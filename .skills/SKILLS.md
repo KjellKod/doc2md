@@ -82,6 +82,13 @@ This directory contains specialized skills for AI agents working in this reposit
 
 **Location:** `.skills/gpt/SKILL.md`
 
+### jc-and-dexter
+**Purpose:** Cross-agent conversation practice. Jean-Claude (Claude) and Dexter (Codex) talk at natural moments, write memoir entries in their own voice, and log user interaction insights for continuity across sessions.
+
+**Use when:** During quest workflows (at least once per quest), after significant user conversations, when something interesting happens worth two perspectives, or when the user asks JC and Dexter to talk.
+
+**Location:** `.skills/jc-and-dexter/SKILL.md`
+
 ### celebrate
 **Purpose:** Play a rich quest completion celebration animation with block letters, achievements, impact metrics, quality score, and end credits. Runs the celebrate script or produces a manual celebration from quest artifacts.
 
