@@ -1,7 +1,36 @@
 # doc2md
 Document to Markdown
 
-# Why this tool? 
+<div align="center">
+
+### ✦ [**Use doc2md live →**](https://kjellkod.github.io/doc2md/) ✦
+
+*Client-side, private, no upload. Your files never leave your browser.*
+
+</div>
+
+---
+
+## Quick Start
+
+**Use it online** — just visit [kjellkod.github.io/doc2md](https://kjellkod.github.io/doc2md/) and drop your files.
+
+**Run locally:**
+
+```bash
+git clone https://github.com/KjellKod/doc2md.git
+cd doc2md
+npm install
+npm run dev
+```
+
+Then open `http://localhost:5173/doc2md/` in your browser.
+
+**Supported formats:** `.docx` `.xlsx` `.pdf` `.csv` `.tsv` `.pptx` `.html` `.txt` `.json`
+
+---
+
+# Why this tool?
 This began from a very practical question from people newly starting to use AI workflows:
 
 > _How do I turn an Excel doc or a PDF or a Word document into Markdown?_
