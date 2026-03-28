@@ -1,10 +1,16 @@
 import type { SupportedFormat } from "../types";
+import { convertCsv } from "./csv";
+import { convertHtml } from "./html";
 import { convertJson } from "./json";
+import { convertTsv } from "./tsv";
 import { convertTxt } from "./txt";
 import type { ConversionResult, Converter } from "./types";
 
 const converters: Record<SupportedFormat, Converter> = {
+  csv: convertCsv,
+  html: convertHtml,
   json: convertJson,
+  tsv: convertTsv,
   txt: convertTxt
 };
 

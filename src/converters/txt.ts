@@ -1,9 +1,6 @@
-import type { Converter } from "./types";
+import { normalizeLineEndings } from "./delimited";
 import { readFileAsText } from "./readText";
-
-function normalizeLineEndings(value: string) {
-  return value.replace(/\r\n?/g, "\n");
-}
+import type { Converter } from "./types";
 
 export const convertTxt: Converter = async (file) => {
   try {

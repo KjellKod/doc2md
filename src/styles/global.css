@@ -316,6 +316,17 @@ a {
   color: #8a6420;
 }
 
+.format-badge-csv,
+.format-badge-tsv {
+  background: #e8f4eb;
+  color: #286347;
+}
+
+.format-badge-html {
+  background: #f7ece6;
+  color: #9a5222;
+}
+
 .format-badge-unknown {
   background: #f4ece9;
   color: #8c3b34;
