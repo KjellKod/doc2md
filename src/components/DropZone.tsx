@@ -40,7 +40,7 @@ export default function DropZone({ onFilesAdded }: DropZoneProps) {
         ref={inputRef}
         className="visually-hidden"
         type="file"
-        accept=".txt,.json,application/json,text/plain"
+        accept=".txt,.json,.csv,.tsv,.html,text/plain,application/json,text/csv,text/tab-separated-values,text/html"
         multiple
         onChange={(event) => {
           handleFiles(event.target.files);
@@ -60,7 +60,9 @@ export default function DropZone({ onFilesAdded }: DropZoneProps) {
         </button>
         .
       </p>
-      <p className="drop-zone-note">Current support: plain text and JSON.</p>
+      <p className="drop-zone-note">
+        Current support: plain text, JSON, CSV, TSV, and HTML.
+      </p>
     </div>
   );
 }
