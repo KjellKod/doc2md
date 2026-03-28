@@ -13,7 +13,7 @@ function createPdfFile(contents: BlobPart[], fileName = "sample.pdf") {
 
 async function importPdfModule() {
   vi.resetModules();
-  vi.unmock("pdfjs-dist/legacy/build/pdf.mjs");
+  vi.doUnmock("pdfjs-dist/legacy/build/pdf.mjs");
 
   return import("./pdf");
 }
@@ -22,7 +22,7 @@ describe("convertPdf", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.resetModules();
-    vi.unmock("pdfjs-dist/legacy/build/pdf.mjs");
+    vi.doUnmock("pdfjs-dist/legacy/build/pdf.mjs");
   });
 
   it("extracts text from the sample PDF fixture", async () => {

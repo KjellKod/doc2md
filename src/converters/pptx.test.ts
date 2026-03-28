@@ -14,7 +14,7 @@ function createPptxFile(contents: BlobPart[], fileName = "sample.pptx") {
 
 async function importPptxModule() {
   vi.resetModules();
-  vi.unmock("jszip");
+  vi.doUnmock("jszip");
 
   return import("./pptx");
 }
@@ -23,7 +23,7 @@ describe("convertPptx", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.resetModules();
-    vi.unmock("jszip");
+    vi.doUnmock("jszip");
   });
 
   it("extracts slide titles and body text from the sample PPTX fixture", async () => {
