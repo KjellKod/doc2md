@@ -3,6 +3,8 @@ import { convertCsv } from "./csv";
 import { convertDocx } from "./docx";
 import { convertHtml } from "./html";
 import { convertJson } from "./json";
+import { convertPdf } from "./pdf";
+import { convertPptx } from "./pptx";
 import { convertTsv } from "./tsv";
 import { convertTxt } from "./txt";
 import type { ConversionResult, Converter } from "./types";
@@ -13,6 +15,8 @@ const converters: Record<SupportedFormat, Converter> = {
   docx: convertDocx,
   html: convertHtml,
   json: convertJson,
+  pdf: convertPdf,
+  pptx: convertPptx,
   tsv: convertTsv,
   txt: convertTxt,
   xlsx: convertXlsx

@@ -29,7 +29,7 @@ export default function App() {
               Files are processed locally in your browser
             </span>
             <span className="hero-pill">
-              Phase 3 support: .txt, .json, .csv, .tsv, .html
+              Phase 5 support: .txt, .json, .csv, .tsv, .html, .docx, .xlsx, .pdf, .pptx
             </span>
           </div>
         </header>
@@ -40,8 +40,8 @@ export default function App() {
               <div>
                 <h2 id="upload-title">Upload</h2>
                 <p className="panel-copy">
-                  Drop in text, JSON, CSV, TSV, or HTML and review the Markdown
-                  before downloading it.
+                  Drop in supported documents, spreadsheets, PDFs, or decks and
+                  review the Markdown before downloading it.
                 </p>
               </div>
             </div>

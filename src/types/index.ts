@@ -1,4 +1,14 @@
-export const SUPPORTED_FORMATS = ["txt", "json", "csv", "tsv", "html", "docx", "xlsx"] as const;
+export const SUPPORTED_FORMATS = [
+  "txt",
+  "json",
+  "csv",
+  "tsv",
+  "html",
+  "docx",
+  "xlsx",
+  "pdf",
+  "pptx"
+] as const;
 
 export type SupportedFormat = (typeof SUPPORTED_FORMATS)[number];
 

@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import * as XLSX from "xlsx";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { UNSUPPORTED_FILE_MESSAGE, convertFile } from "./index";
@@ -103,9 +105,33 @@ describe("convertFile", () => {
     expect(result.status).toBe("success");
   });
 
-  it("returns an error for unsupported extensions", async () => {
-    const file = new File(["binary"], "report.pdf", {
+  it("routes .pdf files to the PDF converter", async () => {
+    const fixture = fs.readFileSync(path.resolve(process.cwd(), "test-fixtures/sample.pdf"));
+    const file = new File([fixture], "report.pdf", {
       type: "application/pdf"
+    });
+
+    const result = await convertFile(file);
+
+    expect(result.markdown).toContain("## Page 1");
+    expect(result.status).toBe("success");
+  });
+
+  it("routes .pptx files to the PPTX converter", async () => {
+    const fixture = fs.readFileSync(path.resolve(process.cwd(), "test-fixtures/sample.pptx"));
+    const file = new File([fixture], "deck.pptx", {
+      type: "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    });
+
+    const result = await convertFile(file);
+
+    expect(result.markdown).toContain("## Slide 1: Sample Presentation");
+    expect(result.status).toBe("success");
+  });
+
+  it("returns an error for unsupported extensions", async () => {
+    const file = new File(["binary"], "report.exe", {
+      type: "application/octet-stream"
     });
 
     const result = await convertFile(file);
