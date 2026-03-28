@@ -1,0 +1,297 @@
+name: Codex CI Code Review
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: codex-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  codex-review:
+    if: >-
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.user.login == 'KjellKod' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    environment: codex-ci-review
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.base.sha }}
+
+      - name: Check API key availability
+        id: check-key
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "OPENAI_API_KEY is not available. Skipping review."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Gather PR context
+        if: steps.check-key.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh pr diff ${{ github.event.pull_request.number }} --patch > /tmp/pr.diff
+          gh pr view ${{ github.event.pull_request.number }} \
+            --json title,body --jq '.title + "\n\n" + (.body // "")' > /tmp/pr_description.txt
+          gh pr view ${{ github.event.pull_request.number }} \
+            --json headRefOid --jq '.headRefOid' > /tmp/pr_head_sha.txt
+          gh pr view ${{ github.event.pull_request.number }} \
+            --json files --jq '.files[].path' > /tmp/changed_files.txt
+
+          python3 <<'PYEOF'
+          import os
+          import subprocess
+          from pathlib import Path
+          from urllib.parse import quote
+
+          repo = os.environ["REPO"]
+          head_sha = Path("/tmp/pr_head_sha.txt").read_text(encoding="utf-8").strip()
+          changed_files = [
+              line.strip()
+              for line in Path("/tmp/changed_files.txt").read_text(encoding="utf-8").splitlines()
+              if line.strip()
+          ]
+
+          max_files = 12
+          max_chars = 12000
+          rendered = []
+          for path in changed_files[:max_files]:
+              encoded_path = quote(path, safe="/")
+              cmd = [
+                  "gh",
+                  "api",
+                  "-H",
+                  "Accept: application/vnd.github.raw",
+                  f"repos/{repo}/contents/{encoded_path}?ref={head_sha}",
+              ]
+              try:
+                  result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+                  content = result.stdout
+              except subprocess.CalledProcessError as exc:
+                  detail = exc.stderr.strip() or exc.stdout.strip() or "unable to fetch file snapshot"
+                  content = f"[unavailable: {detail}]"
+
+              if len(content) > max_chars:
+                  content = content[:max_chars] + "\n... [truncated]\n"
+
+              rendered.append(f"## {path}\n```\n{content.rstrip()}\n```")
+
+          if len(changed_files) > max_files:
+              rendered.append(
+                  f"## Additional changed files omitted\nOnly the first {max_files} changed files are included here for context. "
+                  "Use the diff as the source of truth for the full change set."
+              )
+
+          Path("/tmp/pr_head_files.md").write_text("\n\n".join(rendered).strip() + "\n", encoding="utf-8")
+          PYEOF
+
+      - name: Fetch existing review comments and replies
+        if: steps.check-key.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api --paginate --slurp "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments" \
+            --jq 'map(.[]) | map({id, in_reply_to_id, user: .user.login, path, line, body})' \
+            > /tmp/existing_comments.json 2>/dev/null || echo "[]" > /tmp/existing_comments.json
+
+      - name: Build review prompt
+        if: steps.check-key.outputs.skip != 'true'
+        run: |
+          sed -e '/{PLACEHOLDER_PR_DESCRIPTION}/r /tmp/pr_description.txt' \
+              -e '/{PLACEHOLDER_PR_DESCRIPTION}/d' \
+              -e '/{PLACEHOLDER_EXISTING_COMMENTS}/r /tmp/existing_comments.json' \
+              -e '/{PLACEHOLDER_EXISTING_COMMENTS}/d' \
+              -e '/{PLACEHOLDER_PR_HEAD_FILES}/r /tmp/pr_head_files.md' \
+              -e '/{PLACEHOLDER_PR_HEAD_FILES}/d' \
+              -e '/{PLACEHOLDER_DIFF}/r /tmp/pr.diff' \
+              -e '/{PLACEHOLDER_DIFF}/d' \
+              .github/codex-review-prompt.md > /tmp/review-prompt.md
+
+      - name: AI Code Review
+        if: steps.check-key.outputs.skip != 'true'
+        id: review
+        continue-on-error: true
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt-file: /tmp/review-prompt.md
+          sandbox: read-only
+          safety-strategy: drop-sudo
+          effort: high
+          output-file: /tmp/review-output.json
+
+      - name: Post inline review
+        if: always() && steps.check-key.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+          REPO: ${{ github.repository }}
+          STRICT_INLINE_POSTING: "false"
+        run: |
+          if [ ! -s /tmp/review-output.json ]; then
+            echo "::warning::No AI review output file produced. Skipping inline review posting."
+            exit 0
+          fi
+
+          python3 << 'PYEOF'
+          import json
+          import os
+          import re
+          import subprocess
+          import sys
+
+          raw = open("/tmp/review-output.json", encoding="utf-8").read()
+          comments = None
+          stripped = raw
+
+          try:
+              parsed = json.loads(raw)
+              if isinstance(parsed, list):
+                  comments = parsed
+          except (json.JSONDecodeError, ValueError):
+              pass
+
+          if comments is None:
+              stripped = re.sub(r"```[\w]*\n?", "", raw)
+              try:
+                  parsed = json.loads(stripped.strip())
+                  if isinstance(parsed, list):
+                      comments = parsed
+              except (json.JSONDecodeError, ValueError):
+                  pass
+
+          if comments is None:
+              for fence_match in re.finditer(r"```(?:json)?\s*\n(.*?)```", raw, re.DOTALL):
+                  try:
+                      parsed = json.loads(fence_match.group(1))
+                      if isinstance(parsed, list):
+                          comments = parsed
+                          break
+                  except (json.JSONDecodeError, ValueError):
+                      continue
+
+          if comments is None:
+              for match in re.finditer(r"\[.*?\]", stripped, re.DOTALL):
+                  try:
+                      candidate = json.loads(match.group())
+                      if isinstance(candidate, list):
+                          comments = candidate
+                          break
+                  except (json.JSONDecodeError, ValueError):
+                      continue
+
+          if comments is None:
+              print("No review comments -- could not parse JSON array from output.")
+              sys.exit(0)
+
+          if not isinstance(comments, list) or not comments:
+              print("No review comments.")
+              sys.exit(0)
+
+          def is_valid_comment(comment):
+              if not isinstance(comment, dict):
+                  return False
+              if not (isinstance(comment.get("path"), str) and comment["path"]):
+                  return False
+              if not (isinstance(comment.get("body"), str) and comment["body"]):
+                  return False
+              try:
+                  comment["line"] = int(comment["line"])
+              except (TypeError, ValueError):
+                  return False
+              if comment["line"] < 1:
+                  return False
+              if comment.get("side") not in ("LEFT", "RIGHT"):
+                  comment["side"] = "RIGHT"
+              return True
+
+          comments = [comment for comment in comments if is_valid_comment(comment)]
+          if not comments:
+              print("No valid review comments after structural validation.")
+              sys.exit(0)
+
+          existing = []
+          try:
+              existing = json.load(open("/tmp/existing_comments.json", encoding="utf-8"))
+          except Exception:
+              pass
+
+          bot_bodies = {
+              item["body"].strip()
+              for item in existing
+              if isinstance(item, dict)
+              and item.get("user") == "github-actions[bot]"
+              and isinstance(item.get("body"), str)
+          }
+          replied_ids = {
+              item.get("in_reply_to_id")
+              for item in existing
+              if isinstance(item, dict) and item.get("in_reply_to_id")
+          }
+          resolved_bot_ids = {
+              item["id"]
+              for item in existing
+              if isinstance(item, dict)
+              and item.get("user") == "github-actions[bot]"
+              and item.get("id") in replied_ids
+          }
+          resolved_bot_bodies = {
+              item["body"].strip()
+              for item in existing
+              if isinstance(item, dict)
+              and item.get("user") == "github-actions[bot]"
+              and item.get("id") in resolved_bot_ids
+              and isinstance(item.get("body"), str)
+          }
+
+          filtered = []
+          for comment in comments:
+              body = comment["body"].strip()
+              if body in bot_bodies or body in resolved_bot_bodies:
+                  continue
+              filtered.append(comment)
+
+          if not filtered:
+              print("No new review comments to post after deduplication.")
+              sys.exit(0)
+
+          for comment in filtered:
+              payload = {
+                  "body": comment["body"],
+                  "commit_id": os.environ["COMMIT_SHA"],
+                  "path": comment["path"],
+                  "line": comment["line"],
+                  "side": comment.get("side", "RIGHT"),
+              }
+              subprocess.run(
+                  [
+                      "gh",
+                      "api",
+                      f"repos/{os.environ['REPO']}/pulls/{os.environ['PR_NUMBER']}/comments",
+                      "--method",
+                      "POST",
+                      "--input",
+                      "-",
+                  ],
+                  input=json.dumps(payload),
+                  text=True,
+                  check=False,
+              )
+          PYEOF
