@@ -1,4 +1,7 @@
+import fs from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { CORRUPT_FILE_MESSAGE, EMPTY_FILE_MESSAGE } from "./messages";
 import { convertJson } from "./json";
 
 describe("convertJson", () => {
@@ -17,16 +20,17 @@ describe("convertJson", () => {
   });
 
   it("handles malformed JSON gracefully", async () => {
-    const file = new File(['{"name": }'], "broken.json", {
+    const fixture = fs.readFileSync(
+      path.resolve(process.cwd(), "test-fixtures/sample-malformed.json")
+    );
+    const file = new File([fixture], "broken.json", {
       type: "application/json"
     });
 
     const result = await convertJson(file);
 
     expect(result.status).toBe("error");
-    expect(result.warnings).toEqual([
-      "This JSON file could not be parsed. Please check that it is valid JSON."
-    ]);
+    expect(result.warnings).toEqual([CORRUPT_FILE_MESSAGE]);
   });
 
   it("handles an empty JSON file", async () => {
@@ -38,7 +42,7 @@ describe("convertJson", () => {
 
     expect(result).toEqual({
       markdown: "",
-      warnings: ["This JSON file is empty."],
+      warnings: [EMPTY_FILE_MESSAGE],
       status: "error"
     });
   });

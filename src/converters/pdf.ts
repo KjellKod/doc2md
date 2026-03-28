@@ -7,16 +7,16 @@ import type {
   TextItem,
   TextMarkedContent
 } from "pdfjs-dist/types/src/display/api";
+import {
+  CORRUPT_FILE_MESSAGE,
+  LOW_QUALITY_PDF_MESSAGE,
+  SCANNED_PDF_MESSAGE
+} from "./messages";
 import { readFileAsArrayBuffer } from "./readBinary";
 import type { Converter } from "./types";
 
-export const PDF_LOW_TEXT_MESSAGE =
-  "This PDF appears to contain little or no selectable text. Scanned/image-based PDFs are not supported in this version.";
-export const PDF_LAYOUT_WARNING_MESSAGE =
-  "Conversion completed, but this PDF layout is likely to produce imperfect Markdown. Please review before use.";
-
-const INVALID_PDF_MESSAGE =
-  "This PDF file could not be read. It may be corrupted or use unsupported content.";
+export const PDF_LOW_TEXT_MESSAGE = SCANNED_PDF_MESSAGE;
+export const PDF_LAYOUT_WARNING_MESSAGE = LOW_QUALITY_PDF_MESSAGE;
 const LOW_TEXT_CHARACTER_THRESHOLD = 50;
 const IMPERFECT_LAYOUT_CHARACTER_THRESHOLD = 140;
 const LINE_BREAK_THRESHOLD = 4;
@@ -202,7 +202,7 @@ export const convertPdf: Converter = async (file) => {
   } catch {
     return {
       markdown: "",
-      warnings: [INVALID_PDF_MESSAGE],
+      warnings: [CORRUPT_FILE_MESSAGE],
       status: "error"
     };
   } finally {

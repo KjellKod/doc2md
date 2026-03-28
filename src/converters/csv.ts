@@ -1,21 +1,18 @@
 import { parseDelimitedText, renderMarkdownTable } from "./delimited";
+import {
+  CORRUPT_FILE_MESSAGE,
+  EMPTY_FILE_MESSAGE,
+  createErrorResult
+} from "./messages";
 import { readFileAsText } from "./readText";
 import type { Converter } from "./types";
-
-const EMPTY_CSV_MESSAGE = "This CSV file is empty.";
-const INVALID_CSV_MESSAGE =
-  "This CSV file could not be parsed. Please check that quoted fields are balanced.";
 
 export const convertCsv: Converter = async (file) => {
   try {
     const rows = parseDelimitedText(await readFileAsText(file), ",");
 
     if (rows.length === 0) {
-      return {
-        markdown: "",
-        warnings: [EMPTY_CSV_MESSAGE],
-        status: "error"
-      };
+      return createErrorResult(EMPTY_FILE_MESSAGE);
     }
 
     return {
@@ -25,17 +22,9 @@ export const convertCsv: Converter = async (file) => {
     };
   } catch (error) {
     if (error instanceof SyntaxError) {
-      return {
-        markdown: "",
-        warnings: [INVALID_CSV_MESSAGE],
-        status: "error"
-      };
+      return createErrorResult(CORRUPT_FILE_MESSAGE);
     }
 
-    return {
-      markdown: "",
-      warnings: ["This CSV file could not be read."],
-      status: "error"
-    };
+    return createErrorResult(CORRUPT_FILE_MESSAGE);
   }
 };

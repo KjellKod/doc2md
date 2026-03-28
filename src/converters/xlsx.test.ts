@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import * as XLSX from "xlsx";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { CORRUPT_FILE_MESSAGE } from "./messages";
 import { convertXlsx } from "./xlsx";
 import * as office from "./office";
 
@@ -69,9 +70,7 @@ describe("convertXlsx", () => {
 
     expect(result).toEqual({
       markdown: "",
-      warnings: [
-        "This XLSX file could not be read. It may be corrupted or use unsupported content."
-      ],
+      warnings: [CORRUPT_FILE_MESSAGE],
       status: "error"
     });
   });

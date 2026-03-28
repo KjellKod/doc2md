@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { CORRUPT_FILE_MESSAGE } from "./messages";
 
 const PDF_MIME_TYPE = "application/pdf";
 
@@ -134,7 +135,7 @@ describe("convertPdf", () => {
 
     expect(result).toEqual({
       markdown: "",
-      warnings: ["This PDF file could not be read. It may be corrupted or use unsupported content."],
+      warnings: [CORRUPT_FILE_MESSAGE],
       status: "error"
     });
   });

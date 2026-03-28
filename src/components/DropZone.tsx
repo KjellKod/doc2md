@@ -1,4 +1,6 @@
 import { useRef, useState } from "react";
+import { MAX_BROWSER_FILE_SIZE_BYTES } from "../converters/messages";
+import { SUPPORTED_FORMATS } from "../types";
 
 interface DropZoneProps {
   onFilesAdded: (files: FileList | File[]) => void;
@@ -6,7 +8,9 @@ interface DropZoneProps {
 
 export default function DropZone({ onFilesAdded }: DropZoneProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const dragDepthRef = useRef(0);
   const [isDragging, setIsDragging] = useState(false);
+  const maxSizeInMb = Math.round(MAX_BROWSER_FILE_SIZE_BYTES / (1024 * 1024));
 
   function handleFiles(files: FileList | null) {
     if (!files || files.length === 0) {
@@ -16,22 +20,45 @@ export default function DropZone({ onFilesAdded }: DropZoneProps) {
     onFilesAdded(files);
   }
 
+  function openFilePicker() {
+    inputRef.current?.click();
+  }
+
   return (
     <div
       className={`drop-zone${isDragging ? " is-dragging" : ""}`}
+      role="button"
+      tabIndex={0}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) {
+          openFilePicker();
+        }
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openFilePicker();
+        }
+      }}
       onDragEnter={(event) => {
         event.preventDefault();
+        dragDepthRef.current += 1;
         setIsDragging(true);
       }}
       onDragLeave={(event) => {
         event.preventDefault();
-        setIsDragging(false);
+        dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+
+        if (dragDepthRef.current === 0) {
+          setIsDragging(false);
+        }
       }}
       onDragOver={(event) => {
         event.preventDefault();
       }}
       onDrop={(event) => {
         event.preventDefault();
+        dragDepthRef.current = 0;
         setIsDragging(false);
         handleFiles(event.dataTransfer.files);
       }}
@@ -48,20 +75,28 @@ export default function DropZone({ onFilesAdded }: DropZoneProps) {
         }}
       />
 
-      <p className="drop-zone-title">Drop files here</p>
+      <p className="drop-zone-kicker">Local conversion. No upload in the normal flow.</p>
+      <p className="drop-zone-title">Drop files to convert</p>
       <p className="drop-zone-copy">
         Drag in one or more files, or{" "}
         <button
           type="button"
           className="inline-button"
-          onClick={() => inputRef.current?.click()}
+          onClick={openFilePicker}
         >
           browse from your device
         </button>
         .
       </p>
+      <div className="drop-zone-format-list" aria-label="Supported formats">
+        {SUPPORTED_FORMATS.map((format) => (
+          <span key={format} className="drop-zone-format-pill">
+            .{format}
+          </span>
+        ))}
+      </div>
       <p className="drop-zone-note">
-        Current support: TXT, JSON, CSV, TSV, HTML, DOCX, XLSX, PDF, and PPTX.
+        Supports mixed batches. Up to {maxSizeInMb} MB per file.
       </p>
     </div>
   );

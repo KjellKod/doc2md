@@ -11,9 +11,9 @@ export default function PreviewPanel({ entry }: PreviewPanelProps) {
   if (!entry) {
     return (
       <div className="preview-empty-state">
-        <p className="empty-state-title">No preview yet.</p>
+        <p className="empty-state-title">Drop files to convert.</p>
         <p className="empty-state-copy">
-          Select a converted file to inspect the rendered Markdown.
+          Converted Markdown will render here once a file is ready for review.
         </p>
       </div>
     );
@@ -21,10 +21,11 @@ export default function PreviewPanel({ entry }: PreviewPanelProps) {
 
   if (entry.status === "pending" || entry.status === "converting") {
     return (
-      <div className="preview-empty-state">
-        <p className="empty-state-title">Preparing preview.</p>
+      <div className="preview-empty-state preview-loading-state" role="status">
+        <span className="loading-orb" aria-hidden="true" />
+        <p className="empty-state-title">Converting locally.</p>
         <p className="empty-state-copy">
-          The file is being converted locally in your browser.
+          Preparing a Markdown preview for {entry.name}.
         </p>
       </div>
     );
@@ -37,9 +38,9 @@ export default function PreviewPanel({ entry }: PreviewPanelProps) {
   if (entry.markdown.length === 0) {
     return (
       <div className="preview-empty-state">
-        <p className="empty-state-title">This file is empty.</p>
+        <p className="empty-state-title">No Markdown output.</p>
         <p className="empty-state-copy">
-          The conversion succeeded, but there is nothing to render.
+          This file finished processing, but there is nothing useful to render.
         </p>
       </div>
     );

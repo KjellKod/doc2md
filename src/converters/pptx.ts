@@ -1,4 +1,9 @@
 import JSZip from "jszip";
+import {
+  CORRUPT_FILE_MESSAGE,
+  EMPTY_FILE_MESSAGE,
+  createErrorResult
+} from "./messages";
 import { readFileAsArrayBuffer } from "./readBinary";
 import type { Converter } from "./types";
 
@@ -10,10 +15,7 @@ const RELATIONSHIP_NAMESPACE =
 const PACKAGE_RELATIONSHIP_NAMESPACE =
   "http://schemas.openxmlformats.org/package/2006/relationships";
 
-const EMPTY_PPTX_MESSAGE = "This PPTX file did not contain any extractable slide text.";
 const EMPTY_SLIDE_MESSAGE = "This slide contains no extractable text.";
-const INVALID_PPTX_MESSAGE =
-  "This PPTX file could not be read. It may be corrupted or use unsupported content.";
 
 function parseXmlDocument(xml: string) {
   const parsed = new DOMParser().parseFromString(xml, "application/xml");
@@ -177,11 +179,7 @@ export const convertPptx: Converter = async (file) => {
     const slidePaths = await getOrderedSlidePaths(zip);
 
     if (slidePaths.length === 0) {
-      return {
-        markdown: "",
-        warnings: [EMPTY_PPTX_MESSAGE],
-        status: "error"
-      };
+      return createErrorResult(EMPTY_FILE_MESSAGE);
     }
 
     const slideContents = await Promise.all(
@@ -206,11 +204,7 @@ export const convertPptx: Converter = async (file) => {
     );
 
     if (!hasExtractableText) {
-      return {
-        markdown: "",
-        warnings: [EMPTY_PPTX_MESSAGE],
-        status: "error"
-      };
+      return createErrorResult(EMPTY_FILE_MESSAGE);
     }
 
     return {
@@ -227,10 +221,6 @@ export const convertPptx: Converter = async (file) => {
       status: "success"
     };
   } catch {
-    return {
-      markdown: "",
-      warnings: [INVALID_PPTX_MESSAGE],
-      status: "error"
-    };
+    return createErrorResult(CORRUPT_FILE_MESSAGE);
   }
 };
