@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { CORRUPT_FILE_MESSAGE, EMPTY_FILE_MESSAGE } from "./messages";
 import { convertTsv } from "./tsv";
 
 describe("convertTsv", () => {
@@ -28,7 +29,7 @@ describe("convertTsv", () => {
 
     expect(result).toEqual({
       markdown: "",
-      warnings: ["This TSV file is empty."],
+      warnings: [EMPTY_FILE_MESSAGE],
       status: "error"
     });
   });
@@ -56,9 +57,7 @@ describe("convertTsv", () => {
 
     expect(result).toEqual({
       markdown: "",
-      warnings: [
-        "This TSV file could not be parsed. Please check that quoted fields are balanced."
-      ],
+      warnings: [CORRUPT_FILE_MESSAGE],
       status: "error"
     });
   });

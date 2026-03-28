@@ -1,41 +1,19 @@
 import type { FileEntry } from "../types";
+import { downloadEntry, isDownloadableEntry } from "../utils/download";
 
 interface DownloadButtonProps {
   entry: FileEntry | null;
 }
 
-function createMarkdownFileName(fileName: string) {
-  const dotIndex = fileName.lastIndexOf(".");
-
-  if (dotIndex <= 0) {
-    return `${fileName}.md`;
-  }
-
-  return `${fileName.slice(0, dotIndex)}.md`;
-}
-
 export default function DownloadButton({ entry }: DownloadButtonProps) {
-  const isDownloadable =
-    entry !== null &&
-    (entry.status === "success" || entry.status === "warning");
+  const isDownloadable = isDownloadableEntry(entry);
 
   function handleDownload() {
-    if (!entry || !isDownloadable) {
+    if (!isDownloadable) {
       return;
     }
 
-    const markdownBlob = new globalThis.Blob([entry.markdown], {
-      type: "text/markdown;charset=utf-8"
-    });
-    const objectUrl = globalThis.URL.createObjectURL(markdownBlob);
-    const link = document.createElement("a");
-
-    link.href = objectUrl;
-    link.download = createMarkdownFileName(entry.name);
-    document.body.append(link);
-    link.click();
-    link.remove();
-    globalThis.URL.revokeObjectURL(objectUrl);
+    downloadEntry(entry);
   }
 
   return (
@@ -45,7 +23,7 @@ export default function DownloadButton({ entry }: DownloadButtonProps) {
       disabled={!isDownloadable}
       onClick={handleDownload}
     >
-      Download .md
+      Download selected
     </button>
   );
 }

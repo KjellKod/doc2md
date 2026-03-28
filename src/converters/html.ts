@@ -1,29 +1,24 @@
+import {
+  CORRUPT_FILE_MESSAGE,
+  EMPTY_FILE_MESSAGE,
+  createErrorResult
+} from "./messages";
 import { readFileAsText } from "./readText";
 import { convertHtmlFragmentToMarkdown } from "./richText";
 import type { Converter } from "./types";
-
-const EMPTY_HTML_MESSAGE = "This HTML file is empty.";
 
 export const convertHtml: Converter = async (file) => {
   try {
     const contents = await readFileAsText(file);
 
     if (contents.trim().length === 0) {
-      return {
-        markdown: "",
-        warnings: [EMPTY_HTML_MESSAGE],
-        status: "error"
-      };
+      return createErrorResult(EMPTY_FILE_MESSAGE);
     }
 
     const markdown = convertHtmlFragmentToMarkdown(contents);
 
     if (markdown.length === 0) {
-      return {
-        markdown: "",
-        warnings: [EMPTY_HTML_MESSAGE],
-        status: "error"
-      };
+      return createErrorResult(EMPTY_FILE_MESSAGE);
     }
 
     return {
@@ -32,10 +27,6 @@ export const convertHtml: Converter = async (file) => {
       status: "success"
     };
   } catch {
-    return {
-      markdown: "",
-      warnings: ["This HTML file could not be read."],
-      status: "error"
-    };
+    return createErrorResult(CORRUPT_FILE_MESSAGE);
   }
 };

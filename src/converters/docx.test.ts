@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { CORRUPT_FILE_MESSAGE } from "./messages";
 import { convertDocx } from "./docx";
 import * as office from "./office";
 
@@ -56,9 +57,7 @@ describe("convertDocx", () => {
 
     expect(result).toEqual({
       markdown: "",
-      warnings: [
-        "This DOCX file could not be read. It may be corrupted or use unsupported content."
-      ],
+      warnings: [CORRUPT_FILE_MESSAGE],
       status: "error"
     });
   });

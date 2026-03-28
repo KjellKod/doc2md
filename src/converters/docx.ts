@@ -1,11 +1,12 @@
 import { convertDocxToHtml } from "./office";
+import {
+  CORRUPT_FILE_MESSAGE,
+  EMPTY_FILE_MESSAGE,
+  createErrorResult
+} from "./messages";
 import { convertHtmlFragmentToMarkdown } from "./richText";
 import { readFileAsArrayBuffer } from "./readBinary";
 import type { Converter } from "./types";
-
-const EMPTY_DOCX_MESSAGE = "This DOCX file did not contain any extractable text.";
-const INVALID_DOCX_MESSAGE =
-  "This DOCX file could not be read. It may be corrupted or use unsupported content.";
 
 export const convertDocx: Converter = async (file) => {
   try {
@@ -15,11 +16,7 @@ export const convertDocx: Converter = async (file) => {
     const markdown = convertHtmlFragmentToMarkdown(result.value);
 
     if (markdown.length === 0) {
-      return {
-        markdown: "",
-        warnings: warnings.length > 0 ? warnings : [EMPTY_DOCX_MESSAGE],
-        status: "error"
-      };
+      return createErrorResult(EMPTY_FILE_MESSAGE);
     }
 
     return {
@@ -28,10 +25,6 @@ export const convertDocx: Converter = async (file) => {
       status: warnings.length > 0 ? "warning" : "success"
     };
   } catch {
-    return {
-      markdown: "",
-      warnings: [INVALID_DOCX_MESSAGE],
-      status: "error"
-    };
+    return createErrorResult(CORRUPT_FILE_MESSAGE);
   }
 };

@@ -1,5 +1,10 @@
 import { useState } from "react";
 import { convertFile, getFileExtension } from "../converters";
+import {
+  CORRUPT_FILE_MESSAGE,
+  MAX_BROWSER_FILE_SIZE_BYTES,
+  OVERSIZED_FILE_MESSAGE
+} from "../converters/messages";
 import type { FileEntry } from "../types";
 
 function createEntryId(file: File, index: number) {
@@ -33,6 +38,16 @@ export function useFileConversion() {
   }
 
   async function processEntry(entry: FileEntry) {
+    if (entry.file.size > MAX_BROWSER_FILE_SIZE_BYTES) {
+      updateEntry(entry.id, (currentEntry) => ({
+        ...currentEntry,
+        markdown: "",
+        warnings: [OVERSIZED_FILE_MESSAGE],
+        status: "error"
+      }));
+      return;
+    }
+
     updateEntry(entry.id, (currentEntry) => ({
       ...currentEntry,
       status: "converting",
@@ -52,7 +67,7 @@ export function useFileConversion() {
       updateEntry(entry.id, (currentEntry) => ({
         ...currentEntry,
         markdown: "",
-        warnings: ["This file could not be converted."],
+        warnings: [CORRUPT_FILE_MESSAGE],
         status: "error"
       }));
     }
@@ -91,11 +106,16 @@ export function useFileConversion() {
     );
   }
 
+  function clearEntries() {
+    setEntries([]);
+  }
+
   const selectedEntry = entries.find((entry) => entry.selected) ?? null;
 
   return {
     entries,
     addFiles,
+    clearEntries,
     selectEntry,
     selectedEntry
   };

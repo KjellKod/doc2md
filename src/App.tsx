@@ -1,17 +1,21 @@
+import AboutSection from "./components/AboutSection";
 import DownloadButton from "./components/DownloadButton";
 import DropZone from "./components/DropZone";
 import FileList from "./components/FileList";
 import PreviewPanel from "./components/PreviewPanel";
 import { useFileConversion } from "./hooks/useFileConversion";
+import { downloadAllEntries, isDownloadableEntry } from "./utils/download";
 
 function pluralize(count: number, singular: string, plural = `${singular}s`) {
   return count === 1 ? singular : plural;
 }
 
 export default function App() {
-  const { entries, addFiles, selectEntry, selectedEntry } = useFileConversion();
-  const completedCount = entries.filter(
-    (entry) => entry.status === "success" || entry.status === "warning"
+  const { entries, addFiles, clearEntries, selectEntry, selectedEntry } =
+    useFileConversion();
+  const completedCount = entries.filter(isDownloadableEntry).length;
+  const activeCount = entries.filter(
+    (entry) => entry.status === "pending" || entry.status === "converting"
   ).length;
 
   return (
@@ -29,7 +33,12 @@ export default function App() {
               Files are processed locally in your browser
             </span>
             <span className="hero-pill">
-              Phase 5 support: .txt, .json, .csv, .tsv, .html, .docx, .xlsx, .pdf, .pptx
+              Supports .txt, .json, .csv, .tsv, .html, .docx, .xlsx, .pdf, and .pptx
+            </span>
+            <span className="hero-pill">
+              {entries.length === 0
+                ? "Ready for single or mixed-format batches"
+                : `${completedCount} ${pluralize(completedCount, "file")} ready, ${activeCount} processing`}
             </span>
           </div>
         </header>
@@ -59,7 +68,12 @@ export default function App() {
               <DownloadButton entry={selectedEntry} />
             </div>
 
-            <FileList entries={entries} onSelect={selectEntry} />
+            <FileList
+              entries={entries}
+              onClearAll={clearEntries}
+              onDownloadAll={() => downloadAllEntries(entries)}
+              onSelect={selectEntry}
+            />
           </section>
 
           <section className="panel preview-panel" aria-labelledby="preview-title">
@@ -69,13 +83,15 @@ export default function App() {
                 <p className="panel-copy">
                   {selectedEntry
                     ? selectedEntry.name
-                    : "Select a file to review the Markdown output."}
+                    : "Drop files to convert and review the rendered Markdown here."}
                 </p>
               </div>
             </div>
             <PreviewPanel entry={selectedEntry} />
           </section>
         </section>
+
+        <AboutSection />
       </main>
     </div>
   );

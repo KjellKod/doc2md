@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { CORRUPT_FILE_MESSAGE, EMPTY_FILE_MESSAGE } from "./messages";
 import { convertCsv } from "./csv";
 
 describe("convertCsv", () => {
@@ -40,7 +41,7 @@ describe("convertCsv", () => {
 
     expect(result).toEqual({
       markdown: "",
-      warnings: ["This CSV file is empty."],
+      warnings: [EMPTY_FILE_MESSAGE],
       status: "error"
     });
   });
@@ -68,9 +69,7 @@ describe("convertCsv", () => {
 
     expect(result).toEqual({
       markdown: "",
-      warnings: [
-        "This CSV file could not be parsed. Please check that quoted fields are balanced."
-      ],
+      warnings: [CORRUPT_FILE_MESSAGE],
       status: "error"
     });
   });

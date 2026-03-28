@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { EMPTY_FILE_MESSAGE } from "./messages";
 import { convertTxt } from "./txt";
 
 describe("convertTxt", () => {
@@ -36,8 +37,8 @@ describe("convertTxt", () => {
 
     expect(result).toEqual({
       markdown: "",
-      warnings: [],
-      status: "success"
+      warnings: [EMPTY_FILE_MESSAGE],
+      status: "error"
     });
   });
 });

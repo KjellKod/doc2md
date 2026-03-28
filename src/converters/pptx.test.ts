@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { CORRUPT_FILE_MESSAGE } from "./messages";
 
 const PPTX_MIME_TYPE =
   "application/vnd.openxmlformats-officedocument.presentationml.presentation";
@@ -90,9 +91,7 @@ describe("convertPptx", () => {
 
     expect(result).toEqual({
       markdown: "",
-      warnings: [
-        "This PPTX file could not be read. It may be corrupted or use unsupported content."
-      ],
+      warnings: [CORRUPT_FILE_MESSAGE],
       status: "error"
     });
   });

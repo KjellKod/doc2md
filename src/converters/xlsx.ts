@@ -1,11 +1,12 @@
 import { renderMarkdownTable } from "./delimited";
+import {
+  CORRUPT_FILE_MESSAGE,
+  EMPTY_FILE_MESSAGE,
+  createErrorResult
+} from "./messages";
 import { readWorkbook, sheetToRows } from "./office";
 import { readFileAsArrayBuffer } from "./readBinary";
 import type { Converter } from "./types";
-
-const EMPTY_XLSX_MESSAGE = "This XLSX file does not contain any populated sheets.";
-const INVALID_XLSX_MESSAGE =
-  "This XLSX file could not be read. It may be corrupted or use unsupported content.";
 
 function stringifyCell(value: unknown) {
   if (value === null || value === undefined) {
@@ -45,11 +46,7 @@ export const convertXlsx: Converter = async (file) => {
     });
 
     if (sections.length === 0) {
-      return {
-        markdown: "",
-        warnings: warnings.length > 0 ? warnings : [EMPTY_XLSX_MESSAGE],
-        status: "error"
-      };
+      return createErrorResult(EMPTY_FILE_MESSAGE);
     }
 
     return {
@@ -58,10 +55,6 @@ export const convertXlsx: Converter = async (file) => {
       status: warnings.length > 0 ? "warning" : "success"
     };
   } catch {
-    return {
-      markdown: "",
-      warnings: [INVALID_XLSX_MESSAGE],
-      status: "error"
-    };
+    return createErrorResult(CORRUPT_FILE_MESSAGE);
   }
 };

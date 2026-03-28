@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { EMPTY_FILE_MESSAGE } from "./messages";
 import { convertHtml } from "./html";
 
 describe("convertHtml", () => {
@@ -62,7 +63,7 @@ describe("convertHtml", () => {
 
     expect(result).toEqual({
       markdown: "",
-      warnings: ["This HTML file is empty."],
+      warnings: [EMPTY_FILE_MESSAGE],
       status: "error"
     });
   });

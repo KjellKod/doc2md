@@ -1,20 +1,17 @@
+import {
+  CORRUPT_FILE_MESSAGE,
+  EMPTY_FILE_MESSAGE,
+  createErrorResult
+} from "./messages";
 import type { Converter } from "./types";
 import { readFileAsText } from "./readText";
-
-const EMPTY_JSON_MESSAGE = "This JSON file is empty.";
-const INVALID_JSON_MESSAGE =
-  "This JSON file could not be parsed. Please check that it is valid JSON.";
 
 export const convertJson: Converter = async (file) => {
   try {
     const raw = (await readFileAsText(file)).trim();
 
     if (raw.length === 0) {
-      return {
-        markdown: "",
-        warnings: [EMPTY_JSON_MESSAGE],
-        status: "error"
-      };
+      return createErrorResult(EMPTY_FILE_MESSAGE);
     }
 
     const parsed = JSON.parse(raw);
@@ -27,17 +24,9 @@ export const convertJson: Converter = async (file) => {
     };
   } catch (error) {
     if (error instanceof SyntaxError) {
-      return {
-        markdown: "",
-        warnings: [INVALID_JSON_MESSAGE],
-        status: "error"
-      };
+      return createErrorResult(CORRUPT_FILE_MESSAGE);
     }
 
-    return {
-      markdown: "",
-      warnings: ["This JSON file could not be read."],
-      status: "error"
-    };
+    return createErrorResult(CORRUPT_FILE_MESSAGE);
   }
 };

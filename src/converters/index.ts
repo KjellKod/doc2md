@@ -3,6 +3,7 @@ import { convertCsv } from "./csv";
 import { convertDocx } from "./docx";
 import { convertHtml } from "./html";
 import { convertJson } from "./json";
+import { UNSUPPORTED_FILE_MESSAGE, createErrorResult } from "./messages";
 import { convertPdf } from "./pdf";
 import { convertPptx } from "./pptx";
 import { convertTsv } from "./tsv";
@@ -22,9 +23,6 @@ const converters: Record<SupportedFormat, Converter> = {
   xlsx: convertXlsx
 };
 
-const UNSUPPORTED_FILE_MESSAGE =
-  "Unsupported file type. Please upload one of the supported formats.";
-
 export function getFileExtension(fileName: string) {
   const extension = fileName.split(".").pop();
 
@@ -43,11 +41,7 @@ export async function convertFile(file: File): Promise<ConversionResult> {
   const extension = getFileExtension(file.name);
 
   if (!isSupportedFormat(extension)) {
-    return {
-      markdown: "",
-      warnings: [UNSUPPORTED_FILE_MESSAGE],
-      status: "error"
-    };
+    return createErrorResult(UNSUPPORTED_FILE_MESSAGE);
   }
 
   return converters[extension](file);
