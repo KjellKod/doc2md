@@ -555,3 +555,7 @@ If tradeoffs are needed, bias toward:
 * quality over format count
 * graceful limitations over fake completeness
 * local privacy-preserving execution over backend complexity
+
+---
+
+**doc2md** is an initiative through CandidTalentEdge and developed with [Quest](https://github.com/KjellKod/quest/blob/main/README.md)
