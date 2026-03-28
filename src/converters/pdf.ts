@@ -168,7 +168,9 @@ export const convertPdf: Converter = async (file) => {
     const arrayBuffer = await readFileAsArrayBuffer(file);
 
     loadingTask = getDocument({
-      data: new Uint8Array(arrayBuffer)
+      data: new Uint8Array(arrayBuffer),
+      useSystemFonts: true,
+      standardFontDataUrl: undefined,
     });
 
     const document = await loadingTask.promise;
