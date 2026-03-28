@@ -1,7 +1,13 @@
-import { describe, expect, it } from "vitest";
+import * as XLSX from "xlsx";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { UNSUPPORTED_FILE_MESSAGE, convertFile } from "./index";
+import * as office from "./office";
 
 describe("convertFile", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("routes .txt files to the text converter", async () => {
     const file = new File(["Plain text"], "notes.TXT", {
       type: "text/plain"
@@ -57,6 +63,43 @@ describe("convertFile", () => {
     const result = await convertFile(file);
 
     expect(result.markdown).toContain("# Title");
+    expect(result.status).toBe("success");
+  });
+
+  it("routes .docx files to the DOCX converter", async () => {
+    vi.spyOn(office, "convertDocxToHtml").mockResolvedValue({
+      value: "<h1>Overview</h1><p>Body copy.</p>",
+      messages: []
+    });
+    const file = new File([new Uint8Array([1, 2, 3])], "report.docx", {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    });
+
+    const result = await convertFile(file);
+
+    expect(result.markdown).toContain("# Overview");
+    expect(result.status).toBe("success");
+  });
+
+  it("routes .xlsx files to the XLSX converter", async () => {
+    const workbook = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      XLSX.utils.aoa_to_sheet([
+        ["Project", "Owner"],
+        ["Atlas", "Jordan"]
+      ]),
+      "Projects"
+    );
+    vi.spyOn(office, "readWorkbook").mockReturnValue(workbook);
+    const file = new File([new Uint8Array([1, 2, 3])], "report.xlsx", {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    });
+
+    const result = await convertFile(file);
+
+    expect(result.markdown).toContain("## Sheet: Projects");
     expect(result.status).toBe("success");
   });
 

@@ -1,17 +1,21 @@
 import type { SupportedFormat } from "../types";
 import { convertCsv } from "./csv";
+import { convertDocx } from "./docx";
 import { convertHtml } from "./html";
 import { convertJson } from "./json";
 import { convertTsv } from "./tsv";
 import { convertTxt } from "./txt";
 import type { ConversionResult, Converter } from "./types";
+import { convertXlsx } from "./xlsx";
 
 const converters: Record<SupportedFormat, Converter> = {
   csv: convertCsv,
+  docx: convertDocx,
   html: convertHtml,
   json: convertJson,
   tsv: convertTsv,
-  txt: convertTxt
+  txt: convertTxt,
+  xlsx: convertXlsx
 };
 
 const UNSUPPORTED_FILE_MESSAGE =
