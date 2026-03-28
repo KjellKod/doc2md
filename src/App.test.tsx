@@ -4,11 +4,17 @@ import { describe, expect, it } from "vitest";
 import App from "./App";
 
 describe("App", () => {
-  it("renders without crashing", () => {
+  it("renders the core product promise", () => {
     render(<App />);
 
     expect(
-      screen.getByRole("heading", { name: "doc2md — Document to Markdown" })
+      screen.getByRole("heading", {
+        name: "Document to Markdown, without leaving the browser."
+      })
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText("Files are processed locally in your browser")
     ).toBeInTheDocument();
   });
 });
