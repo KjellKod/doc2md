@@ -327,6 +327,18 @@ a {
   color: #9a5222;
 }
 
+.format-badge-docx,
+.format-badge-pptx {
+  background: #e9eef9;
+  color: #355a96;
+}
+
+.format-badge-xlsx,
+.format-badge-pdf {
+  background: #f6e8e8;
+  color: #9a4040;
+}
+
 .format-badge-unknown {
   background: #f4ece9;
   color: #8c3b34;

@@ -40,7 +40,7 @@ export default function DropZone({ onFilesAdded }: DropZoneProps) {
         ref={inputRef}
         className="visually-hidden"
         type="file"
-        accept=".txt,.json,.csv,.tsv,.html,text/plain,application/json,text/csv,text/tab-separated-values,text/html"
+        accept=".txt,.json,.csv,.tsv,.html,.docx,.xlsx,.pdf,.pptx,text/plain,application/json,text/csv,text/tab-separated-values,text/html,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.presentationml.presentation"
         multiple
         onChange={(event) => {
           handleFiles(event.target.files);
@@ -61,7 +61,7 @@ export default function DropZone({ onFilesAdded }: DropZoneProps) {
         .
       </p>
       <p className="drop-zone-note">
-        Current support: plain text, JSON, CSV, TSV, and HTML.
+        Current support: TXT, JSON, CSV, TSV, HTML, DOCX, XLSX, PDF, and PPTX.
       </p>
     </div>
   );
