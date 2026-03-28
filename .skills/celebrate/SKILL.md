@@ -14,6 +14,13 @@ Play a rich, visually stunning celebration for a completed quest.
 - Quest workflow reaches Step 7 (complete) and user chooses to celebrate
 - User points to a quest archive path or journal entry and asks to celebrate it
 
+## Agent Routing (JC / Dexter)
+
+**Before generating the celebration**, read `.skills/jc-and-dexter/CELEBRATE.md` for the branching protocol:
+- **Even PR number** → Jean-Claude's Celebration (warm, literate, grand)
+- **Odd PR number** → Dexter's Requiem (deadpan, tombstones, epitaphs)
+- Save every celebration/requiem to the appropriate agent's journal
+
 ## Process
 
 ### Step 1: Resolve the Quest Source

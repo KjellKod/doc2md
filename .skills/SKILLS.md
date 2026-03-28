@@ -90,11 +90,11 @@ This directory contains specialized skills for AI agents working in this reposit
 **Location:** `.skills/jc-and-dexter/SKILL.md`
 
 ### celebrate
-**Purpose:** Play a rich quest completion celebration animation with block letters, achievements, impact metrics, quality score, and end credits. Runs the celebrate script or produces a manual celebration from quest artifacts.
+**Purpose:** Play a quest completion ceremony — alternates between Jean-Claude's celebration (even PRs) and Dexter's requiem (odd PRs). Block letters or tombstones, achievements or epitaphs. Every ceremony is saved to the agent's journal for posterity.
 
 **Use when:** The user invokes `/celebrate`, asks to celebrate a quest, or when a quest reaches completion. Also triggered by the quest workflow Step 7.
 
-**Location:** `.skills/celebrate/SKILL.md`
+**Location:** `.skills/celebrate/SKILL.md` + `.skills/jc-and-dexter/CELEBRATE.md` for routing
 
 ## How Skills Work
 
