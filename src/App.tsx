@@ -33,7 +33,7 @@ export default function App() {
               Files are processed locally in your browser
             </span>
             <span className="hero-pill">
-              Supports .txt, .json, .csv, .tsv, .html, .docx, .xlsx, .pdf, and .pptx
+              Supports .md, .txt, .json, .csv, .tsv, .html, .docx, .xlsx, .pdf, and .pptx
             </span>
             <span className="hero-pill">
               {entries.length === 0
