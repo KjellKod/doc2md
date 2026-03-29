@@ -48,12 +48,12 @@ mcp__codex-cli__codex({
   sandbox: "read-only",
   prompt: "You are Dexter. Read docs/persona.md for voice.
 
-Write requiem content for quest <id>. Read:
-- .quest/archive/<id>/quest_brief.md
-- .quest/archive/<id>/state.json
-- .quest/archive/<id>/phase_02_implementation/handoff.json
-- .quest/archive/<id>/phase_03_review/handoff_code-reviewer-a.json
-- docs/quest-journal/<slug>_<date>.md (if archived quest has a journal entry)
+Write requiem content for quest <id>. Read whichever sources exist:
+- .quest/<id>/quest_brief.md OR .quest/archive/<id>/quest_brief.md
+- .quest/<id>/state.json OR .quest/archive/<id>/state.json
+- .quest/<id>/phase_02_implementation/handoff.json OR .quest/archive/<id>/phase_02_implementation/handoff.json
+- .quest/<id>/phase_03_review/handoff_code-reviewer-a.json OR .quest/archive/<id>/phase_03_review/handoff_code-reviewer-a.json
+- docs/quest-journal/<slug>_<date>.md (if a journal entry exists)
 
 Return ONLY the following sections. No ASCII art, no block letters, no markdown headers — JC handles all rendering. Write in your voice.
 
