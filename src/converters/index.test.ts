@@ -1,6 +1,5 @@
 import fs from "node:fs";
 import path from "node:path";
-import * as XLSX from "xlsx";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { UNSUPPORTED_FILE_MESSAGE, convertFile } from "./index";
 import * as office from "./office";
@@ -84,17 +83,15 @@ describe("convertFile", () => {
   });
 
   it("routes .xlsx files to the XLSX converter", async () => {
-    const workbook = XLSX.utils.book_new();
-
-    XLSX.utils.book_append_sheet(
-      workbook,
-      XLSX.utils.aoa_to_sheet([
-        ["Project", "Owner"],
-        ["Atlas", "Jordan"]
-      ]),
-      "Projects"
-    );
-    vi.spyOn(office, "readWorkbook").mockReturnValue(workbook);
+    vi.spyOn(office, "readAllSheets").mockResolvedValue([
+      {
+        name: "Projects",
+        rows: [
+          ["Project", "Owner"],
+          ["Atlas", "Jordan"]
+        ]
+      }
+    ]);
     const file = new File([new Uint8Array([1, 2, 3])], "report.xlsx", {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     });

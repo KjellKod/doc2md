@@ -1,18 +1,51 @@
 import fs from "node:fs";
 import path from "node:path";
-import * as XLSX from "xlsx";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CORRUPT_FILE_MESSAGE } from "./messages";
-import { convertXlsx } from "./xlsx";
 import * as office from "./office";
+import { convertXlsx } from "./xlsx";
 
 const XLSX_MIME_TYPE =
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
+function toArrayBuffer(part: BlobPart) {
+  if (typeof part === "string") {
+    return Uint8Array.from(Buffer.from(part)).buffer;
+  }
+
+  if (part instanceof ArrayBuffer) {
+    return part;
+  }
+
+  if (ArrayBuffer.isView(part)) {
+    return part.buffer.slice(part.byteOffset, part.byteOffset + part.byteLength);
+  }
+
+  throw new TypeError("Unsupported BlobPart in XLSX test fixture");
+}
+
 function createWorkbookFile(contents: BlobPart[] = [new Uint8Array([1, 2, 3])]) {
-  return new File(contents, "sample.xlsx", {
+  const file = new File(contents, "sample.xlsx", {
     type: XLSX_MIME_TYPE
   });
+
+  if (typeof file.arrayBuffer !== "function") {
+    const buffers = contents.map((part) => new Uint8Array(toArrayBuffer(part)));
+    const length = buffers.reduce((sum, buffer) => sum + buffer.byteLength, 0);
+    const combined = new Uint8Array(length);
+    let offset = 0;
+
+    for (const buffer of buffers) {
+      combined.set(buffer, offset);
+      offset += buffer.byteLength;
+    }
+
+    Object.defineProperty(file, "arrayBuffer", {
+      value: async () => combined.buffer.slice(0)
+    });
+  }
+
+  return file;
 }
 
 describe("convertXlsx", () => {
@@ -39,19 +72,16 @@ describe("convertXlsx", () => {
   });
 
   it("skips empty sheets and reports a warning", async () => {
-    const workbook = XLSX.utils.book_new();
-
-    XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([]), "Empty");
-    XLSX.utils.book_append_sheet(
-      workbook,
-      XLSX.utils.aoa_to_sheet([
-        ["Project", "Owner"],
-        ["Atlas", "Jordan"]
-      ]),
-      "Projects"
-    );
-
-    vi.spyOn(office, "readWorkbook").mockReturnValue(workbook);
+    vi.spyOn(office, "readAllSheets").mockResolvedValue([
+      { name: "Empty", rows: [] },
+      {
+        name: "Projects",
+        rows: [
+          ["Project", "Owner"],
+          ["Atlas", "Jordan"]
+        ]
+      }
+    ]);
 
     const result = await convertXlsx(createWorkbookFile());
 
@@ -62,9 +92,9 @@ describe("convertXlsx", () => {
   });
 
   it("handles corrupt XLSX files with an error result", async () => {
-    vi.spyOn(office, "readWorkbook").mockImplementation(() => {
-      throw new Error("corrupt workbook");
-    });
+    vi.spyOn(office, "readAllSheets").mockRejectedValue(
+      new Error("corrupt workbook")
+    );
 
     const result = await convertXlsx(createWorkbookFile());
 

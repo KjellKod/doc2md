@@ -4,8 +4,7 @@ import {
   EMPTY_FILE_MESSAGE,
   createErrorResult
 } from "./messages";
-import { readWorkbook, sheetToRows } from "./office";
-import { readFileAsArrayBuffer } from "./readBinary";
+import { readAllSheets } from "./office";
 import type { Converter } from "./types";
 
 function stringifyCell(value: unknown) {
@@ -28,22 +27,20 @@ function renderSheetSection(sheetName: string, rows: string[][]) {
 
 export const convertXlsx: Converter = async (file) => {
   try {
-    const workbook = readWorkbook(await readFileAsArrayBuffer(file));
+    const sheets = await readAllSheets(file);
     const sections: string[] = [];
     const warnings: string[] = [];
 
-    workbook.SheetNames.forEach((sheetName) => {
-      const worksheet = workbook.Sheets[sheetName];
-      const rawRows = sheetToRows(worksheet);
+    for (const { name, rows: rawRows } of sheets) {
       const rows = normalizeSheetRows(rawRows);
 
       if (rows.length === 0) {
-        warnings.push(`Sheet "${sheetName}" is empty and was skipped.`);
-        return;
+        warnings.push(`Sheet "${name}" is empty and was skipped.`);
+        continue;
       }
 
-      sections.push(renderSheetSection(sheetName, rows));
-    });
+      sections.push(renderSheetSection(name, rows));
+    }
 
     if (sections.length === 0) {
       return createErrorResult(EMPTY_FILE_MESSAGE);

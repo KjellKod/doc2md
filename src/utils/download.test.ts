@@ -18,6 +18,7 @@ function createEntry(overrides: Partial<FileEntry> = {}): FileEntry {
 
 describe("downloadEntry", () => {
   let capturedContent: string[];
+  let OriginalBlob: typeof Blob;
   const mockLink = {
     href: "",
     download: "",
@@ -28,15 +29,14 @@ describe("downloadEntry", () => {
   beforeEach(() => {
     capturedContent = [];
 
-    const OriginalBlob = globalThis.Blob;
+    OriginalBlob = globalThis.Blob;
 
-    vi.spyOn(globalThis, "Blob").mockImplementation(
-      // @ts-expect-error -- mocking constructor
-      (parts: BlobPart[]) => {
+    globalThis.Blob = class extends OriginalBlob {
+      constructor(parts: BlobPart[], options?: BlobPropertyBag) {
+        super(parts, options);
         capturedContent.push(parts.map(String).join(""));
-        return new OriginalBlob(parts);
       }
-    );
+    } as typeof Blob;
 
     globalThis.URL.createObjectURL = vi.fn(() => "blob:mock-url");
     globalThis.URL.revokeObjectURL = vi.fn();
@@ -51,6 +51,7 @@ describe("downloadEntry", () => {
   });
 
   afterEach(() => {
+    globalThis.Blob = OriginalBlob;
     vi.restoreAllMocks();
   });
 

@@ -12,8 +12,47 @@ function readFixture(fileName: string) {
   return fs.readFileSync(path.resolve(process.cwd(), "test-fixtures", fileName));
 }
 
+function withArrayBuffer(file: File, contents: BlobPart[]) {
+  if (typeof file.arrayBuffer === "function") {
+    return file;
+  }
+
+  const buffers = contents.map((part) => {
+    if (typeof part === "string") {
+      return Uint8Array.from(Buffer.from(part));
+    }
+
+    if (part instanceof ArrayBuffer) {
+      return new Uint8Array(part);
+    }
+
+    if (ArrayBuffer.isView(part)) {
+      return new Uint8Array(
+        part.buffer.slice(part.byteOffset, part.byteOffset + part.byteLength)
+      );
+    }
+
+    throw new TypeError("Unsupported BlobPart in smoke test fixture");
+  });
+  const length = buffers.reduce((sum, buffer) => sum + buffer.byteLength, 0);
+  const combined = new Uint8Array(length);
+  let offset = 0;
+
+  for (const buffer of buffers) {
+    combined.set(buffer, offset);
+    offset += buffer.byteLength;
+  }
+
+  Object.defineProperty(file, "arrayBuffer", {
+    value: async () => combined.buffer.slice(0)
+  });
+
+  return file;
+}
+
 function createFixtureFile(fileName: string, type: string) {
-  return new File([readFixture(fileName)], fileName, { type });
+  const contents = [readFixture(fileName)];
+  return withArrayBuffer(new File(contents, fileName, { type }), contents);
 }
 
 describe("doc2md smoke coverage", () => {
