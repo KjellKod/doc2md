@@ -27,6 +27,7 @@ describe("downloadEntry", () => {
   };
 
   beforeEach(() => {
+    vi.useFakeTimers();
     capturedContent = [];
 
     OriginalBlob = globalThis.Blob;
@@ -51,6 +52,7 @@ describe("downloadEntry", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     globalThis.Blob = OriginalBlob;
     vi.restoreAllMocks();
   });
@@ -75,5 +77,20 @@ describe("downloadEntry", () => {
     );
 
     expect(capturedContent[0]).toBe("# Changed");
+  });
+
+  it("defers link removal and URL revocation by 1 second", () => {
+    downloadEntry(createEntry());
+
+    expect(mockLink.click).toHaveBeenCalled();
+    expect(mockLink.remove).not.toHaveBeenCalled();
+    expect(globalThis.URL.revokeObjectURL).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(1000);
+
+    expect(mockLink.remove).toHaveBeenCalled();
+    expect(globalThis.URL.revokeObjectURL).toHaveBeenCalledWith(
+      "blob:mock-url"
+    );
   });
 });
