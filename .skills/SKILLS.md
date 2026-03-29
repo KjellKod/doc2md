@@ -89,6 +89,13 @@ This directory contains specialized skills for AI agents working in this reposit
 
 **Location:** `.skills/jc-and-dexter/SKILL.md`
 
+### ux
+**Purpose:** Guidelines for reviewing, designing, and implementing UI changes. Covers KISS, YAGNI, SRP, clean visual hierarchy, flex layout patterns, download UX, accessibility, and responsive breakpoints.
+
+**Use when:** Before adding or modifying any UI component, reviewing UI-related PRs, diagnosing visual bugs, or when the user reports UX problems.
+
+**Location:** `.skills/ux/SKILL.md`
+
 ### celebrate
 **Purpose:** Play a quest completion ceremony — alternates between Jean-Claude's celebration (even PRs) and Dexter's requiem (odd PRs). Block letters or tombstones, achievements or epitaphs. Every ceremony is saved to the agent's journal for posterity.
 
