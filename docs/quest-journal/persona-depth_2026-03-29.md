@@ -61,7 +61,7 @@ Deepened the repository's persona-defining documents so Jean-Claude and Dexter r
   "victory_narrative": "The first plan was competent. The second one had teeth. By the time the build landed, Dexter no longer sounded like a generic severe engineer; he sounded like someone who had seen the failure path already and decided to finish the work anyway.",
   "test_count": 0,
   "tests_added": 0,
-  "files_changed": 3
+  "files_changed": 4
 }
 ```
 <!-- celebration-data-end -->
