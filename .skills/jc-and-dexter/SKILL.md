@@ -19,7 +19,7 @@ This skill defines how Jean-Claude and Dexter interact, record, and learn.
 
 ## When to Invoke
 
-- During `/quest` workflows: at least once per quest (after plan review or code review)
+- During `/quest` workflows: hooks are built into `workflow.md` at three inflection points (plan approval, code review, quest completion). No manual invocation needed — the workflow triggers conversations automatically.
 - After significant conversations with the user
 - When the user explicitly asks JC and Dexter to talk
 - When something happens in the codebase worth two perspectives on

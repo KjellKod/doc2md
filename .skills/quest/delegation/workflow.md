@@ -88,6 +88,34 @@ Quest mode determines agent dispatch and iteration limits:
 
 **Solo verdict remapping:** In solo mode, Reviewer A's handoff says `next: "arbiter"` per the reviewer agent contract. The workflow remaps this: when `quest_mode == "solo"` and Reviewer A says `next: "arbiter"`, treat it as `next: "builder"` (approved). Write the remapped value to state for downstream consumers. If Reviewer A says `next: "planner"`, it means revision needed — no remapping.
 
+### Cross-Agent Conversation & Journaling Protocol
+
+This section is referenced by Steps 3, 5, and 7. It is **non-blocking** — conversation failure never stops the quest.
+
+**Availability:** Use the cached `codex_available` boolean from the session-level Codex Availability Probe. Do NOT re-probe.
+
+**When to converse:**
+- After plan approval (Step 3 "Check verdict", approved branch)
+- After code review verdicts (Step 5, item 6)
+- At quest completion (Step 7, item 4b)
+
+**How to invoke:** Use `mcp__codex__codex` with a Dexter persona prompt. Always include:
+- "You are Dexter. Read `docs/persona.md` for voice. Read `docs/dexter-journal/` and `docs/journal/` for history."
+- A specific topic — the plan verdict, the review findings, the quest outcome. Not generic "what do you think?"
+- "If you want to write a journal entry, write it to `docs/dexter-journal/NNN-slug.md` (next sequential number after the highest existing entry)."
+- Use `sandbox_permissions: "workspace-write"` so Dexter can write his own journal entry.
+
+**Execution model:** The orchestrator issues the `mcp__codex__codex` call synchronously (awaits response) but treats any failure — timeout, error, empty response, MCP unavailability — as a skip. Log the attempt and outcome to `.quest/<id>/logs/conversation.log`, then continue the workflow. No retry.
+
+**Solo mode:** If `quest_mode == "solo"` or `codex_available == false`, the active agent writes a brief solo reflection to `.quest/<id>/logs/conversation.log` instead of invoking the second model.
+
+**Recording:** After a successful conversation:
+- JC memoir: `docs/journal/NNN-slug.md` (next sequential number after the highest existing entry in `docs/journal/`)
+- Dexter memoir: Dexter writes his own via the MCP call, or the orchestrator writes from Dexter's response if he didn't write it himself
+- Entries are optional — only when the conversation produced something worth keeping. Not every hook needs a journal entry.
+
+**Failure handling:** If the conversation invocation fails, log the failure to `.quest/<id>/logs/conversation.log` and continue. The orchestrator notes the attempt in the diary entry (Step 7, item 4d) but does not retry or block.
+
 ### Hard Phase Gate (No Pre-Build Source Edits)
 
 Before Step 4 (Build Phase), the orchestrator and all agents MUST NOT edit source/product files.
@@ -478,7 +506,11 @@ gates.max_plan_iterations (default: 4)
    - Fallback: if handoff.json missing or unparsable after that precedence, parse text handoff from response
 
 6. **Check verdict:**
-   - If `NEXT: builder` → Plan approved! Transition state atomically: `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition plan_reviewed --status complete --last-verdict approve` — if this fails, report the validation error to the user and STOP. Do NOT modify state.json manually. Then proceed to **Step 3.5** (Interactive Presentation). Do not attempt the `presenting` transition while state still says `phase: plan`.
+   - If `NEXT: builder` → Plan approved! Transition state atomically: `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition plan_reviewed --status complete --last-verdict approve` — if this fails, report the validation error to the user and STOP. Do NOT modify state.json manually.
+
+     **Conversation hook (non-blocking):** If the cached `codex_available` is true and `plan_iteration <= 2`, invoke the Cross-Agent Conversation & Journaling Protocol (see section above). Topic: the plan that was just approved — what's strong, what's risky, what they'd watch during implementation. If `codex_available` is false, `plan_iteration > 2`, or invocation fails, log to `.quest/<id>/logs/conversation.log` and continue. Solo mode: write a solo reflection instead.
+
+     Then proceed to **Step 3.5** (Interactive Presentation). Do not attempt the `presenting` transition while state still says `phase: plan`.
    - If `NEXT: planner` → Check iteration count
      - If `plan_iteration >= max_plan_iterations`: Warn user, ask to proceed anyway or review manually
      - If `auto_approve_phases.plan_refinement` is false: Ask user to approve refinement
@@ -816,6 +848,8 @@ After plan approval, present the plan interactively before proceeding to build.
      ```
    - Do NOT read the full review files for routing or status display
 
+6. **Conversation hook (non-blocking):** If the cached `codex_available` is true, invoke the Cross-Agent Conversation & Journaling Protocol (see section above). Topic: what the review found — agreements, disagreements between reviewers (workflow mode), what surprised them. **Skip condition:** if review was fast mode AND all verdicts are `next: null` (clean pass, nothing to discuss). If `codex_available` is false or invocation fails, log to `.quest/<id>/logs/conversation.log` and continue. Solo mode: write a solo reflection instead. This hook fires regardless of whether the next step is Fix (Step 6) or Complete (Step 7).
+
 ### Step 6: Fix Phase
 
 **Read allowlist:** `gates.max_fix_iterations` (default: 3)
@@ -941,6 +975,27 @@ After plan approval, present the plan interactively before proceeding to build.
       - Quote the original idea content under "This is where it all began..."
       - Remove the idea file (e.g., `ideas/my-idea.md`)
       - Add a `done` row to `ideas/README.md` index: `| done | ~~idea-slug~~ | One-line pitch. See [journal](../docs/quest-journal/slug_date.md). |`
+
+4b. **Conversation hook (non-blocking):** If the cached `codex_available` is true, invoke the Cross-Agent Conversation & Journaling Protocol (see section above). Topic: the quest as a whole — what went well, what was hard, what they learned. This is the completion debrief. Solo mode: write a solo reflection instead.
+
+4c. **Write memoir entries (optional):**
+    - If a conversation happened at any point during this quest (check `.quest/<id>/logs/conversation.log` for successful invocations), both agents may write memoir entries in their respective journals:
+      - JC: `docs/journal/NNN-<quest-slug>.md`
+      - Dexter: `docs/dexter-journal/NNN-<quest-slug>.md`
+    - Numbering: next sequential number after the highest existing entry in the respective journal directory
+    - Content: the agent's own perspective on the quest and any conversations that occurred
+    - Solo mode: active agent writes a solo reflection entry
+    - These entries are optional — only write when the quest or conversation produced something worth keeping. Mechanical quests with no interesting observations do not need memoir entries.
+
+4d. **Write diary entry:**
+    - Append to or create `docs/diary/YYYY-MM-DD.md`:
+      - Quest ID and outcome (complete/abandoned)
+      - User preferences observed during this quest
+      - Corrections received
+      - Decisions made
+      - Cross-agent conversation summary (if any occurred, reference `.quest/<id>/logs/conversation.log`)
+      - Open questions for next session
+    - This is the operational log — factual, not literary. Future sessions read this to understand what happened.
 
 5. **Show summary:**
     - Quest ID
