@@ -92,7 +92,10 @@ Quest mode determines agent dispatch and iteration limits:
 
 This section is referenced by Steps 3, 5, and 7. It is **non-blocking** — conversation failure never stops the quest.
 
-**Availability:** Use the cached `codex_available` boolean from the session-level Codex Availability Probe. Do NOT re-probe.
+**Availability:** Depends on which runtime is orchestrating:
+- **Claude-led sessions:** Use the cached `codex_available` boolean. If false, fall back to solo reflection.
+- **Codex-led sessions:** Use the cached `claude_bridge_available` boolean. If true, invoke Claude via the bridge for the JC side of the conversation. If false, fall back to solo reflection.
+Do NOT re-probe in either case.
 
 **When to converse:**
 - After plan approval (Step 3 "Check verdict", approved branch)
@@ -105,7 +108,9 @@ This section is referenced by Steps 3, 5, and 7. It is **non-blocking** — conv
 - "If you want to write a journal entry, write it to `docs/dexter-journal/NNN-slug.md` (next sequential number after the highest existing entry)."
 - Use `sandbox_permissions: "workspace-write"` so Dexter can write his own journal entry.
 
-**Execution model:** The orchestrator issues the `mcp__codex__codex` call synchronously (awaits response) but treats any failure — timeout, error, empty response, MCP unavailability — as a skip. Log the attempt and outcome to `.quest/<id>/logs/conversation.log`, then continue the workflow. No retry.
+**Execution model:** The orchestrator issues the conversation call synchronously (awaits response) but treats any failure — timeout, error, empty response, MCP unavailability — as a skip. Log the attempt and outcome to `.quest/<id>/logs/conversation.log`, then continue the workflow. No retry.
+
+**Handoff exception:** Conversation hooks are explicitly exempt from the global Handoff File Polling rules. They do not produce `handoff.json` files, do not participate in the three-tier fallback ladder, and are not logged to `context_health.log`. They are flavor, not workflow gates. The only logging is to `.quest/<id>/logs/conversation.log`.
 
 **Solo mode:** If `quest_mode == "solo"` or `codex_available == false`, the active agent writes a brief solo reflection to `.quest/<id>/logs/conversation.log` instead of invoking the second model.
 
@@ -508,7 +513,7 @@ gates.max_plan_iterations (default: 4)
 6. **Check verdict:**
    - If `NEXT: builder` → Plan approved! Transition state atomically: `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition plan_reviewed --status complete --last-verdict approve` — if this fails, report the validation error to the user and STOP. Do NOT modify state.json manually.
 
-     **Conversation hook (non-blocking):** If the cached `codex_available` is true and `plan_iteration <= 2`, invoke the Cross-Agent Conversation & Journaling Protocol (see section above). Topic: the plan that was just approved — what's strong, what's risky, what they'd watch during implementation. If `codex_available` is false, `plan_iteration > 2`, or invocation fails, log to `.quest/<id>/logs/conversation.log` and continue. Solo mode: write a solo reflection instead.
+     **Conversation hook (non-blocking):** If the second model is available (see protocol Availability rules above), invoke the Cross-Agent Conversation & Journaling Protocol. Topic: the plan that was just approved — what's strong, what's risky, what they'd watch during implementation. Plans that took 3+ iterations to approve are especially worth discussing. If the second model is unavailable or invocation fails, log to `.quest/<id>/logs/conversation.log` and continue. Solo mode: write a solo reflection instead.
 
      Then proceed to **Step 3.5** (Interactive Presentation). Do not attempt the `presenting` transition while state still says `phase: plan`.
    - If `NEXT: planner` → Check iteration count
