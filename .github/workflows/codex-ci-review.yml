@@ -54,7 +54,13 @@ jobs:
           gh pr view ${{ github.event.pull_request.number }} \
             --json files --jq '.files[].path' > /tmp/changed_files.txt
 
-          python3 scripts/build_pr_head_files.py \
+          HEAD_SHA="$(cat /tmp/pr_head_sha.txt)"
+          gh api \
+            -H "Accept: application/vnd.github.raw" \
+            "repos/$REPO/contents/scripts/build_pr_head_files.py?ref=$HEAD_SHA" \
+            > /tmp/build_pr_head_files.py
+
+          python3 /tmp/build_pr_head_files.py \
             --repo "$REPO" \
             --head-sha-file /tmp/pr_head_sha.txt \
             --changed-files-file /tmp/changed_files.txt \
