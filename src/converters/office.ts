@@ -21,7 +21,7 @@ export async function readAllSheets(file: File): Promise<SheetData[]> {
   const sheets: SheetData[] = [];
 
   for (const name of names) {
-    const rows = await readXlsxFile(file, { sheet: name });
+    const rows = await readXlsxFile(file, { sheet: name, trim: false });
     sheets.push({ name, rows });
   }
 
