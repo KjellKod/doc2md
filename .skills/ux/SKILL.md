@@ -1,3 +1,8 @@
+---
+name: ux
+description: Guidelines for reviewing, designing, and implementing UI changes. Use before adding or modifying any UI component, reviewing UI PRs, diagnosing visual bugs, or when the user reports UX problems.
+---
+
 # UX Review and Implementation Skill
 
 Guidelines for reviewing, designing, and implementing UI changes in doc2md. Apply these principles before writing any UI code.
