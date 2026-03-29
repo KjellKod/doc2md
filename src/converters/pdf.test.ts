@@ -108,6 +108,28 @@ describe("mergePageTexts", () => {
     expect(result).not.toContain("section. # New");
   });
 
+  it("does not merge when previous line ends with sentence punctuation", async () => {
+    const { mergePageTexts } = await importPdfModule();
+    const result = mergePageTexts([
+      "Complete sentence ending here.",
+      "New paragraph starting fresh.",
+    ]);
+
+    expect(result).not.toContain("here. New paragraph");
+    expect(result).toContain("Complete sentence ending here.");
+    expect(result).toContain("New paragraph starting fresh.");
+  });
+
+  it("does not merge when next line starts with ALL CAPS", async () => {
+    const { mergePageTexts } = await importPdfModule();
+    const result = mergePageTexts([
+      "End of section text without period",
+      "ACHIEVEMENTS section starts here",
+    ]);
+
+    expect(result).not.toContain("period ACHIEVEMENTS");
+  });
+
   it("drops empty pages silently", async () => {
     const { mergePageTexts } = await importPdfModule();
     const result = mergePageTexts(["Content here.", "", "  ", "More content."]);

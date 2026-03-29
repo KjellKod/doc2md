@@ -319,6 +319,16 @@ function isBodyLine(line: string): boolean {
   return true;
 }
 
+function looksLikeContinuation(prevLine: string, nextLine: string): boolean {
+  const trimmedPrev = prevLine.trim();
+  const trimmedNext = nextLine.trim();
+  if (!isBodyLine(trimmedPrev) || !isBodyLine(trimmedNext)) return false;
+  if (/[.!?:;]$/.test(trimmedPrev)) return false;
+  if (/^\d+[.)]\s/.test(trimmedNext)) return false;
+  if (/^[A-Z][A-Z]/.test(trimmedNext)) return false;
+  return true;
+}
+
 export function mergePageTexts(pageTexts: string[]): string {
   const nonEmpty = pageTexts.filter((t) => t.trim().length > 0);
   if (nonEmpty.length === 0) return "";
@@ -337,7 +347,7 @@ export function mergePageTexts(pageTexts: string[]): string {
     const lastNonEmpty = [...prevLines].reverse().find((l) => l.trim().length > 0) || "";
     const firstLine = pageText.split("\n").find((l) => l.trim().length > 0) || "";
 
-    if (isBodyLine(lastNonEmpty.trim()) && isBodyLine(firstLine.trim())) {
+    if (looksLikeContinuation(lastNonEmpty, firstLine)) {
       const lines = pageText.split("\n");
       const firstNonEmptyIdx = lines.findIndex((l) => l.trim().length > 0);
       if (firstNonEmptyIdx >= 0) {
