@@ -271,7 +271,7 @@ Every celebration and requiem is saved for posterity. This step is **mandatory**
    [full celebration/requiem content as rendered]
    ```
 
-3. **If Dexter is performing the requiem** via `mcp__codex__codex`, include the save instruction in his prompt so he writes his own file with `sandbox_permissions: "workspace-write"`. If he doesn't write it, the orchestrator saves it from his response.
+3. **For requiems:** JC handles saving (not Dexter). Dexter provides content only via read-only Codex call (see Requiem Pipeline in CELEBRATE.md). JC renders and saves the file with the attribution footer: `Content by Dexter. Rendered by Jean-Claude.`
 
 4. **Update the journal index:** Prepend a row to the corresponding `README.md` index table (`docs/journal/README.md` or `docs/dexter-journal/README.md`).
 
