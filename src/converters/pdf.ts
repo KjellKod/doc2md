@@ -21,7 +21,7 @@ const LOW_TEXT_CHARACTER_THRESHOLD = 50;
 const IMPERFECT_LAYOUT_CHARACTER_THRESHOLD = 140;
 const LINE_BREAK_THRESHOLD = 4;
 const PARAGRAPH_GAP_FACTOR = 1.8;
-const BULLET_PATTERN = /^[•➢▸▪◦◆■●\-–—]/;
+const BULLET_PATTERN = /^[•➢▸▪◦◆■●]|^[-–—]\s/;
 
 const PROCESS_INFO = typeof process === "object" && process !== null
   ? (process as NodeJS.Process & { type?: string })
@@ -42,6 +42,10 @@ function isTextItem(item: TextItem | TextMarkedContent): item is TextItem {
 
 function normalizeTextValue(value: string) {
   return value.replace(/\s+/g, " ").trim();
+}
+
+function getFontSize(transform: [number, number, number, number, number, number]) {
+  return Math.round(Math.hypot(transform[0], transform[1]));
 }
 
 function shouldInsertSpace(currentLine: string, value: string) {
@@ -73,7 +77,7 @@ function detectFontProfile(allItems: Array<TextItem | TextMarkedContent>): FontP
     if (!isTextItem(item)) continue;
     const text = item.str.trim();
     if (!text) continue;
-    const fontSize = Math.round(item.transform[0]);
+    const fontSize = getFontSize(item.transform as [number, number, number, number, number, number]);
     const fontName = item.fontName || "unknown";
     const key = `${fontName}@${fontSize}`;
     charCounts[key] = (charCounts[key] || 0) + text.length;
@@ -180,7 +184,7 @@ export function renderPdfPageText(
     }
 
     const currentY = Math.round(item.transform[5]);
-    const fontSize = Math.round(item.transform[0]);
+    const fontSize = getFontSize(item.transform as [number, number, number, number, number, number]);
     const fontName = item.fontName || "unknown";
     const isNewLine =
       previousY !== null && Math.abs(currentY - previousY) > LINE_BREAK_THRESHOLD;
