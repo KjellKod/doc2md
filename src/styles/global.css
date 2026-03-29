@@ -402,13 +402,17 @@ a {
 
 .file-list-item-name-group {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .file-list-item-name {
   font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .file-list-item-copy {
@@ -472,6 +476,7 @@ a {
   color: var(--text-secondary);
   font-size: 0.88rem;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .status-dot {
