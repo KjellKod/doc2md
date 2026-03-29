@@ -189,6 +189,110 @@ The tier must be candid. Smooth quests get celebrated. Rough quests get acknowle
 
 - **Emojis render beautifully in markdown.** Use them generously: ⭐️ 🏆 🎯 💎 📊 🔧 🧪 🔒 📚 ⚡️ 🎊 🎉 🚀 🎮
 
+### Step 3b: Requiem Rendering (Odd PR — Dexter's Content, JC's Visuals)
+
+When the PR is odd, JC renders a requiem using content Dexter provided (see `.skills/jc-and-dexter/CELEBRATE.md` "Requiem Pipeline" for the Codex call that produces the content).
+
+**Parse Dexter's response** into sections: EPITAPHS, PALLBEARERS, CORONERS_REPORT, LAST_WORDS, QUALITY_TIER, MOOD.
+
+**Render with gothic/memorial aesthetic:**
+
+**Block-letter title art** — use the same Unicode block-letter technique as celebrations, but for tombstone words. Max ~5 letters per line. Examples:
+
+```
+██████╗  ██╗██████╗
+██╔══██╗ ██║██╔══██╗
+██████╔╝ ██║██████╔╝
+██╔══██╗ ██║██╔═══╝
+██║  ██║ ██║██║
+╚═╝  ╚═╝ ╚═╝╚═╝
+```
+
+For the quest name, render it in block letters below the R.I.P. — same rules as celebrations (max ~5 letters per line, break across lines).
+
+**Emoji palette** — gothic, not festive:
+- Primary: 💀 ⚰️ 🪦 🕯️ ☠️ 🦇 🌑 ⚱️
+- Accent: 🖤 🥀 ⛓️ 🌫️ 🔕 📜
+- Quality tiers: same icons as celebrations but rendered with dark commentary
+
+**Required sections** (map from Dexter's content):
+
+| Celebration Section | Requiem Section | Source |
+|---|---|---|
+| Achievements | 🪦 Epitaphs | Dexter's EPITAPHS, rendered in tombstone frames |
+| Starring Cast | ⚰️ Pallbearers | Dexter's PALLBEARERS, with model tags |
+| Impact Metrics | 💀 Coroner's Report | Dexter's CORONERS_REPORT, in blockquote |
+| Quote | 📜 Last Words | Dexter's LAST_WORDS, in blockquote |
+| Quality Tier | ☠️ Cause of Death Rating | Dexter's QUALITY_TIER |
+
+**Epitaph rendering** — wrap each epitaph in a tombstone frame:
+```
+    ┌───────────────────────────┐
+    │                           │
+    │  Here lies readWorkbook.  │
+    │  It parsed what it could. │
+    │                           │
+    └───────────────────────────┘
+```
+
+**MOOD drives tone:** Dexter sets the mood word. JC matches the rendering intensity:
+- `solemn` → understated, minimal emojis, dignified
+- `grim` → heavy, more tombstones, sparse commentary
+- `resigned` → tired but respectful, "it is what it is"
+- `darkly-amused` → more emojis, lighter touch, gallows humor allowed
+- `ceremonial` → full pomp, maximum visual treatment
+
+**Critical rule: preserve Dexter's voice.** JC renders the visual frame and markdown formatting. Dexter's epitaphs, coroner's report, and last words appear **verbatim**. JC does not rewrite, paraphrase, or "improve" Dexter's text. JC adds headers, emojis, block letters, and tombstone frames around Dexter's prose.
+
+**Sign-off:** `— Dexter, coroner on duty (rendered by Jean-Claude)`
+
+**Attribution footer:** `Content by Dexter. Rendered by Jean-Claude.`
+
+---
+
+### Step 4: Save the Celebration/Requiem
+
+Every celebration and requiem is saved for posterity. This step is **mandatory**.
+
+1. **Determine the save path** based on who performed (from CELEBRATE.md routing):
+   - JC celebration: `docs/journal/NNN-celebrate-<quest-slug>.md`
+   - Dexter requiem: `docs/dexter-journal/NNN-requiem-<quest-slug>.md`
+   - Numbering: next sequential number after the highest existing entry in the respective journal directory
+
+2. **Write the file** with this metadata header:
+   ```markdown
+   # NNN — Celebration: <Quest Name>
+   <!-- quest-id: <id> -->
+   <!-- pr: #<number or "none"> -->
+   <!-- style: celebration | requiem -->
+   <!-- quality-tier: <tier> -->
+   <!-- date: YYYY-MM-DD -->
+
+   [full celebration/requiem content as rendered]
+   ```
+
+3. **If Dexter is performing the requiem** via `mcp__codex__codex`, include the save instruction in his prompt so he writes his own file with `sandbox_permissions: "workspace-write"`. If he doesn't write it, the orchestrator saves it from his response.
+
+4. **Update the journal index:** Prepend a row to the corresponding `README.md` index table (`docs/journal/README.md` or `docs/dexter-journal/README.md`).
+
+5. **Confirm** to the user: "Saved to `<path>`"
+
+### Step 5: List Past Celebrations (Subcommand)
+
+If the user types `/celebrate list` or `/celebrate history`:
+
+1. Scan both journal directories for celebration/requiem files:
+   - `docs/journal/*celebrate*`
+   - `docs/dexter-journal/*requiem*`
+2. Also scan `docs/quest-journal/` for entries with `celebration_data` blocks
+3. Present a table:
+   ```
+   | # | Date | Quest | Style | Tier | Saved At |
+   |---|------|-------|-------|------|----------|
+   ```
+   Sorted by date, newest first.
+4. The user can then `/celebrate <quest-slug>` to replay any entry.
+
 ## Examples
 
 ```
@@ -197,4 +301,6 @@ The tier must be candid. Smooth quests get celebrated. Rough quests get acknowle
 /celebrate .quest/archive/celebrate-v2_2026-03-05__0643
 /celebrate docs/quest-journal/celebrate-v2_2026-03-05.md
 /celebrate celebrate-v2
+/celebrate list
+/celebrate history
 ```

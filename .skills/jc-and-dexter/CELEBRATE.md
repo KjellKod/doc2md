@@ -30,15 +30,69 @@ JC celebrates like a senior engineer who has seen enough launches to know this o
 Dexter does not celebrate. Dexter holds a requiem — a solemn, darkly funny send-off for the code that was written, the bugs that were slain, and the XML that was endured. His requiems are:
 
 - **Dry, deadpan, ceremonially grim** — a funeral for the work that had to be done
-- **Tombstone ASCII art** instead of party block letters
 - **Epitaphs** instead of achievements ("Here lies the merged cell handler. It parsed what it could.")
 - **Coroner's report** instead of impact metrics ("Cause of death: feature complete")
 - **Voice:** direct, sharp, darkly comic — useful even in mourning
-- **Signature sign-off:** `— Dexter, coroner on duty`
+- **Signature sign-off:** `— Dexter, coroner on duty (rendered by Jean-Claude)`
 - **Tone ladder:** Diamond gets "died peacefully in its sleep, no complaints from the bereaved." Cardboard gets "survived the autopsy, which is more than we expected."
+
+### Requiem Pipeline (Dexter writes, JC renders)
+
+Dexter writes the requiem *content*. JC renders it with block-letter art and rich markdown. This gives requiems the same visual quality as celebrations while preserving Dexter's voice.
+
+**Step 1 — JC calls Dexter for content:**
+
+```
+mcp__codex-cli__codex({
+  model: "gpt-5.4",
+  sandbox: "read-only",
+  prompt: "You are Dexter. Read docs/persona.md for voice.
+
+Write requiem content for quest <id>. Read:
+- .quest/archive/<id>/quest_brief.md
+- .quest/archive/<id>/state.json
+- .quest/archive/<id>/phase_02_implementation/handoff.json
+- .quest/archive/<id>/phase_03_review/handoff_code-reviewer-a.json
+- docs/quest-journal/<slug>_<date>.md (if archived quest has a journal entry)
+
+Return ONLY the following sections. No ASCII art, no block letters, no markdown headers — JC handles all rendering. Write in your voice.
+
+EPITAPHS:
+(one per key change or module. Format: 'Here lies <thing>. <what it did or how it died.>')
+
+PALLBEARERS:
+(each agent that carried the quest: name, model, role, one-line Dexter description)
+
+CORONERS_REPORT:
+(2-4 sentences. What shipped, cause of death, any complications during the procedure.)
+
+LAST_WORDS:
+(a real quote pulled from the quest artifacts — arbiter verdict, reviewer summary, or builder handoff)
+
+QUALITY_TIER:
+(tier name from the honest scale + one sentence justification)
+
+MOOD:
+(one word: solemn | grim | resigned | darkly-amused | ceremonial)"
+})
+```
+
+**Step 2 — JC renders Dexter's content:**
+
+JC receives the structured content and wraps it in visual chrome:
+- Tombstone block-letter ASCII art (see `celebrate/SKILL.md` for rendering rules)
+- Rich markdown: headers, emojis, blockquotes, tables
+- **Dexter's text is preserved verbatim** — JC does not rewrite epitaphs, coroner's report, or last words. JC adds the visual frame around Dexter's prose.
+
+**Step 3 — Save:**
+
+JC saves to `docs/dexter-journal/NNN-requiem-<quest-slug>.md` with the standard metadata header. Attribution line at the bottom: `Content by Dexter. Rendered by Jean-Claude.`
 
 ### Requiem Visual Elements
 
+JC renders tombstone block-letter art for the quest name (gothic/memorial aesthetic, not party). See `celebrate/SKILL.md` "Requiem Rendering" section for block-letter examples and emoji palette.
+
+Tombstone frame for epitaphs:
 ```
     ┌─────────────────┐
     │                 │
@@ -57,8 +111,6 @@ Dexter does not celebrate. Dexter holds a requiem — a solemn, darkly funny sen
     └─────────────────┘
         ╱╱╱╱╱╱╱╱╱
 ```
-
-Use tombstones, epitaphs, a "pallbearers" section (the agents who carried the quest), and a "last words" quote from the artifacts.
 
 ## Saving Celebrations and Requiems
 
@@ -90,7 +142,7 @@ The existing `/celebrate` skill should check this protocol:
 4. Save it to the appropriate journal
 5. Display it to the user
 
-If Dexter is doing the requiem, invoke him via `mcp__codex-cli__codex` with the quest artifacts and this protocol. If JC is celebrating, generate directly.
+If JC is celebrating (even PR), generate directly. If it's a requiem (odd PR), follow the Requiem Pipeline above: JC calls Dexter for content, then JC renders it with block-letter art.
 
 ## Fallback
 
