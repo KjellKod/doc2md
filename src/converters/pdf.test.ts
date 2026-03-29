@@ -84,6 +84,69 @@ describe("renderPdfPageText", () => {
   });
 });
 
+describe("mergeBulletContinuations", () => {
+  it("merges a lowercase continuation into the preceding bullet", async () => {
+    const { mergeBulletContinuations } = await importPdfModule();
+    const result = mergeBulletContinuations([
+      "- Smart, fast, and useful first",
+      "with dry humor",
+    ]);
+    expect(result).toEqual(["- Smart, fast, and useful first with dry humor"]);
+  });
+
+  it("does not merge when previous bullet ends with terminal punctuation", async () => {
+    const { mergeBulletContinuations } = await importPdfModule();
+    const result = mergeBulletContinuations([
+      "- Complete sentence here.",
+      "next paragraph starts",
+    ]);
+    expect(result).toEqual([
+      "- Complete sentence here.",
+      "next paragraph starts",
+    ]);
+  });
+
+  it("does not merge when next line starts with uppercase", async () => {
+    const { mergeBulletContinuations } = await importPdfModule();
+    const result = mergeBulletContinuations([
+      "- Some bullet item",
+      "New separate thought",
+    ]);
+    expect(result).toEqual([
+      "- Some bullet item",
+      "New separate thought",
+    ]);
+  });
+
+  it("does not merge across blank lines", async () => {
+    const { mergeBulletContinuations } = await importPdfModule();
+    const result = mergeBulletContinuations([
+      "- Some bullet item",
+      "",
+      "next paragraph text",
+    ]);
+    expect(result).toEqual([
+      "- Some bullet item",
+      "",
+      "next paragraph text",
+    ]);
+  });
+
+  it("does not merge headings or bullets into a bullet", async () => {
+    const { mergeBulletContinuations } = await importPdfModule();
+    const result = mergeBulletContinuations([
+      "- First bullet",
+      "- Second bullet",
+      "## A Heading",
+    ]);
+    expect(result).toEqual([
+      "- First bullet",
+      "- Second bullet",
+      "## A Heading",
+    ]);
+  });
+});
+
 describe("mergePageTexts", () => {
   it("merges body text split across pages", async () => {
     const { mergePageTexts } = await importPdfModule();
