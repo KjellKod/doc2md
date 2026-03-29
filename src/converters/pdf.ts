@@ -20,6 +20,9 @@ export const PDF_LAYOUT_WARNING_MESSAGE = LOW_QUALITY_PDF_MESSAGE;
 const LOW_TEXT_CHARACTER_THRESHOLD = 50;
 const IMPERFECT_LAYOUT_CHARACTER_THRESHOLD = 140;
 const LINE_BREAK_THRESHOLD = 4;
+const PARAGRAPH_GAP_FACTOR = 1.8;
+const BULLET_PATTERN = /^[•➢▸▪◦◆■●]|^[-–—]\s/;
+
 const PROCESS_INFO = typeof process === "object" && process !== null
   ? (process as NodeJS.Process & { type?: string })
   : null;
@@ -41,6 +44,10 @@ function normalizeTextValue(value: string) {
   return value.replace(/\s+/g, " ").trim();
 }
 
+function getFontSize(transform: [number, number, number, number, number, number]) {
+  return Math.round(Math.hypot(transform[0], transform[1]));
+}
+
 function shouldInsertSpace(currentLine: string, value: string) {
   if (currentLine.length === 0) {
     return false;
@@ -57,18 +64,109 @@ function shouldInsertSpace(currentLine: string, value: string) {
   return true;
 }
 
-function flushLine(lines: string[], currentLine: string) {
-  const normalizedLine = currentLine.trim();
-
-  if (normalizedLine.length > 0) {
-    lines.push(normalizedLine);
-  }
+interface FontProfile {
+  bodyFontSize: number;
+  bodyFontName: string;
+  boldFontNames: Set<string>;
 }
 
-export function renderPdfPageText(items: Array<TextItem | TextMarkedContent>) {
-  const lines: string[] = [];
-  let currentLine = "";
+function detectFontProfile(allItems: Array<TextItem | TextMarkedContent>): FontProfile {
+  const charCounts: Record<string, number> = {};
+
+  for (const item of allItems) {
+    if (!isTextItem(item)) continue;
+    const text = item.str.trim();
+    if (!text) continue;
+    const fontSize = getFontSize(item.transform as [number, number, number, number, number, number]);
+    const fontName = item.fontName || "unknown";
+    const key = `${fontName}@${fontSize}`;
+    charCounts[key] = (charCounts[key] || 0) + text.length;
+  }
+
+  const sorted = Object.entries(charCounts).sort((a, b) => b[1] - a[1]);
+  if (sorted.length === 0) {
+    return { bodyFontSize: 10, bodyFontName: "unknown", boldFontNames: new Set() };
+  }
+
+  const [bodyKey] = sorted[0];
+  const [bodyFontName, bodySizeStr] = bodyKey.split("@");
+  const bodyFontSize = parseInt(bodySizeStr);
+
+  const boldFontNames = new Set<string>();
+  for (const key of Object.keys(charCounts)) {
+    const [name, size] = key.split("@");
+    if (parseInt(size) === bodyFontSize && name !== bodyFontName) {
+      boldFontNames.add(name);
+    }
+  }
+
+  return { bodyFontSize, bodyFontName, boldFontNames };
+}
+
+interface LineInfo {
+  text: string;
+  fontSize: number;
+  fontName: string;
+  isBullet: boolean;
+}
+
+function classifyLine(line: LineInfo, fontProfile: FontProfile): string {
+  const { text, fontSize, fontName, isBullet } = line;
+  const { bodyFontSize, boldFontNames } = fontProfile;
+  const sizeDelta = fontSize - bodyFontSize;
+
+  if (isBullet) {
+    const cleaned = text.replace(BULLET_PATTERN, "").trim();
+    return `- ${cleaned}`;
+  }
+
+  if (sizeDelta >= 6) {
+    return `# ${text}`;
+  }
+
+  if (sizeDelta >= 2) {
+    return `## ${text}`;
+  }
+
+  if (boldFontNames.has(fontName) && text.length < 100) {
+    return `**${text}**`;
+  }
+
+  return text;
+}
+
+export function renderPdfPageText(
+  items: Array<TextItem | TextMarkedContent>,
+  fontProfile?: FontProfile
+) {
+  const profile = fontProfile || detectFontProfile(items);
+  const collectedLines: LineInfo[] = [];
+  let currentText = "";
+  let currentFontSize = 0;
+  let currentFontName = "";
+  let currentIsBullet = false;
   let previousY: number | null = null;
+  let pendingParagraphBreak = false;
+
+  function flushLine() {
+    const trimmed = currentText.trim();
+    if (trimmed.length > 0) {
+      if (pendingParagraphBreak && collectedLines.length > 0) {
+        collectedLines.push({ text: "", fontSize: 0, fontName: "", isBullet: false });
+        pendingParagraphBreak = false;
+      }
+      collectedLines.push({
+        text: trimmed,
+        fontSize: currentFontSize,
+        fontName: currentFontName,
+        isBullet: currentIsBullet
+      });
+    }
+    currentText = "";
+    currentFontSize = 0;
+    currentFontName = "";
+    currentIsBullet = false;
+  }
 
   for (const item of items) {
     if (!isTextItem(item)) {
@@ -79,35 +177,69 @@ export function renderPdfPageText(items: Array<TextItem | TextMarkedContent>) {
 
     if (value.length === 0) {
       if (item.hasEOL) {
-        flushLine(lines, currentLine);
-        currentLine = "";
+        flushLine();
         previousY = null;
       }
       continue;
     }
 
     const currentY = Math.round(item.transform[5]);
+    const fontSize = getFontSize(item.transform as [number, number, number, number, number, number]);
+    const fontName = item.fontName || "unknown";
     const isNewLine =
       previousY !== null && Math.abs(currentY - previousY) > LINE_BREAK_THRESHOLD;
+    const isParagraphGap =
+      previousY !== null &&
+      Math.abs(currentY - previousY) > profile.bodyFontSize * PARAGRAPH_GAP_FACTOR;
 
     if (isNewLine) {
-      flushLine(lines, currentLine);
-      currentLine = "";
+      flushLine();
+      if (isParagraphGap) {
+        pendingParagraphBreak = true;
+      }
     }
 
-    currentLine += `${shouldInsertSpace(currentLine, value) ? " " : ""}${value}`;
+    if (!currentText) {
+      currentFontSize = fontSize;
+      currentFontName = fontName;
+      currentIsBullet = BULLET_PATTERN.test(value);
+    }
+
+    currentText += `${shouldInsertSpace(currentText, value) ? " " : ""}${value}`;
     previousY = currentY;
 
     if (item.hasEOL) {
-      flushLine(lines, currentLine);
-      currentLine = "";
+      flushLine();
       previousY = null;
     }
   }
 
-  flushLine(lines, currentLine);
+  flushLine();
 
-  return lines.join("\n").trim();
+  const outputLines: string[] = [];
+  for (const line of collectedLines) {
+    if (line.text === "") {
+      if (outputLines.length > 0 && outputLines[outputLines.length - 1] !== "") {
+        outputLines.push("");
+      }
+      continue;
+    }
+
+    const classified = classifyLine(line, profile);
+    const isHeading = classified.startsWith("# ") || classified.startsWith("## ");
+
+    if (isHeading && outputLines.length > 0 && outputLines[outputLines.length - 1] !== "") {
+      outputLines.push("");
+    }
+
+    outputLines.push(classified);
+
+    if (isHeading) {
+      outputLines.push("");
+    }
+  }
+
+  return outputLines.join("\n").trim();
 }
 
 function countMeaningfulCharacters(value: string) {
@@ -174,13 +306,23 @@ export const convertPdf: Converter = async (file) => {
     });
 
     const document = await loadingTask.promise;
-    const pageTexts: string[] = [];
+    const allItems: Array<TextItem | TextMarkedContent> = [];
+    const pageItemRanges: Array<{ start: number; end: number }> = [];
 
     for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
       const page = await document.getPage(pageNumber);
       const textContent = await page.getTextContent();
+      const start = allItems.length;
+      allItems.push(...textContent.items);
+      pageItemRanges.push({ start, end: allItems.length });
+    }
 
-      pageTexts.push(renderPdfPageText(textContent.items));
+    const fontProfile = detectFontProfile(allItems);
+    const pageTexts: string[] = [];
+
+    for (const { start, end } of pageItemRanges) {
+      const pageItems = allItems.slice(start, end);
+      pageTexts.push(renderPdfPageText(pageItems, fontProfile));
     }
 
     const markdown = pageTexts

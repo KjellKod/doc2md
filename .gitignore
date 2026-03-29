@@ -1,6 +1,7 @@
-node_modules
-dist
-.env
-*.local
-.quest/
 .DS_Store
+.env
+.quest/
+.ws/
+*.local
+dist
+node_modules
