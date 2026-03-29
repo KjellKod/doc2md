@@ -1,4 +1,5 @@
 export const SUPPORTED_FORMATS = [
+  "md",
   "txt",
   "json",
   "csv",

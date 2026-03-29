@@ -67,7 +67,7 @@ export default function DropZone({ onFilesAdded }: DropZoneProps) {
         ref={inputRef}
         className="visually-hidden"
         type="file"
-        accept=".txt,.json,.csv,.tsv,.html,.docx,.xlsx,.pdf,.pptx,text/plain,application/json,text/csv,text/tab-separated-values,text/html,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        accept=".md,.txt,.json,.csv,.tsv,.html,.docx,.xlsx,.pdf,.pptx,text/markdown,text/plain,application/json,text/csv,text/tab-separated-values,text/html,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.presentationml.presentation"
         multiple
         onChange={(event) => {
           handleFiles(event.target.files);
