@@ -1,12 +1,12 @@
 ---
 name: pr-assistant
-description: Creates and updates GitHub pull requests in draft mode. Generates PR title and description from branch commits, shows for approval before executing. Use when the user asks to create a PR, update a PR description, or open a pull request.
+description: Creates and updates GitHub pull requests ready for review. Generates PR title and description from branch commits, shows for approval before executing, then auto-shepherds. Use when the user asks to create a PR, update a PR description, or open a pull request.
 user-invocable: true
 ---
 
 # PR Assistant
 
-Generate a pull request title and description from the current branch, then create or update the PR via `gh` CLI. PRs are always created in **draft mode**.
+Generate a pull request title and description from the current branch, then create or update the PR via `gh` CLI. After creation, automatically invoke pr-shepherd to monitor CI and handle reviews.
 
 ---
 
@@ -135,14 +135,15 @@ When updating an existing PR body, preserve bot-managed sections exactly:
 - Regenerate only the human-authored section.
 - Never remove, rewrite, or reorder bot-managed blocks, badges, or hidden anchors/comments.
 
-### Draft mode (required)
+### Ready for review (default)
 
-- Always create PRs with the `--draft` flag.
-- When updating an existing PR, do not change its draft status.
+- Create PRs **without** the `--draft` flag by default. The PR should be ready for review immediately.
+- If the user explicitly asks for a draft, use `--draft`.
+- When updating an existing PR, do not change its review-readiness status.
 
 ### Use gh CLI
 
-- Create: `gh pr create --draft --title "..." --body "..."`
+- Create: `gh pr create --title "..." --body "..."`
 - Update: `gh pr edit <number> --title "..." --body "..."`
 - Push first if the remote branch is behind: `git push -u origin HEAD`
 - Run `gh` directly — do not wrap in `bash -lc` or `sh -c`. Permission prefixes only match when `gh` is the top-level command.
@@ -187,3 +188,9 @@ Always show the intended PR title and full body to the user and wait for explici
 ## Output
 
 Output only the final PR title and body. Do not use emojis.
+
+---
+
+## After PR Creation
+
+After a PR is successfully created (not updated), invoke the **pr-shepherd** skill (`/pr-shepherd`) to push, monitor CI, respond to review comments, fix issues, and mark ready for review when clean. This is automatic — do not ask the user for permission to shepherd.
