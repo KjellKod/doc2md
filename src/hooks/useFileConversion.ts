@@ -110,6 +110,10 @@ export function useFileConversion() {
     setEntries([]);
   }
 
+  function updateMarkdown(id: string, markdown: string) {
+    updateEntry(id, (entry) => ({ ...entry, editedMarkdown: markdown }));
+  }
+
   const selectedEntry = entries.find((entry) => entry.selected) ?? null;
 
   return {
@@ -117,6 +121,7 @@ export function useFileConversion() {
     addFiles,
     clearEntries,
     selectEntry,
-    selectedEntry
+    selectedEntry,
+    updateMarkdown
   };
 }

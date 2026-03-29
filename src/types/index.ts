@@ -26,6 +26,7 @@ export interface FileEntry {
   format: string;
   status: ConversionStatus;
   markdown: string;
+  editedMarkdown?: string;
   warnings: string[];
   selected: boolean;
 }
