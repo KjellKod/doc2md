@@ -39,6 +39,46 @@ describe("formatPreviewMarkdown", () => {
     );
   });
 
+  it("preserves tilde-fenced code blocks", () => {
+    const markdown = [
+      "~~~python",
+      "def hello():",
+      "    print('hello')",
+      "~~~"
+    ].join("\n");
+
+    expect(formatPreviewMarkdown(markdown)).toBe(markdown);
+  });
+
+  it("preserves multi-line tilde fence without corruption", () => {
+    const markdown = [
+      "Some text",
+      "",
+      "~~~",
+      "Short line one",
+      "Short line two",
+      "Short line three",
+      "Short line four",
+      "~~~",
+      "",
+      "More text"
+    ].join("\n");
+
+    expect(formatPreviewMarkdown(markdown)).toBe(markdown);
+  });
+
+  it("preserves leading whitespace on first line", () => {
+    const markdown = "    indented code block\n    second line";
+
+    expect(formatPreviewMarkdown(markdown)).toBe(markdown);
+  });
+
+  it("preserves trailing whitespace at end of document", () => {
+    const markdown = "# Title\n\nSome content\n";
+
+    expect(formatPreviewMarkdown(markdown)).toBe(markdown);
+  });
+
   it("preserves paragraph prose", () => {
     const markdown = [
       "This is a normal paragraph with enough context to read like prose rather than a compact",
