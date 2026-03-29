@@ -13,21 +13,13 @@ function createEntryId(file: File, index: number) {
   return `${normalizedName}-${Date.now()}-${index}-${Math.round(Math.random() * 1_000_000)}`;
 }
 
-function decodeName(name: string): string {
-  try {
-    return decodeURIComponent(name);
-  } catch {
-    return name;
-  }
-}
-
 function createPendingEntry(file: File, index: number, selected: boolean): FileEntry {
   const extension = getFileExtension(file.name);
 
   return {
     id: createEntryId(file, index),
     file,
-    name: decodeName(file.name),
+    name: file.name,
     format: extension || "unknown",
     status: "pending",
     markdown: "",
