@@ -111,6 +111,7 @@ Do NOT re-probe in either case.
 - **Codex-led sessions:** Use `python3 scripts/quest_claude_runner.py` (or `scripts/claude_cli_bridge.py`) to invoke Claude as Jean-Claude:
   - "You are Jean-Claude. Read `docs/persona.md` for voice. Read `docs/journal/` and `docs/dexter-journal/` for history."
   - Same topic specificity rules apply.
+  - **Pre-Build guard:** For Step 3 and Step 5 hooks, pass `--add-dir .quest/<id>/logs` only (not the full repo). The prompt must include: "Do not write files outside `.quest/`. Log your response only." At Step 7, full repo access is permitted for memoir writes.
 
 **Execution model:** The orchestrator issues the conversation call synchronously (awaits response) but treats any failure — timeout, error, empty response, MCP unavailability — as a skip. Log the attempt and outcome to `.quest/<id>/logs/conversation.log`, then continue the workflow. No retry.
 
