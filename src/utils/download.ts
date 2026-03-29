@@ -40,7 +40,7 @@ export function downloadEntry(entry: FileEntry) {
 }
 
 export function downloadAllEntries(entries: FileEntry[]) {
-  entries.filter(isDownloadableEntry).forEach((entry, index) => {
-    setTimeout(() => downloadEntry(entry), index * 100);
+  entries.filter(isDownloadableEntry).forEach((entry) => {
+    downloadEntry(entry);
   });
 }
