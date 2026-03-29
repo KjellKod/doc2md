@@ -110,7 +110,8 @@ describe("convertFile", () => {
 
     const result = await convertFile(file);
 
-    expect(result.markdown).toContain("## Page 1");
+    expect(result.markdown).not.toContain("## Page ");
+    expect(result.markdown).toContain("Sample PDF");
     expect(result.status).toBe("success");
   });
 

@@ -24,6 +24,15 @@ const PARAGRAPH_GAP_FACTOR = 1.8;
 const BULLET_CHAR_PATTERN = /^[•➢▸▪◦◆■●]/;
 const DASH_BULLET_PATTERN = /^[-–—]\s/;
 
+const H1_SIZE_DELTA = 8;
+const H2_SIZE_DELTA = 4;
+const H3_SIZE_DELTA = 2;
+
+const DATE_PATTERN =
+  /^(?:(?:January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\s+\d{4}(?:\s*[-–—]\s*(?:(?:January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\s+\d{4}|present|current))?|\d{4}\s*[-–—]\s*(?:\d{4}|present|current)|(?:Finished entire project,?\s*)?(?:January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\s+\d{4}\s*[-–—]\s*(?:(?:January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\s+\d{4}|present|current))\s*$/i;
+
+const URL_ONLY_PATTERN = /^https?:\/\/\S+$/i;
+
 const PROCESS_INFO = typeof process === "object" && process !== null
   ? (process as NodeJS.Process & { type?: string })
   : null;
@@ -121,12 +130,21 @@ function classifyLine(line: LineInfo, fontProfile: FontProfile): string {
     return `- ${cleaned}`;
   }
 
-  if (sizeDelta >= 6) {
-    return `# ${text}`;
-  }
+  if (sizeDelta >= H3_SIZE_DELTA) {
+    if (DATE_PATTERN.test(text)) {
+      return `**${text}**`;
+    }
+    if (URL_ONLY_PATTERN.test(text)) {
+      return text;
+    }
 
-  if (sizeDelta >= 2) {
-    return `## ${text}`;
+    if (sizeDelta >= H1_SIZE_DELTA) {
+      return `# ${text}`;
+    }
+    if (sizeDelta >= H2_SIZE_DELTA) {
+      return `## ${text}`;
+    }
+    return `### ${text}`;
   }
 
   if (boldFontNames.has(fontName) && text.length < 100) {
@@ -228,7 +246,7 @@ export function renderPdfPageText(
     }
 
     const classified = classifyLine(line, profile);
-    const isHeading = classified.startsWith("# ") || classified.startsWith("## ");
+    const isHeading = /^#{1,3} /.test(classified);
 
     if (isHeading && outputLines.length > 0 && outputLines[outputLines.length - 1] !== "") {
       outputLines.push("");
@@ -293,6 +311,64 @@ export function classifyPdfQuality(pageTexts: string[]) {
   };
 }
 
+function isBodyLine(line: string): boolean {
+  if (line.length === 0) return false;
+  if (line.startsWith("#")) return false;
+  if (line.startsWith("- ")) return false;
+  if (line.startsWith("**")) return false;
+  return true;
+}
+
+function looksLikeContinuation(prevLine: string, nextLine: string): boolean {
+  const trimmedPrev = prevLine.trim();
+  const trimmedNext = nextLine.trim();
+  if (!isBodyLine(trimmedPrev) || !isBodyLine(trimmedNext)) return false;
+  if (/[.!?:;]$/.test(trimmedPrev)) return false;
+  if (/^\d+[.)]\s/.test(trimmedNext)) return false;
+  if (/^[A-Z][A-Z]/.test(trimmedNext)) return false;
+  return true;
+}
+
+export function mergePageTexts(pageTexts: string[]): string {
+  const nonEmpty = pageTexts.filter((t) => t.trim().length > 0);
+  if (nonEmpty.length === 0) return "";
+
+  const result: string[] = [];
+
+  for (let i = 0; i < nonEmpty.length; i++) {
+    const pageText = nonEmpty[i];
+
+    if (i === 0) {
+      result.push(pageText);
+      continue;
+    }
+
+    const prevLines = result.join("\n").split("\n");
+    const lastNonEmpty = [...prevLines].reverse().find((l) => l.trim().length > 0) || "";
+    const firstLine = pageText.split("\n").find((l) => l.trim().length > 0) || "";
+
+    if (looksLikeContinuation(lastNonEmpty, firstLine)) {
+      const lines = pageText.split("\n");
+      const firstNonEmptyIdx = lines.findIndex((l) => l.trim().length > 0);
+      if (firstNonEmptyIdx >= 0) {
+        const trailingNewlines = result.join("\n").replace(/\n+$/, "");
+        const merged = `${trailingNewlines} ${lines[firstNonEmptyIdx].trim()}`;
+        const rest = lines.slice(firstNonEmptyIdx + 1).join("\n");
+        result.length = 0;
+        result.push(merged);
+        if (rest.trim().length > 0) {
+          result.push(rest);
+        }
+      }
+    } else {
+      result.push("");
+      result.push(pageText);
+    }
+  }
+
+  return result.join("\n").trim();
+}
+
 export const convertPdf: Converter = async (file) => {
   let loadingTask:
     | ReturnType<typeof getDocument>
@@ -327,9 +403,7 @@ export const convertPdf: Converter = async (file) => {
       pageTexts.push(renderPdfPageText(pageItems, fontProfile));
     }
 
-    const markdown = pageTexts
-      .map((pageText, index) => `## Page ${index + 1}\n\n${pageText || "_No extractable text found on this page._"}`)
-      .join("\n\n");
+    const markdown = mergePageTexts(pageTexts);
     const quality = classifyPdfQuality(pageTexts);
 
     if (quality.status === "error") {
