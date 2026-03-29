@@ -29,8 +29,10 @@ function downloadMarkdownFile(fileName: string, markdown: string) {
   link.download = createMarkdownFileName(fileName);
   document.body.append(link);
   link.click();
-  link.remove();
-  globalThis.URL.revokeObjectURL(objectUrl);
+  setTimeout(() => {
+    link.remove();
+    globalThis.URL.revokeObjectURL(objectUrl);
+  }, 1000);
 }
 
 export function downloadEntry(entry: FileEntry) {
@@ -38,5 +40,7 @@ export function downloadEntry(entry: FileEntry) {
 }
 
 export function downloadAllEntries(entries: FileEntry[]) {
-  entries.filter(isDownloadableEntry).forEach(downloadEntry);
+  entries.filter(isDownloadableEntry).forEach((entry, index) => {
+    setTimeout(() => downloadEntry(entry), index * 100);
+  });
 }
