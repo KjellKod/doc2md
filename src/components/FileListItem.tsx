@@ -1,4 +1,5 @@
 import type { FileEntry } from "../types";
+import { displayName } from "../utils/displayName";
 import FormatBadge from "./FormatBadge";
 import StatusIndicator from "./StatusIndicator";
 
@@ -21,7 +22,7 @@ export default function FileListItem({ entry, onSelect }: FileListItemProps) {
       >
         <div className="file-list-item-top">
           <div className="file-list-item-name-group">
-            <span className="file-list-item-name">{entry.name}</span>
+            <span className="file-list-item-name">{displayName(entry.name)}</span>
             <FormatBadge format={entry.format} />
           </div>
           <StatusIndicator status={entry.status} />
