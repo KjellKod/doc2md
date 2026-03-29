@@ -11,7 +11,7 @@ function pluralize(count: number, singular: string, plural = `${singular}s`) {
 }
 
 export default function App() {
-  const { entries, addFiles, clearEntries, selectEntry, selectedEntry } =
+  const { entries, addFiles, clearEntries, selectEntry, selectedEntry, updateMarkdown } =
     useFileConversion();
   const completedCount = entries.filter(isDownloadableEntry).length;
   const activeCount = entries.filter(
@@ -87,7 +87,12 @@ export default function App() {
                 </p>
               </div>
             </div>
-            <PreviewPanel entry={selectedEntry} />
+            <PreviewPanel
+              entry={selectedEntry}
+              onMarkdownChange={(text) => {
+                if (selectedEntry) updateMarkdown(selectedEntry.id, text);
+              }}
+            />
           </section>
         </section>
 
