@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [react()],
   base: "/doc2md/",
   test: {
-    environment: "jsdom"
+    environment: "jsdom",
+    exclude: [".claude/**", "node_modules/**", "dist/**"]
   }
 });

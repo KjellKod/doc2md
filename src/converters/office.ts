@@ -1,5 +1,5 @@
 import mammoth from "mammoth";
-import * as XLSX from "xlsx";
+import readXlsxFile, { readSheetNames } from "read-excel-file/universal";
 
 export function convertDocxToHtml(arrayBuffer: ArrayBuffer) {
   if (typeof Buffer !== "undefined") {
@@ -11,16 +11,19 @@ export function convertDocxToHtml(arrayBuffer: ArrayBuffer) {
   return mammoth.convertToHtml({ arrayBuffer });
 }
 
-export function readWorkbook(arrayBuffer: ArrayBuffer) {
-  return XLSX.read(arrayBuffer, {
-    type: "array"
-  });
+export interface SheetData {
+  name: string;
+  rows: unknown[][];
 }
 
-export function sheetToRows(worksheet: XLSX.WorkSheet) {
-  return XLSX.utils.sheet_to_json<unknown[]>(worksheet, {
-    header: 1,
-    raw: false,
-    defval: ""
-  });
+export async function readAllSheets(file: File): Promise<SheetData[]> {
+  const names = await readSheetNames(file);
+  const sheets: SheetData[] = [];
+
+  for (const name of names) {
+    const rows = await readXlsxFile(file, { sheet: name });
+    sheets.push({ name, rows });
+  }
+
+  return sheets;
 }
