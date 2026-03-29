@@ -100,16 +100,18 @@ Format badges use distinct hue per format group — this is separate from status
 
 | State | Download Selected | Download All |
 |---|---|---|
-| No files | Hidden | Hidden |
+| No files (toolbar not rendered) | N/A | N/A |
 | Files exist, none ready | Disabled | Disabled |
 | Some ready, none selected | Disabled | Enabled |
 | Selected file ready | Enabled | Enabled |
 | Selected file not ready | Disabled | Enabled (if others ready) |
 
+Note: "No files" means the toolbar itself is not rendered (progressive disclosure). Once the toolbar exists, buttons are disabled, never hidden.
+
 ### Batch download timing
 Browser downloads are async. When triggering multiple downloads:
-- Stagger with small delays between each (50-100ms)
-- Don't remove download links synchronously after click
+- Keep batch download calls synchronous to preserve user-activation context
+- Defer only link cleanup (remove + revokeObjectURL) via setTimeout
 
 ## Responsive Breakpoints
 
