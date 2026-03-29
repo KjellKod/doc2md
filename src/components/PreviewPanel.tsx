@@ -4,6 +4,7 @@ import remarkGfm from "remark-gfm";
 import type { FileEntry } from "../types";
 import { displayName } from "../utils/displayName";
 import ErrorMessage from "./ErrorMessage";
+import { formatPreviewMarkdown } from "./previewFormatting";
 
 interface PreviewPanelProps {
   entry: FileEntry | null;
@@ -56,6 +57,7 @@ export default function PreviewPanel({ entry, onMarkdownChange }: PreviewPanelPr
   }
 
   const effectiveMarkdown = entry.editedMarkdown ?? entry.markdown;
+  const previewMarkdown = formatPreviewMarkdown(effectiveMarkdown);
   const showToggle =
     (entry.status === "success" || entry.status === "warning") &&
     entry.markdown.length > 0;
@@ -100,7 +102,7 @@ export default function PreviewPanel({ entry, onMarkdownChange }: PreviewPanelPr
         />
       ) : (
         <div className="markdown-surface">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{effectiveMarkdown}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{previewMarkdown}</ReactMarkdown>
         </div>
       )}
     </div>
