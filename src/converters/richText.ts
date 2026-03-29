@@ -57,7 +57,39 @@ function restoreTablePlaceholders(markdown: string, replacements: Map<string, st
   return result.trim();
 }
 
-const GDOCS_LIST_LEVEL_PATTERN = /lst-kix_\w+-(\d+)/;
+const GDOCS_LIST_CLASS_PATTERN = /(?:^|\s)(lst-kix_[^\s-]+)-(\d+)(?:\s|$)/;
+
+interface GoogleDocsListMetadata {
+  family: string;
+  level: number;
+}
+
+function getGoogleDocsListMetadata(list: Element): GoogleDocsListMetadata | null {
+  const className = list.getAttribute("class") ?? "";
+  const match = className.match(GDOCS_LIST_CLASS_PATTERN);
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    family: match[1],
+    level: parseInt(match[2], 10)
+  };
+}
+
+function getLastListItem(list: Element): HTMLLIElement | null {
+  const children = Array.from(list.children);
+
+  for (let i = children.length - 1; i >= 0; i -= 1) {
+    const child = children[i];
+    if (child.tagName === "LI") {
+      return child as HTMLLIElement;
+    }
+  }
+
+  return null;
+}
 
 /**
  * Google Docs exports nested lists as flat sibling <ul> elements with
@@ -71,27 +103,24 @@ function nestGoogleDocsLists(doc: Document): void {
 
   for (let i = lists.length - 1; i >= 0; i--) {
     const list = lists[i];
-    const match = list.className.match(GDOCS_LIST_LEVEL_PATTERN);
-    if (!match) continue;
-
-    const level = parseInt(match[1], 10);
-    if (level === 0) continue;
+    const metadata = getGoogleDocsListMetadata(list);
+    if (!metadata || metadata.level === 0) continue;
 
     // Walk backwards through preceding siblings to find a list at a lower level
     let sibling = list.previousElementSibling;
     while (sibling) {
       if (sibling.tagName === "UL" || sibling.tagName === "OL") {
-        const sibMatch = sibling.className.match(GDOCS_LIST_LEVEL_PATTERN);
-        if (sibMatch) {
-          const sibLevel = parseInt(sibMatch[1], 10);
-          if (sibLevel < level) {
-            // Nest inside the last <li> of the preceding lower-level list
-            const lastLi = sibling.querySelector("li:last-child");
-            if (lastLi) {
-              lastLi.appendChild(list);
-            }
-            break;
+        const siblingMetadata = getGoogleDocsListMetadata(sibling);
+        if (
+          siblingMetadata &&
+          siblingMetadata.family === metadata.family &&
+          siblingMetadata.level < metadata.level
+        ) {
+          const lastLi = getLastListItem(sibling);
+          if (lastLi) {
+            lastLi.appendChild(list);
           }
+          break;
         }
       }
       sibling = sibling.previousElementSibling;

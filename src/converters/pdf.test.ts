@@ -94,6 +94,17 @@ describe("mergeBulletContinuations", () => {
     expect(result).toEqual(["- Smart, fast, and useful first with dry humor"]);
   });
 
+  it("merges a punctuation-led continuation into the preceding bullet", async () => {
+    const { mergeBulletContinuations } = await importPdfModule();
+    const result = mergeBulletContinuations([
+      "- Journal files are numbered sequentially (001, 002,",
+      "...) and stored under docs/journal/",
+    ]);
+    expect(result).toEqual([
+      "- Journal files are numbered sequentially (001, 002, ...) and stored under docs/journal/",
+    ]);
+  });
+
   it("does not merge when previous bullet ends with terminal punctuation", async () => {
     const { mergeBulletContinuations } = await importPdfModule();
     const result = mergeBulletContinuations([

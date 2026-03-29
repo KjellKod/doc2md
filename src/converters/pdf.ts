@@ -266,7 +266,7 @@ export function renderPdfPageText(
  * Merge plain body continuation lines into the preceding bullet when:
  * - previous non-empty line starts with `- `
  * - previous line does NOT end with terminal punctuation
- * - current line starts with a lowercase letter
+ * - current line looks like wrapped continuation text, not a new sentence/list item
  * - current line is not a heading, bullet, or bold text
  */
 export function mergeBulletContinuations(lines: string[]): string[] {
@@ -294,7 +294,7 @@ export function mergeBulletContinuations(lines: string[]): string[] {
       prev.startsWith("- ") &&
       !/[.!?:;]$/.test(prev) &&
       isBodyLine(line) &&
-      /^[a-z]/.test(line) &&
+      startsLikeBulletContinuation(line) &&
       // Only merge if no blank lines separate them
       lastIdx === result.length - 1;
 
@@ -306,6 +306,16 @@ export function mergeBulletContinuations(lines: string[]): string[] {
   }
 
   return result;
+}
+
+function startsLikeBulletContinuation(line: string): boolean {
+  const trimmed = line.trim();
+
+  if (trimmed.length === 0) return false;
+  if (/^\d+[.)]\s/.test(trimmed)) return false;
+  if (/^[A-Z]/.test(trimmed)) return false;
+
+  return true;
 }
 
 function countMeaningfulCharacters(value: string) {
