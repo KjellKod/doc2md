@@ -193,7 +193,7 @@ describe("doc2md smoke coverage", () => {
   });
 
   it("converts 10 identical PDFs concurrently without stalling", async () => {
-    const files = Array.from({ length: 10 }, (_, i) =>
+    const files = Array.from({ length: 10 }, () =>
       createFixtureFile("sample.pdf", "application/pdf")
     );
 
