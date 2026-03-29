@@ -178,6 +178,34 @@ describe("doc2md smoke coverage", () => {
     expect(results.every((result) => result.status === "success")).toBe(true);
   });
 
+  it("converts 10 identical files concurrently without stalling", async () => {
+    const files = Array.from({ length: 10 }, (_, i) =>
+      new File([`Document number ${i + 1}`], `doc-${i + 1}.txt`, { type: "text/plain" })
+    );
+
+    const results = await Promise.all(files.map((file) => convertFile(file)));
+
+    expect(results).toHaveLength(10);
+    expect(results.every((r) => r.status === "success")).toBe(true);
+    results.forEach((r, i) => {
+      expect(r.markdown).toBe(`Document number ${i + 1}`);
+    });
+  });
+
+  it("converts 10 identical PDFs concurrently without stalling", async () => {
+    const files = Array.from({ length: 10 }, (_, i) =>
+      createFixtureFile("sample.pdf", "application/pdf")
+    );
+
+    const results = await Promise.all(files.map((file) => convertFile(file)));
+
+    expect(results).toHaveLength(10);
+    expect(results.every((r) => r.status === "success")).toBe(true);
+    results.forEach((r) => {
+      expect(r.markdown).toContain("## Page 1");
+    });
+  }, 30_000);
+
   it("returns the unsupported-format message", async () => {
     const result = await convertFile(
       new File(["binary-ish"], "smoke.exe", {
