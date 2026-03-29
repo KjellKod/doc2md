@@ -23,6 +23,27 @@ afterEach(() => {
 });
 
 describe("PreviewPanel", () => {
+  it("restructures dense metadata blocks in preview mode", () => {
+    render(
+      <PreviewPanel
+        entry={createEntry({
+          markdown: [
+            "Contact",
+            "Location: Chihuahua, Mexico",
+            "Email: javier@example.com",
+            "LinkedIn: https://example.com/in/javier",
+            "Github: https://github.com/javier"
+          ].join("\n")
+        })}
+      />
+    );
+
+    expect(screen.getByRole("heading", { name: "Contact" })).toBeInTheDocument();
+    expect(screen.getByRole("list")).toBeInTheDocument();
+    expect(screen.getByText(/Location:/)).toBeInTheDocument();
+    expect(screen.getByText(/Email:/)).toBeInTheDocument();
+  });
+
   it("renders toggle buttons when entry is success with markdown", () => {
     render(<PreviewPanel entry={createEntry()} />);
 
@@ -120,5 +141,18 @@ describe("PreviewPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
 
     expect(screen.getByRole("textbox")).toHaveValue("# Edited");
+  });
+
+  it("keeps the original markdown untouched in edit mode", () => {
+    const markdown = [
+      "Contact",
+      "Location: Chihuahua, Mexico",
+      "Email: javier@example.com"
+    ].join("\n");
+
+    render(<PreviewPanel entry={createEntry({ markdown })} />);
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+    expect(screen.getByRole("textbox")).toHaveValue(markdown);
   });
 });

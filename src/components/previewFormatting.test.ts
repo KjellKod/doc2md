@@ -1,0 +1,50 @@
+import { describe, expect, it } from "vitest";
+import { formatPreviewMarkdown } from "./previewFormatting";
+
+describe("formatPreviewMarkdown", () => {
+  it("converts heading-like metadata blocks into preview lists", () => {
+    const markdown = [
+      "Contact",
+      "Location: Chihuahua, Mexico",
+      "Email: javier@example.com",
+      "LinkedIn: https://example.com/in/javier"
+    ].join("\n");
+
+    expect(formatPreviewMarkdown(markdown)).toBe(
+      [
+        "### Contact",
+        "",
+        "- **Location:** Chihuahua, Mexico",
+        "- **Email:** javier@example.com",
+        "- **LinkedIn:** https://example.com/in/javier"
+      ].join("\n")
+    );
+  });
+
+  it("converts compact non-prose clusters into bullets", () => {
+    const markdown = [
+      "Strong SwiftUI delivery",
+      "UIKit migration ownership",
+      "Binary deployment workflow",
+      "Team collaboration across design and backend"
+    ].join("\n");
+
+    expect(formatPreviewMarkdown(markdown)).toBe(
+      [
+        "- Strong SwiftUI delivery",
+        "- UIKit migration ownership",
+        "- Binary deployment workflow",
+        "- Team collaboration across design and backend"
+      ].join("\n")
+    );
+  });
+
+  it("preserves paragraph prose", () => {
+    const markdown = [
+      "This is a normal paragraph with enough context to read like prose rather than a compact",
+      "metadata or checklist block, so the preview formatter should leave it alone."
+    ].join("\n");
+
+    expect(formatPreviewMarkdown(markdown)).toBe(markdown);
+  });
+});
