@@ -261,7 +261,7 @@ Every celebration and requiem is saved for posterity. This step is **mandatory**
 
 2. **Write the file** with this metadata header:
    ```markdown
-   # NNN — Celebration: <Quest Name>
+   # NNN — <Celebration|Requiem>: <Quest Name>
    <!-- quest-id: <id> -->
    <!-- pr: #<number or "none"> -->
    <!-- style: celebration | requiem -->
