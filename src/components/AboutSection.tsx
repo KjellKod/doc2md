@@ -44,6 +44,18 @@ export default function AboutSection() {
           to pretend that every format is more cooperative than it really is.
         </p>
       </div>
+
+      <p className="about-tagline">
+        Built with{" "}
+        <a
+          href="https://github.com/KjellKod/quest"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Quest
+        </a>{" "}
+        — vetted by Dexter, narrated by Jean-Claude.
+      </p>
     </section>
   );
 }

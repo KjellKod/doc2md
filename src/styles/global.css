@@ -741,6 +741,24 @@ a {
   margin-top: 14px;
 }
 
+.about-tagline {
+  margin-top: 16px;
+  font-size: 0.8rem;
+  color: var(--text-tertiary, #999);
+  letter-spacing: 0.01em;
+}
+
+.about-tagline a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--text-tertiary, #999);
+  text-underline-offset: 2px;
+}
+
+.about-tagline a:hover {
+  color: var(--text-secondary);
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;
