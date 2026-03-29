@@ -422,6 +422,11 @@ a {
   color: var(--text-secondary);
 }
 
+.format-badge-md {
+  background: #e8edf4;
+  color: #3b5278;
+}
+
 .format-badge-txt {
   background: #edf2f6;
   color: #4f6575;
