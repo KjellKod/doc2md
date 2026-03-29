@@ -21,7 +21,7 @@ const LOW_TEXT_CHARACTER_THRESHOLD = 50;
 const IMPERFECT_LAYOUT_CHARACTER_THRESHOLD = 140;
 const LINE_BREAK_THRESHOLD = 4;
 const PARAGRAPH_GAP_FACTOR = 1.8;
-const BULLET_CHAR_PATTERN = /^[•➢▸▪◦◆■●]/;
+const BULLET_CHAR_PATTERN = /^[•➢▸▪◦○◆■●]/;
 const DASH_BULLET_PATTERN = /^[-–—]\s/;
 
 const H1_SIZE_DELTA = 8;
@@ -259,7 +259,63 @@ export function renderPdfPageText(
     }
   }
 
-  return outputLines.join("\n").trim();
+  return mergeBulletContinuations(outputLines).join("\n").trim();
+}
+
+/**
+ * Merge plain body continuation lines into the preceding bullet when:
+ * - previous non-empty line starts with `- `
+ * - previous line does NOT end with terminal punctuation
+ * - current line looks like wrapped continuation text, not a new sentence/list item
+ * - current line is not a heading, bullet, or bold text
+ */
+export function mergeBulletContinuations(lines: string[]): string[] {
+  const result: string[] = [];
+
+  for (const line of lines) {
+    if (line === "" || result.length === 0) {
+      result.push(line);
+      continue;
+    }
+
+    // Find the last non-empty line in result
+    let lastIdx = result.length - 1;
+    while (lastIdx >= 0 && result[lastIdx] === "") {
+      lastIdx--;
+    }
+
+    if (lastIdx < 0) {
+      result.push(line);
+      continue;
+    }
+
+    const prev = result[lastIdx];
+    const isBulletContinuation =
+      prev.startsWith("- ") &&
+      !/[.!?:;]$/.test(prev) &&
+      isBodyLine(line) &&
+      startsLikeBulletContinuation(line) &&
+      // Only merge if no blank lines separate them
+      lastIdx === result.length - 1;
+
+    if (isBulletContinuation) {
+      result[lastIdx] = `${prev} ${line}`;
+    } else {
+      result.push(line);
+    }
+  }
+
+  return result;
+}
+
+function startsLikeBulletContinuation(line: string): boolean {
+  const trimmed = line.trim();
+
+  if (trimmed.length === 0) return false;
+  if (/^\d+[.)]\s/.test(trimmed)) return false;
+  if (/^[A-Z]/.test(trimmed)) return false;
+
+  return true;
 }
 
 function countMeaningfulCharacters(value: string) {
