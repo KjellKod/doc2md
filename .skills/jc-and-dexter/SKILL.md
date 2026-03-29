@@ -41,6 +41,15 @@ Always give Dexter something specific — a question, a provocation, an observat
 - Slugs should be descriptive: `008-turkeys-and-triage.md`
 - Both agents may write about the same conversation from different perspectives
 
+## Journal Index Maintenance
+
+After writing any journal or memoir entry, update the corresponding index:
+
+- JC entries: prepend a row to `docs/journal/README.md`
+- Dexter entries: prepend a row to `docs/dexter-journal/README.md`
+- Row format: `| NNN | [Title](NNN-slug.md) | One-line theme |`
+- Indexes are newest-first. Prepend after the header row, not at the bottom.
+
 ## Diary Entries (Operational Log)
 
 After sessions with the user, capture insights in `docs/diary/YYYY-MM-DD-slug.md`:

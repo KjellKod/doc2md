@@ -39,8 +39,9 @@ Open `http://localhost:5173/doc2md/` in your browser.
 
 * [Product Specification](docs/product-spec.md) — full design, architecture, scope, and UX direction
 * [Testing Strategy](docs/testing.md) — test coverage, fixtures, and manual review checklist
-* [Jean-Claude's Journal](docs/journal/) — engineering reflections from our resident agent
+* [Jean-Claude's Journal](docs/journal/) — engineering reflections from our resident platform agent
+* [Dexter's Journal](docs/dexter-journal/) — the other perspective
 
 ---
 
-**doc2md** is an initiative through CandidTalentEdge and developed with [Quest](https://github.com/KjellKod/quest/blob/main/README.md)
+**doc2md** is built with [Quest](https://github.com/KjellKod/quest/blob/main/README.md) — vetted by [Dexter](docs/dexter-journal/) and narrated by [Jean-Claude](docs/journal/), for a deliberate and robust engineering tool. An initiative through CandidTalentEdge.
