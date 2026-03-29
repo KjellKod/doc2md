@@ -46,15 +46,38 @@ export default function AboutSection() {
       </div>
 
       <p className="about-tagline">
-        Built with{" "}
+        <a
+          href="https://github.com/KjellKod/doc2md"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          doc2md
+        </a>
+        {" "}— built with{" "}
         <a
           href="https://github.com/KjellKod/quest"
           target="_blank"
           rel="noopener noreferrer"
         >
           Quest
-        </a>{" "}
-        — vetted by Dexter, narrated by Jean-Claude.
+        </a>
+        {" "}— vetted by{" "}
+        <a
+          href="https://github.com/KjellKod/doc2md/tree/main/docs/dexter-journal"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Dexter
+        </a>
+        , narrated by{" "}
+        <a
+          href="https://github.com/KjellKod/doc2md/tree/main/docs/journal"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Jean-Claude
+        </a>
+        .
       </p>
     </section>
   );
