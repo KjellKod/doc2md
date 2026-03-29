@@ -110,7 +110,7 @@ export function formatPreviewMarkdown(markdown: string) {
   const lines = markdown.split(/\r?\n/);
   const formatted: string[] = [];
   let block: string[] = [];
-  let inCodeFence = false;
+  let fenceChar: string | null = null;
 
   const flushBlock = () => {
     if (block.length > 0) {
@@ -121,15 +121,32 @@ export function formatPreviewMarkdown(markdown: string) {
 
   for (const line of lines) {
     const trimmed = line.trim();
+    const fenceMatch = trimmed.match(/^(`{3,}|~{3,})/);
 
-    if (/^(`{3,}|~{3,})/.test(trimmed)) {
-      flushBlock();
-      inCodeFence = !inCodeFence;
+    if (fenceMatch) {
+      const char = fenceMatch[1][0];
+
+      if (fenceChar === null) {
+        // Opening a new fence
+        flushBlock();
+        fenceChar = char;
+        formatted.push(line);
+        continue;
+      }
+
+      if (char === fenceChar) {
+        // Closing the fence with a matching marker
+        fenceChar = null;
+        formatted.push(line);
+        continue;
+      }
+
+      // Mismatched fence marker inside a code block — pass through
       formatted.push(line);
       continue;
     }
 
-    if (inCodeFence) {
+    if (fenceChar !== null) {
       formatted.push(line);
       continue;
     }
@@ -151,7 +168,46 @@ export function formatPreviewMarkdown(markdown: string) {
 
   flushBlock();
 
-  return formatted
-    .join("\n")
-    .replace(/\n{3,}/g, "\n\n");
+  return collapseBlankLinesOutsideFences(formatted.join("\n"));
+}
+
+function collapseBlankLinesOutsideFences(text: string): string {
+  const lines = text.split("\n");
+  const result: string[] = [];
+  let fence: string | null = null;
+  let consecutiveBlanks = 0;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const fenceMatch = trimmed.match(/^(`{3,}|~{3,})/);
+
+    if (fenceMatch) {
+      const char = fenceMatch[1][0];
+      if (fence === null) {
+        fence = char;
+      } else if (char === fence) {
+        fence = null;
+      }
+      consecutiveBlanks = 0;
+      result.push(line);
+      continue;
+    }
+
+    if (fence !== null) {
+      result.push(line);
+      continue;
+    }
+
+    if (trimmed.length === 0) {
+      consecutiveBlanks++;
+      if (consecutiveBlanks <= 1) {
+        result.push(line);
+      }
+    } else {
+      consecutiveBlanks = 0;
+      result.push(line);
+    }
+  }
+
+  return result.join("\n");
 }

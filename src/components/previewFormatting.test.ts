@@ -79,6 +79,55 @@ describe("formatPreviewMarkdown", () => {
     expect(formatPreviewMarkdown(markdown)).toBe(markdown);
   });
 
+  it("does not close backtick fence with tilde marker", () => {
+    const markdown = [
+      "```",
+      "Short line one",
+      "~~~",
+      "Short line two",
+      "Short line three",
+      "Short line four",
+      "```",
+    ].join("\n");
+
+    expect(formatPreviewMarkdown(markdown)).toBe(markdown);
+  });
+
+  it("does not close tilde fence with backtick marker", () => {
+    const markdown = [
+      "~~~",
+      "Short line one",
+      "```",
+      "Short line two",
+      "Short line three",
+      "Short line four",
+      "~~~",
+    ].join("\n");
+
+    expect(formatPreviewMarkdown(markdown)).toBe(markdown);
+  });
+
+  it("preserves multiple blank lines inside code fences", () => {
+    const markdown = [
+      "```",
+      "line one",
+      "",
+      "",
+      "",
+      "line two",
+      "```",
+    ].join("\n");
+
+    expect(formatPreviewMarkdown(markdown)).toBe(markdown);
+  });
+
+  it("collapses triple blank lines outside code fences", () => {
+    const markdown = "# Title\n\n\n\nSome content";
+    const expected = "# Title\n\nSome content";
+
+    expect(formatPreviewMarkdown(markdown)).toBe(expected);
+  });
+
   it("preserves paragraph prose", () => {
     const markdown = [
       "This is a normal paragraph with enough context to read like prose rather than a compact",
