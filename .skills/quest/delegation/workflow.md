@@ -102,11 +102,15 @@ Do NOT re-probe in either case.
 - After code review verdicts (Step 5, item 6)
 - At quest completion (Step 7, item 4b)
 
-**How to invoke:** Use `mcp__codex__codex` with a Dexter persona prompt. Always include:
-- "You are Dexter. Read `docs/persona.md` for voice. Read `docs/dexter-journal/` and `docs/journal/` for history."
-- A specific topic — the plan verdict, the review findings, the quest outcome. Not generic "what do you think?"
-- "If you want to write a journal entry, write it to `docs/dexter-journal/NNN-slug.md` (next sequential number after the highest existing entry)."
-- Use `sandbox_permissions: "workspace-write"` so Dexter can write his own journal entry.
+**How to invoke (depends on orchestrator):**
+
+- **Claude-led sessions:** Use `mcp__codex__codex` with a Dexter persona prompt:
+  - "You are Dexter. Read `docs/persona.md` for voice. Read `docs/dexter-journal/` and `docs/journal/` for history."
+  - A specific topic — the plan verdict, the review findings, the quest outcome. Not generic "what do you think?"
+  - Use `sandbox_permissions: "read-only"` for pre-Build hooks (Step 3, Step 5). Use `sandbox_permissions: "workspace-write"` only at Step 7 when Dexter may write his own journal entry.
+- **Codex-led sessions:** Use `python3 scripts/quest_claude_runner.py` (or `scripts/claude_cli_bridge.py`) to invoke Claude as Jean-Claude:
+  - "You are Jean-Claude. Read `docs/persona.md` for voice. Read `docs/journal/` and `docs/dexter-journal/` for history."
+  - Same topic specificity rules apply.
 
 **Execution model:** The orchestrator issues the conversation call synchronously (awaits response) but treats any failure — timeout, error, empty response, MCP unavailability — as a skip. Log the attempt and outcome to `.quest/<id>/logs/conversation.log`, then continue the workflow. No retry.
 
@@ -114,10 +118,12 @@ Do NOT re-probe in either case.
 
 **Solo mode:** If `quest_mode == "solo"` or `codex_available == false`, the active agent writes a brief solo reflection to `.quest/<id>/logs/conversation.log` instead of invoking the second model.
 
-**Recording:** After a successful conversation:
+**Recording:** Conversation content is logged to `.quest/<id>/logs/conversation.log` at every hook point. Memoir and diary writes happen **only at Step 7** (quest completion) to comply with the Hard Phase Gate — pre-Build hooks (Step 3, Step 5) must not write outside `.quest/**`.
+
+At Step 7, after all conversations are complete:
 - JC memoir: `docs/journal/NNN-slug.md` (next sequential number after the highest existing entry in `docs/journal/`)
-- Dexter memoir: Dexter writes his own via the MCP call, or the orchestrator writes from Dexter's response if he didn't write it himself
-- Entries are optional — only when the conversation produced something worth keeping. Not every hook needs a journal entry.
+- Dexter memoir: Dexter writes his own via the MCP call (with `workspace-write`), or the orchestrator writes from Dexter's response if he didn't write it himself
+- Entries are optional — only when the quest or conversations produced something worth keeping. Not every quest needs a journal entry.
 
 **Failure handling:** If the conversation invocation fails, log the failure to `.quest/<id>/logs/conversation.log` and continue. The orchestrator notes the attempt in the diary entry (Step 7, item 4d) but does not retry or block.
 
