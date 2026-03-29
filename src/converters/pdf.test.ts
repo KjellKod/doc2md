@@ -18,6 +18,106 @@ async function importPdfModule() {
   return import("./pdf");
 }
 
+function textItem(str: string, transform: number[], fontName: string, hasEOL = true) {
+  return { str, transform, fontName, hasEOL, dir: "ltr" as const, width: 100, height: transform[0] };
+}
+
+describe("renderPdfPageText", () => {
+  it("classifies three distinct heading sizes into H1, H2, H3", async () => {
+    const { renderPdfPageText } = await importPdfModule();
+    const bodySize = 12;
+    const items = [
+      textItem("Main Title", [20, 0, 0, 20, 0, 700], "f1"),
+      textItem("Section Header", [16, 0, 0, 16, 0, 660], "f1"),
+      textItem("Subsection", [14, 0, 0, 14, 0, 620], "f1"),
+      textItem("Body text here.", [bodySize, 0, 0, bodySize, 0, 580], "f2"),
+    ];
+    const profile = { bodyFontSize: bodySize, bodyFontName: "f2", boldFontNames: new Set<string>() };
+    const result = renderPdfPageText(items, profile);
+
+    expect(result).toContain("# Main Title");
+    expect(result).toContain("## Section Header");
+    expect(result).toContain("### Subsection");
+    expect(result).toContain("Body text here.");
+    expect(result).not.toMatch(/^#{1,3} Body text/m);
+  });
+
+  it("demotes date-like lines from headings to bold text", async () => {
+    const { renderPdfPageText } = await importPdfModule();
+    const items = [
+      textItem("March 2022 - September 2024", [14, 0, 0, 14, 0, 700], "f1"),
+      textItem("2015-2017", [14, 0, 0, 14, 0, 660], "f1"),
+      textItem("Body text.", [12, 0, 0, 12, 0, 620], "f2"),
+    ];
+    const profile = { bodyFontSize: 12, bodyFontName: "f2", boldFontNames: new Set<string>() };
+    const result = renderPdfPageText(items, profile);
+
+    expect(result).toContain("**March 2022 - September 2024**");
+    expect(result).toContain("**2015-2017**");
+    expect(result).not.toMatch(/^#{1,3} March/m);
+    expect(result).not.toMatch(/^#{1,3} 2015/m);
+  });
+
+  it("demotes URL-only lines from headings to plain text", async () => {
+    const { renderPdfPageText } = await importPdfModule();
+    const items = [
+      textItem("https://kigo.pro", [14, 0, 0, 14, 0, 700], "f1"),
+      textItem("Body text.", [12, 0, 0, 12, 0, 660], "f2"),
+    ];
+    const profile = { bodyFontSize: 12, bodyFontName: "f2", boldFontNames: new Set<string>() };
+    const result = renderPdfPageText(items, profile);
+
+    expect(result).toContain("https://kigo.pro");
+    expect(result).not.toMatch(/^#{1,3} https:/m);
+  });
+
+  it("maps single heading size to H3 when delta is small", async () => {
+    const { renderPdfPageText } = await importPdfModule();
+    const items = [
+      textItem("Only Heading", [14, 0, 0, 14, 0, 700], "f1"),
+      textItem("Body.", [12, 0, 0, 12, 0, 660], "f2"),
+    ];
+    const profile = { bodyFontSize: 12, bodyFontName: "f2", boldFontNames: new Set<string>() };
+    const result = renderPdfPageText(items, profile);
+
+    expect(result).toContain("### Only Heading");
+  });
+});
+
+describe("mergePageTexts", () => {
+  it("merges body text split across pages", async () => {
+    const { mergePageTexts } = await importPdfModule();
+    const result = mergePageTexts([
+      "First paragraph starts here and continues",
+      "across the page boundary seamlessly.",
+    ]);
+
+    expect(result).toContain("continues across the page");
+    expect(result).not.toContain("\n\nacross");
+  });
+
+  it("does not merge when the next page starts with a heading", async () => {
+    const { mergePageTexts } = await importPdfModule();
+    const result = mergePageTexts([
+      "End of previous section.",
+      "# New Section\n\nNew content here.",
+    ]);
+
+    expect(result).toContain("End of previous section.");
+    expect(result).toContain("# New Section");
+    expect(result).not.toContain("section. # New");
+  });
+
+  it("drops empty pages silently", async () => {
+    const { mergePageTexts } = await importPdfModule();
+    const result = mergePageTexts(["Content here.", "", "  ", "More content."]);
+
+    expect(result).toContain("Content here.");
+    expect(result).toContain("More content.");
+    expect(result).not.toContain("_No extractable text");
+  });
+});
+
 describe("convertPdf", () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -34,7 +134,7 @@ describe("convertPdf", () => {
       warnings: [],
       status: "success"
     });
-    expect(result.markdown).toContain("## Page 1");
+    expect(result.markdown).not.toContain("## Page ");
     expect(result.markdown).toContain("Sample PDF");
     expect(result.markdown).toContain("This PDF is intentionally text-based");
   });
@@ -53,7 +153,7 @@ describe("convertPdf", () => {
     });
   });
 
-  it("adds page headings and warns when extractable text looks sparse", async () => {
+  it("warns when extractable text looks sparse and merges pages", async () => {
     const destroy = vi.fn().mockResolvedValue(undefined);
 
     vi.doMock("pdfjs-dist/legacy/build/pdf.mjs", () => ({
@@ -113,9 +213,9 @@ describe("convertPdf", () => {
 
     expect(result.status).toBe("warning");
     expect(result.warnings).toEqual([PDF_LAYOUT_WARNING_MESSAGE]);
-    expect(result.markdown).toContain("## Page 1");
-    expect(result.markdown).toContain("## Page 2");
+    expect(result.markdown).not.toContain("## Page ");
     expect(result.markdown).toContain("Sparse layout intro");
+    expect(result.markdown).toContain("A fragmented second page");
     expect(destroy).toHaveBeenCalledOnce();
   });
 

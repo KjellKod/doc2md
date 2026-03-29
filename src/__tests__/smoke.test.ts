@@ -141,7 +141,7 @@ describe("doc2md smoke coverage", () => {
     const result = await convertFile(createFixtureFile("sample.pdf", "application/pdf"));
 
     expect(result.status).toBe("success");
-    expect(result.markdown).toContain("## Page 1");
+    expect(result.markdown).not.toContain("## Page ");
     expect(result.markdown).toContain("Sample PDF");
   });
 
@@ -174,7 +174,8 @@ describe("doc2md smoke coverage", () => {
     expect(results[0].markdown).toBe("Batch text");
     expect(results[1].markdown).toContain("```json");
     expect(results[2].markdown).toContain("| team | owner |");
-    expect(results[3].markdown).toContain("## Page 1");
+    expect(results[3].markdown).not.toContain("## Page ");
+    expect(results[3].markdown).toContain("Sample PDF");
     expect(results.every((result) => result.status === "success")).toBe(true);
   });
 
@@ -202,7 +203,8 @@ describe("doc2md smoke coverage", () => {
     expect(results).toHaveLength(10);
     expect(results.every((r) => r.status === "success")).toBe(true);
     results.forEach((r) => {
-      expect(r.markdown).toContain("## Page 1");
+      expect(r.markdown).not.toContain("## Page ");
+      expect(r.markdown).toContain("Sample PDF");
     });
   }, 30_000);
 
