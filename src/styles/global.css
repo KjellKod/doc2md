@@ -376,6 +376,7 @@ a {
 .file-list-item {
   width: 100%;
   padding: 16px 18px;
+  color: var(--text-primary);
   border: 1px solid var(--panel-border);
   border-radius: 18px;
   background: var(--panel-bg-strong);

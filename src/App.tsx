@@ -3,6 +3,7 @@ import DownloadButton from "./components/DownloadButton";
 import DropZone from "./components/DropZone";
 import FileList from "./components/FileList";
 import PreviewPanel from "./components/PreviewPanel";
+import { displayName } from "./utils/displayName";
 import { useFileConversion } from "./hooks/useFileConversion";
 import { downloadAllEntries, isDownloadableEntry } from "./utils/download";
 
@@ -82,7 +83,7 @@ export default function App() {
                 <h2 id="preview-title">Preview</h2>
                 <p className="panel-copy">
                   {selectedEntry
-                    ? selectedEntry.name
+                    ? displayName(selectedEntry.name)
                     : "Drop files to convert and review the rendered Markdown here."}
                 </p>
               </div>

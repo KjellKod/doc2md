@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { FileEntry } from "../types";
+import { displayName } from "../utils/displayName";
 import ErrorMessage from "./ErrorMessage";
 import { formatPreviewMarkdown } from "./previewFormatting";
 
@@ -34,7 +35,7 @@ export default function PreviewPanel({ entry, onMarkdownChange }: PreviewPanelPr
         <span className="loading-orb" aria-hidden="true" />
         <p className="empty-state-title">Converting locally.</p>
         <p className="empty-state-copy">
-          Preparing a Markdown preview for {entry.name}.
+          Preparing a Markdown preview for {displayName(entry.name)}.
         </p>
       </div>
     );

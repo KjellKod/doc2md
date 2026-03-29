@@ -73,6 +73,25 @@ export function useFileConversion() {
     }
   }
 
+  async function processWithConcurrencyLimit(entriesToProcess: FileEntry[], limit: number) {
+    const queue = [...entriesToProcess];
+    const active: Promise<void>[] = [];
+
+    while (queue.length > 0 || active.length > 0) {
+      while (active.length < limit && queue.length > 0) {
+        const entry = queue.shift()!;
+        const promise = processEntry(entry).then(() => {
+          active.splice(active.indexOf(promise), 1);
+        });
+        active.push(promise);
+      }
+
+      if (active.length > 0) {
+        await Promise.race(active);
+      }
+    }
+  }
+
   function addFiles(fileList: FileList | File[]) {
     const files = Array.from(fileList);
 
@@ -92,9 +111,7 @@ export function useFileConversion() {
       return [...currentEntries, ...nextEntries];
     });
 
-    nextEntries.forEach((entry) => {
-      void processEntry(entry);
-    });
+    void processWithConcurrencyLimit(nextEntries, 3);
   }
 
   function selectEntry(id: string) {
