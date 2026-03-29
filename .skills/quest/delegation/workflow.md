@@ -108,7 +108,7 @@ Do NOT re-probe in either case.
   - "You are Dexter. Read `docs/persona.md` for voice. Read `docs/dexter-journal/` and `docs/journal/` for history."
   - A specific topic — the plan verdict, the review findings, the quest outcome. Not generic "what do you think?"
   - Use `sandbox_permissions: "read-only"` for pre-Build hooks (Step 3, Step 5). Use `sandbox_permissions: "workspace-write"` only at Step 7 when Dexter may write his own journal entry.
-- **Codex-led sessions:** Use `python3 scripts/quest_claude_runner.py` (or `scripts/claude_cli_bridge.py`) to invoke Claude as Jean-Claude:
+- **Codex-led sessions:** Use `python3 scripts/claude_cli_bridge.py` directly (NOT `quest_claude_runner.py`, which has handoff polling and context_health logging that do not apply to conversations):
   - "You are Jean-Claude. Read `docs/persona.md` for voice. Read `docs/journal/` and `docs/dexter-journal/` for history."
   - Same topic specificity rules apply.
   - **Pre-Build guard:** For Step 3 and Step 5 hooks, pass `--add-dir .quest/<id>/logs` only (not the full repo). The prompt must include: "Do not write files outside `.quest/`. Log your response only." At Step 7, full repo access is permitted for memoir writes.
@@ -117,7 +117,7 @@ Do NOT re-probe in either case.
 
 **Handoff exception:** Conversation hooks are explicitly exempt from the global Handoff File Polling rules. They do not produce `handoff.json` files, do not participate in the three-tier fallback ladder, and are not logged to `context_health.log`. They are flavor, not workflow gates. The only logging is to `.quest/<id>/logs/conversation.log`.
 
-**Solo mode:** If `quest_mode == "solo"` or `codex_available == false`, the active agent writes a brief solo reflection to `.quest/<id>/logs/conversation.log` instead of invoking the second model.
+**Solo mode:** If `quest_mode == "solo"` or the second model is unavailable (Claude-led: `codex_available == false`; Codex-led: `claude_bridge_available == false`), the active agent writes a brief solo reflection to `.quest/<id>/logs/conversation.log` instead of invoking the second model.
 
 **Recording:** Conversation content is logged to `.quest/<id>/logs/conversation.log` at every hook point. Memoir and diary writes happen **only at Step 7** (quest completion) to comply with the Hard Phase Gate — pre-Build hooks (Step 3, Step 5) must not write outside `.quest/**`.
 
