@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { FileEntry } from "../types";
@@ -5,9 +6,16 @@ import ErrorMessage from "./ErrorMessage";
 
 interface PreviewPanelProps {
   entry: FileEntry | null;
+  onMarkdownChange?: (markdown: string) => void;
 }
 
-export default function PreviewPanel({ entry }: PreviewPanelProps) {
+export default function PreviewPanel({ entry, onMarkdownChange }: PreviewPanelProps) {
+  const [mode, setMode] = useState<"edit" | "preview">("preview");
+
+  useEffect(() => {
+    setMode("preview");
+  }, [entry?.id]);
+
   if (!entry) {
     return (
       <div className="preview-empty-state">
@@ -46,8 +54,34 @@ export default function PreviewPanel({ entry }: PreviewPanelProps) {
     );
   }
 
+  const effectiveMarkdown = entry.editedMarkdown ?? entry.markdown;
+  const showToggle =
+    (entry.status === "success" || entry.status === "warning") &&
+    entry.markdown.length > 0;
+
   return (
     <div className="preview-body">
+      {showToggle ? (
+        <div className="preview-toggle" role="group" aria-label="Edit or preview mode">
+          <button
+            type="button"
+            className={`preview-toggle-button${mode === "edit" ? " is-active" : ""}`}
+            onClick={() => setMode("edit")}
+            aria-pressed={mode === "edit"}
+          >
+            Edit
+          </button>
+          <button
+            type="button"
+            className={`preview-toggle-button${mode === "preview" ? " is-active" : ""}`}
+            onClick={() => setMode("preview")}
+            aria-pressed={mode === "preview"}
+          >
+            Preview
+          </button>
+        </div>
+      ) : null}
+
       {entry.warnings.length > 0 ? (
         <div className="warning-message" role="status">
           {entry.warnings.map((warning) => (
@@ -56,9 +90,18 @@ export default function PreviewPanel({ entry }: PreviewPanelProps) {
         </div>
       ) : null}
 
-      <div className="markdown-surface">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{entry.markdown}</ReactMarkdown>
-      </div>
+      {mode === "edit" ? (
+        <textarea
+          className="markdown-edit-area"
+          value={effectiveMarkdown}
+          onChange={(event) => onMarkdownChange?.(event.target.value)}
+          aria-label="Edit markdown"
+        />
+      ) : (
+        <div className="markdown-surface">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{effectiveMarkdown}</ReactMarkdown>
+        </div>
+      )}
     </div>
   );
 }

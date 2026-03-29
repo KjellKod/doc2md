@@ -34,7 +34,7 @@ function downloadMarkdownFile(fileName: string, markdown: string) {
 }
 
 export function downloadEntry(entry: FileEntry) {
-  downloadMarkdownFile(entry.name, entry.markdown);
+  downloadMarkdownFile(entry.name, entry.editedMarkdown ?? entry.markdown);
 }
 
 export function downloadAllEntries(entries: FileEntry[]) {
