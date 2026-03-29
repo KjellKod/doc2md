@@ -21,7 +21,8 @@ const LOW_TEXT_CHARACTER_THRESHOLD = 50;
 const IMPERFECT_LAYOUT_CHARACTER_THRESHOLD = 140;
 const LINE_BREAK_THRESHOLD = 4;
 const PARAGRAPH_GAP_FACTOR = 1.8;
-const BULLET_PATTERN = /^[•➢▸▪◦◆■●]|^[-–—]\s/;
+const BULLET_CHAR_PATTERN = /^[•➢▸▪◦◆■●]/;
+const DASH_BULLET_PATTERN = /^[-–—]\s/;
 
 const PROCESS_INFO = typeof process === "object" && process !== null
   ? (process as NodeJS.Process & { type?: string })
@@ -116,7 +117,7 @@ function classifyLine(line: LineInfo, fontProfile: FontProfile): string {
   const sizeDelta = fontSize - bodyFontSize;
 
   if (isBullet) {
-    const cleaned = text.replace(BULLET_PATTERN, "").trim();
+    const cleaned = text.replace(BULLET_CHAR_PATTERN, "").replace(DASH_BULLET_PATTERN, "").trim();
     return `- ${cleaned}`;
   }
 
@@ -155,11 +156,12 @@ export function renderPdfPageText(
         collectedLines.push({ text: "", fontSize: 0, fontName: "", isBullet: false });
         pendingParagraphBreak = false;
       }
+      const isBullet = currentIsBullet || DASH_BULLET_PATTERN.test(trimmed);
       collectedLines.push({
         text: trimmed,
         fontSize: currentFontSize,
         fontName: currentFontName,
-        isBullet: currentIsBullet
+        isBullet
       });
     }
     currentText = "";
@@ -202,7 +204,7 @@ export function renderPdfPageText(
     if (!currentText) {
       currentFontSize = fontSize;
       currentFontName = fontName;
-      currentIsBullet = BULLET_PATTERN.test(value);
+      currentIsBullet = BULLET_CHAR_PATTERN.test(value);
     }
 
     currentText += `${shouldInsertSpace(currentText, value) ? " " : ""}${value}`;
