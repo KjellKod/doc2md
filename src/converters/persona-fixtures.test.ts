@@ -9,7 +9,7 @@ function loadFixture(filename: string): Buffer {
 }
 
 function createFile(buffer: Buffer, name: string, type: string): File {
-  return new File([buffer], name, { type });
+  return new File([new Uint8Array(buffer)], name, { type });
 }
 
 /**
