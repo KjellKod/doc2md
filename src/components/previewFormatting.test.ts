@@ -128,6 +128,50 @@ describe("formatPreviewMarkdown", () => {
     expect(formatPreviewMarkdown(markdown)).toBe(expected);
   });
 
+  it("preserves indented code blocks from bulletization", () => {
+    const markdown = [
+      "    line one",
+      "    line two",
+      "    line three",
+      "    line four",
+    ].join("\n");
+
+    expect(formatPreviewMarkdown(markdown)).toBe(markdown);
+  });
+
+  it("preserves tab-indented code blocks from bulletization", () => {
+    const markdown = [
+      "\tline one",
+      "\tline two",
+      "\tline three",
+      "\tline four",
+    ].join("\n");
+
+    expect(formatPreviewMarkdown(markdown)).toBe(markdown);
+  });
+
+  it("does not close fence on line with trailing info string", () => {
+    const markdown = [
+      "```",
+      "```js",
+      "some code",
+      "```",
+    ].join("\n");
+
+    expect(formatPreviewMarkdown(markdown)).toBe(markdown);
+  });
+
+  it("does not close tilde fence on line with trailing content", () => {
+    const markdown = [
+      "~~~",
+      "~~~note",
+      "some text",
+      "~~~",
+    ].join("\n");
+
+    expect(formatPreviewMarkdown(markdown)).toBe(markdown);
+  });
+
   it("preserves paragraph prose", () => {
     const markdown = [
       "This is a normal paragraph with enough context to read like prose rather than a compact",

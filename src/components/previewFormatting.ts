@@ -3,6 +3,7 @@ const MARKDOWN_TABLE_LINE = /^\|.+\|$|^:?-{3,}:?(?:\s*\|\s*:?-{3,}:?)*$/;
 const HEADING_PUNCTUATION = /[.!?;:]$/;
 const METADATA_LABEL = /^([A-Za-z][A-Za-z0-9/&()' -]{1,42}):\s+(.+)$/;
 const LINKISH_VALUE = /(https?:\/\/|www\.|@|(?:\+?\d[\d()\s-]{6,}\d))/i;
+const INDENTED_CODE_LINE = /^(?: {4}|\t)/;
 
 function isStructuralLine(line: string) {
   return MARKDOWN_STRUCTURAL_LINE.test(line) || MARKDOWN_TABLE_LINE.test(line);
@@ -106,6 +107,10 @@ function formatDenseBlock(lines: string[]) {
   return renderedLines;
 }
 
+function isValidClosingFence(trimmed: string): boolean {
+  return /^[`~]+\s*$/.test(trimmed);
+}
+
 export function formatPreviewMarkdown(markdown: string) {
   const lines = markdown.split(/\r?\n/);
   const formatted: string[] = [];
@@ -134,14 +139,14 @@ export function formatPreviewMarkdown(markdown: string) {
         continue;
       }
 
-      if (char === fenceChar) {
-        // Closing the fence with a matching marker
+      if (char === fenceChar && isValidClosingFence(trimmed)) {
+        // Closing the fence with a matching marker (no trailing info string)
         fenceChar = null;
         formatted.push(line);
         continue;
       }
 
-      // Mismatched fence marker inside a code block — pass through
+      // Mismatched marker or has trailing content — pass through inside fence
       formatted.push(line);
       continue;
     }
@@ -154,6 +159,13 @@ export function formatPreviewMarkdown(markdown: string) {
     if (trimmed.length === 0) {
       flushBlock();
       formatted.push("");
+      continue;
+    }
+
+    // Indented code blocks (4+ spaces or tab) bypass dense-block formatting
+    if (INDENTED_CODE_LINE.test(line)) {
+      flushBlock();
+      formatted.push(line);
       continue;
     }
 
@@ -185,7 +197,7 @@ function collapseBlankLinesOutsideFences(text: string): string {
       const char = fenceMatch[1][0];
       if (fence === null) {
         fence = char;
-      } else if (char === fence) {
+      } else if (char === fence && isValidClosingFence(trimmed)) {
         fence = null;
       }
       consecutiveBlanks = 0;
