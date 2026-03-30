@@ -1,22 +1,30 @@
 import "@testing-library/jest-dom/vitest";
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 
 const { convertFileMock } = vi.hoisted(() => ({
-  convertFileMock: vi.fn()
+  convertFileMock: vi.fn(),
 }));
 
 vi.mock("./converters", () => ({
   convertFile: convertFileMock,
-  getFileExtension: (fileName: string) => fileName.split(".").pop()?.toLowerCase() ?? ""
+  getFileExtension: (fileName: string) =>
+    fileName.split(".").pop()?.toLowerCase() ?? "",
 }));
 
 function createSuccessResult(markdown: string) {
   return {
     markdown,
     warnings: [],
-    status: "success" as const
+    status: "success" as const,
   };
 }
 
@@ -35,37 +43,90 @@ describe("App", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: "Document to Markdown, without leaving the browser."
-      })
+        name: "Edit or convert to Markdown, without leaving the browser.",
+      }),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByText("Private by design: your files never leave your browser")
+      screen.getByText(
+        "Private by design: your files never leave your browser",
+      ),
     ).toBeInTheDocument();
   });
 
   it("renders the current empty upload, file-list, and preview states", () => {
     render(<App />);
 
-    expect(screen.getByText("Drop files to convert")).toBeInTheDocument();
-    expect(screen.getByText("No files yet.")).toBeInTheDocument();
-    expect(screen.getAllByText("Drop files to convert.")).toHaveLength(2);
     expect(
-      screen.getByText("Converted Markdown will render here once a file is ready for review.")
+      screen.getByText("Drop files or start writing."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("No files or drafts yet.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Start with writing or drop a file."),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Download selected" })
+      screen.getByRole("button", { name: "Start writing" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Open the editor to paste or write Markdown from scratch, or convert a document and review the result here.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Download selected" }),
     ).toBeDisabled();
   });
 
+  it("supports editor-first scratch drafts without uploads", async () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Start writing" }));
+
+    expect(
+      await screen.findByRole("button", { name: /untitled\.md/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("textbox", { name: "Edit markdown" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Download selected" }),
+    ).toBeDisabled();
+    expect(screen.getByText("1 draft")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Edit markdown" }), {
+      target: { value: "# Planning Notes\n\nBody" },
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: /planning notes/i }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText("Draft is ready to preview and download."),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Download selected" }),
+      ).toBeEnabled();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+
+    expect(
+      screen.getByRole("heading", { name: "Planning Notes" }),
+    ).toBeInTheDocument();
+  });
+
   it("supports upload, selection, preview readiness, and download state changes", async () => {
-    const pendingResolvers = new Map<string, (value: ReturnType<typeof createSuccessResult>) => void>();
+    const pendingResolvers = new Map<
+      string,
+      (value: ReturnType<typeof createSuccessResult>) => void
+    >();
 
     convertFileMock.mockImplementation(
       (file: File) =>
         new Promise((resolve) => {
           pendingResolvers.set(file.name, resolve);
-        })
+        }),
     );
 
     const { container } = render(<App />);
@@ -75,14 +136,20 @@ describe("App", () => {
 
     fireEvent.change(input!, {
       target: {
-        files: [createFile("alpha.txt"), createFile("beta.txt")]
-      }
+        files: [createFile("alpha.txt"), createFile("beta.txt")],
+      },
     });
 
-    expect(await screen.findByRole("button", { name: /alpha\.txt/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /beta\.txt/i })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: /alpha\.txt/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /beta\.txt/i }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent("Converting locally.");
-    expect(screen.getByRole("button", { name: "Download selected" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Download selected" }),
+    ).toBeDisabled();
 
     await act(async () => {
       pendingResolvers.get("alpha.txt")?.(createSuccessResult("# Alpha"));
@@ -91,9 +158,11 @@ describe("App", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Alpha" })).toBeInTheDocument();
       expect(
-        screen.getByRole("button", { name: "Download selected" })
+        screen.getByRole("heading", { name: "Alpha" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Download selected" }),
       ).toBeEnabled();
     });
 

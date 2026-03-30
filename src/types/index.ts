@@ -8,7 +8,7 @@ export const SUPPORTED_FORMATS = [
   "docx",
   "xlsx",
   "pdf",
-  "pptx"
+  "pptx",
 ] as const;
 
 export type SupportedFormat = (typeof SUPPORTED_FORMATS)[number];
@@ -30,4 +30,5 @@ export interface FileEntry {
   editedMarkdown?: string;
   warnings: string[];
   selected: boolean;
+  isScratch?: boolean;
 }

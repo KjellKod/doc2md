@@ -11,16 +11,19 @@ export function createMarkdownFileName(fileName: string) {
 }
 
 export function isDownloadableEntry(
-  entry: FileEntry | null | undefined
+  entry: FileEntry | null | undefined,
 ): entry is FileEntry {
   return Boolean(
-    entry && (entry.status === "success" || entry.status === "warning")
+    entry &&
+    (entry.status === "success" || entry.status === "warning") &&
+    (!entry.isScratch ||
+      (entry.editedMarkdown ?? entry.markdown).trim().length > 0),
   );
 }
 
 function downloadMarkdownFile(fileName: string, markdown: string) {
   const markdownBlob = new globalThis.Blob([markdown], {
-    type: "text/markdown;charset=utf-8"
+    type: "text/markdown;charset=utf-8",
   });
   const objectUrl = globalThis.URL.createObjectURL(markdownBlob);
   const link = document.createElement("a");

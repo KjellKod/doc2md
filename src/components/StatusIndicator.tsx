@@ -2,6 +2,7 @@ import type { ConversionStatus } from "../types";
 
 interface StatusIndicatorProps {
   status: ConversionStatus;
+  label?: string;
 }
 
 const statusLabels: Record<ConversionStatus, string> = {
@@ -9,14 +10,17 @@ const statusLabels: Record<ConversionStatus, string> = {
   converting: "Converting",
   success: "Ready",
   warning: "Review",
-  error: "Needs attention"
+  error: "Needs attention",
 };
 
-export default function StatusIndicator({ status }: StatusIndicatorProps) {
+export default function StatusIndicator({
+  status,
+  label,
+}: StatusIndicatorProps) {
   return (
     <span className={`status-indicator status-${status}`}>
       <span className="status-dot" aria-hidden="true" />
-      {statusLabels[status]}
+      {label ?? statusLabels[status]}
     </span>
   );
 }

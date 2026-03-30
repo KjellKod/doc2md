@@ -1,14 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { OVERSIZED_FILE_MESSAGE, TIMEOUT_MESSAGE } from "../converters/messages";
+import {
+  OVERSIZED_FILE_MESSAGE,
+  TIMEOUT_MESSAGE,
+} from "../converters/messages";
 import type { FileEntry } from "../types";
 import {
   applyConversionResult,
   createEntryId,
   createPendingEntries,
   createPendingEntry,
+  createScratchEntry,
   getConversionFailureWarning,
   markEntryConverting,
-  markEntryError
+  markEntryError,
 } from "./useFileConversion.helpers";
 
 function createFile(name: string) {
@@ -25,14 +29,14 @@ function createEntry(overrides: Partial<FileEntry> = {}): FileEntry {
     markdown: "",
     warnings: [],
     selected: true,
-    ...overrides
+    ...overrides,
   };
 }
 
 describe("useFileConversion helpers", () => {
   it("creates stable entry ids from normalized file names when seeds are provided", () => {
     expect(createEntryId("Quarterly Report (Final).DOCX", 2, 1234, 42)).toBe(
-      "quarterly-report-final-docx-1234-2-42"
+      "quarterly-report-final-docx-1234-2-42",
     );
   });
 
@@ -41,30 +45,47 @@ describe("useFileConversion helpers", () => {
       name: "notes.md",
       format: "md",
       status: "pending",
-      selected: true
+      selected: true,
     });
   });
 
   it("selects the first new pending entry only when there is no existing selection", () => {
     expect(
-      createPendingEntries([createFile("alpha.txt"), createFile("beta.txt")], false).map(
-        (entry) => entry.selected
-      )
+      createPendingEntries(
+        [createFile("alpha.txt"), createFile("beta.txt")],
+        false,
+      ).map((entry) => entry.selected),
     ).toEqual([true, false]);
 
     expect(
-      createPendingEntries([createFile("alpha.txt"), createFile("beta.txt")], true).map(
-        (entry) => entry.selected
-      )
+      createPendingEntries(
+        [createFile("alpha.txt"), createFile("beta.txt")],
+        true,
+      ).map((entry) => entry.selected),
     ).toEqual([false, false]);
+  });
+
+  it("creates a scratch entry ready for editing", () => {
+    expect(createScratchEntry()).toMatchObject({
+      name: "Untitled.md",
+      format: "md",
+      status: "success",
+      markdown: "",
+      editedMarkdown: "",
+      warnings: [],
+      selected: true,
+      isScratch: true,
+    });
   });
 
   it("marks entries as converting and clears warnings", () => {
     expect(
-      markEntryConverting(createEntry({ status: "pending", warnings: ["old warning"] }))
+      markEntryConverting(
+        createEntry({ status: "pending", warnings: ["old warning"] }),
+      ),
     ).toMatchObject({
       status: "converting",
-      warnings: []
+      warnings: [],
     });
   });
 
@@ -73,30 +94,37 @@ describe("useFileConversion helpers", () => {
       applyConversionResult(createEntry(), {
         markdown: "# Converted",
         warnings: ["review this"],
-        status: "warning"
-      })
+        status: "warning",
+      }),
     ).toMatchObject({
       markdown: "# Converted",
       warnings: ["review this"],
-      status: "warning"
+      status: "warning",
     });
   });
 
   it("maps timeout failures separately from generic conversion failures", () => {
     const timeoutError = new Error("timeout");
 
-    expect(getConversionFailureWarning(timeoutError, timeoutError)).toBe(TIMEOUT_MESSAGE);
+    expect(getConversionFailureWarning(timeoutError, timeoutError)).toBe(
+      TIMEOUT_MESSAGE,
+    );
     expect(getConversionFailureWarning(new Error("bad"), timeoutError)).toBe(
-      "We couldn't read this file. It may be corrupted or use a structure not supported by this tool."
+      "We couldn't read this file. It may be corrupted or use a structure not supported by this tool.",
     );
   });
 
   it("marks entries as failed with the provided warning", () => {
-    expect(markEntryError(createEntry({ markdown: "# Old" }), OVERSIZED_FILE_MESSAGE)).toEqual({
+    expect(
+      markEntryError(
+        createEntry({ markdown: "# Old" }),
+        OVERSIZED_FILE_MESSAGE,
+      ),
+    ).toEqual({
       ...createEntry({ markdown: "# Old" }),
       markdown: "",
       warnings: [OVERSIZED_FILE_MESSAGE],
-      status: "error"
+      status: "error",
     });
   });
 });

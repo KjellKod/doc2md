@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { FileEntry } from "../types";
-import { downloadEntry } from "./download";
+import { downloadEntry, isDownloadableEntry } from "./download";
 
 function createEntry(overrides: Partial<FileEntry> = {}): FileEntry {
   return {
@@ -12,7 +12,7 @@ function createEntry(overrides: Partial<FileEntry> = {}): FileEntry {
     markdown: "# Original",
     warnings: [],
     selected: true,
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -23,7 +23,7 @@ describe("downloadEntry", () => {
     href: "",
     download: "",
     click: vi.fn(),
-    remove: vi.fn()
+    remove: vi.fn(),
   };
 
   beforeEach(() => {
@@ -43,11 +43,11 @@ describe("downloadEntry", () => {
     globalThis.URL.revokeObjectURL = vi.fn();
 
     vi.spyOn(document, "createElement").mockReturnValue(
-      mockLink as unknown as HTMLAnchorElement
+      mockLink as unknown as HTMLAnchorElement,
     );
 
     vi.spyOn(document.body, "append").mockImplementation(
-      () => mockLink as unknown as HTMLAnchorElement
+      () => mockLink as unknown as HTMLAnchorElement,
     );
   });
 
@@ -73,7 +73,7 @@ describe("downloadEntry", () => {
 
   it("uses editedMarkdown over markdown even when both present", () => {
     downloadEntry(
-      createEntry({ markdown: "# Original", editedMarkdown: "# Changed" })
+      createEntry({ markdown: "# Original", editedMarkdown: "# Changed" }),
     );
 
     expect(capturedContent[0]).toBe("# Changed");
@@ -90,7 +90,35 @@ describe("downloadEntry", () => {
 
     expect(mockLink.remove).toHaveBeenCalled();
     expect(globalThis.URL.revokeObjectURL).toHaveBeenCalledWith(
-      "blob:mock-url"
+      "blob:mock-url",
     );
+  });
+
+  it("does not treat empty scratch drafts as downloadable", () => {
+    expect(
+      isDownloadableEntry(
+        createEntry({
+          name: "Untitled.md",
+          format: "md",
+          markdown: "",
+          editedMarkdown: "",
+          isScratch: true,
+        }),
+      ),
+    ).toBe(false);
+  });
+
+  it("treats scratch drafts with content as downloadable", () => {
+    expect(
+      isDownloadableEntry(
+        createEntry({
+          name: "Untitled.md",
+          format: "md",
+          markdown: "",
+          editedMarkdown: "# Draft",
+          isScratch: true,
+        }),
+      ),
+    ).toBe(true);
   });
 });
