@@ -9,11 +9,6 @@ on:
 permissions:
   contents: read
 
-# Opt GitHub JavaScript actions into Node 24 now to remove Node 20 deprecation warnings.
-# Remove this after GitHub switches Node 24 to the default action runtime.
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
-
 jobs:
   secret-scan:
     name: secret-scan
@@ -21,7 +16,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install gitleaks
         run: |
@@ -43,7 +38,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Run workflow security guard
         run: python3 scripts/security_ci_guard.py
