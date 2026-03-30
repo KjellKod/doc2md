@@ -6,6 +6,7 @@ For the other perspective, see [Jean-Claude's Journal](../journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 007 | [Requiem: Repo Quality Cleanup](007-requiem-repo-quality-cleanup.md) | Burying indirect coverage, shallow App tests, and the part of the hook that no longer needed to be a secret |
 | 006 | [Requiem: UX Beautifying](006-requiem-ux-beautifying.md) | Burying vague wording, weak visual cues, and one footer link that looked too innocent |
 | 005 | [Requiem: MIT Client Follow-Up](005-requiem-mit-client-followup.md) | Burying implied architecture, hidden licensing, and a lint boundary leak |
 | 004 | [Requiem: PDF Formatting Intelligence](004-requiem-pdf-formatting.md) | Funeral rites for flat PDFs and reckless bullet heuristics |
