@@ -4,12 +4,12 @@
 
 ## Core docs
 
-- [README](./README.md)
-- [Architecture](./docs/architecture.md)
-- [Product Spec](./docs/product-spec.md)
-- [Testing](./docs/testing.md)
-- [Provenance](./docs/provenance.md)
-- [License](./LICENSE)
+- [README](https://raw.githubusercontent.com/KjellKod/doc2md/main/README.md)
+- [Architecture](https://raw.githubusercontent.com/KjellKod/doc2md/main/docs/architecture.md)
+- [Product Spec](https://raw.githubusercontent.com/KjellKod/doc2md/main/docs/product-spec.md)
+- [Testing](https://raw.githubusercontent.com/KjellKod/doc2md/main/docs/testing.md)
+- [Provenance](https://raw.githubusercontent.com/KjellKod/doc2md/main/docs/provenance.md)
+- [License](https://raw.githubusercontent.com/KjellKod/doc2md/main/LICENSE)
 
 ## Notes for LLMs
 
