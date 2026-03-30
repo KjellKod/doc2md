@@ -95,15 +95,10 @@ export function useFileConversion() {
       return;
     }
 
-    let nextEntries: FileEntry[] = [];
+    const hasSelection = entries.some((entry) => entry.selected);
+    const nextEntries = createPendingEntries(files, hasSelection);
 
-    setEntries((currentEntries) => {
-      const hasSelection = currentEntries.some((entry) => entry.selected);
-
-      nextEntries = createPendingEntries(files, hasSelection);
-
-      return [...currentEntries, ...nextEntries];
-    });
+    setEntries((currentEntries) => [...currentEntries, ...nextEntries]);
 
     void processWithConcurrencyLimit(nextEntries, 3);
   }

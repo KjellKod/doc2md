@@ -249,6 +249,36 @@ describe("useFileConversion", () => {
     expect(result.current.selectedEntry).toBeNull();
   });
 
+  it("converts re-added files after clearing entries", async () => {
+    convertFileMock.mockResolvedValue(createSuccessResult("# Converted"));
+
+    const { result } = renderHook(() => useFileConversion());
+    const file = createFile("repro.pdf");
+
+    act(() => {
+      result.current.addFiles([file]);
+    });
+
+    await waitFor(() => {
+      expect(result.current.entries[0]?.status).toBe("success");
+    });
+
+    act(() => {
+      result.current.clearEntries();
+    });
+
+    expect(result.current.entries).toEqual([]);
+
+    act(() => {
+      result.current.addFiles([file]);
+    });
+
+    await waitFor(() => {
+      expect(result.current.entries).toHaveLength(1);
+      expect(result.current.entries[0]?.status).toBe("success");
+    });
+  });
+
   it("discards late converter resolution after timeout", async () => {
     vi.useFakeTimers();
 
