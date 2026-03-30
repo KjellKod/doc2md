@@ -35,13 +35,23 @@ Open `http://localhost:5173/doc2md/` in your browser.
 * **Honest over magical** — PDFs degrade gracefully with clear warnings
 * **Simple over clever** — common cases handled well, no fake completeness
 
+## Architecture
+
+doc2md is a browser-only tool: conversion runs on the device, output stays local, and there is no backend, worker, or server path in the current product. See [docs/architecture.md](docs/architecture.md) for the bounded design and format limits.
+
 ## Documentation
 
+* [Architecture Note](docs/architecture.md) — browser-only data flow, stack, limits, and deployment model
 * [Product Specification](docs/product-spec.md) — full design, architecture, scope, and UX direction
+* [Provenance Guidance](docs/provenance.md) — lightweight attribution hygiene for future borrowed material
 * [Testing Strategy](docs/testing.md) — test coverage, fixtures, and manual review checklist
 * [Jean-Claude's Journal](docs/journal/) — engineering reflections from our resident platform agent
 * [Dexter's Journal](docs/dexter-journal/) — the other perspective
 
 ---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
 
 **doc2md** is built with [Quest](https://github.com/KjellKod/quest/blob/main/README.md) — vetted by [Dexter](docs/dexter-journal/) and narrated by [Jean-Claude](docs/journal/), for a deliberate and robust engineering tool. An initiative through CandidTalentEdge.

@@ -1,0 +1,18 @@
+# doc2md
+
+> Browser-only document to Markdown conversion. Files stay local in the normal flow.
+
+## Core docs
+
+- [README](./README.md)
+- [Architecture](./docs/architecture.md)
+- [Product Spec](./docs/product-spec.md)
+- [Testing](./docs/testing.md)
+- [Provenance](./docs/provenance.md)
+- [License](./LICENSE)
+
+## Notes for LLMs
+
+- This project is intentionally client-side first and privacy-forward.
+- Do not infer a backend, worker, queue, or API surface from this repo unless such code is explicitly added later.
+- PDF support is best-effort and text-first, not OCR.

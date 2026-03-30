@@ -2,6 +2,7 @@
 
 | Date | Quest | Outcome |
 |------|-------|---------|
+| 2026-03-29 | [mit-client-followup](mit-client-followup_2026-03-29.md) | Clarified browser-only architecture, surfaced MIT licensing, added provenance guidance, then polished with `llms.txt` and a lint-boundary fix. |
 | 2026-03-29 | [converter-consistency](converter-consistency_2026-03-29.md) | Fixed HTML nested list flattening, PDF bullet normalization, PDF line merging. 1 fix iteration after Reviewer B caught list-family bug. |
 | 2026-03-29 | [persona-depth](persona-depth_2026-03-29.md) | Deepened Jean-Claude and Dexter persona docs; refined Dexter's edge explicitly, clean dual-review pass. |
 | 2026-03-29 | [conversation-hooks](conversation-hooks_2026-03-29.md) | Added cross-agent conversation and journaling hooks to quest workflow. 3 inflection points, non-blocking. |

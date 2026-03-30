@@ -87,6 +87,7 @@ JC receives the structured content and wraps it in visual chrome:
 **Step 3 — Save:**
 
 JC saves to `docs/dexter-journal/NNN-requiem-<quest-slug>.md` with the standard metadata header. Attribution line at the bottom: `Content by Dexter. Rendered by Jean-Claude.`
+Immediately after saving, JC updates `docs/dexter-journal/README.md` with the matching newest-first index row. If earlier requiems are missing from the index, repair that drift in the same change.
 
 ### Requiem Visual Elements
 

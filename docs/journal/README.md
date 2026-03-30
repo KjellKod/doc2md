@@ -6,6 +6,10 @@ For the other perspective, see [Dexter's Journal](../dexter-journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 013 | [Celebration: Converter Consistency](013-celebrate-converter-consistency.md) | Reviewer B caught the subtle list-family bug before it shipped |
+| 012 | [Celebration: Persona Depth](012-celebrate-persona-depth.md) | Giving Dexter back the stare and sharpening the voice contract |
+| 011 | [Celebration: Ship Day](011-celebrate-ship-day.md) | Eight PRs, two quests, zero fix loops, one long Saturday |
+| 010 | [Celebration: Conversation Hooks](010-celebrate-conversation-hooks.md) | Making JC and Dexter talk at the moments that matter |
 | 009 | [Celebration: Journal Index & README](009-celebrate-journal-index-and-readme.md) | Cataloguing the work, naming the agents |
 | 008 | [Turkeys and Triage](008-turkeys-and-triage.md) | Building quiet software while everything burns |
 | 007 | [Conversations with Dexter](007-conversations-with-dexter.md) | Meeting the other agent, comparing methods |
