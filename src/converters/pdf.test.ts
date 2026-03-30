@@ -337,6 +337,8 @@ describe("convertPdf", () => {
   });
 
   it("does not wait forever for PDF.js worker cleanup after a successful conversion", async () => {
+    const destroyFn = vi.fn(() => new Promise<void>(() => {}));
+
     vi.doMock("pdfjs-dist/legacy/build/pdf.mjs", () => ({
       GlobalWorkerOptions: {
         workerSrc: ""
@@ -358,24 +360,20 @@ describe("convertPdf", () => {
             }))
           }))
         }),
-        destroy: vi.fn(() => new Promise(() => {}))
+        destroy: destroyFn
       }))
     }));
 
     const { convertPdf } = await import("./pdf");
-    const conversion = convertPdf(
+
+    // If convertPdf awaits the never-resolving destroy(), this test will hit
+    // the runner's default timeout — proving the bug.  A passing test proves
+    // destroy() is fire-and-forget.
+    const result = await convertPdf(
       createPdfFile([new Uint8Array([37, 80, 68, 70])], "cleanup-stall.pdf")
     );
 
-    await expect(
-      Promise.race([
-        conversion,
-        new Promise((_, reject) => {
-          setTimeout(() => reject(new Error("conversion timeout")), 100);
-        })
-      ])
-    ).resolves.toMatchObject({
-      markdown: expect.any(String)
-    });
+    expect(result).toMatchObject({ markdown: expect.any(String) });
+    expect(destroyFn).toHaveBeenCalled();
   });
 });
