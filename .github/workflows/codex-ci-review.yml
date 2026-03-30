@@ -28,6 +28,10 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.base.sha }}
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
       - name: Check API key availability
         id: check-key
         env:
@@ -88,18 +92,21 @@ jobs:
               -e '/{PLACEHOLDER_DIFF}/d' \
               .github/codex-review-prompt.md > /tmp/review-prompt.md
 
+      - name: Install Codex CLI
+        if: steps.check-key.outputs.skip != 'true'
+        run: npm install -g @openai/codex
+
       - name: AI Code Review
         if: steps.check-key.outputs.skip != 'true'
         id: review
         continue-on-error: true
-        uses: openai/codex-action@v1
-        with:
-          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          prompt-file: /tmp/review-prompt.md
-          sandbox: read-only
-          safety-strategy: drop-sudo
-          effort: high
-          output-file: /tmp/review-output.json
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          codex exec \
+            --sandbox read-only \
+            --output-last-message /tmp/review-output.json \
+            - < /tmp/review-prompt.md
 
       - name: Post inline review
         if: always() && steps.check-key.outputs.skip != 'true'
