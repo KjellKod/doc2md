@@ -399,14 +399,22 @@ a {
   transition:
     border-color 160ms ease,
     box-shadow 160ms ease,
+    background 160ms ease,
     transform 160ms ease;
 }
 
-.file-list-item:hover,
-.file-list-item.is-selected {
+.file-list-item:hover {
   border-color: rgba(23, 56, 76, 0.24);
   box-shadow: 0 14px 30px rgba(27, 39, 49, 0.06);
   transform: translateY(-1px);
+}
+
+.file-list-item.is-selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 14px 30px rgba(27, 39, 49, 0.06);
+  border-left: 3px solid var(--accent);
+  padding-left: 16px;
 }
 
 .file-list-item-top {
