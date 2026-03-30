@@ -37,7 +37,7 @@ Open `http://localhost:5173/doc2md/` in your browser.
 
 ## Architecture
 
-doc2md is a browser-only tool: conversion runs on the device, output stays local, and there is no backend, worker, or server path in the current product. See [docs/architecture.md](docs/architecture.md) for the bounded design and format limits.
+doc2md is a browser-only tool: conversion runs on the device, output stays local, and there is no backend, server-side worker, or server path in the current product. The PDF converter does use a browser-side PDF.js worker as an implementation detail. See [docs/architecture.md](docs/architecture.md) for the bounded design and format limits.
 
 ## Documentation
 
