@@ -23,16 +23,14 @@ export default function App() {
     <div className="app-shell">
       <main className="page">
         <header className="hero">
-          <p className="eyebrow">Local document conversion</p>
+          <p className="eyebrow">Private document conversion</p>
           <h1>Document to Markdown, without leaving the browser.</h1>
           <p className="hero-copy">
-            Drop in a file, convert it locally, review the result, and download
-            Markdown.
+            Drop in a file, convert it right here, review the result, and
+            download clean Markdown.
           </p>
           <div className="hero-meta" aria-label="Product highlights">
-            <span className="hero-pill">
-              Files are processed locally in your browser
-            </span>
+            <span className="hero-pill">Private by design: your files never leave your browser</span>
             <span className="hero-pill">
               Supports .md, .txt, .json, .csv, .tsv, .html, .docx, .xlsx, .pdf, and .pptx
             </span>
@@ -50,8 +48,8 @@ export default function App() {
               <div>
                 <h2 id="upload-title">Upload</h2>
                 <p className="panel-copy">
-                  Drop in supported documents, spreadsheets, PDFs, or decks and
-                  review the Markdown before downloading it.
+                  Drop in documents, spreadsheets, PDFs, or presentations and
+                  review the Markdown before downloading.
                 </p>
               </div>
             </div>

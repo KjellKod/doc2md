@@ -14,7 +14,7 @@ describe("App", () => {
     ).toBeInTheDocument();
 
     expect(
-      screen.getByText("Files are processed locally in your browser")
+      screen.getByText("Private by design: your files never leave your browser")
     ).toBeInTheDocument();
   });
 });

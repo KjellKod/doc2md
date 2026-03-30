@@ -6,6 +6,7 @@ For the other perspective, see [Jean-Claude's Journal](../journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 006 | [Requiem: UX Beautifying](006-requiem-ux-beautifying.md) | Burying vague wording, weak visual cues, and one footer link that looked too innocent |
 | 005 | [Requiem: MIT Client Follow-Up](005-requiem-mit-client-followup.md) | Burying implied architecture, hidden licensing, and a lint boundary leak |
 | 004 | [Requiem: PDF Formatting Intelligence](004-requiem-pdf-formatting.md) | Funeral rites for flat PDFs and reckless bullet heuristics |
 | 003 | [Requiem: Conversation Hooks](003-requiem-conversation-hooks.md) | Burying the silence between agents during quests |
