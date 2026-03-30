@@ -9,6 +9,11 @@ on:
 permissions:
   contents: read
 
+# Opt GitHub JavaScript actions into Node 24 now to remove Node 20 deprecation warnings.
+# Remove this after GitHub switches Node 24 to the default action runtime.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   ci:
     name: ci

@@ -12,6 +12,11 @@ concurrency:
   group: codex-review-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
+# Opt GitHub JavaScript actions into Node 24 now to remove Node 20 deprecation warnings.
+# Remove this after GitHub switches Node 24 to the default action runtime.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   codex-review:
     if: >-
@@ -30,7 +35,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Check API key availability
         id: check-key
