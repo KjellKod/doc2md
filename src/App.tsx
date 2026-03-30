@@ -61,7 +61,7 @@ export default function App() {
                 <p className="panel-copy">
                   {entries.length === 0
                     ? "No files yet."
-                    : `${entries.length} ${pluralize(entries.length, "file")}, ${completedCount} ready`}
+                    : `${completedCount} of ${entries.length} converted, ready to download`}
                 </p>
               </div>
               <DownloadButton entry={selectedEntry} />

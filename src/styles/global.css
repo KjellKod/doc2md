@@ -360,21 +360,8 @@ a {
 .file-list-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 2px 2px 0;
-}
-
-.file-list-summary {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 0.92rem;
-}
-
-.file-list-actions {
-  display: flex;
-  flex-wrap: wrap;
   gap: 10px;
+  padding: 2px 2px 0;
 }
 
 .file-list {
@@ -935,17 +922,19 @@ a {
 
   .panel-heading,
   .about-header,
-  .file-list-toolbar,
   .file-list-item-top {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .file-list-actions,
+  .file-list-toolbar {
+    flex-wrap: wrap;
+  }
+
   .download-button,
   .secondary-button,
   .ghost-button {
-    width: 100%;
+    width: auto;
   }
 
   .drop-zone {
