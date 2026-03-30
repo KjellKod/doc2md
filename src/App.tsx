@@ -21,7 +21,6 @@ export default function App() {
     selectedEntry,
     updateMarkdown,
   } = useFileConversion();
-  const completedCount = entries.filter(isDownloadableEntry).length;
   const convertedCount = entries.filter(
     (entry) => isDownloadableEntry(entry) && !entry.isScratch,
   ).length;
