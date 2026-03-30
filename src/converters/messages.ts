@@ -12,6 +12,9 @@ export const OVERSIZED_FILE_MESSAGE =
   "This file is too large for reliable in-browser conversion in this version.";
 export const EMPTY_FILE_MESSAGE = "This file appears to be empty.";
 export const MAX_BROWSER_FILE_SIZE_BYTES = 50 * 1024 * 1024;
+export const CONVERSION_TIMEOUT_MS = 60_000;
+export const TIMEOUT_MESSAGE =
+  "Conversion timed out. The file may be too complex for in-browser processing.";
 
 export function createErrorResult(message: string): ConversionResult {
   return {

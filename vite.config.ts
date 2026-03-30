@@ -6,6 +6,6 @@ export default defineConfig({
   base: "/doc2md/",
   test: {
     environment: "jsdom",
-    exclude: [".claude/**", "node_modules/**", "dist/**"]
+    exclude: [".claude/**", ".quest/**", ".worktrees/**", ".ws/**", "node_modules/**", "dist/**"]
   }
 });

@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { convertFile, getFileExtension } from "../converters";
 import {
+  CONVERSION_TIMEOUT_MS,
   CORRUPT_FILE_MESSAGE,
   MAX_BROWSER_FILE_SIZE_BYTES,
-  OVERSIZED_FILE_MESSAGE
+  OVERSIZED_FILE_MESSAGE,
+  TIMEOUT_MESSAGE
 } from "../converters/messages";
 import type { FileEntry } from "../types";
 
@@ -54,8 +56,14 @@ export function useFileConversion() {
       warnings: []
     }));
 
+    const timeoutError = new Error("conversion-timeout");
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
     try {
-      const result = await convertFile(entry.file);
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => reject(timeoutError), CONVERSION_TIMEOUT_MS);
+      });
+      const result = await Promise.race([convertFile(entry.file), timeoutPromise]);
 
       updateEntry(entry.id, (currentEntry) => ({
         ...currentEntry,
@@ -63,13 +71,17 @@ export function useFileConversion() {
         warnings: result.warnings,
         status: result.status
       }));
-    } catch {
+    } catch (error) {
       updateEntry(entry.id, (currentEntry) => ({
         ...currentEntry,
         markdown: "",
-        warnings: [CORRUPT_FILE_MESSAGE],
+        warnings: [error === timeoutError ? TIMEOUT_MESSAGE : CORRUPT_FILE_MESSAGE],
         status: "error"
       }));
+    } finally {
+      if (timeoutId !== undefined) {
+        clearTimeout(timeoutId);
+      }
     }
   }
 
