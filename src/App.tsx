@@ -30,7 +30,7 @@ export default function App() {
             download clean Markdown.
           </p>
           <div className="hero-meta" aria-label="Product highlights">
-            <span className="hero-pill">Your files never leave your browser</span>
+            <span className="hero-pill">Private by design: your files never leave your browser</span>
             <span className="hero-pill">
               Supports .md, .txt, .json, .csv, .tsv, .html, .docx, .xlsx, .pdf, and .pptx
             </span>
