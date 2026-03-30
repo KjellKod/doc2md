@@ -31,7 +31,7 @@ completed_date: 2026-03-30
 
 ## Current Baseline
 
-- Current audit artifact: [/Users/kjell/ws/extra/doc2md/.ws/repo-quality-audit.md](/Users/kjell/ws/extra/doc2md/.ws/repo-quality-audit.md)
+- Current audit artifact: `.ws/repo-quality-audit.md`
 - Current direct-test coverage: 17 of 34 production modules
 - Current baseline validation at spec time:
   - `npx vitest run`
@@ -46,11 +46,11 @@ completed_date: 2026-03-30
 1. Existing user-facing behavior remains unchanged unless a change is explicitly documented and approved.
 2. Before any structural refactor, characterization tests exist for the behavior being protected.
 3. Direct automated coverage is added for the current high-risk helper layer:
-   - `/Users/kjell/ws/extra/doc2md/src/converters/delimited.ts`
-   - `/Users/kjell/ws/extra/doc2md/src/converters/readBinary.ts`
-   - `/Users/kjell/ws/extra/doc2md/src/converters/readText.ts`
-   - `/Users/kjell/ws/extra/doc2md/src/converters/richText.ts`
-   - `/Users/kjell/ws/extra/doc2md/src/converters/office.ts` if practical without mock hell
+   - `src/converters/delimited.ts`
+   - `src/converters/readBinary.ts`
+   - `src/converters/readText.ts`
+   - `src/converters/richText.ts`
+   - `src/converters/office.ts` if practical without mock hell
 4. A stronger top-level UI flow test exists for the core user journey: upload/select/preview/download readiness.
 5. `useFileConversion.ts` is simplified or decomposed in a behavior-preserving way, with direct tests covering its protected behavior.
 6. Final validation passes using the repo’s real test command(s), and any test-count drift is explained in the quest artifacts.
@@ -65,7 +65,7 @@ completed_date: 2026-03-30
 **Work**:
 - Re-baseline the current Vitest suite at quest start and record the observed counts.
 - Add or strengthen characterization tests for:
-  - current timeout behavior in `/Users/kjell/ws/extra/doc2md/src/hooks/useFileConversion.ts`
+  - current timeout behavior in `src/hooks/useFileConversion.ts`
   - current top-level App flow behavior
   - current helper behavior where future refactors are planned
 
@@ -77,11 +77,11 @@ completed_date: 2026-03-30
 **Goal**: Add direct tests around shared parsing and file-I/O behavior that multiple converters depend on.
 
 **Target files**:
-- `/Users/kjell/ws/extra/doc2md/src/converters/delimited.ts`
-- `/Users/kjell/ws/extra/doc2md/src/converters/readBinary.ts`
-- `/Users/kjell/ws/extra/doc2md/src/converters/readText.ts`
-- `/Users/kjell/ws/extra/doc2md/src/converters/richText.ts`
-- `/Users/kjell/ws/extra/doc2md/src/converters/office.ts` if the mocking boundary stays reasonable
+- `src/converters/delimited.ts`
+- `src/converters/readBinary.ts`
+- `src/converters/readText.ts`
+- `src/converters/richText.ts`
+- `src/converters/office.ts` if the mocking boundary stays reasonable
 
 **Expected focus**:
 - malformed quoted-field handling
@@ -95,8 +95,8 @@ completed_date: 2026-03-30
 **Goal**: Raise confidence at the product boundary instead of only at leaf modules.
 
 **Target files**:
-- `/Users/kjell/ws/extra/doc2md/src/App.tsx`
-- `/Users/kjell/ws/extra/doc2md/src/App.test.tsx`
+- `src/App.tsx`
+- `src/App.test.tsx`
 - related UI files only as needed for stable testing
 
 **Expected focus**:
@@ -113,7 +113,7 @@ completed_date: 2026-03-30
 **Goal**: Reduce the maintenance pressure in `useFileConversion.ts` without changing its external behavior.
 
 **Primary target**:
-- `/Users/kjell/ws/extra/doc2md/src/hooks/useFileConversion.ts`
+- `src/hooks/useFileConversion.ts`
 
 **Refactor direction**:
 - Extract pure helpers where it improves readability or isolates queue/state logic
@@ -129,11 +129,11 @@ completed_date: 2026-03-30
 **Goal**: Apply small cleanup items that improve maintainability without changing behavior.
 
 **Candidate targets**:
-- `/Users/kjell/ws/extra/doc2md/src/converters/csv.ts`
-- `/Users/kjell/ws/extra/doc2md/src/converters/tsv.ts`
-- `/Users/kjell/ws/extra/doc2md/src/converters/json.ts`
-- `/Users/kjell/ws/extra/doc2md/src/types/index.ts`
-- `/Users/kjell/ws/extra/doc2md/src/components/FormatBadge.tsx`
+- `src/converters/csv.ts`
+- `src/converters/tsv.ts`
+- `src/converters/json.ts`
+- `src/types/index.ts`
+- `src/components/FormatBadge.tsx`
 
 **Examples**:
 - reduce duplicated catch/return structure
@@ -146,14 +146,14 @@ completed_date: 2026-03-30
 
 ### Critical Files
 
-- `/Users/kjell/ws/extra/doc2md/src/hooks/useFileConversion.ts` — refactor target, high behavioral sensitivity
-- `/Users/kjell/ws/extra/doc2md/src/hooks/useFileConversion.test.ts` — direct protection for hook behavior
-- `/Users/kjell/ws/extra/doc2md/src/App.test.tsx` — top-level product-flow coverage improvement
-- `/Users/kjell/ws/extra/doc2md/src/converters/delimited.ts` — shared parsing logic
-- `/Users/kjell/ws/extra/doc2md/src/converters/readBinary.ts` — shared binary I/O boundary
-- `/Users/kjell/ws/extra/doc2md/src/converters/readText.ts` — shared text I/O boundary
-- `/Users/kjell/ws/extra/doc2md/src/converters/richText.ts` — shared HTML/Google Docs transformation logic
-- `/Users/kjell/ws/extra/doc2md/src/converters/office.ts` — shared spreadsheet/document helper
+- `src/hooks/useFileConversion.ts` — refactor target, high behavioral sensitivity
+- `src/hooks/useFileConversion.test.ts` — direct protection for hook behavior
+- `src/App.test.tsx` — top-level product-flow coverage improvement
+- `src/converters/delimited.ts` — shared parsing logic
+- `src/converters/readBinary.ts` — shared binary I/O boundary
+- `src/converters/readText.ts` — shared text I/O boundary
+- `src/converters/richText.ts` — shared HTML/Google Docs transformation logic
+- `src/converters/office.ts` — shared spreadsheet/document helper
 
 ### Key Functions / Areas
 
@@ -185,7 +185,7 @@ completed_date: 2026-03-30
 - **Expected**: pass
 
 **Automated Test**: Hook protection
-- **File**: `/Users/kjell/ws/extra/doc2md/src/hooks/useFileConversion.test.ts`
+- **File**: `src/hooks/useFileConversion.test.ts`
 - **Run**: `npx vitest run src/hooks/useFileConversion.test.ts`
 - **Covers**: timeout behavior, queue progression, future added selection/edit regression tests
 - **Mocking**: mock converter boundary only
@@ -193,7 +193,7 @@ completed_date: 2026-03-30
 
 **Automated Test**: Helper-layer tests
 - **Files**:
-  - `/Users/kjell/ws/extra/doc2md/src/converters/*.test.ts`
+  - `src/converters/*.test.ts`
   - new direct helper tests as added
 - **Run**: targeted `npx vitest run <file>` during implementation and full suite before close
 - **Covers**: parsing, I/O, transformation behavior
@@ -201,7 +201,7 @@ completed_date: 2026-03-30
 - **Expected**: pass
 
 **Automated Test**: App flow test
-- **File**: `/Users/kjell/ws/extra/doc2md/src/App.test.tsx`
+- **File**: `src/App.test.tsx`
 - **Run**: `npx vitest run src/App.test.tsx`
 - **Covers**: top-level interaction path
 - **Expected**: pass and meaningfully exercise current product flow
