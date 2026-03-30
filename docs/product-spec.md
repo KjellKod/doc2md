@@ -34,8 +34,9 @@ The core product story is:
 
 ## Supported input formats
 
+* `.md` — pass-through with normalization
 * `.docx` — via mammoth.js + turndown
-* `.xlsx` — via SheetJS, one table per sheet
+* `.xlsx` — via read-excel-file, one table per sheet
 * `.pdf` — via PDF.js, text PDFs only, with quality detection
 * `.csv` / `.tsv` — native parsing, Markdown tables
 * `.pptx` — via JSZip XML parsing (experimental)
@@ -51,7 +52,7 @@ Users can upload multiple files of different formats in one session. Each file c
 
 ### In scope
 
-* Client-side conversion for all 9 supported formats
+* Client-side conversion for all 10 supported formats
 * Mixed-format batch upload
 * Per-file conversion status
 * Markdown preview (react-markdown + remark-gfm)
@@ -88,7 +89,7 @@ When a PDF is uploaded, the system attempts text extraction, detects whether usa
 * **React + TypeScript + Vite** — static frontend, GitHub Pages deployment
 * **mammoth.js** — .docx to semantic HTML
 * **turndown** — HTML to Markdown
-* **SheetJS** — .xlsx parsing
+* **read-excel-file** — .xlsx parsing
 * **PDF.js** — PDF text extraction
 * **JSZip** — .pptx unpacking
 * **react-markdown + remark-gfm** — Markdown preview rendering

@@ -4,10 +4,10 @@ Testing should be practical and confidence-building, not performative.
 
 ## Current coverage
 
-57 tests across 12 test files. Run with:
+158 tests across 25 test files. Run with:
 
 ```bash
-npm test -- --run
+npx vitest run --exclude '.worktrees/**'
 ```
 
 ## Unit tests
@@ -27,12 +27,15 @@ npm test -- --run
 
 ## Smoke tests (`src/__tests__/smoke.test.ts`)
 
-13 scenarios covering:
+15 scenarios covering:
 
-1. Each of the 9 supported formats converts correctly
+1. 9 representative conversion formats convert correctly in an end-to-end smoke pass
 2. Mixed-format batch conversion works independently
-3. Unsupported format returns clear error
-4. Empty file returns appropriate message
+3. Concurrent batches do not stall
+4. Unsupported format returns clear error
+5. Empty file returns appropriate message
+
+`.md` is covered separately by its dedicated converter unit test rather than the smoke fixture set.
 
 ## Test fixtures
 
