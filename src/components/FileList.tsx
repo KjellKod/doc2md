@@ -13,17 +13,17 @@ export default function FileList({
   entries,
   onClearAll,
   onDownloadAll,
-  onSelect
+  onSelect,
 }: FileListProps) {
   const readyCount = entries.filter(isDownloadableEntry).length;
 
   if (entries.length === 0) {
     return (
       <div className="empty-state">
-        <p className="empty-state-title">Drop files to convert.</p>
+        <p className="empty-state-title">Drop files or start writing.</p>
         <p className="empty-state-copy">
-          Supported files convert one by one, stay in this browser session, and
-          keep their own Markdown output.
+          Uploaded files convert one by one, and scratch drafts stay beside them
+          in the same browser session.
         </p>
       </div>
     );
@@ -40,11 +40,7 @@ export default function FileList({
         >
           Download All
         </button>
-        <button
-          type="button"
-          className="ghost-button"
-          onClick={onClearAll}
-        >
+        <button type="button" className="ghost-button" onClick={onClearAll}>
           Clear All
         </button>
       </div>

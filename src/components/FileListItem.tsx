@@ -1,5 +1,5 @@
 import type { FileEntry } from "../types";
-import { displayName } from "../utils/displayName";
+import { entryDisplayName } from "../utils/displayName";
 import FormatBadge from "./FormatBadge";
 import StatusIndicator from "./StatusIndicator";
 
@@ -9,9 +9,18 @@ interface FileListItemProps {
 }
 
 export default function FileListItem({ entry, onSelect }: FileListItemProps) {
+  const hasScratchContent =
+    entry.isScratch &&
+    (entry.editedMarkdown ?? entry.markdown).trim().length > 0;
   const notice =
     entry.warnings[0] ??
-    (entry.status === "success" ? "Markdown is ready to review." : "");
+    (entry.isScratch
+      ? hasScratchContent
+        ? "Draft is ready to preview and download."
+        : "Start writing to enable download."
+      : entry.status === "success"
+        ? "Markdown is ready to review."
+        : "");
 
   return (
     <li>
@@ -22,10 +31,15 @@ export default function FileListItem({ entry, onSelect }: FileListItemProps) {
       >
         <div className="file-list-item-top">
           <div className="file-list-item-name-group">
-            <span className="file-list-item-name">{displayName(entry.name)}</span>
+            <span className="file-list-item-name">
+              {entryDisplayName(entry)}
+            </span>
             <FormatBadge format={entry.format} />
           </div>
-          <StatusIndicator status={entry.status} />
+          <StatusIndicator
+            status={entry.status}
+            label={entry.isScratch ? "Draft" : undefined}
+          />
         </div>
         <p className="file-list-item-copy">{notice}</p>
       </button>

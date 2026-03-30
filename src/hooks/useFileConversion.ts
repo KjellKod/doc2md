@@ -8,10 +8,11 @@ import {
 import type { FileEntry } from "../types";
 import {
   applyConversionResult,
+  createScratchEntry,
   createPendingEntries,
   getConversionFailureWarning,
   markEntryConverting,
-  markEntryError
+  markEntryError,
 } from "./useFileConversion.helpers";
 
 export function useFileConversion() {
@@ -19,14 +20,14 @@ export function useFileConversion() {
 
   function updateEntry(id: string, updater: (entry: FileEntry) => FileEntry) {
     setEntries((currentEntries) =>
-      currentEntries.map((entry) => (entry.id === id ? updater(entry) : entry))
+      currentEntries.map((entry) => (entry.id === id ? updater(entry) : entry)),
     );
   }
 
   async function processEntry(entry: FileEntry) {
     if (entry.file.size > MAX_BROWSER_FILE_SIZE_BYTES) {
       updateEntry(entry.id, (currentEntry) =>
-        markEntryError(currentEntry, OVERSIZED_FILE_MESSAGE)
+        markEntryError(currentEntry, OVERSIZED_FILE_MESSAGE),
       );
       return;
     }
@@ -38,14 +39,25 @@ export function useFileConversion() {
 
     try {
       const timeoutPromise = new Promise<never>((_, reject) => {
-        timeoutId = setTimeout(() => reject(timeoutError), CONVERSION_TIMEOUT_MS);
+        timeoutId = setTimeout(
+          () => reject(timeoutError),
+          CONVERSION_TIMEOUT_MS,
+        );
       });
-      const result = await Promise.race([convertFile(entry.file), timeoutPromise]);
+      const result = await Promise.race([
+        convertFile(entry.file),
+        timeoutPromise,
+      ]);
 
-      updateEntry(entry.id, (currentEntry) => applyConversionResult(currentEntry, result));
+      updateEntry(entry.id, (currentEntry) =>
+        applyConversionResult(currentEntry, result),
+      );
     } catch (error) {
       updateEntry(entry.id, (currentEntry) =>
-        markEntryError(currentEntry, getConversionFailureWarning(error, timeoutError))
+        markEntryError(
+          currentEntry,
+          getConversionFailureWarning(error, timeoutError),
+        ),
       );
     } finally {
       if (timeoutId !== undefined) {
@@ -54,7 +66,10 @@ export function useFileConversion() {
     }
   }
 
-  async function processWithConcurrencyLimit(entriesToProcess: FileEntry[], limit: number) {
+  async function processWithConcurrencyLimit(
+    entriesToProcess: FileEntry[],
+    limit: number,
+  ) {
     const queue = [...entriesToProcess];
     const active: Promise<void>[] = [];
 
@@ -93,12 +108,22 @@ export function useFileConversion() {
     void processWithConcurrencyLimit(nextEntries, 3);
   }
 
+  function addScratchEntry() {
+    setEntries((currentEntries) => [
+      ...currentEntries.map((entry) => ({
+        ...entry,
+        selected: false,
+      })),
+      createScratchEntry(),
+    ]);
+  }
+
   function selectEntry(id: string) {
     setEntries((currentEntries) =>
       currentEntries.map((entry) => ({
         ...entry,
-        selected: entry.id === id
-      }))
+        selected: entry.id === id,
+      })),
     );
   }
 
@@ -115,9 +140,10 @@ export function useFileConversion() {
   return {
     entries,
     addFiles,
+    addScratchEntry,
     clearEntries,
     selectEntry,
     selectedEntry,
-    updateMarkdown
+    updateMarkdown,
   };
 }

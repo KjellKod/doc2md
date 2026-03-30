@@ -6,24 +6,25 @@ import {
   CONVERSION_TIMEOUT_MS,
   MAX_BROWSER_FILE_SIZE_BYTES,
   OVERSIZED_FILE_MESSAGE,
-  TIMEOUT_MESSAGE
+  TIMEOUT_MESSAGE,
 } from "../converters/messages";
 import { useFileConversion } from "./useFileConversion";
 
 const { convertFileMock } = vi.hoisted(() => ({
-  convertFileMock: vi.fn()
+  convertFileMock: vi.fn(),
 }));
 
 vi.mock("../converters", () => ({
   convertFile: convertFileMock,
-  getFileExtension: (fileName: string) => fileName.split(".").pop()?.toLowerCase() ?? ""
+  getFileExtension: (fileName: string) =>
+    fileName.split(".").pop()?.toLowerCase() ?? "",
 }));
 
 function createSuccessResult(markdown: string) {
   return {
     markdown,
     warnings: [],
-    status: "success" as const
+    status: "success" as const,
   };
 }
 
@@ -35,7 +36,7 @@ function createOversizedFile(name: string) {
   const file = createFile(name);
 
   Object.defineProperty(file, "size", {
-    value: MAX_BROWSER_FILE_SIZE_BYTES + 1
+    value: MAX_BROWSER_FILE_SIZE_BYTES + 1,
   });
 
   return file;
@@ -99,7 +100,9 @@ describe("useFileConversion", () => {
 
     await waitFor(() => {
       expect(result.current.entries[0]?.status).toBe("error");
-      expect(result.current.entries[0]?.warnings).toEqual([CORRUPT_FILE_MESSAGE]);
+      expect(result.current.entries[0]?.warnings).toEqual([
+        CORRUPT_FILE_MESSAGE,
+      ]);
     });
   });
 
@@ -112,7 +115,9 @@ describe("useFileConversion", () => {
 
     await waitFor(() => {
       expect(result.current.entries[0]?.status).toBe("error");
-      expect(result.current.entries[0]?.warnings).toEqual([OVERSIZED_FILE_MESSAGE]);
+      expect(result.current.entries[0]?.warnings).toEqual([
+        OVERSIZED_FILE_MESSAGE,
+      ]);
     });
 
     expect(convertFileMock).not.toHaveBeenCalled();
@@ -120,13 +125,16 @@ describe("useFileConversion", () => {
 
   it("selects the first added entry and lets users switch selection", async () => {
     convertFileMock.mockImplementation((file: File) =>
-      Promise.resolve(createSuccessResult(`# ${file.name}`))
+      Promise.resolve(createSuccessResult(`# ${file.name}`)),
     );
 
     const { result } = renderHook(() => useFileConversion());
 
     act(() => {
-      result.current.addFiles([createFile("first.txt"), createFile("second.txt")]);
+      result.current.addFiles([
+        createFile("first.txt"),
+        createFile("second.txt"),
+      ]);
     });
 
     await waitFor(() => {
@@ -169,6 +177,57 @@ describe("useFileConversion", () => {
     expect(result.current.entries[0]?.editedMarkdown).toBe("# Edited");
   });
 
+  it("creates a selected scratch entry without uploading a file", () => {
+    const { result } = renderHook(() => useFileConversion());
+
+    act(() => {
+      result.current.addScratchEntry();
+    });
+
+    expect(result.current.entries).toHaveLength(1);
+    expect(result.current.entries[0]).toMatchObject({
+      name: "Untitled.md",
+      format: "md",
+      status: "success",
+      markdown: "",
+      editedMarkdown: "",
+      selected: true,
+      isScratch: true,
+    });
+    expect(result.current.selectedEntry?.id).toBe(
+      result.current.entries[0]?.id,
+    );
+  });
+
+  it("selects the scratch entry even when another file is already selected", async () => {
+    convertFileMock.mockResolvedValue(createSuccessResult("# Converted"));
+
+    const { result } = renderHook(() => useFileConversion());
+
+    act(() => {
+      result.current.addFiles([createFile("existing.txt")]);
+    });
+
+    await waitFor(() => {
+      expect(result.current.entries).toHaveLength(1);
+    });
+
+    act(() => {
+      result.current.addScratchEntry();
+    });
+
+    expect(result.current.entries).toHaveLength(2);
+    expect(result.current.entries[0]?.selected).toBe(false);
+    expect(result.current.entries[1]).toMatchObject({
+      name: "Untitled.md",
+      selected: true,
+      isScratch: true,
+    });
+    expect(result.current.selectedEntry?.id).toBe(
+      result.current.entries[1]?.id,
+    );
+  });
+
   it("clears all entries and resets the selection", async () => {
     convertFileMock.mockResolvedValue(createSuccessResult("# Converted"));
 
@@ -201,7 +260,7 @@ describe("useFileConversion", () => {
       () =>
         new Promise((resolve) => {
           resolveConversion = resolve;
-        })
+        }),
     );
 
     const { result } = renderHook(() => useFileConversion());
@@ -243,7 +302,7 @@ describe("useFileConversion", () => {
         createFile("first.txt"),
         createFile("second.txt"),
         createFile("third.txt"),
-        createFile("fourth.txt")
+        createFile("fourth.txt"),
       ]);
     });
 
@@ -271,7 +330,7 @@ describe("useFileConversion", () => {
         createFile("first.txt"),
         createFile("second.txt"),
         createFile("third.txt"),
-        createFile("fourth.txt")
+        createFile("fourth.txt"),
       ]);
     });
 

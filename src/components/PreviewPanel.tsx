@@ -2,29 +2,46 @@ import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { FileEntry } from "../types";
-import { displayName } from "../utils/displayName";
+import { entryDisplayName } from "../utils/displayName";
 import ErrorMessage from "./ErrorMessage";
 import { formatPreviewMarkdown } from "./previewFormatting";
 
 interface PreviewPanelProps {
   entry: FileEntry | null;
   onMarkdownChange?: (markdown: string) => void;
+  onStartWriting?: () => void;
 }
 
-export default function PreviewPanel({ entry, onMarkdownChange }: PreviewPanelProps) {
+export default function PreviewPanel({
+  entry,
+  onMarkdownChange,
+  onStartWriting,
+}: PreviewPanelProps) {
   const [mode, setMode] = useState<"edit" | "preview">("preview");
 
   useEffect(() => {
-    setMode("preview");
-  }, [entry?.id]);
+    setMode(entry?.isScratch ? "edit" : "preview");
+  }, [entry?.id, entry?.isScratch]);
 
   if (!entry) {
     return (
       <div className="preview-empty-state">
-        <p className="empty-state-title">Drop files to convert.</p>
+        <p className="empty-state-title">Start with writing or drop a file.</p>
         <p className="empty-state-copy">
-          Converted Markdown will render here once a file is ready for review.
+          Open the editor to paste or write Markdown from scratch, or convert a
+          document and review the result here.
         </p>
+        {onStartWriting ? (
+          <div className="empty-state-actions">
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={onStartWriting}
+            >
+              Start writing
+            </button>
+          </div>
+        ) : null}
       </div>
     );
   }
@@ -35,7 +52,7 @@ export default function PreviewPanel({ entry, onMarkdownChange }: PreviewPanelPr
         <span className="loading-orb" aria-hidden="true" />
         <p className="empty-state-title">Converting locally.</p>
         <p className="empty-state-copy">
-          Preparing a Markdown preview for {displayName(entry.name)}.
+          Preparing a Markdown preview for {entryDisplayName(entry)}.
         </p>
       </div>
     );
@@ -45,7 +62,11 @@ export default function PreviewPanel({ entry, onMarkdownChange }: PreviewPanelPr
     return <ErrorMessage message={entry.warnings[0] ?? "Conversion failed."} />;
   }
 
-  if (entry.markdown.length === 0) {
+  const effectiveMarkdown = entry.editedMarkdown ?? entry.markdown;
+  const canEditFromEmptyState =
+    entry.isScratch || entry.editedMarkdown !== undefined;
+
+  if (entry.markdown.length === 0 && !canEditFromEmptyState) {
     return (
       <div className="preview-empty-state">
         <p className="empty-state-title">No Markdown output.</p>
@@ -56,16 +77,19 @@ export default function PreviewPanel({ entry, onMarkdownChange }: PreviewPanelPr
     );
   }
 
-  const effectiveMarkdown = entry.editedMarkdown ?? entry.markdown;
   const previewMarkdown = formatPreviewMarkdown(effectiveMarkdown);
   const showToggle =
     (entry.status === "success" || entry.status === "warning") &&
-    entry.markdown.length > 0;
+    (entry.markdown.length > 0 || canEditFromEmptyState);
 
   return (
     <div className="preview-body">
       {showToggle ? (
-        <div className="preview-toggle" role="group" aria-label="Edit or preview mode">
+        <div
+          className="preview-toggle"
+          role="group"
+          aria-label="Edit or preview mode"
+        >
           <button
             type="button"
             className={`preview-toggle-button${mode === "edit" ? " is-active" : ""}`}
@@ -102,7 +126,9 @@ export default function PreviewPanel({ entry, onMarkdownChange }: PreviewPanelPr
         />
       ) : (
         <div className="markdown-surface">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{previewMarkdown}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {previewMarkdown}
+          </ReactMarkdown>
         </div>
       )}
     </div>

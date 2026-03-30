@@ -14,7 +14,7 @@ function createEntry(overrides: Partial<FileEntry> = {}): FileEntry {
     markdown: "# Hello World",
     warnings: [],
     selected: true,
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -32,13 +32,15 @@ describe("PreviewPanel", () => {
             "Location: Chihuahua, Mexico",
             "Email: javier@example.com",
             "LinkedIn: https://example.com/in/javier",
-            "Github: https://github.com/javier"
-          ].join("\n")
+            "Github: https://github.com/javier",
+          ].join("\n"),
         })}
-      />
+      />,
     );
 
-    expect(screen.getByRole("heading", { name: "Contact" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Contact" }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("list")).toBeInTheDocument();
     expect(screen.getByText(/Location:/)).toBeInTheDocument();
     expect(screen.getByText(/Email:/)).toBeInTheDocument();
@@ -53,7 +55,9 @@ describe("PreviewPanel", () => {
 
   it("renders toggle buttons when entry is warning with markdown", () => {
     render(
-      <PreviewPanel entry={createEntry({ status: "warning", warnings: ["Some warning"] })} />
+      <PreviewPanel
+        entry={createEntry({ status: "warning", warnings: ["Some warning"] })}
+      />,
     );
 
     expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
@@ -62,27 +66,47 @@ describe("PreviewPanel", () => {
   it("does not render toggle when entry is null", () => {
     render(<PreviewPanel entry={null} />);
 
-    expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Edit" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows the start-writing action in the empty state when provided", () => {
+    const onStartWriting = vi.fn();
+
+    render(<PreviewPanel entry={null} onStartWriting={onStartWriting} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Start writing" }));
+
+    expect(onStartWriting).toHaveBeenCalledTimes(1);
   });
 
   it("does not render toggle when entry is pending", () => {
     render(<PreviewPanel entry={createEntry({ status: "pending" })} />);
 
-    expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Edit" }),
+    ).not.toBeInTheDocument();
   });
 
   it("does not render toggle when entry is converting", () => {
     render(<PreviewPanel entry={createEntry({ status: "converting" })} />);
 
-    expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Edit" }),
+    ).not.toBeInTheDocument();
   });
 
   it("does not render toggle when entry is error", () => {
     render(
-      <PreviewPanel entry={createEntry({ status: "error", warnings: ["Failed"] })} />
+      <PreviewPanel
+        entry={createEntry({ status: "error", warnings: ["Failed"] })}
+      />,
     );
 
-    expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Edit" }),
+    ).not.toBeInTheDocument();
   });
 
   it("starts in preview mode showing rendered markdown", () => {
@@ -120,7 +144,7 @@ describe("PreviewPanel", () => {
     render(<PreviewPanel entry={createEntry()} onMarkdownChange={onChange} />);
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     fireEvent.change(screen.getByRole("textbox"), {
-      target: { value: "# Hello World!" }
+      target: { value: "# Hello World!" },
     });
 
     expect(onChange).toHaveBeenCalledWith("# Hello World!");
@@ -128,7 +152,7 @@ describe("PreviewPanel", () => {
 
   it("displays editedMarkdown when present in preview mode", () => {
     render(
-      <PreviewPanel entry={createEntry({ editedMarkdown: "# Edited" })} />
+      <PreviewPanel entry={createEntry({ editedMarkdown: "# Edited" })} />,
     );
 
     expect(screen.getByText("Edited")).toBeInTheDocument();
@@ -136,7 +160,7 @@ describe("PreviewPanel", () => {
 
   it("displays editedMarkdown in textarea when in edit mode", () => {
     render(
-      <PreviewPanel entry={createEntry({ editedMarkdown: "# Edited" })} />
+      <PreviewPanel entry={createEntry({ editedMarkdown: "# Edited" })} />,
     );
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
 
@@ -147,12 +171,34 @@ describe("PreviewPanel", () => {
     const markdown = [
       "Contact",
       "Location: Chihuahua, Mexico",
-      "Email: javier@example.com"
+      "Email: javier@example.com",
     ].join("\n");
 
     render(<PreviewPanel entry={createEntry({ markdown })} />);
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
 
     expect(screen.getByRole("textbox")).toHaveValue(markdown);
+  });
+
+  it("opens scratch entries directly in edit mode even with empty markdown", () => {
+    render(
+      <PreviewPanel
+        entry={createEntry({
+          name: "Untitled.md",
+          format: "md",
+          markdown: "",
+          editedMarkdown: "",
+          isScratch: true,
+        })}
+      />,
+    );
+
+    expect(
+      screen.getByRole("textbox", { name: "Edit markdown" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Edit" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
   });
 });
