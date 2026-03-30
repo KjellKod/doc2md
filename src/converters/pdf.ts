@@ -483,7 +483,9 @@ export const convertPdf: Converter = async (file) => {
     };
   } finally {
     if (loadingTask && typeof loadingTask.destroy === "function") {
-      await loadingTask.destroy();
+      void loadingTask.destroy().catch(() => {
+        // Cleanup should not block or change the user-visible conversion result.
+      });
     }
   }
 };

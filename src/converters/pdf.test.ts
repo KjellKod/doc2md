@@ -335,4 +335,47 @@ describe("convertPdf", () => {
       status: "error"
     });
   });
+
+  it("does not wait forever for PDF.js worker cleanup after a successful conversion", async () => {
+    vi.doMock("pdfjs-dist/legacy/build/pdf.mjs", () => ({
+      GlobalWorkerOptions: {
+        workerSrc: ""
+      },
+      getDocument: vi.fn(() => ({
+        promise: Promise.resolve({
+          numPages: 1,
+          getPage: vi.fn(async () => ({
+            getTextContent: vi.fn(async () => ({
+              items: [
+                {
+                  str:
+                    "Readable PDF content that should convert cleanly with enough text to satisfy the quality threshold.",
+                  transform: [12, 0, 0, 12, 0, 720],
+                  fontName: "f1",
+                  hasEOL: true
+                }
+              ]
+            }))
+          }))
+        }),
+        destroy: vi.fn(() => new Promise(() => {}))
+      }))
+    }));
+
+    const { convertPdf } = await import("./pdf");
+    const conversion = convertPdf(
+      createPdfFile([new Uint8Array([37, 80, 68, 70])], "cleanup-stall.pdf")
+    );
+
+    await expect(
+      Promise.race([
+        conversion,
+        new Promise((_, reject) => {
+          setTimeout(() => reject(new Error("conversion timeout")), 100);
+        })
+      ])
+    ).resolves.toMatchObject({
+      markdown: expect.any(String)
+    });
+  });
 });
