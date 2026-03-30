@@ -52,6 +52,9 @@ describe("App", () => {
         "Private by design: your files never leave your browser",
       ),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Switch to day mode" }),
+    ).toBeInTheDocument();
   });
 
   it("renders the current empty upload, file-list, and preview states", () => {
@@ -171,5 +174,29 @@ describe("App", () => {
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "Beta" })).toBeInTheDocument();
     });
+  });
+
+  it("toggles between day and night mode", () => {
+    render(<App />);
+
+    const toggle = screen.getByRole("button", { name: "Switch to day mode" });
+
+    expect(document.documentElement.dataset.theme).toBe("dark");
+
+    fireEvent.click(toggle);
+
+    expect(document.documentElement.dataset.theme).toBeUndefined();
+    expect(
+      screen.getByRole("button", { name: "Switch to night mode" }),
+    ).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Switch to night mode" }),
+    );
+
+    expect(document.documentElement.dataset.theme).toBe("dark");
+    expect(
+      screen.getByRole("button", { name: "Switch to day mode" }),
+    ).toHaveAttribute("aria-pressed", "true");
   });
 });

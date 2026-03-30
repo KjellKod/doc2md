@@ -3,6 +3,8 @@ import DownloadButton from "./components/DownloadButton";
 import DropZone from "./components/DropZone";
 import FileList from "./components/FileList";
 import PreviewPanel from "./components/PreviewPanel";
+import ThemeProvider from "./components/ThemeProvider";
+import ThemeToggle from "./components/ThemeToggle";
 import { entryDisplayName } from "./utils/displayName";
 import { useFileConversion } from "./hooks/useFileConversion";
 import { downloadAllEntries, isDownloadableEntry } from "./utils/download";
@@ -60,86 +62,95 @@ export default function App() {
         `${entries.length} ${pluralize(entries.length, "entry")} in session`;
 
   return (
-    <div className="app-shell">
-      <main className="page">
-        <header className="hero">
-          <p className="eyebrow">Private markdown workspace</p>
-          <h1>Edit or convert to Markdown, without leaving the browser.</h1>
-          <p className="hero-copy">
-            Start with a blank draft, paste in existing content, or drop in a
-            file to convert locally before you review and download clean
-            Markdown.
-          </p>
-          <div className="hero-meta" aria-label="Product highlights">
-            <span className="hero-pill">
-              Private by design: your files never leave your browser
-            </span>
-            <span className="hero-pill">
-              Supports .md, .txt, .json, .csv, .tsv, .html, .docx, .xlsx, .pdf,
-              and .pptx
-            </span>
-            <span className="hero-pill">{heroSummary}</span>
-          </div>
-        </header>
-
-        <section className="workspace">
-          <section
-            className="panel sidebar-panel"
-            aria-labelledby="upload-title"
-          >
-            <div className="panel-heading">
-              <div>
-                <h2 id="upload-title">Upload</h2>
-                <p className="panel-copy">
-                  Drop in documents, spreadsheets, PDFs, or presentations, or
-                  start writing from scratch and keep everything in one session.
-                </p>
-              </div>
+    <ThemeProvider>
+      <div className="app-shell">
+        <main className="page">
+          <header className="hero">
+            <div className="hero-top">
+              <p className="eyebrow">Private markdown workspace</p>
+              <ThemeToggle />
             </div>
-            <DropZone onFilesAdded={addFiles} />
-
-            <div className="panel-heading panel-heading-tight">
-              <div>
-                <h2>Files</h2>
-                <p className="panel-copy">{fileSummary}</p>
-              </div>
-              <DownloadButton entry={selectedEntry} />
+            <h1>Edit or convert to Markdown, without leaving the browser.</h1>
+            <p className="hero-copy">
+              Start with a blank draft, paste in existing content, or drop in a
+              file to convert locally before you review and download clean
+              Markdown.
+            </p>
+            <div className="hero-meta" aria-label="Product highlights">
+              <span className="hero-pill">
+                Private by design: your files never leave your browser
+              </span>
+              <span className="hero-pill">
+                Supports .md, .txt, .json, .csv, .tsv, .html, .docx, .xlsx,
+                .pdf, and .pptx
+              </span>
+              <span className="hero-pill">{heroSummary}</span>
             </div>
+          </header>
 
-            <FileList
-              entries={entries}
-              onClearAll={clearEntries}
-              onDownloadAll={() => downloadAllEntries(entries)}
-              onSelect={selectEntry}
-            />
+          <section className="workspace">
+            <section
+              className="panel sidebar-panel"
+              aria-labelledby="upload-title"
+            >
+              <div className="panel-heading">
+                <div>
+                  <h2 id="upload-title">Upload</h2>
+                  <p className="panel-copy">
+                    Drop in documents, spreadsheets, PDFs, or presentations, or
+                    start writing from scratch and keep everything in one
+                    session.
+                  </p>
+                </div>
+              </div>
+
+              <DropZone onFilesAdded={addFiles} />
+
+              <div className="panel-heading panel-heading-tight">
+                <div>
+                  <h2>Files</h2>
+                  <p className="panel-copy">{fileSummary}</p>
+                </div>
+                <DownloadButton entry={selectedEntry} />
+              </div>
+
+              <FileList
+                entries={entries}
+                onClearAll={clearEntries}
+                onDownloadAll={() => downloadAllEntries(entries)}
+                onSelect={selectEntry}
+              />
+            </section>
+
+            <section
+              className="panel preview-panel"
+              aria-labelledby="preview-title"
+            >
+              <div className="panel-heading">
+                <div>
+                  <h2 id="preview-title">Preview</h2>
+                  <p className="panel-copy">
+                    {selectedEntry
+                      ? entryDisplayName(selectedEntry)
+                      : "Start writing, paste Markdown, or convert a file and review it here."}
+                  </p>
+                </div>
+              </div>
+              <PreviewPanel
+                entry={selectedEntry}
+                onStartWriting={addScratchEntry}
+                onMarkdownChange={(text) => {
+                  if (selectedEntry) {
+                    updateMarkdown(selectedEntry.id, text);
+                  }
+                }}
+              />
+            </section>
           </section>
 
-          <section
-            className="panel preview-panel"
-            aria-labelledby="preview-title"
-          >
-            <div className="panel-heading">
-              <div>
-                <h2 id="preview-title">Preview</h2>
-                <p className="panel-copy">
-                  {selectedEntry
-                    ? entryDisplayName(selectedEntry)
-                    : "Start writing, paste Markdown, or convert a file and review it here."}
-                </p>
-              </div>
-            </div>
-            <PreviewPanel
-              entry={selectedEntry}
-              onStartWriting={addScratchEntry}
-              onMarkdownChange={(text) => {
-                if (selectedEntry) updateMarkdown(selectedEntry.id, text);
-              }}
-            />
-          </section>
-        </section>
-
-        <AboutSection />
-      </main>
-    </div>
+          <AboutSection />
+        </main>
+      </div>
+    </ThemeProvider>
   );
 }
