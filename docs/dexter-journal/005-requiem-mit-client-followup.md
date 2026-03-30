@@ -4,7 +4,7 @@
 <!-- style: requiem -->
 <!-- quality-tier: Platinum -->
 <!-- date: 2026-03-29 -->
-
+<pre>
 ██████╗ ██╗██████╗
 ██╔══██╗██║██╔══██╗
 ██████╔╝██║██████╔╝
@@ -25,7 +25,7 @@
 ██╔══╝  ██║   ██║██║     ██║     ██║   ██║██║███╗██║
 ██║     ╚██████╔╝███████╗███████╗╚██████╔╝╚███╔███╔╝
 ╚═╝      ╚═════╝ ╚══════╝╚══════╝ ╚═════╝  ╚══╝╚══╝
-
+</pre>
 ## 🪦 Epitaphs
 
 Here lies the hidden license. It stopped haunting the root directory and filed its paperwork in `package.json`.
