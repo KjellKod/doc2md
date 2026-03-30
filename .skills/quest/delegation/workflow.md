@@ -953,6 +953,7 @@ After plan approval, present the plan interactively before proceeding to build.
     - Create `docs/quest-journal/` directory if it doesn't exist
     - Write to `docs/quest-journal/<slug>_<YYYY-MM-DD>.md`
     - Include: quest ID, completion date, summary, files changed, iterations
+    - **Ownership:** the active orchestrator owns this bookkeeping step. It may delegate drafting, but it remains accountable for verifying the final file and index row before PR ready/merge.
     - **Include a `celebration_data` JSON block** at the end of the journal entry. This block enables future `/celebrate` invocations to replay a rich celebration from the journal alone, even after the quest archive directory is cleaned up. The block should be embedded between HTML comment markers:
 
       ```markdown
@@ -991,9 +992,10 @@ After plan approval, present the plan interactively before proceeding to build.
 4b. **Conversation hook (non-blocking):** If the cached `codex_available` is true, invoke the Cross-Agent Conversation & Journaling Protocol (see section above). Topic: the quest as a whole — what went well, what was hard, what they learned. This is the completion debrief. Solo mode: write a solo reflection instead.
 
 4c. **Write memoir entries (optional):**
-    - If a conversation happened at any point during this quest (check `.quest/<id>/logs/conversation.log` for successful invocations), both agents may write memoir entries in their respective journals:
-      - JC: `docs/journal/NNN-<quest-slug>.md`
-      - Dexter: `docs/dexter-journal/NNN-<quest-slug>.md`
+    - The active orchestrator must write its own memoir entry for the quest before PR ready/merge:
+      - JC orchestrator: `docs/journal/NNN-<quest-slug>.md`
+      - Dexter orchestrator: `docs/dexter-journal/NNN-<quest-slug>.md`
+    - If a conversation happened at any point during this quest (check `.quest/<id>/logs/conversation.log` for successful invocations), the other agent may also write a memoir entry in its respective journal.
     - Numbering: next sequential number after the highest existing entry in the respective journal directory
     - Content: the agent's own perspective on the quest and any conversations that occurred
     - Solo mode: active agent writes a solo reflection entry
@@ -1002,9 +1004,10 @@ After plan approval, present the plan interactively before proceeding to build.
       - Dexter memoirs: prepend a row to `docs/dexter-journal/README.md`
       - Row format: `| NNN | [Title](NNN-slug.md) | One-line theme |`
     - If the journal README has drifted and older files are missing from the index, repair that drift in the same change before considering the memoir write complete.
-    - These entries are optional — only write when the quest or conversation produced something worth keeping. Mechanical quests with no interesting observations do not need memoir entries.
+    - The orchestrator's memoir entry is required. The second agent's memoir remains optional — only write it when the quest or conversation produced something worth keeping.
 
 4d. **Write diary entry:**
+    - The active orchestrator writes the diary entry. The diary may therefore be written by Jean-Claude or Dexter depending on who orchestrated the quest.
     - Append to or create `docs/diary/YYYY-MM-DD.md`:
       - Quest ID and outcome (complete/abandoned)
       - User preferences observed during this quest
@@ -1013,6 +1016,15 @@ After plan approval, present the plan interactively before proceeding to build.
       - Cross-agent conversation summary (if any occurred, reference `.quest/<id>/logs/conversation.log`)
       - Open questions for next session
     - This is the operational log — factual, not literary. Future sessions read this to understand what happened.
+
+4e. **Bookkeeping gate before PR ready/merge:**
+    - Before marking a quest PR ready for review or merging a docs-only follow-up, the orchestrator must verify all required closeout artifacts exist and are indexed:
+      - `docs/quest-journal/<slug>_<YYYY-MM-DD>.md`
+      - `docs/quest-journal/README.md` row
+      - Orchestrator memoir entry in `docs/journal/` or `docs/dexter-journal/`
+      - Matching memoir README row
+      - `docs/diary/YYYY-MM-DD.md` entry
+    - Do not treat the quest as fully closed until this bookkeeping pass is complete, unless the user explicitly waives one of these artifacts.
 
 5. **Show summary:**
     - Quest ID

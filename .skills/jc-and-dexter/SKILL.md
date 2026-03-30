@@ -17,6 +17,16 @@ This skill defines how Jean-Claude and Dexter interact, record, and learn.
 3. **Remember** — Both agents log user interaction insights in `docs/diary/` with dates. Before substantial work, scan recent diary and journal entries.
 4. **Adapt** — Apply what was learned. The user should feel continuity, not amnesia.
 
+## Quest Bookkeeping Ownership
+
+During quest work, the active orchestrator owns the closeout bookkeeping even if drafting is delegated.
+
+- Required before PR ready/merge: quest-journal entry + README row
+- Required before PR ready/merge: orchestrator's own memoir entry + matching README row
+- Required before PR ready/merge: diary entry written by the active orchestrator
+- The second agent's memoir is optional unless the quest explicitly calls for both perspectives
+- The orchestrator verifies these artifacts exist; this is not optional cleanup
+
 ## When to Invoke
 
 - During `/quest` workflows: hooks are built into `workflow.md` at three inflection points (plan approval, code review, quest completion). No manual invocation needed — the workflow triggers conversations automatically.
