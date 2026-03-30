@@ -997,6 +997,11 @@ After plan approval, present the plan interactively before proceeding to build.
     - Numbering: next sequential number after the highest existing entry in the respective journal directory
     - Content: the agent's own perspective on the quest and any conversations that occurred
     - Solo mode: active agent writes a solo reflection entry
+    - After writing any memoir entry, update the matching README index immediately:
+      - JC memoirs: prepend a row to `docs/journal/README.md`
+      - Dexter memoirs: prepend a row to `docs/dexter-journal/README.md`
+      - Row format: `| NNN | [Title](NNN-slug.md) | One-line theme |`
+    - If the journal README has drifted and older files are missing from the index, repair that drift in the same change before considering the memoir write complete.
     - These entries are optional — only write when the quest or conversation produced something worth keeping. Mechanical quests with no interesting observations do not need memoir entries.
 
 4d. **Write diary entry:**

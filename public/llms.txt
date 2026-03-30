@@ -1,0 +1,18 @@
+# doc2md
+
+> Browser-only document to Markdown conversion. Files stay local in the normal flow.
+
+## Core docs
+
+- [README](https://raw.githubusercontent.com/KjellKod/doc2md/main/README.md)
+- [Architecture](https://raw.githubusercontent.com/KjellKod/doc2md/main/docs/architecture.md)
+- [Product Spec](https://raw.githubusercontent.com/KjellKod/doc2md/main/docs/product-spec.md)
+- [Testing](https://raw.githubusercontent.com/KjellKod/doc2md/main/docs/testing.md)
+- [Provenance](https://raw.githubusercontent.com/KjellKod/doc2md/main/docs/provenance.md)
+- [License](https://raw.githubusercontent.com/KjellKod/doc2md/main/LICENSE)
+
+## Notes for LLMs
+
+- This project is intentionally client-side first and privacy-forward.
+- Do not infer a backend, worker, queue, or API surface from this repo unless such code is explicitly added later.
+- PDF support is best-effort and text-first, not OCR.

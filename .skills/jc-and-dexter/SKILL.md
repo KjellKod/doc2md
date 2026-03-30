@@ -49,6 +49,9 @@ After writing any journal or memoir entry, update the corresponding index:
 - Dexter entries: prepend a row to `docs/dexter-journal/README.md`
 - Row format: `| NNN | [Title](NNN-slug.md) | One-line theme |`
 - Indexes are newest-first. Prepend after the header row, not at the bottom.
+- This is mandatory, not optional. A journal entry is incomplete until its README index row exists.
+- Before prepending, scan the directory and README together. If earlier entries are missing from the index, repair that drift in the same change instead of adding one more orphaned entry.
+- Verify the saved file and README row agree on number, title, and relative link.
 
 ## Diary Entries (Operational Log)
 
