@@ -75,7 +75,7 @@ export default function DropZone({ onFilesAdded }: DropZoneProps) {
         }}
       />
 
-      <p className="drop-zone-kicker">Local conversion. No upload in the normal flow.</p>
+      <p className="drop-zone-kicker">Your files stay on your device. Nothing is uploaded.</p>
       <p className="drop-zone-title">Drop files to convert</p>
       <p className="drop-zone-copy">
         Drag in one or more files, or{" "}
@@ -84,6 +84,13 @@ export default function DropZone({ onFilesAdded }: DropZoneProps) {
           className="inline-button"
           onClick={openFilePicker}
         >
+          <svg
+            className="inline-button-icon"
+            viewBox="0 0 16 16"
+            aria-hidden="true"
+          >
+            <path d="M1.75 4.75a1.5 1.5 0 0 1 1.5-1.5H6l1.5 1.5h5.25a1.5 1.5 0 0 1 1.5 1.5v5a1.5 1.5 0 0 1-1.5 1.5h-9.5a1.5 1.5 0 0 1-1.5-1.5z" />
+          </svg>
           browse from your device
         </button>
         .
@@ -96,7 +103,7 @@ export default function DropZone({ onFilesAdded }: DropZoneProps) {
         ))}
       </div>
       <p className="drop-zone-note">
-        Supports mixed batches. Up to {maxSizeInMb} MB per file.
+        Mix different file types. Up to {maxSizeInMb} MB each.
       </p>
     </div>
   );

@@ -270,11 +270,26 @@ a {
 }
 
 .inline-button {
+  display: inline-flex;
+  align-items: center;
   padding: 0;
   border: 0;
   background: transparent;
   color: var(--accent);
   font-weight: 700;
+}
+
+.inline-button-icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.25em;
+  vertical-align: -0.15em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .inline-button:hover,
@@ -843,6 +858,20 @@ a {
 
 .about-tagline a:hover {
   color: var(--text-secondary);
+}
+
+.github-icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-left: 0.2em;
+  vertical-align: -0.15em;
+  fill: currentColor;
+}
+
+.about-tagline strong {
+  color: inherit;
+  font-weight: 700;
 }
 
 .visually-hidden {
