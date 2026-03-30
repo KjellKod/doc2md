@@ -360,21 +360,8 @@ a {
 .file-list-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 2px 2px 0;
-}
-
-.file-list-summary {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 0.92rem;
-}
-
-.file-list-actions {
-  display: flex;
-  flex-wrap: wrap;
   gap: 10px;
+  padding: 2px 2px 0;
 }
 
 .file-list {
@@ -399,14 +386,22 @@ a {
   transition:
     border-color 160ms ease,
     box-shadow 160ms ease,
+    background 160ms ease,
     transform 160ms ease;
 }
 
-.file-list-item:hover,
-.file-list-item.is-selected {
+.file-list-item:hover {
   border-color: rgba(23, 56, 76, 0.24);
   box-shadow: 0 14px 30px rgba(27, 39, 49, 0.06);
   transform: translateY(-1px);
+}
+
+.file-list-item.is-selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 14px 30px rgba(27, 39, 49, 0.06);
+  border-left: 3px solid var(--accent);
+  padding-left: 16px;
 }
 
 .file-list-item-top {
@@ -927,17 +922,19 @@ a {
 
   .panel-heading,
   .about-header,
-  .file-list-toolbar,
   .file-list-item-top {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .file-list-actions,
+  .file-list-toolbar {
+    flex-wrap: wrap;
+  }
+
   .download-button,
   .secondary-button,
   .ghost-button {
-    width: 100%;
+    width: auto;
   }
 
   .drop-zone {

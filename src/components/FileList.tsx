@@ -32,26 +32,21 @@ export default function FileList({
   return (
     <>
       <div className="file-list-toolbar">
-        <p className="file-list-summary">
-          {entries.length} in session, {readyCount} ready to download.
-        </p>
-        <div className="file-list-actions">
-          <button
-            type="button"
-            className="secondary-button"
-            disabled={readyCount === 0}
-            onClick={onDownloadAll}
-          >
-            Download All
-          </button>
-          <button
-            type="button"
-            className="ghost-button"
-            onClick={onClearAll}
-          >
-            Clear All
-          </button>
-        </div>
+        <button
+          type="button"
+          className="secondary-button"
+          disabled={readyCount === 0}
+          onClick={onDownloadAll}
+        >
+          Download All
+        </button>
+        <button
+          type="button"
+          className="ghost-button"
+          onClick={onClearAll}
+        >
+          Clear All
+        </button>
       </div>
 
       <ol className="file-list">
