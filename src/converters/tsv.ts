@@ -20,11 +20,7 @@ export const convertTsv: Converter = async (file) => {
       warnings: [],
       status: "success"
     };
-  } catch (error) {
-    if (error instanceof SyntaxError) {
-      return createErrorResult(CORRUPT_FILE_MESSAGE);
-    }
-
+  } catch {
     return createErrorResult(CORRUPT_FILE_MESSAGE);
   }
 };

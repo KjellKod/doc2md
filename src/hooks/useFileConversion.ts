@@ -1,34 +1,18 @@
 import { useState } from "react";
-import { convertFile, getFileExtension } from "../converters";
+import { convertFile } from "../converters";
 import {
   CONVERSION_TIMEOUT_MS,
-  CORRUPT_FILE_MESSAGE,
   MAX_BROWSER_FILE_SIZE_BYTES,
   OVERSIZED_FILE_MESSAGE,
-  TIMEOUT_MESSAGE
 } from "../converters/messages";
 import type { FileEntry } from "../types";
-
-function createEntryId(file: File, index: number) {
-  const normalizedName = file.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
-
-  return `${normalizedName}-${Date.now()}-${index}-${Math.round(Math.random() * 1_000_000)}`;
-}
-
-function createPendingEntry(file: File, index: number, selected: boolean): FileEntry {
-  const extension = getFileExtension(file.name);
-
-  return {
-    id: createEntryId(file, index),
-    file,
-    name: file.name,
-    format: extension || "unknown",
-    status: "pending",
-    markdown: "",
-    warnings: [],
-    selected
-  };
-}
+import {
+  applyConversionResult,
+  createPendingEntries,
+  getConversionFailureWarning,
+  markEntryConverting,
+  markEntryError
+} from "./useFileConversion.helpers";
 
 export function useFileConversion() {
   const [entries, setEntries] = useState<FileEntry[]>([]);
@@ -41,20 +25,13 @@ export function useFileConversion() {
 
   async function processEntry(entry: FileEntry) {
     if (entry.file.size > MAX_BROWSER_FILE_SIZE_BYTES) {
-      updateEntry(entry.id, (currentEntry) => ({
-        ...currentEntry,
-        markdown: "",
-        warnings: [OVERSIZED_FILE_MESSAGE],
-        status: "error"
-      }));
+      updateEntry(entry.id, (currentEntry) =>
+        markEntryError(currentEntry, OVERSIZED_FILE_MESSAGE)
+      );
       return;
     }
 
-    updateEntry(entry.id, (currentEntry) => ({
-      ...currentEntry,
-      status: "converting",
-      warnings: []
-    }));
+    updateEntry(entry.id, markEntryConverting);
 
     const timeoutError = new Error("conversion-timeout");
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -65,19 +42,11 @@ export function useFileConversion() {
       });
       const result = await Promise.race([convertFile(entry.file), timeoutPromise]);
 
-      updateEntry(entry.id, (currentEntry) => ({
-        ...currentEntry,
-        markdown: result.markdown,
-        warnings: result.warnings,
-        status: result.status
-      }));
+      updateEntry(entry.id, (currentEntry) => applyConversionResult(currentEntry, result));
     } catch (error) {
-      updateEntry(entry.id, (currentEntry) => ({
-        ...currentEntry,
-        markdown: "",
-        warnings: [error === timeoutError ? TIMEOUT_MESSAGE : CORRUPT_FILE_MESSAGE],
-        status: "error"
-      }));
+      updateEntry(entry.id, (currentEntry) =>
+        markEntryError(currentEntry, getConversionFailureWarning(error, timeoutError))
+      );
     } finally {
       if (timeoutId !== undefined) {
         clearTimeout(timeoutId);
@@ -116,9 +85,7 @@ export function useFileConversion() {
     setEntries((currentEntries) => {
       const hasSelection = currentEntries.some((entry) => entry.selected);
 
-      nextEntries = files.map((file, index) =>
-        createPendingEntry(file, index, !hasSelection && index === 0)
-      );
+      nextEntries = createPendingEntries(files, hasSelection);
 
       return [...currentEntries, ...nextEntries];
     });
