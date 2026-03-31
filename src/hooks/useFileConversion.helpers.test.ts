@@ -81,11 +81,19 @@ describe("useFileConversion helpers", () => {
   it("marks entries as converting and clears warnings", () => {
     expect(
       markEntryConverting(
-        createEntry({ status: "pending", warnings: ["old warning"] }),
+        createEntry({
+          status: "pending",
+          warnings: ["old warning"],
+          quality: {
+            level: "good",
+            summary: "Good: Selectable text detected. Layout looks straightforward.",
+          },
+        }),
       ),
     ).toMatchObject({
       status: "converting",
       warnings: [],
+      quality: undefined,
     });
   });
 
@@ -95,11 +103,21 @@ describe("useFileConversion helpers", () => {
         markdown: "# Converted",
         warnings: ["review this"],
         status: "warning",
+        quality: {
+          level: "review",
+          summary:
+            "Review: Text was extracted, but layout may be fragmented or out of reading order.",
+        },
       }),
     ).toMatchObject({
       markdown: "# Converted",
       warnings: ["review this"],
       status: "warning",
+      quality: {
+        level: "review",
+        summary:
+          "Review: Text was extracted, but layout may be fragmented or out of reading order.",
+      },
     });
   });
 
@@ -117,7 +135,14 @@ describe("useFileConversion helpers", () => {
   it("marks entries as failed with the provided warning", () => {
     expect(
       markEntryError(
-        createEntry({ markdown: "# Old" }),
+        createEntry({
+          markdown: "# Old",
+          quality: {
+            level: "poor",
+            summary:
+              "Poor: Little or no selectable text detected. This PDF may be scanned or image-based.",
+          },
+        }),
         OVERSIZED_FILE_MESSAGE,
       ),
     ).toEqual({
@@ -125,6 +150,7 @@ describe("useFileConversion helpers", () => {
       markdown: "",
       warnings: [OVERSIZED_FILE_MESSAGE],
       status: "error",
+      quality: undefined,
     });
   });
 });

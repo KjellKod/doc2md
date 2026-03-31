@@ -13,7 +13,7 @@ import {
   SCANNED_PDF_MESSAGE
 } from "./messages";
 import { readFileAsArrayBuffer } from "./readBinary";
-import type { Converter } from "./types";
+import type { ConversionQuality, Converter } from "./types";
 
 export const PDF_LOW_TEXT_MESSAGE = SCANNED_PDF_MESSAGE;
 export const PDF_LAYOUT_WARNING_MESSAGE = LOW_QUALITY_PDF_MESSAGE;
@@ -23,6 +23,9 @@ const LINE_BREAK_THRESHOLD = 4;
 const PARAGRAPH_GAP_FACTOR = 1.8;
 const BULLET_CHAR_PATTERN = /^[•➢▸▪◦○◆■●]/;
 const DASH_BULLET_PATTERN = /^[-–—]\s/;
+const SHORT_LINE_CHARACTER_THRESHOLD = 24;
+const POOR_PDF_QUALITY_SUMMARY =
+  "Poor: Little or no selectable text detected. This PDF may be scanned or image-based.";
 
 const H1_SIZE_DELTA = 8;
 const H2_SIZE_DELTA = 4;
@@ -322,7 +325,20 @@ function countMeaningfulCharacters(value: string) {
   return value.replace(/\s+/g, "").length;
 }
 
-export function classifyPdfQuality(pageTexts: string[]) {
+export interface PdfQualitySignals {
+  lowSelectableText: boolean;
+  sparseText: boolean;
+  fragmentedLines: boolean;
+}
+
+export interface PdfQualityAssessment {
+  status: "error" | "warning" | "success";
+  warnings: string[];
+  quality: ConversionQuality;
+  signals: PdfQualitySignals;
+}
+
+export function classifyPdfQuality(pageTexts: string[]): PdfQualityAssessment {
   const nonEmptyPages = pageTexts.filter((pageText) => pageText.trim().length > 0);
   const totalCharacters = pageTexts.reduce(
     (sum, pageText) => sum + countMeaningfulCharacters(pageText),
@@ -341,29 +357,57 @@ export function classifyPdfQuality(pageTexts: string[]) {
   const shortLineRatio =
     allLines.length === 0
       ? 0
-      : allLines.filter((line) => line.length < 24).length / allLines.length;
+      : allLines.filter((line) => line.length < SHORT_LINE_CHARACTER_THRESHOLD).length / allLines.length;
+  const lowSelectableText =
+    totalCharacters === 0 || averageCharactersPerPage < LOW_TEXT_CHARACTER_THRESHOLD;
+  const sparseText = averageCharactersPerPage < IMPERFECT_LAYOUT_CHARACTER_THRESHOLD;
+  const fragmentedLines =
+    averageCharactersPerLine < SHORT_LINE_CHARACTER_THRESHOLD || shortLineRatio > 0.75;
 
-  if (totalCharacters === 0 || averageCharactersPerPage < LOW_TEXT_CHARACTER_THRESHOLD) {
+  if (lowSelectableText) {
     return {
       status: "error" as const,
-      warnings: [PDF_LOW_TEXT_MESSAGE]
+      warnings: [PDF_LOW_TEXT_MESSAGE],
+      quality: {
+        level: "poor" as const,
+        summary: POOR_PDF_QUALITY_SUMMARY
+      },
+      signals: {
+        lowSelectableText,
+        sparseText,
+        fragmentedLines
+      }
     };
   }
 
-  if (
-    averageCharactersPerPage < IMPERFECT_LAYOUT_CHARACTER_THRESHOLD ||
-    averageCharactersPerLine < 24 ||
-    shortLineRatio > 0.75
-  ) {
+  if (sparseText || fragmentedLines) {
     return {
       status: "warning" as const,
-      warnings: [PDF_LAYOUT_WARNING_MESSAGE]
+      warnings: [PDF_LAYOUT_WARNING_MESSAGE],
+      quality: {
+        level: "review" as const,
+        summary: "Review: Text was extracted, but layout may be fragmented or out of reading order."
+      },
+      signals: {
+        lowSelectableText,
+        sparseText,
+        fragmentedLines
+      }
     };
   }
 
   return {
     status: "success" as const,
-    warnings: []
+    warnings: [],
+    quality: {
+      level: "good" as const,
+      summary: "Good: Selectable text detected. Layout looks straightforward."
+    },
+    signals: {
+      lowSelectableText,
+      sparseText,
+      fragmentedLines
+    }
   };
 }
 
@@ -466,20 +510,26 @@ export const convertPdf: Converter = async (file) => {
       return {
         markdown: "",
         warnings: quality.warnings,
-        status: "error"
+        status: "error",
+        quality: quality.quality
       };
     }
 
     return {
       markdown,
       warnings: quality.warnings,
-      status: quality.status
+      status: quality.status,
+      quality: quality.quality
     };
   } catch {
     return {
       markdown: "",
       warnings: [CORRUPT_FILE_MESSAGE],
-      status: "error"
+      status: "error",
+      quality: {
+        level: "poor",
+        summary: POOR_PDF_QUALITY_SUMMARY
+      }
     };
   } finally {
     if (loadingTask && typeof loadingTask.destroy === "function") {

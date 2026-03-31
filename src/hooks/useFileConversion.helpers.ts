@@ -59,6 +59,7 @@ export function markEntryConverting(entry: FileEntry): FileEntry {
     ...entry,
     status: "converting",
     warnings: [],
+    quality: undefined,
   };
 }
 
@@ -71,6 +72,7 @@ export function applyConversionResult(
     markdown: result.markdown,
     warnings: result.warnings,
     status: result.status,
+    quality: result.quality,
   };
 }
 
@@ -87,5 +89,6 @@ export function markEntryError(entry: FileEntry, warning: string): FileEntry {
     markdown: "",
     warnings: [warning],
     status: "error",
+    quality: undefined,
   };
 }

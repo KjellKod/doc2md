@@ -1,3 +1,5 @@
+import type { ConversionQuality } from "../converters/types";
+
 export const SUPPORTED_FORMATS = [
   "md",
   "txt",
@@ -29,6 +31,7 @@ export interface FileEntry {
   markdown: string;
   editedMarkdown?: string;
   warnings: string[];
+  quality?: ConversionQuality;
   selected: boolean;
   isScratch?: boolean;
 }

@@ -1,8 +1,15 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { ConversionQuality } from "../converters/types";
 import type { FileEntry } from "../types";
 import PreviewPanel from "./PreviewPanel";
+
+const REVIEW_QUALITY: ConversionQuality = {
+  level: "review",
+  summary:
+    "Review: Text was extracted, but layout may be fragmented or out of reading order.",
+};
 
 function createEntry(overrides: Partial<FileEntry> = {}): FileEntry {
   return {
@@ -107,6 +114,59 @@ describe("PreviewPanel", () => {
     expect(
       screen.queryByRole("button", { name: "Edit" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("shows the PDF quality indicator when a PDF entry includes quality metadata", () => {
+    render(
+      <PreviewPanel
+        entry={createEntry({
+          format: "pdf",
+          quality: REVIEW_QUALITY,
+        })}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "PDF quality: Review" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Review")).toBeInTheDocument();
+  });
+
+  it("does not show a PDF quality indicator for non-PDF entries", () => {
+    render(
+      <PreviewPanel
+        entry={createEntry({
+          format: "txt",
+          quality: REVIEW_QUALITY,
+        })}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: /PDF quality:/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows the poor-quality indicator in the PDF error path", () => {
+    render(
+      <PreviewPanel
+        entry={createEntry({
+          format: "pdf",
+          status: "error",
+          warnings: ["This PDF may be scanned."],
+          quality: {
+            level: "poor",
+            summary:
+              "Poor: Little or no selectable text detected. This PDF may be scanned or image-based.",
+          },
+        })}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "PDF quality: Poor" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("This PDF may be scanned.")).toBeInTheDocument();
   });
 
   it("starts in preview mode showing rendered markdown", () => {
