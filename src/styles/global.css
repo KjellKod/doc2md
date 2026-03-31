@@ -1030,6 +1030,23 @@ a {
   font-weight: 700;
 }
 
+.about-support {
+  margin: 4px 0 0;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.about-support a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: currentColor;
+  text-underline-offset: 2px;
+}
+
+.about-support a:hover {
+  color: var(--text-primary);
+}
+
 :root[data-theme="dark"] .hero-pill {
   background: rgba(27, 33, 40, 0.82);
 }
