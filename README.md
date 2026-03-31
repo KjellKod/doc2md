@@ -55,3 +55,5 @@ doc2md is a browser-only tool: conversion runs on the device, output stays local
 This project is licensed under the [MIT License](LICENSE).
 
 **doc2md** is built with [Quest](https://github.com/KjellKod/quest/blob/main/README.md) — vetted by [Dexter](docs/dexter-journal/) and narrated by [Jean-Claude](docs/journal/), for a deliberate and robust engineering tool. An initiative through CandidTalentEdge.
+
+If doc2md is useful in your workflow, [sponsor KjellKod on GitHub](https://github.com/sponsors/KjellKod).
