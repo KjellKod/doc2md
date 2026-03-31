@@ -86,6 +86,17 @@ export default function AboutSection() {
         </a>
         .
       </p>
+
+      <p className="about-support">
+        Is doc2md useful?{" "}
+        <a
+          href="https://github.com/sponsors/KjellKod"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Sponsor new features and bug fixes.
+        </a>
+      </p>
     </section>
   );
 }
