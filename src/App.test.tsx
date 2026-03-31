@@ -55,6 +55,9 @@ describe("App", () => {
     expect(
       screen.getByRole("button", { name: "Switch to day mode" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "sponsor ongoing work on GitHub" }),
+    ).toHaveAttribute("href", "https://github.com/sponsors/KjellKod");
   });
 
   it("renders the current empty upload, file-list, and preview states", () => {
