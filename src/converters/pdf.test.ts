@@ -22,6 +22,10 @@ function textItem(str: string, transform: number[], fontName: string, hasEOL = t
   return { str, transform, fontName, hasEOL, dir: "ltr" as const, width: 100, height: transform[0] };
 }
 
+function repeatedCharacters(length: number) {
+  return "x".repeat(length);
+}
+
 describe("renderPdfPageText", () => {
   it("classifies three distinct heading sizes into H1, H2, H3", async () => {
     const { renderPdfPageText } = await importPdfModule();
@@ -214,6 +218,149 @@ describe("mergePageTexts", () => {
   });
 });
 
+describe("classifyPdfQuality", () => {
+  it("returns poor quality when no meaningful text is detected", async () => {
+    const { classifyPdfQuality, PDF_LOW_TEXT_MESSAGE } = await importPdfModule();
+
+    expect(classifyPdfQuality(["", "  "])).toEqual({
+      status: "error",
+      warnings: [PDF_LOW_TEXT_MESSAGE],
+      quality: {
+        level: "poor",
+        summary:
+          "Poor: Little or no selectable text detected. This PDF may be scanned or image-based.",
+      },
+      signals: {
+        lowSelectableText: true,
+        sparseText: true,
+        fragmentedLines: true,
+      },
+    });
+  });
+
+  it("returns review quality for sparse fragmented text", async () => {
+    const { classifyPdfQuality, PDF_LAYOUT_WARNING_MESSAGE } =
+      await importPdfModule();
+
+    expect(
+      classifyPdfQuality([
+        "Short line\nTiny bit\nLoose row\nBrief text\nJagged block",
+        "Fragmented line\nMultiple rows\nAnother clipped sentence\nBroken layout",
+      ]),
+    ).toEqual({
+      status: "warning",
+      warnings: [PDF_LAYOUT_WARNING_MESSAGE],
+      quality: {
+        level: "review",
+        summary:
+          "Review: Text was extracted, but layout may be fragmented or out of reading order.",
+      },
+      signals: {
+        lowSelectableText: false,
+        sparseText: true,
+        fragmentedLines: true,
+      },
+    });
+  });
+
+  it("returns good quality for normal text density", async () => {
+    const { classifyPdfQuality } = await importPdfModule();
+    const pageText = [
+      "Readable content with enough words to feel like normal prose and avoid the sparse threshold.",
+      "Another paragraph with enough sentence structure to look straightforward for markdown conversion.",
+    ].join("\n");
+
+    expect(classifyPdfQuality([pageText])).toEqual({
+      status: "success",
+      warnings: [],
+      quality: {
+        level: "good",
+        summary: "Good: Selectable text detected. Layout looks straightforward.",
+      },
+      signals: {
+        lowSelectableText: false,
+        sparseText: false,
+        fragmentedLines: false,
+      },
+    });
+  });
+
+  it("treats the low-text threshold as poor below 50 chars/page and review at 50", async () => {
+    const { classifyPdfQuality } = await importPdfModule();
+
+    expect(classifyPdfQuality([repeatedCharacters(49)])).toMatchObject({
+      status: "error",
+      quality: { level: "poor" },
+    });
+
+    expect(classifyPdfQuality([repeatedCharacters(50)])).toMatchObject({
+      status: "warning",
+      quality: { level: "review" },
+    });
+  });
+
+  it("treats the layout-density threshold as review below 140 chars/page and good at 140", async () => {
+    const { classifyPdfQuality } = await importPdfModule();
+
+    expect(classifyPdfQuality([repeatedCharacters(139)])).toMatchObject({
+      status: "warning",
+      quality: { level: "review" },
+    });
+
+    expect(classifyPdfQuality([repeatedCharacters(140)])).toMatchObject({
+      status: "success",
+      quality: { level: "good" },
+    });
+  });
+
+  it("treats the average characters-per-line threshold as review below 24 and good at 24", async () => {
+    const { classifyPdfQuality } = await importPdfModule();
+    const linesAt23 = Array.from({ length: 7 }, () => repeatedCharacters(23)).join("\n");
+    const linesAt24 = Array.from({ length: 7 }, () => repeatedCharacters(24)).join("\n");
+
+    expect(classifyPdfQuality([linesAt23])).toMatchObject({
+      status: "warning",
+      quality: { level: "review" },
+      signals: { fragmentedLines: true },
+    });
+
+    expect(classifyPdfQuality([linesAt24])).toMatchObject({
+      status: "success",
+      quality: { level: "good" },
+      signals: { fragmentedLines: false },
+    });
+  });
+
+  it("treats the short-line ratio threshold as review above 0.75 and good at exactly 0.75", async () => {
+    const { classifyPdfQuality } = await importPdfModule();
+    const ratioAboveThreshold = [
+      repeatedCharacters(10),
+      repeatedCharacters(10),
+      repeatedCharacters(10),
+      repeatedCharacters(10),
+      repeatedCharacters(100),
+    ].join("\n");
+    const ratioAtThreshold = [
+      repeatedCharacters(10),
+      repeatedCharacters(10),
+      repeatedCharacters(10),
+      repeatedCharacters(110),
+    ].join("\n");
+
+    expect(classifyPdfQuality([ratioAboveThreshold])).toMatchObject({
+      status: "warning",
+      quality: { level: "review" },
+      signals: { fragmentedLines: true },
+    });
+
+    expect(classifyPdfQuality([ratioAtThreshold])).toMatchObject({
+      status: "success",
+      quality: { level: "good" },
+      signals: { fragmentedLines: false },
+    });
+  });
+});
+
 describe("convertPdf", () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -228,7 +375,11 @@ describe("convertPdf", () => {
 
     expect(result).toMatchObject({
       warnings: [],
-      status: "success"
+      status: "success",
+      quality: {
+        level: "good",
+        summary: "Good: Selectable text detected. Layout looks straightforward.",
+      },
     });
     expect(result.markdown).not.toContain("## Page ");
     expect(result.markdown).toContain("Sample PDF");
@@ -245,7 +396,12 @@ describe("convertPdf", () => {
     expect(result).toEqual({
       markdown: "",
       warnings: [PDF_LOW_TEXT_MESSAGE],
-      status: "error"
+      status: "error",
+      quality: {
+        level: "poor",
+        summary:
+          "Poor: Little or no selectable text detected. This PDF may be scanned or image-based.",
+      },
     });
   });
 
@@ -309,6 +465,11 @@ describe("convertPdf", () => {
 
     expect(result.status).toBe("warning");
     expect(result.warnings).toEqual([PDF_LAYOUT_WARNING_MESSAGE]);
+    expect(result.quality).toEqual({
+      level: "review",
+      summary:
+        "Review: Text was extracted, but layout may be fragmented or out of reading order.",
+    });
     expect(result.markdown).not.toContain("## Page ");
     expect(result.markdown).toContain("Sparse layout intro");
     expect(result.markdown).toContain("A fragmented second page");
@@ -332,7 +493,12 @@ describe("convertPdf", () => {
     expect(result).toEqual({
       markdown: "",
       warnings: [CORRUPT_FILE_MESSAGE],
-      status: "error"
+      status: "error",
+      quality: {
+        level: "poor",
+        summary:
+          "Poor: Could not assess PDF quality because this PDF could not be read.",
+      },
     });
   });
 

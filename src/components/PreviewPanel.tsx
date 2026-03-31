@@ -4,6 +4,7 @@ import remarkGfm from "remark-gfm";
 import type { FileEntry } from "../types";
 import { entryDisplayName } from "../utils/displayName";
 import ErrorMessage from "./ErrorMessage";
+import PdfQualityIndicator from "./PdfQualityIndicator";
 import { formatPreviewMarkdown } from "./previewFormatting";
 
 interface PreviewPanelProps {
@@ -59,6 +60,15 @@ export default function PreviewPanel({
   }
 
   if (entry.status === "error") {
+    if (entry.format === "pdf" && entry.quality) {
+      return (
+        <div className="preview-body">
+          <PdfQualityIndicator quality={entry.quality} />
+          <ErrorMessage message={entry.warnings[0] ?? "Conversion failed."} />
+        </div>
+      );
+    }
+
     return <ErrorMessage message={entry.warnings[0] ?? "Conversion failed."} />;
   }
 
@@ -81,6 +91,8 @@ export default function PreviewPanel({
   const showToggle =
     (entry.status === "success" || entry.status === "warning") &&
     (entry.markdown.length > 0 || canEditFromEmptyState);
+
+  const showQualityIndicator = entry.format === "pdf" && entry.quality;
 
   return (
     <div className="preview-body">
@@ -107,6 +119,10 @@ export default function PreviewPanel({
             Preview
           </button>
         </div>
+      ) : null}
+
+      {showQualityIndicator ? (
+        <PdfQualityIndicator quality={entry.quality!} />
       ) : null}
 
       {entry.warnings.length > 0 ? (
