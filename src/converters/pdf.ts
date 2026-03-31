@@ -26,6 +26,8 @@ const DASH_BULLET_PATTERN = /^[-–—]\s/;
 const SHORT_LINE_CHARACTER_THRESHOLD = 24;
 const POOR_PDF_QUALITY_SUMMARY =
   "Poor: Little or no selectable text detected. This PDF may be scanned or image-based.";
+const UNREADABLE_PDF_QUALITY_SUMMARY =
+  "Poor: Could not assess PDF quality because this PDF could not be read.";
 
 const H1_SIZE_DELTA = 8;
 const H2_SIZE_DELTA = 4;
@@ -528,7 +530,7 @@ export const convertPdf: Converter = async (file) => {
       status: "error",
       quality: {
         level: "poor",
-        summary: POOR_PDF_QUALITY_SUMMARY
+        summary: UNREADABLE_PDF_QUALITY_SUMMARY
       }
     };
   } finally {

@@ -497,7 +497,7 @@ describe("convertPdf", () => {
       quality: {
         level: "poor",
         summary:
-          "Poor: Little or no selectable text detected. This PDF may be scanned or image-based.",
+          "Poor: Could not assess PDF quality because this PDF could not be read.",
       },
     });
   });
