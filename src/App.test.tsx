@@ -56,7 +56,15 @@ describe("App", () => {
       screen.getByRole("button", { name: "Switch to day mode" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "sponsor ongoing work on GitHub" }),
+      screen.getByText((_, element) => {
+        return (
+          element?.textContent ===
+          "Is doc2md useful? Sponsor new features and bug fixes."
+        );
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Sponsor new features and bug fixes." }),
     ).toHaveAttribute("href", "https://github.com/sponsors/KjellKod");
   });
 

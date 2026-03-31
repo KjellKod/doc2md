@@ -88,15 +88,14 @@ export default function AboutSection() {
       </p>
 
       <p className="about-support">
-        If doc2md is useful in your workflow,{" "}
+        Is doc2md useful?{" "}
         <a
           href="https://github.com/sponsors/KjellKod"
           target="_blank"
           rel="noopener noreferrer"
         >
-          sponsor ongoing work on GitHub
+          Sponsor new features and bug fixes.
         </a>
-        .
       </p>
     </section>
   );
