@@ -11,6 +11,85 @@ import {
 import PdfQualityIndicator from "./PdfQualityIndicator";
 import { formatPreviewMarkdown } from "./previewFormatting";
 
+type LinkedInPreviewTone =
+  | "bold"
+  | "italic"
+  | "bold-italic"
+  | "underline"
+  | "strike";
+
+interface LinkedInPreviewSegment {
+  text: string;
+  tone: LinkedInPreviewTone | null;
+}
+
+const UNDERLINE_MARK = "\u0332";
+const STRIKE_MARK = "\u0336";
+
+function toneForLinkedInCluster(cluster: string): LinkedInPreviewTone | null {
+  if (cluster.includes(STRIKE_MARK)) {
+    return "strike";
+  }
+
+  if (cluster.includes(UNDERLINE_MARK)) {
+    return "underline";
+  }
+
+  const codePoint = cluster.codePointAt(0);
+
+  if (!codePoint) {
+    return null;
+  }
+
+  if (
+    (codePoint >= 0x1d400 && codePoint <= 0x1d433) ||
+    (codePoint >= 0x1d468 && codePoint <= 0x1d49b)
+  ) {
+    return codePoint >= 0x1d468 ? "bold-italic" : "bold";
+  }
+
+  if (
+    codePoint === 0x210e ||
+    (codePoint >= 0x1d434 && codePoint <= 0x1d467)
+  ) {
+    return "italic";
+  }
+
+  return null;
+}
+
+function segmentLinkedInPreview(text: string) {
+  const clusters: string[] = [];
+
+  for (const char of Array.from(text)) {
+    if (
+      (char === UNDERLINE_MARK || char === STRIKE_MARK) &&
+      clusters.length > 0
+    ) {
+      clusters[clusters.length - 1] += char;
+      continue;
+    }
+
+    clusters.push(char);
+  }
+
+  const segments: LinkedInPreviewSegment[] = [];
+
+  for (const cluster of clusters) {
+    const tone = toneForLinkedInCluster(cluster);
+    const previous = segments.at(-1);
+
+    if (previous && previous.tone === tone) {
+      previous.text += cluster;
+      continue;
+    }
+
+    segments.push({ text: cluster, tone });
+  }
+
+  return segments;
+}
+
 interface PreviewPanelProps {
   entry: FileEntry | null;
   onMarkdownChange?: (markdown: string) => void;
@@ -125,7 +204,19 @@ export default function PreviewPanel({
         </div>
       ) : (
         <pre className="linkedin-surface" aria-label="LinkedIn preview">
-          {linkedinPreview}
+          {segmentLinkedInPreview(linkedinPreview ?? "").map(
+            ({ text, tone }, index) =>
+              tone ? (
+                <span
+                  key={`${tone}-${index}`}
+                  className={`linkedin-emphasis linkedin-emphasis-${tone}`}
+                >
+                  {text}
+                </span>
+              ) : (
+                <span key={`plain-${index}`}>{text}</span>
+              ),
+          )}
         </pre>
       )
     ) : (

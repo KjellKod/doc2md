@@ -9,6 +9,12 @@ const INDENTED_CODE_LINE = /^(?: {4}|\t)(.*)$/;
 const HTML_TAG = /<\/?[A-Za-z][^>]*>/;
 const TABLE_SEPARATOR_LINE =
   /^\s*\|?\s*:?-{3,}:?(?:\s*\|\s*:?-{3,}:?)+\s*\|?\s*$/;
+const METADATA_LINE =
+  /^(?:\*\*)?([A-Za-z][A-Za-z0-9/&()' -]{1,42})(?::)(?:\*\*)?\s+(.+)$/;
+const URL_OR_EMAIL = /(?:https?:\/\/\S+|www\.\S+|\b\S+@\S+\b)/;
+const MARKDOWN_AUTOLINK = /<(?:https?:\/\/|www\.)[^>\s]+>/g;
+
+type InlineStyle = "bold" | "italic" | "boldItalic" | "underline" | "strike";
 
 const BULLETS = ["•", "◦", "▪"];
 
@@ -18,6 +24,10 @@ function isClosingFence(trimmed: string) {
 
 function stripInlineCodeSegments(line: string) {
   return line.replace(/`[^`]*`/g, "");
+}
+
+function stripMarkdownAutolinks(line: string) {
+  return line.replace(MARKDOWN_AUTOLINK, "");
 }
 
 function previousNonBlank(lines: string[], index: number) {
@@ -82,7 +92,7 @@ function collectDetectionLines(markdown: string) {
       continue;
     }
 
-    cleaned.push(stripInlineCodeSegments(line));
+    cleaned.push(stripMarkdownAutolinks(stripInlineCodeSegments(line)));
   }
 
   return cleaned;
@@ -127,7 +137,52 @@ export function detectUnsupportedConstructs(markdown: string) {
   return null;
 }
 
-function stripInlineFormatting(text: string) {
+function mapMathematicalLetter(
+  char: string,
+  uppercaseBase: number,
+  lowercaseBase: number,
+) {
+  const codePoint = char.codePointAt(0);
+
+  if (!codePoint) {
+    return char;
+  }
+
+  if (codePoint >= 65 && codePoint <= 90) {
+    return String.fromCodePoint(uppercaseBase + (codePoint - 65));
+  }
+
+  if (codePoint >= 97 && codePoint <= 122) {
+    return String.fromCodePoint(lowercaseBase + (codePoint - 97));
+  }
+
+  return char;
+}
+
+function stylizeCharacters(text: string, style: InlineStyle) {
+  if (style === "underline" || style === "strike") {
+    const mark = style === "underline" ? "\u0332" : "\u0336";
+    return Array.from(text)
+      .map((char) => (/\s/.test(char) ? char : `${char}${mark}`))
+      .join("");
+  }
+
+  return Array.from(text)
+    .map((char) => {
+      if (style === "bold") {
+        return mapMathematicalLetter(char, 0x1d400, 0x1d41a);
+      }
+
+      if (style === "italic") {
+        return mapMathematicalLetter(char, 0x1d434, 0x1d44e);
+      }
+
+      return mapMathematicalLetter(char, 0x1d468, 0x1d482);
+    })
+    .join("");
+}
+
+function renderInlineFormatting(text: string) {
   let formatted = text;
 
   formatted = formatted.replace(
@@ -140,16 +195,73 @@ function stripInlineFormatting(text: string) {
   formatted = formatted.replace(
     /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,
     (_, label: string, url: string) =>
-      `${stripInlineFormatting(label).trim()}: ${url}`,
+      `${renderInlineFormatting(label).trim()}: ${url}`,
   );
   formatted = formatted.replace(/<(https?:\/\/[^>]+)>/g, "$1");
-  formatted = formatted.replace(/`([^`]+)`/g, "$1");
-  formatted = formatted.replace(/\*\*\*([^*]+)\*\*\*/g, "$1");
-  formatted = formatted.replace(/___([^_]+)___/g, "$1");
-  formatted = formatted.replace(/\*\*([^*]+)\*\*/g, "$1");
-  formatted = formatted.replace(/__([^_]+)__/g, "$1");
-  formatted = formatted.replace(/\*([^*]+)\*/g, "$1");
-  formatted = formatted.replace(/~~([^~]+)~~/g, "$1");
+  formatted = formatted.replace(/~~`([^`]+)`~~/g, (_, value: string) =>
+    stylizeCharacters(value, "strike"),
+  );
+  formatted = formatted.replace(
+    /(?:\*\*\*|___)`([^`]+)`(?:\*\*\*|___)/g,
+    (_, value: string) => stylizeCharacters(value, "boldItalic"),
+  );
+  formatted = formatted.replace(
+    /(?:\*\*|__)`([^`]+)`(?:\*\*|__)/g,
+    (_, value: string) => stylizeCharacters(value, "bold"),
+  );
+  formatted = formatted.replace(
+    /(^|[^*])\*`([^`]+)`\*(?!\*)/g,
+    (_, prefix: string, value: string) =>
+      `${prefix}${stylizeCharacters(value, "italic")}`,
+  );
+  formatted = formatted.replace(
+    /(^|[^\w_])_`([^`]+)`_(?!\w)/g,
+    (_, prefix: string, value: string) =>
+      `${prefix}${stylizeCharacters(value, "italic")}`,
+  );
+
+  const segments = formatted.split(/(`[^`]+`|https?:\/\/\S+|www\.\S+|\b\S+@\S+\b)/g);
+
+  formatted = segments
+    .map((segment) => {
+      if (segment.length === 0) {
+        return segment;
+      }
+
+      if (/^`[^`]+`$/.test(segment)) {
+        return segment.slice(1, -1);
+      }
+
+      if (URL_OR_EMAIL.test(segment)) {
+        return segment;
+      }
+
+      let styled = segment;
+      styled = styled.replace(/~~([^~]+)~~/g, (_, value: string) =>
+        stylizeCharacters(value, "strike"),
+      );
+      styled = styled.replace(
+        /(?:\*\*\*|___)(.+?)(?:\*\*\*|___)/g,
+        (_, value: string) => stylizeCharacters(value, "boldItalic"),
+      );
+      styled = styled.replace(
+        /(?:\*\*|__)(.+?)(?:\*\*|__)/g,
+        (_, value: string) => stylizeCharacters(value, "bold"),
+      );
+      styled = styled.replace(
+        /(^|[^*])\*([^*\n]+)\*(?!\*)/g,
+        (_, prefix: string, value: string) =>
+          `${prefix}${stylizeCharacters(value, "italic")}`,
+      );
+      styled = styled.replace(
+        /(^|[^\w_])_([^_\n]+)_(?!\w)/g,
+        (_, prefix: string, value: string) =>
+          `${prefix}${stylizeCharacters(value, "italic")}`,
+      );
+      return styled;
+    })
+    .join("");
+
   formatted = formatted.replace(/\\([\\`*_{}\[\]()#+\-.!|>])/g, "$1");
   formatted = formatted.replace(/\s+/g, " ").trim();
 
@@ -170,7 +282,18 @@ function flushParagraph(buffer: string[], output: string[]) {
     return;
   }
 
-  output.push(stripInlineFormatting(buffer.join(" ")));
+  const metadataMatches = buffer.map((line) => line.match(METADATA_LINE));
+
+  if (buffer.length >= 2 && metadataMatches.every(Boolean)) {
+    for (const match of metadataMatches) {
+      const [, label, value] = match!;
+      output.push(`• ${label.trim()}: ${renderInlineFormatting(value)}`);
+    }
+    buffer.length = 0;
+    return;
+  }
+
+  output.push(renderInlineFormatting(buffer.join(" ")));
   buffer.length = 0;
 }
 
@@ -251,7 +374,7 @@ export function formatLinkedInUnicode(markdown: string) {
     if (headingMatch) {
       flushParagraph(paragraph, output);
       const level = headingMatch[1].length;
-      const text = stripInlineFormatting(headingMatch[2]);
+      const text = renderInlineFormatting(headingMatch[2]);
 
       output.push(text);
       output.push(headingUnderline(text, level));
@@ -269,7 +392,7 @@ export function formatLinkedInUnicode(markdown: string) {
     const blockquoteMatch = line.match(BLOCKQUOTE_LINE);
     if (blockquoteMatch) {
       flushParagraph(paragraph, output);
-      output.push(`│ ${stripInlineFormatting(blockquoteMatch[1])}`);
+      output.push(`│ ${renderInlineFormatting(blockquoteMatch[1])}`);
       continue;
     }
 
@@ -278,7 +401,7 @@ export function formatLinkedInUnicode(markdown: string) {
       flushParagraph(paragraph, output);
       const level = Math.floor(unorderedMatch[1].length / 2);
       output.push(
-        `${"  ".repeat(level)}${bulletForLevel(level)} ${stripInlineFormatting(unorderedMatch[2])}`,
+        `${"  ".repeat(level)}${bulletForLevel(level)} ${renderInlineFormatting(unorderedMatch[2])}`,
       );
       continue;
     }
@@ -288,7 +411,7 @@ export function formatLinkedInUnicode(markdown: string) {
       flushParagraph(paragraph, output);
       const level = Math.floor(orderedMatch[1].length / 2);
       output.push(
-        `${"  ".repeat(level)}${orderedMatch[2]}. ${stripInlineFormatting(orderedMatch[3])}`,
+        `${"  ".repeat(level)}${orderedMatch[2]}. ${renderInlineFormatting(orderedMatch[3])}`,
       );
       continue;
     }

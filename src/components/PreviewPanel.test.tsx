@@ -219,6 +219,25 @@ describe("PreviewPanel", () => {
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   });
 
+  it("styles linkedin emphasis runs without changing preview text", () => {
+    render(
+      <PreviewPanel
+        entry={createEntry({
+          markdown: "**Bold** and *italic* and ~~struck~~",
+        })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "LinkedIn" }));
+
+    expect(screen.getByText("𝐁𝐨𝐥𝐝")).toHaveClass("linkedin-emphasis-bold");
+    expect(screen.getByText("𝑖𝑡𝑎𝑙𝑖𝑐")).toHaveClass("linkedin-emphasis-italic");
+    expect(screen.getByText("s̶t̶r̶u̶c̶k̶")).toHaveClass("linkedin-emphasis-strike");
+    expect(screen.getByLabelText("LinkedIn preview")).toHaveTextContent(
+      "𝐁𝐨𝐥𝐝 and 𝑖𝑡𝑎𝑙𝑖𝑐 and s̶t̶r̶u̶c̶k̶",
+    );
+  });
+
   it("refuses the linkedin view for markdown tables", () => {
     render(
       <PreviewPanel
