@@ -262,7 +262,7 @@ function renderInlineFormatting(text: string) {
     })
     .join("");
 
-  formatted = formatted.replace(/\\([\\`*_{}\[\]()#+\-.!|>])/g, "$1");
+  formatted = formatted.replace(/\\([\\`*_{}[\]()#+\-.!|>])/g, "$1");
   formatted = formatted.replace(/\s+/g, " ").trim();
 
   return formatted;
