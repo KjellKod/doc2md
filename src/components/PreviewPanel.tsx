@@ -302,14 +302,24 @@ export default function PreviewPanel({
               >
                 Preview
               </button>
-              <button
-                type="button"
-                className={`preview-toggle-button${mode === "linkedin" ? " is-active" : ""}`}
-                onClick={() => setMode("linkedin")}
-                aria-pressed={mode === "linkedin"}
-              >
-                LinkedIn
-              </button>
+              <div className="preview-toggle-with-tooltip">
+                <button
+                  type="button"
+                  className={`preview-toggle-button${mode === "linkedin" ? " is-active" : ""}`}
+                  onClick={() => setMode("linkedin")}
+                  aria-pressed={mode === "linkedin"}
+                  aria-describedby="linkedin-toggle-tooltip"
+                >
+                  LinkedIn
+                </button>
+                <span
+                  id="linkedin-toggle-tooltip"
+                  role="tooltip"
+                  className="preview-toggle-tooltip"
+                >
+                  Unicode formatting for easy LinkedIn posting
+                </span>
+              </div>
             </div>
           ) : (
             <div />

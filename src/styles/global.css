@@ -705,6 +705,37 @@ a {
   gap: 8px;
 }
 
+.preview-toggle-with-tooltip {
+  position: relative;
+  display: inline-flex;
+}
+
+.preview-toggle-tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  z-index: 1;
+  padding: 7px 10px;
+  border-radius: 12px;
+  background: rgba(20, 25, 31, 0.94);
+  color: #ffffff;
+  font-size: 0.8rem;
+  line-height: 1.2;
+  pointer-events: none;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(-50%, -4px);
+  transition:
+    opacity 80ms ease,
+    transform 80ms ease;
+}
+
+.preview-toggle-with-tooltip:hover .preview-toggle-tooltip,
+.preview-toggle-with-tooltip:focus-within .preview-toggle-tooltip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
 .preview-actions {
   position: relative;
   display: inline-flex;

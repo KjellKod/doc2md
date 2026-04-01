@@ -70,6 +70,13 @@ describe("PreviewPanel", () => {
     expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Preview" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "LinkedIn" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "LinkedIn" })).toHaveAttribute(
+      "aria-describedby",
+      "linkedin-toggle-tooltip",
+    );
+    expect(screen.getByRole("tooltip")).toHaveTextContent(
+      "Unicode formatting for easy LinkedIn posting",
+    );
   });
 
   it("renders toggle buttons when entry is warning with markdown", () => {
