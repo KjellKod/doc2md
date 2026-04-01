@@ -4,6 +4,10 @@ import remarkGfm from "remark-gfm";
 import type { FileEntry } from "../types";
 import { entryDisplayName } from "../utils/displayName";
 import ErrorMessage from "./ErrorMessage";
+import {
+  detectUnsupportedConstructs,
+  formatLinkedInUnicode,
+} from "./linkedinFormatting";
 import PdfQualityIndicator from "./PdfQualityIndicator";
 import { formatPreviewMarkdown } from "./previewFormatting";
 
@@ -18,7 +22,7 @@ export default function PreviewPanel({
   onMarkdownChange,
   onStartWriting,
 }: PreviewPanelProps) {
-  const [mode, setMode] = useState<"edit" | "preview">("preview");
+  const [mode, setMode] = useState<"edit" | "preview" | "linkedin">("preview");
 
   useEffect(() => {
     setMode(entry?.isScratch ? "edit" : "preview");
@@ -88,11 +92,47 @@ export default function PreviewPanel({
   }
 
   const previewMarkdown = formatPreviewMarkdown(effectiveMarkdown);
+  const linkedinRefusal =
+    mode === "linkedin"
+      ? detectUnsupportedConstructs(effectiveMarkdown)
+      : null;
+  const linkedinPreview = linkedinRefusal
+    ? null
+    : mode === "linkedin"
+      ? formatLinkedInUnicode(effectiveMarkdown)
+      : null;
   const showToggle =
     (entry.status === "success" || entry.status === "warning") &&
     (entry.markdown.length > 0 || canEditFromEmptyState);
 
   const showQualityIndicator = entry.format === "pdf" && entry.quality;
+  const body =
+    mode === "edit" ? (
+      <textarea
+        className="markdown-edit-area"
+        value={effectiveMarkdown}
+        onChange={(event) => onMarkdownChange?.(event.target.value)}
+        aria-label="Edit markdown"
+      />
+    ) : mode === "linkedin" ? (
+      linkedinRefusal ? (
+        <div className="linkedin-refusal" role="status">
+          <p>{linkedinRefusal}</p>
+          <p>
+            Remove tables or HTML from this draft to preview a LinkedIn-ready
+            plain-text version.
+          </p>
+        </div>
+      ) : (
+        <pre className="linkedin-surface" aria-label="LinkedIn preview">
+          {linkedinPreview}
+        </pre>
+      )
+    ) : (
+      <div className="markdown-surface">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{previewMarkdown}</ReactMarkdown>
+      </div>
+    );
 
   return (
     <div className="preview-body">
@@ -100,7 +140,7 @@ export default function PreviewPanel({
         <div
           className="preview-toggle"
           role="group"
-          aria-label="Edit or preview mode"
+          aria-label="View mode"
         >
           <button
             type="button"
@@ -118,6 +158,14 @@ export default function PreviewPanel({
           >
             Preview
           </button>
+          <button
+            type="button"
+            className={`preview-toggle-button${mode === "linkedin" ? " is-active" : ""}`}
+            onClick={() => setMode("linkedin")}
+            aria-pressed={mode === "linkedin"}
+          >
+            LinkedIn
+          </button>
         </div>
       ) : null}
 
@@ -132,21 +180,7 @@ export default function PreviewPanel({
           ))}
         </div>
       ) : null}
-
-      {mode === "edit" ? (
-        <textarea
-          className="markdown-edit-area"
-          value={effectiveMarkdown}
-          onChange={(event) => onMarkdownChange?.(event.target.value)}
-          aria-label="Edit markdown"
-        />
-      ) : (
-        <div className="markdown-surface">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {previewMarkdown}
-          </ReactMarkdown>
-        </div>
-      )}
+      {body}
     </div>
   );
 }

@@ -58,6 +58,7 @@ describe("PreviewPanel", () => {
 
     expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Preview" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "LinkedIn" })).toBeInTheDocument();
   });
 
   it("renders toggle buttons when entry is warning with markdown", () => {
@@ -196,6 +197,74 @@ describe("PreviewPanel", () => {
 
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
     expect(screen.getByText("Hello World")).toBeInTheDocument();
+  });
+
+  it("renders a linkedin plain-text view for supported markdown", () => {
+    render(
+      <PreviewPanel
+        entry={createEntry({
+          markdown: "# Hello World\n\n- First item\n- Second item",
+        })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "LinkedIn" }));
+
+    expect(screen.getByLabelText("LinkedIn preview")).toHaveTextContent(
+      "Hello World",
+    );
+    expect(screen.getByLabelText("LinkedIn preview")).toHaveTextContent(
+      "• First item",
+    );
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+  });
+
+  it("refuses the linkedin view for markdown tables", () => {
+    render(
+      <PreviewPanel
+        entry={createEntry({
+          markdown: "| Name | Role |\n| --- | --- |\n| Anna | Admin |",
+        })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "LinkedIn" }));
+
+    expect(
+      screen.getByText("LinkedIn view is unavailable for Markdown tables."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Remove tables or HTML from this draft to preview a LinkedIn-ready plain-text version.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("preserves edited markdown across preview, linkedin, and edit modes", () => {
+    render(
+      <PreviewPanel
+        entry={createEntry({ editedMarkdown: "# Edited\n\n- Item" })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "LinkedIn" }));
+    expect(screen.getByLabelText("LinkedIn preview")).toHaveTextContent(
+      "Edited",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    expect(screen.getByRole("textbox", { name: "Edit markdown" })).toHaveValue(
+      "# Edited\n\n- Item",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    expect(screen.getByText("Edited")).toBeInTheDocument();
+  });
+
+  it("uses an updated view-mode aria label for the three-button toggle", () => {
+    render(<PreviewPanel entry={createEntry()} />);
+
+    expect(screen.getByRole("group", { name: "View mode" })).toBeInTheDocument();
   });
 
   it("calls onMarkdownChange when textarea content changes", () => {
