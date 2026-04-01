@@ -77,7 +77,7 @@ function segmentLinkedInPreview(text: string) {
 
   for (const cluster of clusters) {
     const tone = toneForLinkedInCluster(cluster);
-    const previous = segments.at(-1);
+    const previous = segments[segments.length - 1];
 
     if (previous && previous.tone === tone) {
       previous.text += cluster;

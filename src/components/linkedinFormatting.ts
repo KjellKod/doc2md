@@ -319,7 +319,7 @@ function collapseBlankLines(lines: string[]) {
     collapsed.shift();
   }
 
-  while (collapsed.at(-1)?.trim().length === 0) {
+  while (collapsed.length > 0 && collapsed[collapsed.length - 1]?.trim().length === 0) {
     collapsed.pop();
   }
 
