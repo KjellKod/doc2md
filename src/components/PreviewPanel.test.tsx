@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ConversionQuality } from "../converters/types";
 import type { FileEntry } from "../types";
 import PreviewPanel from "./PreviewPanel";
@@ -27,6 +27,17 @@ function createEntry(overrides: Partial<FileEntry> = {}): FileEntry {
 
 afterEach(() => {
   cleanup();
+});
+
+let clipboardWriteText: ReturnType<typeof vi.fn>;
+
+beforeEach(() => {
+  clipboardWriteText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, "clipboard", {
+    configurable: true,
+    value: { writeText: clipboardWriteText },
+  });
+  vi.useRealTimers();
 });
 
 describe("PreviewPanel", () => {
@@ -58,6 +69,14 @@ describe("PreviewPanel", () => {
 
     expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Preview" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "LinkedIn" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "LinkedIn" })).toHaveAttribute(
+      "aria-describedby",
+      "linkedin-toggle-tooltip",
+    );
+    expect(screen.getByRole("tooltip")).toHaveTextContent(
+      "Unicode formatting for easy LinkedIn posting",
+    );
   });
 
   it("renders toggle buttons when entry is warning with markdown", () => {
@@ -196,6 +215,136 @@ describe("PreviewPanel", () => {
 
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
     expect(screen.getByText("Hello World")).toBeInTheDocument();
+  });
+
+  it("renders a linkedin plain-text view for supported markdown", () => {
+    render(
+      <PreviewPanel
+        entry={createEntry({
+          markdown: "# Hello World\n\n- First item\n- Second item",
+        })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "LinkedIn" }));
+
+    expect(screen.getByLabelText("LinkedIn preview")).toHaveTextContent(
+      "Hello World",
+    );
+    expect(screen.getByLabelText("LinkedIn preview")).toHaveTextContent(
+      "• First item",
+    );
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+  });
+
+  it("styles linkedin emphasis runs without changing preview text", () => {
+    render(
+      <PreviewPanel
+        entry={createEntry({
+          markdown: "**Bold** and *italic* and ~~struck~~",
+        })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "LinkedIn" }));
+
+    expect(screen.getByText("𝐁𝐨𝐥𝐝")).toHaveClass("linkedin-emphasis-bold");
+    expect(screen.getByText("𝑖𝑡𝑎𝑙𝑖𝑐")).toHaveClass("linkedin-emphasis-italic");
+    expect(screen.getByText("s̶t̶r̶u̶c̶k̶")).toHaveClass("linkedin-emphasis-strike");
+    expect(screen.getByLabelText("LinkedIn preview")).toHaveTextContent(
+      "𝐁𝐨𝐥𝐝 and 𝑖𝑡𝑎𝑙𝑖𝑐 and s̶t̶r̶u̶c̶k̶",
+    );
+  });
+
+  it("copies the markdown document in preview mode", async () => {
+    render(<PreviewPanel entry={createEntry()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy markdown document" }));
+
+    await waitFor(() => {
+      expect(clipboardWriteText).toHaveBeenCalledWith("# Hello World");
+    });
+    expect(screen.getByText("Copied")).toBeInTheDocument();
+  });
+
+  it("copies the linkedin output in linkedin mode and resets the status label", async () => {
+    vi.useFakeTimers();
+
+    render(
+      <PreviewPanel
+        entry={createEntry({
+          markdown: "# Hello World\n\n- First item",
+        })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "LinkedIn" }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Copy LinkedIn text" }));
+      await Promise.resolve();
+    });
+
+    expect(clipboardWriteText).toHaveBeenCalledWith(
+      "Hello World\n═══════════\n\n• First item",
+    );
+    expect(screen.getByText("Copied")).toBeInTheDocument();
+
+    await act(async () => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    expect(screen.getByText("Copy")).toBeInTheDocument();
+  });
+
+  it("refuses the linkedin view for markdown tables", () => {
+    render(
+      <PreviewPanel
+        entry={createEntry({
+          markdown: "| Name | Role |\n| --- | --- |\n| Anna | Admin |",
+        })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "LinkedIn" }));
+
+    expect(
+      screen.getByText("LinkedIn view is unavailable for Markdown tables."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Remove tables or HTML from this draft to preview a LinkedIn-ready plain-text version.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Copy LinkedIn text" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("preserves edited markdown across preview, linkedin, and edit modes", () => {
+    render(
+      <PreviewPanel
+        entry={createEntry({ editedMarkdown: "# Edited\n\n- Item" })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "LinkedIn" }));
+    expect(screen.getByLabelText("LinkedIn preview")).toHaveTextContent(
+      "Edited",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    expect(screen.getByRole("textbox", { name: "Edit markdown" })).toHaveValue(
+      "# Edited\n\n- Item",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    expect(screen.getByText("Edited")).toBeInTheDocument();
+  });
+
+  it("uses an updated view-mode aria label for the three-button toggle", () => {
+    render(<PreviewPanel entry={createEntry()} />);
+
+    expect(screen.getByRole("group", { name: "View mode" })).toBeInTheDocument();
   });
 
   it("calls onMarkdownChange when textarea content changes", () => {
