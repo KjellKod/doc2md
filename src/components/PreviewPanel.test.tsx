@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ConversionQuality } from "../converters/types";
 import type { FileEntry } from "../types";
 import PreviewPanel from "./PreviewPanel";
@@ -27,6 +27,17 @@ function createEntry(overrides: Partial<FileEntry> = {}): FileEntry {
 
 afterEach(() => {
   cleanup();
+});
+
+let clipboardWriteText: ReturnType<typeof vi.fn>;
+
+beforeEach(() => {
+  clipboardWriteText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, "clipboard", {
+    configurable: true,
+    value: { writeText: clipboardWriteText },
+  });
+  vi.useRealTimers();
 });
 
 describe("PreviewPanel", () => {
@@ -238,6 +249,46 @@ describe("PreviewPanel", () => {
     );
   });
 
+  it("copies the markdown document in preview mode", async () => {
+    render(<PreviewPanel entry={createEntry()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy markdown document" }));
+
+    await waitFor(() => {
+      expect(clipboardWriteText).toHaveBeenCalledWith("# Hello World");
+    });
+    expect(screen.getByText("Copied")).toBeInTheDocument();
+  });
+
+  it("copies the linkedin output in linkedin mode and resets the status label", async () => {
+    vi.useFakeTimers();
+
+    render(
+      <PreviewPanel
+        entry={createEntry({
+          markdown: "# Hello World\n\n- First item",
+        })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "LinkedIn" }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Copy LinkedIn text" }));
+      await Promise.resolve();
+    });
+
+    expect(clipboardWriteText).toHaveBeenCalledWith(
+      "Hello World\n═══════════\n\n• First item",
+    );
+    expect(screen.getByText("Copied")).toBeInTheDocument();
+
+    await act(async () => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    expect(screen.getByText("Copy")).toBeInTheDocument();
+  });
+
   it("refuses the linkedin view for markdown tables", () => {
     render(
       <PreviewPanel
@@ -257,6 +308,9 @@ describe("PreviewPanel", () => {
         "Remove tables or HTML from this draft to preview a LinkedIn-ready plain-text version.",
       ),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Copy LinkedIn text" }),
+    ).not.toBeInTheDocument();
   });
 
   it("preserves edited markdown across preview, linkedin, and edit modes", () => {

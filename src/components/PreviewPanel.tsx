@@ -96,16 +96,41 @@ interface PreviewPanelProps {
   onStartWriting?: () => void;
 }
 
+function fallbackCopyText(text: string) {
+  const element = document.createElement("textarea");
+  element.value = text;
+  element.setAttribute("readonly", "");
+  element.style.position = "absolute";
+  element.style.left = "-9999px";
+  document.body.appendChild(element);
+  element.select();
+  document.execCommand("copy");
+  document.body.removeChild(element);
+}
+
 export default function PreviewPanel({
   entry,
   onMarkdownChange,
   onStartWriting,
 }: PreviewPanelProps) {
   const [mode, setMode] = useState<"edit" | "preview" | "linkedin">("preview");
+  const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
 
   useEffect(() => {
     setMode(entry?.isScratch ? "edit" : "preview");
   }, [entry?.id, entry?.isScratch]);
+
+  useEffect(() => {
+    if (copyState !== "copied") {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setCopyState("idle");
+    }, 2000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [copyState]);
 
   if (!entry) {
     return (
@@ -183,6 +208,32 @@ export default function PreviewPanel({
   const showToggle =
     (entry.status === "success" || entry.status === "warning") &&
     (entry.markdown.length > 0 || canEditFromEmptyState);
+  const copyText =
+    mode === "linkedin"
+      ? linkedinRefusal
+        ? null
+        : linkedinPreview
+      : effectiveMarkdown;
+  const showCopyButton = showToggle && typeof copyText === "string";
+
+  async function handleCopy() {
+    if (!copyText) {
+      return;
+    }
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(copyText);
+      } else {
+        fallbackCopyText(copyText);
+      }
+
+      setCopyState("copied");
+    } catch {
+      fallbackCopyText(copyText);
+      setCopyState("copied");
+    }
+  }
 
   const showQualityIndicator = entry.format === "pdf" && entry.quality;
   const body =
@@ -227,36 +278,71 @@ export default function PreviewPanel({
 
   return (
     <div className="preview-body">
-      {showToggle ? (
-        <div
-          className="preview-toggle"
-          role="group"
-          aria-label="View mode"
-        >
-          <button
-            type="button"
-            className={`preview-toggle-button${mode === "edit" ? " is-active" : ""}`}
-            onClick={() => setMode("edit")}
-            aria-pressed={mode === "edit"}
-          >
-            Edit
-          </button>
-          <button
-            type="button"
-            className={`preview-toggle-button${mode === "preview" ? " is-active" : ""}`}
-            onClick={() => setMode("preview")}
-            aria-pressed={mode === "preview"}
-          >
-            Preview
-          </button>
-          <button
-            type="button"
-            className={`preview-toggle-button${mode === "linkedin" ? " is-active" : ""}`}
-            onClick={() => setMode("linkedin")}
-            aria-pressed={mode === "linkedin"}
-          >
-            LinkedIn
-          </button>
+      {showToggle || showCopyButton ? (
+        <div className="preview-toolbar">
+          {showToggle ? (
+            <div
+              className="preview-toggle"
+              role="group"
+              aria-label="View mode"
+            >
+              <button
+                type="button"
+                className={`preview-toggle-button${mode === "edit" ? " is-active" : ""}`}
+                onClick={() => setMode("edit")}
+                aria-pressed={mode === "edit"}
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                className={`preview-toggle-button${mode === "preview" ? " is-active" : ""}`}
+                onClick={() => setMode("preview")}
+                aria-pressed={mode === "preview"}
+              >
+                Preview
+              </button>
+              <button
+                type="button"
+                className={`preview-toggle-button${mode === "linkedin" ? " is-active" : ""}`}
+                onClick={() => setMode("linkedin")}
+                aria-pressed={mode === "linkedin"}
+              >
+                LinkedIn
+              </button>
+            </div>
+          ) : (
+            <div />
+          )}
+          {showCopyButton ? (
+            <div className="preview-actions">
+              <button
+                type="button"
+                className="preview-copy-button"
+                onClick={handleCopy}
+                aria-label={
+                  mode === "linkedin"
+                    ? "Copy LinkedIn text"
+                    : "Copy markdown document"
+                }
+              >
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="preview-copy-icon"
+                >
+                  <rect x="9" y="7" width="10" height="12" rx="2" />
+                  <rect x="5" y="3" width="10" height="12" rx="2" />
+                </svg>
+              </button>
+              <span
+                className={`preview-copy-tooltip${copyState === "copied" ? " is-visible" : ""}`}
+                aria-live="polite"
+              >
+                {copyState === "copied" ? "Copied" : "Copy"}
+              </span>
+            </div>
+          ) : null}
         </div>
       ) : null}
 
