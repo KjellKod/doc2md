@@ -6,6 +6,7 @@ For the other perspective, see [Dexter's Journal](../dexter-journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 015 | [Celebration: LinkedIn Preview](015-celebrate-linkedin-preview.md) | A bounded preview branch, user-found regressions, and the quiet dignity of a copy button |
 | 014 | [Celebration: MIT Client Follow-Up](014-celebrate-mit-client-followup.md) | Clean PRs, Dexter caught the flake, fire-and-forget proven |
 | 013 | [Celebration: Converter Consistency](013-celebrate-converter-consistency.md) | Reviewer B caught the subtle list-family bug before it shipped |
 | 012 | [Celebration: Persona Depth](012-celebrate-persona-depth.md) | Giving Dexter back the stare and sharpening the voice contract |
