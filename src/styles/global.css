@@ -194,6 +194,11 @@ a {
   display: grid;
   grid-template-columns: minmax(350px, 430px) minmax(0, 1fr);
   gap: 24px;
+  transition: grid-template-columns 200ms ease;
+}
+
+.workspace.sidebar-collapsed {
+  grid-template-columns: 56px minmax(0, 1fr);
 }
 
 .panel {
@@ -398,6 +403,24 @@ a {
   flex-shrink: 0;
 }
 
+.collapse-toggle {
+  flex-shrink: 0;
+}
+
+.collapse-toggle-label {
+  white-space: nowrap;
+}
+
+.collapse-toggle-icon {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .theme-toggle.is-active {
   border-color: var(--panel-border);
   background: var(--accent-soft);
@@ -424,6 +447,50 @@ a {
 .ghost-button:not(:disabled):hover,
 .ghost-button:not(:disabled):focus-visible {
   background: rgba(255, 255, 255, 0.52);
+}
+
+.collapse-rail {
+  padding: 0;
+  overflow: hidden;
+}
+
+.collapse-rail-button {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 100%;
+  padding: 18px 8px;
+  border: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    var(--surface-subtle) 0%,
+    var(--surface-muted) 100%
+  );
+  color: var(--accent);
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.collapse-rail-button:hover,
+.collapse-rail-button:focus-visible {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  transform: translateX(1px);
+}
+
+.collapse-rail-label {
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
 }
 
 .file-list-toolbar {
@@ -594,7 +661,7 @@ a {
   flex: 1;
   flex-direction: column;
   justify-content: center;
-  padding: 24px;
+  padding: 18px;
   border-radius: 24px;
   background: linear-gradient(
     180deg,
@@ -606,7 +673,7 @@ a {
 .preview-body {
   min-height: 0;
   justify-content: flex-start;
-  gap: 16px;
+  gap: 12px;
 }
 
 .preview-toolbar {
@@ -924,14 +991,14 @@ a {
   flex: 1;
   min-height: 300px;
   width: 100%;
-  padding: 28px;
+  padding: clamp(18px, 2vw, 26px);
   border: 1px solid var(--panel-border);
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.94);
   font-family: "SFMono-Regular", "Menlo", "Consolas", monospace;
   font-size: 0.92em;
   line-height: 1.5;
-  resize: vertical;
+  resize: none;
   overflow: auto;
 }
 
@@ -943,7 +1010,7 @@ a {
 .markdown-surface {
   flex: 1;
   min-height: 0;
-  padding: clamp(24px, 3vw, 40px);
+  padding: clamp(18px, 2vw, 28px);
   border: 1px solid var(--panel-border);
   border-radius: 22px;
   background: linear-gradient(
@@ -961,7 +1028,7 @@ a {
   flex: 1;
   min-height: 0;
   margin: 0;
-  padding: clamp(24px, 3vw, 40px);
+  padding: clamp(18px, 2vw, 28px);
   border: 1px solid var(--panel-border);
   border-radius: 22px;
   background: linear-gradient(
@@ -996,9 +1063,9 @@ a {
 }
 
 .markdown-surface > * {
-  max-width: 72ch;
-  margin-left: auto;
-  margin-right: auto;
+  max-width: min(86ch, 100%);
+  margin-left: 0;
+  margin-right: 0;
 }
 
 .markdown-surface > :first-child,
@@ -1444,9 +1511,18 @@ a {
     grid-template-columns: 1fr;
   }
 
+  .workspace.sidebar-collapsed {
+    grid-template-columns: 1fr;
+  }
+
   .sidebar-panel,
-  .preview-panel {
+  .preview-panel,
+  .collapse-rail {
     min-height: auto;
+  }
+
+  .collapse-toggle {
+    display: none;
   }
 }
 
