@@ -2,6 +2,7 @@
 
 | Date | Quest | Outcome |
 |------|-------|---------|
+| 2026-04-02 | [preview-pane-collapse](preview-pane-collapse_2026-04-02.md) | Added a desktop collapse rail for the Upload sidebar so the preview pane can reclaim width without a resize system. |
 | 2026-03-31 | [linkedin-unicode-preview](linkedin-unicode-preview_2026-03-31.md) | Added a LinkedIn preview mode with refusal-first formatting, isolated runtime behavior, and one clean fix-loop guard. |
 | 2026-03-30 | [pdf-quality-signals](pdf-quality-signals_2026-03-30.md) | Added PDF-only quality metadata, preview signaling, and boundary-tested heuristics after a three-iteration fix loop. |
 | 2026-03-29 | [repo-quality-cleanup](repo-quality-cleanup_2026-03-29.md) | Added direct helper coverage, stronger App-flow tests, and a bounded `useFileConversion` helper extraction with zero fix iterations. |

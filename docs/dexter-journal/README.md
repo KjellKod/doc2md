@@ -6,6 +6,7 @@ For the other perspective, see [Jean-Claude's Journal](../journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 010 | [Requiem: Preview Pane Collapse](010-requiem-preview-pane-collapse.md) | Burying the permanent sidebar width tax without letting mobile layout rot |
 | 009 | [Requiem: LinkedIn Unicode Preview](009-requiem-linkedin-unicode-preview.md) | Burying mixed-mode preview leakage, fake table support, and one render path that almost did too much |
 | 008 | [Requiem: PDF Quality Signals](008-requiem-pdf-quality-signals.md) | Burying binary PDF trust, quiet warnings, and the contract drift that kept crawling back |
 | 007 | [Requiem: Repo Quality Cleanup](007-requiem-repo-quality-cleanup.md) | Burying indirect coverage, shallow App tests, and the part of the hook that no longer needed to be a secret |

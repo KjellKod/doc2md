@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import AboutSection from "./components/AboutSection";
 import DownloadButton from "./components/DownloadButton";
 import DropZone from "./components/DropZone";
@@ -13,7 +14,30 @@ function pluralize(count: number, singular: string, plural = `${singular}s`) {
   return count === 1 ? singular : plural;
 }
 
+function SidebarToggleIcon({
+  direction,
+}: {
+  direction: "collapse" | "expand";
+}) {
+  return (
+    <svg
+      className="collapse-toggle-icon"
+      viewBox="0 0 16 16"
+      aria-hidden="true"
+    >
+      <path
+        d={
+          direction === "collapse"
+            ? "M10.5 3.5 6 8l4.5 4.5"
+            : "M5.5 3.5 10 8l-4.5 4.5"
+        }
+      />
+    </svg>
+  );
+}
+
 export default function App() {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const {
     entries,
     addFiles,
@@ -61,6 +85,35 @@ export default function App() {
           .join(", ") ||
         `${entries.length} ${pluralize(entries.length, "entry")} in session`;
 
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") {
+      return;
+    }
+
+    const mediaQueryList = window.matchMedia("(max-width: 980px)");
+    const handleChange = (event: MediaQueryList | MediaQueryListEvent) => {
+      if (event.matches) {
+        setSidebarCollapsed(false);
+      }
+    };
+
+    handleChange(mediaQueryList);
+
+    if (typeof mediaQueryList.addEventListener === "function") {
+      mediaQueryList.addEventListener("change", handleChange);
+
+      return () => {
+        mediaQueryList.removeEventListener("change", handleChange);
+      };
+    }
+
+    mediaQueryList.addListener(handleChange);
+
+    return () => {
+      mediaQueryList.removeListener(handleChange);
+    };
+  }, []);
+
   return (
     <ThemeProvider>
       <div className="app-shell">
@@ -88,39 +141,66 @@ export default function App() {
             </div>
           </header>
 
-          <section className="workspace">
-            <section
-              className="panel sidebar-panel"
-              aria-labelledby="upload-title"
-            >
-              <div className="panel-heading">
-                <div>
-                  <h2 id="upload-title">Upload</h2>
-                  <p className="panel-copy">
-                    Drop in documents, spreadsheets, PDFs, or presentations, or
-                    start writing from scratch and keep everything in one
-                    session.
-                  </p>
+          <section
+            className={`workspace${sidebarCollapsed ? " sidebar-collapsed" : ""}`}
+          >
+            {sidebarCollapsed ? (
+              <section className="panel collapse-rail" aria-label="Upload rail">
+                <button
+                  type="button"
+                  className="collapse-rail-button"
+                  onClick={() => setSidebarCollapsed(false)}
+                  aria-label="Expand upload sidebar"
+                  title="Expand upload sidebar"
+                >
+                  <SidebarToggleIcon direction="expand" />
+                  <span className="collapse-rail-label">Upload</span>
+                </button>
+              </section>
+            ) : (
+              <section
+                className="panel sidebar-panel"
+                aria-labelledby="upload-title"
+              >
+                <div className="panel-heading">
+                  <div>
+                    <h2 id="upload-title">Upload</h2>
+                    <p className="panel-copy">
+                      Drop in documents, spreadsheets, PDFs, or presentations,
+                      or start writing from scratch and keep everything in one
+                      session.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="ghost-button collapse-toggle"
+                    onClick={() => setSidebarCollapsed(true)}
+                    aria-label="Collapse upload sidebar"
+                    title="Collapse upload sidebar"
+                  >
+                    <SidebarToggleIcon direction="collapse" />
+                    <span className="collapse-toggle-label">Collapse</span>
+                  </button>
                 </div>
-              </div>
 
-              <DropZone onFilesAdded={addFiles} />
+                <DropZone onFilesAdded={addFiles} />
 
-              <div className="panel-heading panel-heading-tight">
-                <div>
-                  <h2>Files</h2>
-                  <p className="panel-copy">{fileSummary}</p>
+                <div className="panel-heading panel-heading-tight">
+                  <div>
+                    <h2>Files</h2>
+                    <p className="panel-copy">{fileSummary}</p>
+                  </div>
+                  <DownloadButton entry={selectedEntry} />
                 </div>
-                <DownloadButton entry={selectedEntry} />
-              </div>
 
-              <FileList
-                entries={entries}
-                onClearAll={clearEntries}
-                onDownloadAll={() => downloadAllEntries(entries)}
-                onSelect={selectEntry}
-              />
-            </section>
+                <FileList
+                  entries={entries}
+                  onClearAll={clearEntries}
+                  onDownloadAll={() => downloadAllEntries(entries)}
+                  onSelect={selectEntry}
+                />
+              </section>
+            )}
 
             <section
               className="panel preview-panel"

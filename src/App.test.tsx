@@ -130,6 +130,34 @@ describe("App", () => {
     ).toBeInTheDocument();
   });
 
+  it("collapses and expands the upload sidebar", () => {
+    const { container } = render(<App />);
+    const workspace = container.querySelector(".workspace");
+
+    expect(workspace).not.toHaveClass("sidebar-collapsed");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Collapse upload sidebar" }),
+    );
+
+    expect(workspace).toHaveClass("sidebar-collapsed");
+    expect(
+      screen.getByRole("button", { name: "Expand upload sidebar" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Collapse upload sidebar" }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Expand upload sidebar" }),
+    );
+
+    expect(workspace).not.toHaveClass("sidebar-collapsed");
+    expect(
+      screen.getByRole("button", { name: "Collapse upload sidebar" }),
+    ).toBeInTheDocument();
+  });
+
   it("supports upload, selection, preview readiness, and download state changes", async () => {
     const pendingResolvers = new Map<
       string,
