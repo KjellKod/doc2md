@@ -1105,7 +1105,7 @@ body.is-page-resizing * {
 }
 
 .markdown-surface > * {
-  max-width: min(86ch, 100%);
+  max-width: 100%;
   margin-left: 0;
   margin-right: 0;
 }
