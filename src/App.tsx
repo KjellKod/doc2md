@@ -263,7 +263,6 @@ export default function App() {
                       title="Hide upload panel"
                     >
                       <PanelRightClose className="collapse-toggle-icon" aria-hidden="true" />
-                      <span className="collapse-toggle-label">Hide Panel</span>
                     </button>
                   </div>
 
@@ -286,36 +285,22 @@ export default function App() {
                 </section>
               )}
 
-              <div className="preview-shell">
-                <section
-                  className="panel preview-panel"
-                  aria-labelledby="preview-title"
-                >
-                  <div className="panel-heading">
-                    <div>
-                      <h2 id="preview-title">Preview</h2>
-                      <p className="panel-copy">
-                        {selectedEntry
-                          ? entryDisplayName(selectedEntry)
-                          : "Start writing, paste Markdown, or convert a file and review it here."}
-                      </p>
-                    </div>
+              <section
+                className="panel preview-panel"
+                aria-labelledby="preview-title"
+              >
+                <div className="panel-heading">
+                  <div>
+                    <h2 id="preview-title">Preview</h2>
+                    <p className="panel-copy">
+                      {selectedEntry
+                        ? entryDisplayName(selectedEntry)
+                        : "Start writing, paste Markdown, or convert a file and review it here."}
+                    </p>
                   </div>
-                  <PreviewPanel
-                    entry={selectedEntry}
-                    onStartWriting={addScratchEntry}
-                    onMarkdownChange={(text) => {
-                      if (selectedEntry) {
-                        updateMarkdown(selectedEntry.id, text);
-                      }
-                    }}
-                  />
-                </section>
-
-                <aside className="page-width-rail" aria-label="Workspace width controls">
                   <button
                     type="button"
-                    className="page-width-handle"
+                    className="ghost-button page-width-handle"
                     onMouseDown={handlePageResizeStart}
                     onKeyDown={handlePageResizeKeyDown}
                     aria-label="Resize workspace width"
@@ -323,8 +308,17 @@ export default function App() {
                   >
                     <MoveHorizontal className="page-width-icon" aria-hidden="true" />
                   </button>
-                </aside>
-              </div>
+                </div>
+                <PreviewPanel
+                  entry={selectedEntry}
+                  onStartWriting={addScratchEntry}
+                  onMarkdownChange={(text) => {
+                    if (selectedEntry) {
+                      updateMarkdown(selectedEntry.id, text);
+                    }
+                  }}
+                />
+              </section>
             </section>
 
             <AboutSection />

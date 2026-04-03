@@ -125,7 +125,7 @@ a {
 
 .page-frame {
   --page-max-width: 1680px;
-  width: min(100%, calc(var(--page-max-width) + 18px));
+  width: min(100%, var(--page-max-width));
   margin: 0 auto;
   transition: width 180ms ease;
 }
@@ -207,12 +207,6 @@ a {
   transition: grid-template-columns 200ms ease;
 }
 
-.preview-shell {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 18px;
-  align-items: start;
-  column-gap: 6px;
-}
 
 .workspace.sidebar-collapsed {
   grid-template-columns: 56px minmax(0, 1fr);
@@ -423,10 +417,13 @@ a {
 
 .collapse-toggle {
   flex-shrink: 0;
-}
-
-.collapse-toggle-label {
-  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border-radius: 999px;
 }
 
 .collapse-toggle-icon {
@@ -511,43 +508,24 @@ a {
   transform: rotate(180deg);
 }
 
-.page-width-rail {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding-top: 112px;
-}
-
 .page-width-handle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 44px;
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
   padding: 0;
-  border: 1px solid rgba(111, 130, 144, 0.22);
   border-radius: 999px;
-  background: rgba(126, 146, 160, 0.08);
   cursor: col-resize;
-  transition:
-    border-color 160ms ease,
-    background-color 160ms ease,
-    box-shadow 160ms ease,
-    transform 160ms ease;
 }
 
 .page-width-handle:hover,
 .page-width-handle:focus-visible {
-  border-color: rgba(151, 198, 228, 0.4);
-  background: rgba(151, 198, 228, 0.14);
   box-shadow: 0 0 0 1px rgba(151, 198, 228, 0.16);
-  transform: translateX(-1px);
 }
 
 .page-width-icon {
-  width: 12px;
-  height: 12px;
-  color: rgba(223, 232, 239, 0.72);
+  width: 0.9rem;
+  height: 0.9rem;
+  color: currentColor;
   stroke-width: 2.2;
 }
 
@@ -1570,19 +1548,6 @@ body.is-page-resizing * {
   border: 0;
 }
 
-@media (max-width: 1400px) {
-  .page-frame {
-    width: min(100%, var(--page-max-width));
-  }
-
-  .preview-shell {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .page-width-rail {
-    display: none;
-  }
-}
 
 @media (max-width: 980px) {
   .page-frame {
@@ -1591,10 +1556,6 @@ body.is-page-resizing * {
 
   .workspace {
     grid-template-columns: 1fr;
-  }
-
-  .preview-shell {
-    grid-template-columns: minmax(0, 1fr);
   }
 
   .workspace.sidebar-collapsed {
@@ -1607,13 +1568,11 @@ body.is-page-resizing * {
     min-height: auto;
   }
 
-  .collapse-toggle {
+  .collapse-toggle,
+  .page-width-handle {
     display: none;
   }
 
-  .page-width-rail {
-    display: none;
-  }
 }
 
 @media (max-width: 720px) {
