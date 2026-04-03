@@ -158,6 +158,42 @@ describe("App", () => {
     ).toBeInTheDocument();
   });
 
+  it("lets desktop users drag the workspace wider from the right edge", () => {
+    const originalInnerWidth = window.innerWidth;
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      writable: true,
+      value: 2600,
+    });
+
+    const { container } = render(<App />);
+    const pageFrame = container.querySelector(".page-frame");
+    const handle = screen.getByRole("button", {
+      name: "Resize workspace width",
+    });
+
+    expect(pageFrame).toHaveStyle("--page-max-width: 1680px");
+
+    fireEvent.mouseDown(handle, { clientX: 2000 });
+    fireEvent.mouseMove(window, { clientX: 2160 });
+    fireEvent.mouseUp(window);
+
+    expect(pageFrame).toHaveStyle("--page-max-width: 1840px");
+    expect(screen.getByText("1840px")).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Reset workspace width" }),
+    );
+
+    expect(pageFrame).toHaveStyle("--page-max-width: 1680px");
+
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      writable: true,
+      value: originalInnerWidth,
+    });
+  });
+
   it("supports upload, selection, preview readiness, and download state changes", async () => {
     const pendingResolvers = new Map<
       string,
