@@ -335,7 +335,6 @@ export default function App() {
           </div>
 
           <aside className="page-width-rail" aria-label="Workspace width controls">
-            <p className="page-width-label">Width</p>
             <button
               type="button"
               className="page-width-handle"
@@ -346,16 +345,6 @@ export default function App() {
             >
               <span className="page-width-handle-line" aria-hidden="true" />
               <span className="page-width-handle-grip" aria-hidden="true" />
-            </button>
-            <p className="page-width-value">{pageMaxWidth}px</p>
-            <button
-              type="button"
-              className="page-width-reset"
-              onClick={() => setPageMaxWidth(BASE_PAGE_MAX_WIDTH)}
-              disabled={pageMaxWidth === BASE_PAGE_MAX_WIDTH}
-              aria-label="Reset workspace width"
-            >
-              Reset
             </button>
           </aside>
         </main>

@@ -179,11 +179,10 @@ describe("App", () => {
     fireEvent.mouseUp(window);
 
     expect(pageFrame).toHaveStyle("--page-max-width: 1840px");
-    expect(screen.getByText("1840px")).toBeInTheDocument();
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Reset workspace width" }),
-    );
+    fireEvent.mouseDown(handle, { clientX: 2160 });
+    fireEvent.mouseMove(window, { clientX: 2000 });
+    fireEvent.mouseUp(window);
 
     expect(pageFrame).toHaveStyle("--page-max-width: 1680px");
 
