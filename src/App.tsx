@@ -1,3 +1,4 @@
+import { MoveHorizontal, PanelRightClose, PanelRightOpen } from "lucide-react";
 import type { CSSProperties, KeyboardEvent, MouseEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import AboutSection from "./components/AboutSection";
@@ -37,28 +38,6 @@ function clampPageWidth(width: number) {
   return Math.min(
     Math.max(Math.round(width), MIN_PAGE_MAX_WIDTH),
     viewportLimitedMax,
-  );
-}
-
-function SidebarToggleIcon({
-  direction,
-}: {
-  direction: "collapse" | "expand";
-}) {
-  return (
-    <svg
-      className="collapse-toggle-icon"
-      viewBox="0 0 16 16"
-      aria-hidden="true"
-    >
-      <path
-        d={
-          direction === "collapse"
-            ? "M10.5 3.5 6 8l4.5 4.5"
-            : "M5.5 3.5 10 8l-4.5 4.5"
-        }
-      />
-    </svg>
   );
 }
 
@@ -153,7 +132,9 @@ export default function App() {
 
     const handleMouseMove = (event: globalThis.MouseEvent) => {
       setPageMaxWidth(
-        clampPageWidth(dragStartWidthRef.current + (event.clientX - dragStartXRef.current)),
+        clampPageWidth(
+          dragStartWidthRef.current + (event.clientX - dragStartXRef.current),
+        ),
       );
     };
     const handleMouseUp = () => {
@@ -253,10 +234,10 @@ export default function App() {
                     type="button"
                     className="collapse-rail-button"
                     onClick={() => setSidebarCollapsed(false)}
-                    aria-label="Expand upload sidebar"
-                    title="Expand upload sidebar"
+                    aria-label="Show upload panel"
+                    title="Show upload panel"
                   >
-                    <SidebarToggleIcon direction="expand" />
+                    <PanelRightOpen className="collapse-toggle-icon" aria-hidden="true" />
                     <span className="collapse-rail-label">Upload</span>
                   </button>
                 </section>
@@ -278,11 +259,11 @@ export default function App() {
                       type="button"
                       className="ghost-button collapse-toggle"
                       onClick={() => setSidebarCollapsed(true)}
-                      aria-label="Collapse upload sidebar"
-                      title="Collapse upload sidebar"
+                      aria-label="Hide upload panel"
+                      title="Hide upload panel"
                     >
-                      <SidebarToggleIcon direction="collapse" />
-                      <span className="collapse-toggle-label">Collapse</span>
+                      <PanelRightClose className="collapse-toggle-icon" aria-hidden="true" />
+                      <span className="collapse-toggle-label">Hide Panel</span>
                     </button>
                   </div>
 
@@ -305,48 +286,49 @@ export default function App() {
                 </section>
               )}
 
-              <section
-                className="panel preview-panel"
-                aria-labelledby="preview-title"
-              >
-                <div className="panel-heading">
-                  <div>
-                    <h2 id="preview-title">Preview</h2>
-                    <p className="panel-copy">
-                      {selectedEntry
-                        ? entryDisplayName(selectedEntry)
-                        : "Start writing, paste Markdown, or convert a file and review it here."}
-                    </p>
+              <div className="preview-shell">
+                <section
+                  className="panel preview-panel"
+                  aria-labelledby="preview-title"
+                >
+                  <div className="panel-heading">
+                    <div>
+                      <h2 id="preview-title">Preview</h2>
+                      <p className="panel-copy">
+                        {selectedEntry
+                          ? entryDisplayName(selectedEntry)
+                          : "Start writing, paste Markdown, or convert a file and review it here."}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <PreviewPanel
-                  entry={selectedEntry}
-                  onStartWriting={addScratchEntry}
-                  onMarkdownChange={(text) => {
-                    if (selectedEntry) {
-                      updateMarkdown(selectedEntry.id, text);
-                    }
-                  }}
-                />
-              </section>
+                  <PreviewPanel
+                    entry={selectedEntry}
+                    onStartWriting={addScratchEntry}
+                    onMarkdownChange={(text) => {
+                      if (selectedEntry) {
+                        updateMarkdown(selectedEntry.id, text);
+                      }
+                    }}
+                  />
+                </section>
+
+                <aside className="page-width-rail" aria-label="Workspace width controls">
+                  <button
+                    type="button"
+                    className="page-width-handle"
+                    onMouseDown={handlePageResizeStart}
+                    onKeyDown={handlePageResizeKeyDown}
+                    aria-label="Resize workspace width"
+                    title="Drag to widen or narrow the workspace"
+                  >
+                    <MoveHorizontal className="page-width-icon" aria-hidden="true" />
+                  </button>
+                </aside>
+              </div>
             </section>
 
             <AboutSection />
           </div>
-
-          <aside className="page-width-rail" aria-label="Workspace width controls">
-            <button
-              type="button"
-              className="page-width-handle"
-              onMouseDown={handlePageResizeStart}
-              onKeyDown={handlePageResizeKeyDown}
-              aria-label="Resize workspace width"
-              title="Drag to widen or narrow the workspace"
-            >
-              <span className="page-width-handle-line" aria-hidden="true" />
-              <span className="page-width-handle-grip" aria-hidden="true" />
-            </button>
-          </aside>
         </main>
       </div>
     </ThemeProvider>

@@ -137,24 +137,24 @@ describe("App", () => {
     expect(workspace).not.toHaveClass("sidebar-collapsed");
 
     fireEvent.click(
-      screen.getByRole("button", { name: "Collapse upload sidebar" }),
+      screen.getByRole("button", { name: "Hide upload panel" }),
     );
 
     expect(workspace).toHaveClass("sidebar-collapsed");
     expect(
-      screen.getByRole("button", { name: "Expand upload sidebar" }),
+      screen.getByRole("button", { name: "Show upload panel" }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Collapse upload sidebar" }),
+      screen.queryByRole("button", { name: "Hide upload panel" }),
     ).not.toBeInTheDocument();
 
     fireEvent.click(
-      screen.getByRole("button", { name: "Expand upload sidebar" }),
+      screen.getByRole("button", { name: "Show upload panel" }),
     );
 
     expect(workspace).not.toHaveClass("sidebar-collapsed");
     expect(
-      screen.getByRole("button", { name: "Collapse upload sidebar" }),
+      screen.getByRole("button", { name: "Hide upload panel" }),
     ).toBeInTheDocument();
   });
 
