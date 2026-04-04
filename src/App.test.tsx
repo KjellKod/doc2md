@@ -137,25 +137,60 @@ describe("App", () => {
     expect(workspace).not.toHaveClass("sidebar-collapsed");
 
     fireEvent.click(
-      screen.getByRole("button", { name: "Collapse upload sidebar" }),
+      screen.getByRole("button", { name: "Hide upload panel" }),
     );
 
     expect(workspace).toHaveClass("sidebar-collapsed");
     expect(
-      screen.getByRole("button", { name: "Expand upload sidebar" }),
+      screen.getByRole("button", { name: "Show upload panel" }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Collapse upload sidebar" }),
+      screen.queryByRole("button", { name: "Hide upload panel" }),
     ).not.toBeInTheDocument();
 
     fireEvent.click(
-      screen.getByRole("button", { name: "Expand upload sidebar" }),
+      screen.getByRole("button", { name: "Show upload panel" }),
     );
 
     expect(workspace).not.toHaveClass("sidebar-collapsed");
     expect(
-      screen.getByRole("button", { name: "Collapse upload sidebar" }),
+      screen.getByRole("button", { name: "Hide upload panel" }),
     ).toBeInTheDocument();
+  });
+
+  it("lets desktop users drag the workspace wider from the right edge", () => {
+    const originalInnerWidth = window.innerWidth;
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      writable: true,
+      value: 2600,
+    });
+
+    const { container } = render(<App />);
+    const pageFrame = container.querySelector(".page-frame");
+    const handle = screen.getByRole("button", {
+      name: "Resize workspace width",
+    });
+
+    expect(pageFrame).toHaveStyle("--page-max-width: 1680px");
+
+    fireEvent.mouseDown(handle, { clientX: 2000 });
+    fireEvent.mouseMove(window, { clientX: 2160 });
+    fireEvent.mouseUp(window);
+
+    expect(pageFrame).toHaveStyle("--page-max-width: 1840px");
+
+    fireEvent.mouseDown(handle, { clientX: 2160 });
+    fireEvent.mouseMove(window, { clientX: 2000 });
+    fireEvent.mouseUp(window);
+
+    expect(pageFrame).toHaveStyle("--page-max-width: 1680px");
+
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      writable: true,
+      value: originalInnerWidth,
+    });
   });
 
   it("supports upload, selection, preview readiness, and download state changes", async () => {

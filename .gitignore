@@ -1,5 +1,6 @@
 .DS_Store
 .env
+.quest
 .quest/
 .ws/
 *.local
