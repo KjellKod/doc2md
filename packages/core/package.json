@@ -1,0 +1,28 @@
+{
+  "name": "@doc2md/core",
+  "version": "0.1.0",
+  "type": "module",
+  "private": false,
+  "files": [
+    "dist",
+    "bin"
+  ],
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "bin": {
+    "doc2md": "./bin/doc2md.js"
+  },
+  "scripts": {
+    "build": "vite build --config vite.config.ts",
+    "test": "vitest run --config vitest.config.ts"
+  },
+  "dependencies": {
+    "jsdom": "^26.0.0",
+    "jszip": "^3.10.1",
+    "mammoth": "^1.12.0",
+    "pdfjs-dist": "^4.10.38",
+    "read-excel-file": "^7.0.3",
+    "turndown": "^7.2.1"
+  }
+}

@@ -6,6 +6,8 @@ For the other perspective, see [Jean-Claude's Journal](../journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 013 | [Requiem: API Tooling](013-requiem-api-tooling-celebration.md) | Burying the browser-only prison and the quiet little lies in batch, path, and CLI contracts |
+| 012 | [Requiem: API Tooling](012-requiem-api-tooling.md) | Burying browser captivity, false path reservations, and CLI numbers that lied about being numbers |
 | 011 | [Requiem: Preview Pane Resizer](011-requiem-preview-pane-resizer.md) | Burying fixed sidebar width, noisy resize listeners, and the fantasy that collapse was the only answer |
 | 010 | [Requiem: Preview Pane Collapse](010-requiem-preview-pane-collapse.md) | Burying the permanent sidebar width tax without letting mobile layout rot |
 | 009 | [Requiem: LinkedIn Unicode Preview](009-requiem-linkedin-unicode-preview.md) | Burying mixed-mode preview leakage, fake table support, and one render path that almost did too much |

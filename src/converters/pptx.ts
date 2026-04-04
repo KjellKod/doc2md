@@ -5,6 +5,7 @@ import {
   createErrorResult
 } from "./messages";
 import { readFileAsArrayBuffer } from "./readBinary";
+import { getDomParser } from "./runtime";
 import type { Converter } from "./types";
 
 const DRAWINGML_NAMESPACE = "http://schemas.openxmlformats.org/drawingml/2006/main";
@@ -18,7 +19,8 @@ const PACKAGE_RELATIONSHIP_NAMESPACE =
 const EMPTY_SLIDE_MESSAGE = "This slide contains no extractable text.";
 
 function parseXmlDocument(xml: string) {
-  const parsed = new DOMParser().parseFromString(xml, "application/xml");
+  const DOMParserCtor = getDomParser();
+  const parsed = new DOMParserCtor().parseFromString(xml, "application/xml");
 
   if (parsed.getElementsByTagName("parsererror").length > 0) {
     throw new Error("Unable to parse Open XML content.");

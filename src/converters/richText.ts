@@ -1,5 +1,6 @@
 import TurndownService from "turndown";
 import { renderMarkdownTable } from "./delimited";
+import { getDomParser } from "./runtime";
 
 const TABLE_PLACEHOLDER_PREFIX = "DOC2MDTABLE";
 
@@ -129,7 +130,8 @@ function nestGoogleDocsLists(doc: Document): void {
 }
 
 export function convertHtmlFragmentToMarkdown(html: string) {
-  const parser = new globalThis.DOMParser();
+  const DOMParserCtor = getDomParser();
+  const parser = new DOMParserCtor();
   const document = parser.parseFromString(html, "text/html");
   nestGoogleDocsLists(document);
   const replacements = replaceTablesWithPlaceholders(document);

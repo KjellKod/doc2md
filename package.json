@@ -4,11 +4,16 @@
   "version": "0.1.0",
   "license": "MIT",
   "type": "module",
+  "workspaces": [
+    "packages/core"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:core": "npm run build --workspace=@doc2md/core",
     "lint": "eslint .",
     "test": "vitest",
+    "test:core": "npm run test --workspace=@doc2md/core",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview"
   },
