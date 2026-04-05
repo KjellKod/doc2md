@@ -126,9 +126,11 @@ jobs:
               -e '/{PLACEHOLDER_DIFF}/d' \
               .github/codex-review-prompt.md > /tmp/review-prompt.md
 
-      - name: Install Codex CLI
+      - name: Install Codex CLI and sandbox deps
         if: steps.check-key.outputs.skip != 'true'
-        run: npm install -g @openai/codex
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq bubblewrap >/dev/null 2>&1 || true
+          npm install -g @openai/codex
 
       - name: AI Code Review
         if: steps.check-key.outputs.skip != 'true'
