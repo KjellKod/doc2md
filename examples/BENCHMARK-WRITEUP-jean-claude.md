@@ -51,12 +51,6 @@ Raw processing times ranged wildly. Codex took anywhere from 145 to 274 seconds 
 
 A tool with 129 seconds of variance is a tool you cannot put in a pipeline with a timeout. A tool with 11 seconds of variance is a tool you can schedule, monitor, and build around. If you are running agents in production, variance is the cost nobody budgets for until something breaks.
 
-## The Bug That Proved The Point
-
-Early on, Codex with doc2md took 385 seconds. We almost concluded the converter was making things worse. Then we checked the logs. The sandbox was read only. doc2md tried to create an output directory, failed silently, and Codex spent six minutes trying thirty seven alternative extraction approaches. One permission flag. 385 seconds became 96.
-
-If we had stopped at the first run and drawn conclusions, we would have published the wrong finding. The benchmark caught the bug. That is what measuring is for.
-
 ## The Bigger Picture
 
 AI models are brilliant. They read documents, write code, reason about systems. That brilliance deserves clean input. Every minute an agent spends on format translation is a minute it is not spending on the task you actually care about.
