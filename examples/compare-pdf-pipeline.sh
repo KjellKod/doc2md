@@ -32,6 +32,7 @@ PER_FILE_MODE=0
 # ---------------------------------------------------------------------------
 die() { printf 'Error: %s\n' "$*" >&2; exit 1; }
 warn() { printf 'Warning: %s\n' "$*" >&2; }
+ucfirst() { local first rest; first="$(printf '%s' "$1" | cut -c1 | tr '[:lower:]' '[:upper:]')"; rest="$(printf '%s' "$1" | cut -c2-)"; printf '%s%s' "$first" "$rest"; }
 
 absolute_path() {
   local dir base
@@ -198,8 +199,8 @@ run_agent() {
   local label="$1" sandbox="$2" prompt="$3" agent="$4" mode="${5:-raw}"
 
   # doc2md mode needs write access to create ./output/
-  local codex_sandbox="read-only"
-  [ "$mode" = "doc2md" ] && codex_sandbox="workspace-write"
+  local codex_sandbox_flag="--sandbox=read-only"
+  [ "$mode" = "doc2md" ] && codex_sandbox_flag="--sandbox=workspace-write"
 
   local cmd_display=""
   case "$agent" in
@@ -208,8 +209,8 @@ run_agent() {
         add_result "$label" "SKIP" "n/a" "n/a" "not installed"
         return
       fi
-      cmd_display="echo '<prompt>' | claude -p --no-session-persistence --add-dir $sandbox"
-      printf '\n    cmd: %s\n' "$cmd_display"
+      printf '\n    prompt: %s\n' "$prompt"
+      printf '    cmd: echo <prompt> | claude -p --no-session-persistence --add-dir %s\n' "$sandbox"
       run_timed "$sandbox/response.txt" "$prompt" \
         claude -p --no-session-persistence --add-dir "$sandbox"
       ;;
@@ -218,11 +219,11 @@ run_agent() {
         add_result "$label" "SKIP" "n/a" "n/a" "not installed"
         return
       fi
-      cmd_display="echo '<prompt>' | codex exec -C $sandbox --add-dir $sandbox --skip-git-repo-check -c sandbox_permissions=[\"$codex_sandbox\"] ${CODEX_EXTRA_FLAGS[*]}"
-      printf '\n    cmd: %s\n' "$cmd_display"
+      printf '\n    prompt: %s\n' "$prompt"
+      printf '    cmd: echo <prompt> | codex exec -C %s --add-dir %s --skip-git-repo-check %s %s\n' "$sandbox" "$sandbox" "$codex_sandbox_flag" "${CODEX_EXTRA_FLAGS[*]}"
       run_timed "$sandbox/response.txt" "$prompt" \
         codex exec -C "$sandbox" --add-dir "$sandbox" --skip-git-repo-check \
-        -c "sandbox_permissions=[\"$codex_sandbox\"]" \
+        "$codex_sandbox_flag" \
         "${CODEX_EXTRA_FLAGS[@]}"
       ;;
   esac
@@ -281,8 +282,8 @@ run_batch() {
 
   for agent in "${agents[@]}"; do
     for mode in "${modes[@]}"; do
-      local label="${agent^} ${mode}"
-      [ "$mode" = "doc2md" ] && label="${agent^}+doc2md"
+      local label="$(ucfirst "$agent") ${mode}"
+      [ "$mode" = "doc2md" ] && label="$(ucfirst "$agent")+doc2md"
       local sandbox
       sandbox="$(make_sandbox "batch-${agent}-${mode}" "${INPUT_FILES[@]}")"
 
@@ -317,7 +318,7 @@ run_perfile() {
     for agent in "${agents[@]}"; do
       for mode in "${modes[@]}"; do
         local suffix="raw"; [ "$mode" = "doc2md" ] && suffix="d2m"
-        local label="${ext} ${agent^} ${suffix}"
+        local label="${ext} $(ucfirst "$agent") ${suffix}"
         local sandbox
         sandbox="$(make_sandbox "${ext}-${agent}-${mode}-$$" "$file_path")"
 
@@ -328,7 +329,7 @@ run_perfile() {
           prompt="$(prompt_doc2md_single "$filename")"
         fi
 
-        printf '    %s %s...' "${agent^}" "$mode"
+        printf '    %s %s...' "$(ucfirst "$agent")" "$mode"
         run_agent "$label" "$sandbox" "$prompt" "$agent" "$mode"
       done
     done
