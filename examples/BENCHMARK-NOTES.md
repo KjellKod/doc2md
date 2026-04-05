@@ -6,13 +6,13 @@ doc2md converts PDF, DOCX, XLSX, and PPTX to clean markdown in under 1 second.
 When AI agents (Claude, Codex) use doc2md as a preprocessing step instead of
 reading office documents natively, they finish roughly **2x faster**.
 
-| Approach | Time (4 files) | What happens |
-|----------|---------------|-------------|
+| Approach | Median (10 runs) | What happens |
+|----------|-----------------|-------------|
 | **doc2md alone** | **<1s** | Deterministic conversion, 16KB clean markdown |
-| Claude raw | ~130s | Agent reads each file with built-in tools |
-| **Claude + doc2md** | **~70s** | Agent runs doc2md, reads markdown. ~48% faster |
-| Codex raw | ~180s | Agent struggles with binary formats, many tool calls |
-| **Codex + doc2md** | **~96s** | Agent runs doc2md, reads markdown. ~47% faster |
+| Claude raw | 121s | Agent reads each file with built-in tools |
+| **Claude + doc2md** | **69s** | Agent runs doc2md, reads markdown. **43% faster** |
+| Codex raw | 188s | Agent struggles with binary formats, many tool calls |
+| **Codex + doc2md** | **103s** | Agent runs doc2md, reads markdown. **45% faster** |
 
 ## Why This Matters
 
@@ -114,6 +114,49 @@ doc2md \
   doc2md_Quarterly_Review_Q1_2026.pptx \
   -o ./output/
 ```
+
+## 10-Run Results (2026-04-04)
+
+Batch mode, 4 files (PDF + DOCX + XLSX + PPTX), extraction task. All times in seconds.
+
+| run | doc2md_only | claude_raw | claude_doc2md | codex_raw | codex_doc2md |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 1 | 136 | 64 | 160 | 100 |
+| 2 | 1 | 142 | 71 | 174 | 106 |
+| 3 | 1 | 103 | 70 | 274 | 108 |
+| 4 | 1 | 104 | 73 | 224 | 97 |
+| 5 | 0 | 121 | 63 | 158 | 107 |
+| 6 | 1 | 108 | 69 | 198 | 102 |
+| 7 | 1 | 129 | 68 | 188 | 103 |
+| 8 | 1 | 107 | 70 | 145 | 104 |
+| 9 | 1 | 131 | 66 | 207 | 100 |
+| 10 | 1 | 133 | 69 | 190 | 106 |
+
+### Statistics
+
+| Case | Min | Max | Avg | Median | n |
+|------|-----|-----|-----|--------|---|
+| doc2md only | 0s | 1s | 0s | 1s | 10 |
+| Claude raw | 103s | 142s | 121s | 121s | 10 |
+| Claude+doc2md | 63s | 73s | 68s | 69s | 10 |
+| Codex raw | 145s | 274s | 191s | 188s | 10 |
+| Codex+doc2md | 97s | 108s | 103s | 103s | 10 |
+
+### Key Findings
+
+**doc2md preprocessing cuts agent processing time roughly in half:**
+- Claude: 121s median raw, 69s median with doc2md. **43% faster.**
+- Codex: 188s median raw, 103s median with doc2md. **45% faster.**
+
+**doc2md dramatically reduces variance:**
+- Claude raw range: 39s spread (103-142). Claude+doc2md range: 10s spread (63-73).
+- Codex raw range: 129s spread (145-274). Codex+doc2md range: 11s spread (97-108).
+
+The reduced variance is arguably as valuable as the speed improvement.
+Predictable processing time matters for pipelines, SLAs, and cost estimation.
+
+**doc2md itself is negligible:** 0-1s for all 4 files, every run. The
+conversion cost is effectively zero compared to agent processing time.
 
 ### Bugs Found During Benchmarking
 
