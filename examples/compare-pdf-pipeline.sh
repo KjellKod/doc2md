@@ -228,8 +228,44 @@ run_agent() {
       ;;
   esac
 
-  printf '    result: %s (%ss)\n' "$_RC_STATUS" "$_RC_SECONDS"
-  add_result "$label" "$_RC_STATUS" "$_RC_EXIT" "$_RC_SECONDS" ""
+  # Validate response: exists, non-trivial size, mentions at least one input file
+  local resp="$sandbox/response.txt"
+  local resp_bytes=0 validation="ok"
+  if [ -f "$resp" ]; then
+    resp_bytes="$(wc -c < "$resp" | tr -d '[:space:]')"
+  fi
+
+  if [ "$_RC_STATUS" = "PASS" ]; then
+    if [ "$resp_bytes" -lt 500 ]; then
+      validation="WARN: response only ${resp_bytes} bytes"
+    else
+      # Check that response references at least one input filename (minus extension)
+      local found_ref=0
+      for f in "$sandbox"/*; do
+        [ -f "$f" ] || continue
+        local stem
+        stem="$(basename "$f")"
+        stem="${stem%.*}"
+        [ "$stem" = "response" ] && continue
+        # Look for any word from the filename (split on underscores)
+        local keyword
+        keyword="$(printf '%s' "$stem" | tr '_' '\n' | awk 'length >= 4 {print; exit}')"
+        if [ -n "$keyword" ] && grep -qi "$keyword" "$resp" 2>/dev/null; then
+          found_ref=1
+          break
+        fi
+      done
+      if [ "$found_ref" -eq 0 ]; then
+        validation="WARN: no file content detected"
+      fi
+    fi
+  fi
+
+  local note="${resp_bytes}b"
+  [ "$validation" != "ok" ] && note="$note, $validation"
+
+  printf '    result: %s (%ss, %s)\n' "$_RC_STATUS" "$_RC_SECONDS" "$note"
+  add_result "$label" "$_RC_STATUS" "$_RC_EXIT" "$_RC_SECONDS" "$note"
 }
 
 # ---------------------------------------------------------------------------
