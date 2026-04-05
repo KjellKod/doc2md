@@ -29,6 +29,12 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm run build
+      - name: Build and copy core tarball for Pages
+        run: |
+          npm run build --workspace=@doc2md/core
+          npm run pack:local --workspace=@doc2md/core > "$RUNNER_TEMP/pack-output.txt"
+          cat "$RUNNER_TEMP/pack-output.txt"
+          node --input-type=module -e 'import { copyFileSync, readFileSync, writeFileSync } from "node:fs"; const output = readFileSync(process.argv[1], "utf8"); const jsonStart = output.indexOf("{"); if (jsonStart < 0) { throw new Error(`Could not find pack JSON in output:\n${output}`); } const packResult = JSON.parse(output.slice(jsonStart)); copyFileSync(packResult.tarballPath, `dist/${packResult.filename}`); writeFileSync("dist/latest-tarball.json", `${JSON.stringify({ filename: packResult.filename, version: packResult.version }, null, 2)}\n`, "utf8");' "$RUNNER_TEMP/pack-output.txt"
       - name: Archive Pages artifact
         run: |
           tar \

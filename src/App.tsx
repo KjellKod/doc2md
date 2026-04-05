@@ -1,10 +1,10 @@
-import { MoveHorizontal, PanelRightClose, PanelRightOpen } from "lucide-react";
-import type { CSSProperties, KeyboardEvent, MouseEvent } from "react";
+import type { CSSProperties, KeyboardEvent, MouseEvent, SVGProps } from "react";
 import { useEffect, useRef, useState } from "react";
 import AboutSection from "./components/AboutSection";
 import DownloadButton from "./components/DownloadButton";
 import DropZone from "./components/DropZone";
 import FileList from "./components/FileList";
+import InstallPage from "./components/InstallPage";
 import PreviewPanel from "./components/PreviewPanel";
 import ThemeProvider from "./components/ThemeProvider";
 import ThemeToggle from "./components/ThemeToggle";
@@ -17,6 +17,77 @@ const MIN_PAGE_MAX_WIDTH = 1360;
 const HARD_MAX_PAGE_MAX_WIDTH = 2400;
 const PAGE_WIDTH_FRAME_ALLOWANCE = 96;
 const PAGE_WIDTH_STEP = 48;
+type PageView = "convert" | "install";
+
+function PanelRightOpenIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" {...props}>
+      <path
+        d="M4 5h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="m14 8 4 4-4 4"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function PanelRightCloseIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" {...props}>
+      <path
+        d="M20 5H9a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h11"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="m10 8-4 4 4 4"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function MoveHorizontalIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" {...props}>
+      <path
+        d="m7 8-4 4 4 4"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="m17 8 4 4-4 4"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M3 12h18"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 function pluralize(count: number, singular: string, plural = `${singular}s`) {
   return count === 1 ? singular : plural;
@@ -42,6 +113,7 @@ function clampPageWidth(width: number) {
 }
 
 export default function App() {
+  const [activePage, setActivePage] = useState<PageView>("convert");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isPageResizing, setIsPageResizing] = useState(false);
   const [pageMaxWidth, setPageMaxWidth] = useState(BASE_PAGE_MAX_WIDTH);
@@ -221,107 +293,165 @@ export default function App() {
                   Supports .md, .txt, .json, .csv, .tsv, .html, .docx, .xlsx,
                   .pdf, and .pptx
                 </span>
-                <span className="hero-pill">{heroSummary}</span>
+                <span className="hero-pill">
+                  {activePage === "convert"
+                    ? heroSummary
+                    : "CLI, Node, and portable skill setup from one place"}
+                </span>
               </div>
             </header>
 
-            <section
-              className={`workspace${sidebarCollapsed ? " sidebar-collapsed" : ""}`}
-            >
-              {sidebarCollapsed ? (
-                <section className="panel collapse-rail" aria-label="Upload rail">
-                  <button
-                    type="button"
-                    className="collapse-rail-button"
-                    onClick={() => setSidebarCollapsed(false)}
-                    aria-label="Show upload panel"
-                    title="Show upload panel"
-                  >
-                    <PanelRightOpen className="collapse-toggle-icon" aria-hidden="true" />
-                    <span className="collapse-rail-label">Upload</span>
-                  </button>
-                </section>
-              ) : (
-                <section
-                  className="panel sidebar-panel"
-                  aria-labelledby="upload-title"
-                >
-                  <div className="panel-heading">
-                    <div>
-                      <h2 id="upload-title">Upload</h2>
-                      <p className="panel-copy">
-                        Drop in documents, spreadsheets, PDFs, or presentations,
-                        or start writing from scratch and keep everything in one
-                        session.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      className="ghost-button collapse-toggle"
-                      onClick={() => setSidebarCollapsed(true)}
-                      aria-label="Hide upload panel"
-                      title="Hide upload panel"
-                    >
-                      <PanelRightClose className="collapse-toggle-icon" aria-hidden="true" />
-                    </button>
-                  </div>
-
-                  <DropZone onFilesAdded={addFiles} />
-
-                  <div className="panel-heading panel-heading-tight">
-                    <div>
-                      <h2>Files</h2>
-                      <p className="panel-copy">{fileSummary}</p>
-                    </div>
-                    <DownloadButton entry={selectedEntry} />
-                  </div>
-
-                  <FileList
-                    entries={entries}
-                    onClearAll={clearEntries}
-                    onDownloadAll={() => downloadAllEntries(entries)}
-                    onSelect={selectEntry}
-                  />
-                </section>
-              )}
-
-              <section
-                className="panel preview-panel"
-                aria-labelledby="preview-title"
+            <div className="view-switcher" role="tablist" aria-label="doc2md views">
+              <button
+                id="view-tab-convert"
+                type="button"
+                role="tab"
+                aria-selected={activePage === "convert"}
+                aria-controls="view-panel-convert"
+                tabIndex={activePage === "convert" ? 0 : -1}
+                className={`view-tab${activePage === "convert" ? " is-active" : ""}`}
+                onClick={() => setActivePage("convert")}
               >
-                <div className="panel-heading">
-                  <div>
-                    <h2 id="preview-title">Preview</h2>
-                    <p className="panel-copy">
-                      {selectedEntry
-                        ? entryDisplayName(selectedEntry)
-                        : "Start writing, paste Markdown, or convert a file and review it here."}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    className="ghost-button page-width-handle"
-                    onMouseDown={handlePageResizeStart}
-                    onKeyDown={handlePageResizeKeyDown}
-                    aria-label="Resize workspace width"
-                    title="Drag to widen or narrow the workspace"
-                  >
-                    <MoveHorizontal className="page-width-icon" aria-hidden="true" />
-                  </button>
-                </div>
-                <PreviewPanel
-                  entry={selectedEntry}
-                  onStartWriting={addScratchEntry}
-                  onMarkdownChange={(text) => {
-                    if (selectedEntry) {
-                      updateMarkdown(selectedEntry.id, text);
-                    }
-                  }}
-                />
-              </section>
-            </section>
+                Convert
+              </button>
+              <button
+                id="view-tab-install"
+                type="button"
+                role="tab"
+                aria-selected={activePage === "install"}
+                aria-controls="view-panel-install"
+                tabIndex={activePage === "install" ? 0 : -1}
+                className={`view-tab${activePage === "install" ? " is-active" : ""}`}
+                onClick={() => setActivePage("install")}
+              >
+                Install & Use
+              </button>
+            </div>
 
-            <AboutSection />
+            {activePage === "convert" ? (
+              <section
+                id="view-panel-convert"
+                className="view-panel"
+                role="tabpanel"
+                aria-labelledby="view-tab-convert"
+              >
+                <section
+                  className={`workspace${sidebarCollapsed ? " sidebar-collapsed" : ""}`}
+                >
+                  {sidebarCollapsed ? (
+                    <section className="panel collapse-rail" aria-label="Upload rail">
+                      <button
+                        type="button"
+                        className="collapse-rail-button"
+                        onClick={() => setSidebarCollapsed(false)}
+                        aria-label="Show upload panel"
+                        title="Show upload panel"
+                      >
+                        <PanelRightOpenIcon
+                          className="collapse-toggle-icon"
+                          aria-hidden="true"
+                        />
+                        <span className="collapse-rail-label">Upload</span>
+                      </button>
+                    </section>
+                  ) : (
+                    <section
+                      className="panel sidebar-panel"
+                      aria-labelledby="upload-title"
+                    >
+                      <div className="panel-heading">
+                        <div>
+                          <h2 id="upload-title">Upload</h2>
+                          <p className="panel-copy">
+                            Drop in documents, spreadsheets, PDFs, or presentations,
+                            or start writing from scratch and keep everything in one
+                            session.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          className="ghost-button collapse-toggle"
+                          onClick={() => setSidebarCollapsed(true)}
+                          aria-label="Hide upload panel"
+                          title="Hide upload panel"
+                        >
+                          <PanelRightCloseIcon
+                            className="collapse-toggle-icon"
+                            aria-hidden="true"
+                          />
+                        </button>
+                      </div>
+
+                      <DropZone onFilesAdded={addFiles} />
+
+                      <div className="panel-heading panel-heading-tight">
+                        <div>
+                          <h2>Files</h2>
+                          <p className="panel-copy">{fileSummary}</p>
+                        </div>
+                        <DownloadButton entry={selectedEntry} />
+                      </div>
+
+                      <FileList
+                        entries={entries}
+                        onClearAll={clearEntries}
+                        onDownloadAll={() => downloadAllEntries(entries)}
+                        onSelect={selectEntry}
+                      />
+                    </section>
+                  )}
+
+                  <section
+                    className="panel preview-panel"
+                    aria-labelledby="preview-title"
+                  >
+                    <div className="panel-heading">
+                      <div>
+                        <h2 id="preview-title">Preview</h2>
+                        <p className="panel-copy">
+                          {selectedEntry
+                            ? entryDisplayName(selectedEntry)
+                            : "Start writing, paste Markdown, or convert a file and review it here."}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        className="ghost-button page-width-handle"
+                        onMouseDown={handlePageResizeStart}
+                        onKeyDown={handlePageResizeKeyDown}
+                        aria-label="Resize workspace width"
+                        title="Drag to widen or narrow the workspace"
+                      >
+                        <MoveHorizontalIcon
+                          className="page-width-icon"
+                          aria-hidden="true"
+                        />
+                      </button>
+                    </div>
+                    <PreviewPanel
+                      entry={selectedEntry}
+                      onStartWriting={addScratchEntry}
+                      onMarkdownChange={(text) => {
+                        if (selectedEntry) {
+                          updateMarkdown(selectedEntry.id, text);
+                        }
+                      }}
+                    />
+                  </section>
+                </section>
+
+                <AboutSection />
+              </section>
+            ) : (
+              <section
+                id="view-panel-install"
+                className="view-panel"
+                role="tabpanel"
+                aria-labelledby="view-tab-install"
+              >
+                <InstallPage />
+              </section>
+            )}
           </div>
         </main>
       </div>

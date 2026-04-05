@@ -200,6 +200,55 @@ a {
   font-size: 0.93rem;
 }
 
+.view-switcher {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 24px;
+  padding: 8px;
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.66);
+  box-shadow: 0 18px 40px rgba(27, 39, 49, 0.06);
+}
+
+.view-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: 700;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.view-tab:hover,
+.view-tab:focus-visible {
+  background: rgba(255, 255, 255, 0.74);
+  color: var(--accent-strong);
+  transform: translateY(-1px);
+}
+
+.view-tab.is-active {
+  background: var(--accent);
+  color: #ffffff;
+  box-shadow: 0 14px 28px rgba(23, 56, 76, 0.18);
+}
+
+.view-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
 .workspace {
   display: grid;
   grid-template-columns: minmax(350px, 430px) minmax(0, 1fr);
@@ -233,6 +282,99 @@ a {
 
 .about-section {
   margin-top: 24px;
+}
+
+.install-stack {
+  display: grid;
+  gap: 24px;
+}
+
+.install-hero-panel {
+  gap: 20px;
+}
+
+.install-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.install-download-note {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.install-grid,
+.install-card-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.install-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.install-card-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.install-card,
+.install-step {
+  padding: 18px;
+  border: 1px solid var(--panel-border);
+  border-radius: 22px;
+  background: var(--panel-bg-strong);
+}
+
+.install-card h3,
+.install-step h3 {
+  margin: 6px 0 0;
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+
+.install-card p:last-child,
+.install-step p:last-child {
+  margin-bottom: 0;
+}
+
+.install-steps {
+  display: grid;
+  gap: 16px;
+}
+
+.install-code {
+  margin: 14px 0 0;
+  padding: 14px 16px;
+  border: 1px solid var(--panel-border);
+  border-radius: 18px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.78) 0%,
+    rgba(243, 238, 230, 0.98) 100%
+  );
+  overflow-x: auto;
+}
+
+.install-code code {
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.install-link-list {
+  margin: 14px 0 0;
+  padding-left: 20px;
+  color: var(--text-secondary);
+}
+
+.install-link-list li + li {
+  margin-top: 10px;
+}
+
+.install-link-list a {
+  color: var(--accent);
+  font-weight: 700;
 }
 
 .panel-heading,
@@ -1579,6 +1721,11 @@ body.is-page-resizing * {
     width: 100%;
   }
 
+  .install-grid,
+  .install-card-grid {
+    grid-template-columns: 1fr;
+  }
+
   .workspace {
     grid-template-columns: 1fr;
   }
@@ -1607,6 +1754,10 @@ body.is-page-resizing * {
 
   .hero {
     padding: 22px 4px 26px;
+  }
+
+  .view-switcher {
+    width: 100%;
   }
 
   .hero-top {
@@ -1638,6 +1789,10 @@ body.is-page-resizing * {
   .file-list-item-top {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .view-tab {
+    flex: 1 1 180px;
   }
 
   .file-list-toolbar {
