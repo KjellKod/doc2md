@@ -148,6 +148,12 @@ doc2md_file_args() {
 #   task: Extract and output the full text content of this document. Do not
 #   search for or reference any external files beyond what is provided.
 #
+# To run this benchmark script:
+#   ./examples/compare-pdf-pipeline.sh                       # batch mode, 4 default files
+#   ./examples/compare-pdf-pipeline.sh --per-file             # one session per file
+#   ./examples/compare-pdf-pipeline.sh my.pdf my.docx         # custom files
+#   BENCHMARK_QUESTION="What is the Q2 budget?" ./examples/compare-pdf-pipeline.sh
+#
 # To run doc2md directly (no AI, just conversion):
 #   doc2md ./file1.pdf ./file2.docx ./file3.xlsx ./file4.pptx -o ./output/
 #
