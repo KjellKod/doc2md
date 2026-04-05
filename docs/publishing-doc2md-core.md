@@ -32,8 +32,8 @@ Once a version is published:
 
 Practical implication:
 
-- if `0.5.1` is the latest release tag and `HEAD` is on that tagged commit, the local package artifact uses `0.5.1`
-- if `HEAD` is ahead of the latest release tag, the local package artifact bumps the patch version, for example `0.5.1` -> `0.5.2`
+- if `0.6.1` is the latest release tag and `HEAD` is on that tagged commit, the local package artifact uses `0.6.1`
+- if `HEAD` is ahead of the latest release tag, the local package artifact bumps the patch version, for example `0.6.1` -> `0.6.2`
 - emitted package versions always use `X.Y.Z`, not `vX.Y.Z`
 
 ## What you need before a real npm publish
