@@ -29,7 +29,7 @@ npm run dev
 
 Open `http://localhost:5173/doc2md/` in your browser.
 
-The live site now includes an `Install & Use` tab for the package, tarball, and portable skill paths.
+The live site now includes an **Install & Use** tab for the package, tarball, and portable skill paths.
 
 ## Use As A Package, CLI, Or Skill
 
