@@ -1,25 +1,57 @@
 {
   "name": "@doc2md/core",
-  "version": "0.1.0",
+  "version": "0.6.2",
+  "description": "Publish-ready Node API and CLI for doc2md document-to-markdown conversion.",
+  "license": "MIT",
   "type": "module",
   "private": false,
+  "homepage": "https://kjellkod.github.io/doc2md/",
+  "bugs": {
+    "url": "https://github.com/KjellKod/doc2md/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KjellKod/doc2md.git",
+    "directory": "packages/core"
+  },
+  "keywords": [
+    "doc2md",
+    "markdown",
+    "document-conversion",
+    "pdf",
+    "docx",
+    "cli"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "files": [
     "dist",
     "bin"
   ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./dist/index.js"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
   },
   "bin": {
-    "doc2md": "./bin/doc2md.js"
+    "doc2md": "bin/doc2md.js"
   },
   "scripts": {
-    "build": "vite build --config vite.config.ts",
+    "build": "vite build --config vite.config.ts && node ./scripts/copy-public-types.mjs",
+    "pack:local": "node ./scripts/pack-local-release.mjs",
+    "prepack": "npm run build",
     "test": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
-    "jsdom": "^26.0.0",
     "jszip": "^3.10.1",
+    "jsdom": "^26.0.0",
     "mammoth": "^1.12.0",
     "pdfjs-dist": "^4.10.38",
     "read-excel-file": "^7.0.3",

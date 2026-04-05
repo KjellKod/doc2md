@@ -57,7 +57,7 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole("link", {
-        name: /see how to use @doc2md\/core in node, scripts, and mcp-style tools\./i,
+        name: /see how to use @doc2md\/core in node, scripts, mcp-style tools, or a portable skill\./i,
       }),
     ).toHaveAttribute(
       "href",

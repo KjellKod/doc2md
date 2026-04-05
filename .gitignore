@@ -8,3 +8,4 @@ dist
 node_modules
 __pycache__/
 *.py[cod]
+packages/core/doc2md-core-*.tgz

@@ -44,14 +44,15 @@ export default function AboutSection() {
           to pretend that every format is more cooperative than it really is.
         </p>
         <p>
-          If you want the same conversion approach in Node, batch jobs, or
-          MCP-style tooling, there is now an automation path too:{" "}
+          If you want the same conversion approach in Node, batch jobs,
+          MCP-style tooling, or a portable repo skill, there is now an
+          automation path too:{" "}
           <a
             href="https://github.com/KjellKod/doc2md/blob/main/docs/using-doc2md-core.md"
             target="_blank"
             rel="noopener noreferrer"
           >
-            use the <code>@doc2md/core</code> package
+            use the <code>@doc2md/core</code> package, CLI, and skill path
           </a>
           .
         </p>
@@ -64,7 +65,7 @@ export default function AboutSection() {
           target="_blank"
           rel="noopener noreferrer"
         >
-          See how to use <code>@doc2md/core</code> in Node, scripts, and MCP-style tools.
+          See how to use <code>@doc2md/core</code> in Node, scripts, MCP-style tools, or a portable skill.
         </a>
       </p>
 
