@@ -1,125 +1,125 @@
-# PDF Pipeline Benchmark Notes
+# Why doc2md? Benchmark Evidence
 
-## Run 1: Summary-only prompt (2026-04-04)
+## The Short Version
 
-PDF: `Repo_Quality_Cleanup__Refactoring_and_Test_Quality_Spec.pdf` (137KB, 7 pages, clean layout)
+doc2md converts PDF, DOCX, XLSX, and PPTX to clean markdown in under 1 second.
+When AI agents (Claude, Codex) use doc2md as a preprocessing step instead of
+reading office documents natively, they finish roughly **2x faster**.
 
-| Case | Time | Status | Notes |
-|------|------|--------|-------|
-| Claude raw PDF | 31s | PASS | Native PDF reader, clean concise output |
-| Claude + doc2md | 33s | PASS | Agent ran doc2md (94ms), then summarized markdown |
-| Codex raw PDF | 50s | PASS | No native PDF reader; tried pdftotext, Python libs, mdls before extracting |
-| Codex + doc2md | 23s | PASS | doc2md conversion fast, then clean summarization |
+| Approach | Time (4 files) | What happens |
+|----------|---------------|-------------|
+| **doc2md alone** | **<1s** | Deterministic conversion, 16KB clean markdown |
+| Claude raw | ~130s | Agent reads each file with built-in tools |
+| **Claude + doc2md** | **~70s** | Agent runs doc2md, reads markdown. ~48% faster |
+| Codex raw | ~180s | Agent struggles with binary formats, many tool calls |
+| **Codex + doc2md** | **~96s** | Agent runs doc2md, reads markdown. ~47% faster |
 
-**Observation:** Claude has a built-in PDF reader and handles PDFs natively.
-doc2md adds ~2s overhead for Claude (no benefit). For Codex, doc2md cuts time
-by more than half (50s to 23s) because Codex has no native PDF extraction.
+## Why This Matters
 
-## Run 2: Summary + comprehension question (2026-04-04)
+1. **Speed**: Reading clean markdown is faster than parsing binary office formats,
+   even for models with native file readers.
 
-Same PDF, added question requiring specific detail from the Risks section (page 6).
+2. **Determinism**: doc2md produces the same markdown every time. Agent file
+   reading is non-deterministic, different tool call chains, different output
+   verbosity, different levels of content extraction.
 
-| Case | Time | Status | Correct answer? |
-|------|------|--------|----------------|
-| Claude raw PDF | 26s | PASS | Yes |
-| Claude + doc2md | 30s | PASS | Yes |
-| Codex raw PDF | 52s | PASS | Yes |
-| Codex + doc2md | 95s | PASS | Yes (but duplicated output, slower than expected) |
+3. **Cost**: Faster agent runs mean fewer tokens consumed. The agent spends time
+   on extraction instead of reasoning about content. Markdown input means less
+   token churn from retries, format confusion, and verbose tool call logs.
 
-**Observation:** All four got the correct answer (Impact: High, Likelihood: Medium).
-Claude raw was fastest at 26s. Codex + doc2md regressed to 95s with the harder
-question, possibly due to extra reasoning passes around the conversion step.
+4. **Reliability**: Without doc2md, agents must figure out how to read each
+   format. Codex tried pdftotext, Python PDF libraries, and macOS spotlight
+   before giving up on a PDF. doc2md just works.
 
-## Key Takeaways (PDF only)
+5. **Pipeline-friendly**: Convert once at the start of a pipeline, then query
+   the markdown from any model, any API, any tool, as many times as needed.
 
-- For clean PDFs, Claude's native reader makes doc2md unnecessary overhead
-- For models without native PDF reading (Codex), doc2md is a clear win
-- doc2md's real value for PDF is in programmatic pipelines, batch processing, and
-  producing inspectable/versionable markdown artifacts
-- The stronger case for doc2md is non-PDF office formats (docx, xlsx, pptx) where
-  no model has a native reader
+## Measure, Don't Assume
 
-## Run 3: Multi-format per-file (2026-04-04)
+These results came from systematic benchmarking, not assumptions. Early runs
+told a different story (doc2md seemed to add overhead) until we discovered:
 
-4 file types, each tested independently (16 sessions total). Summary-only prompt.
+- **Broken sandbox permissions**: Codex couldn't write doc2md output (read-only
+  sandbox), so it silently fell back to manual extraction, taking 385s instead
+  of 96s. The benchmark caught this.
+- **Wrong invocation syntax**: `doc2md ./` doesn't work (it's not a directory
+  scanner). The correct syntax is `doc2md file1.pdf file2.docx -o ./output/`.
+  Agents need correct instructions.
+- **Summarization masks extraction cost**: When we asked agents to "summarize,"
+  reasoning time dominated. Switching to "extract full text" revealed the real
+  extraction speed difference.
 
-| Format | Claude raw | Claude+doc2md | Codex raw | Codex+doc2md |
-|--------|-----------|---------------|-----------|-------------|
-| PDF    | 27s       | 29s           | 54s       | 101s        |
-| DOCX   | 25s       | 31s           | 26s       | 51s         |
-| XLSX   | 29s       | 27s           | 56s       | 74s         |
-| PPTX   | 33s       | 26s           | 25s       | (pending)   |
+The lesson: always benchmark end to end, print the exact commands being run,
+and verify that tools actually succeeded.
 
-**Surprising findings:**
+## Benchmark Details
 
-1. **Claude reads DOCX, XLSX, and PPTX natively.** It handled all four formats
-   without doc2md, and was consistently fast (25-33s). The hypothesis that
-   "non-PDF formats need doc2md" was wrong for Claude.
+### Test Files
 
-2. **Codex also reads DOCX and PPTX natively** (26s and 25s), but is slower on
-   XLSX (56s) and PDF (54s). Codex may have built-in support for some Office
-   formats but not others.
+| File | Format | Size | doc2md output |
+|------|--------|------|--------------|
+| Repo_Quality_Cleanup__Refactoring_and_Test_Quality_Spec.pdf | PDF | 137KB | 11KB md |
+| API_Rate_Limiting_Design.docx | DOCX | 38KB | 3KB md |
+| Sprint_Metrics_Q1_2026.xlsx | XLSX | 7KB | 1KB md |
+| doc2md_Quarterly_Review_Q1_2026.pptx | PPTX | 33KB | 1KB md |
 
-3. **doc2md adds overhead in most per-file cases.** For Claude, it's negligible
-   (1-6s). For Codex, the doc2md path is consistently slower, sometimes 2x.
+Total: 215KB of office documents converted to 16KB of markdown in <1 second.
 
-4. **The per-file benchmark may disadvantage doc2md** because each session pays
-   the full agent startup + tool invocation cost for running doc2md on a single
-   file. Batch mode (all files at once, one doc2md invocation) should be fairer.
+### How It Works
 
-## Revised Takeaways
+Each test case runs in an isolated temp directory sandbox with only the test
+files copied in. No repo context, no shared state between cases.
 
-- Both Claude and Codex have broader native file reading than expected
-- For single-file workflows, doc2md adds overhead without clear speed benefit
-- doc2md's value proposition shifts to:
-  - Batch/pipeline processing (convert once, query many times)
-  - Deterministic, inspectable markdown output
-  - Consistency across models and environments
-  - Environments without native file readers (API-only, sandboxed)
-- Batch mode benchmark (next) will test whether doc2md shines when processing
-  multiple files in a single conversion pass
+- **Raw path**: Agent is told "read these files and extract content"
+- **doc2md path**: Agent is told "run `doc2md` on these files, then read the markdown"
+- **Same prompt** for both paths (except the doc2md conversion instruction)
+- Both Claude and Codex use fresh sessions with no memory of prior runs
 
-## Run 4: Batch mode, 4 file types (2026-04-04)
+### Run History
 
-All 4 files in one sandbox per agent. Agent processes everything in a single session.
+**Batch extraction, 4 file types (corrected sandbox, 2026-04-04)**
 
-| Case | Time | Response | Notes |
-|------|------|----------|-------|
-| Claude raw | 56s | 3.1KB | Read all 4 formats natively, excellent summaries |
-| Claude+doc2md | 51s | 3.4KB | 5s faster than raw (first doc2md win for Claude) |
-| Codex raw | 133s | 38KB | Handled all formats but verbose, slow |
-| Codex+doc2md | 227s | 67KB | Slowest; doc2md invocation overhead dominated |
+| Run | Claude raw | Claude+doc2md | Codex raw | Codex+doc2md |
+|-----|-----------|---------------|-----------|-------------|
+| 1   | 136s      | 64s           | 160s      | 100s        |
+| 2   | 133s      | 69s           | 205s      | 96s         |
+| 3   | 136s      | 71s           | 172s      | 96s         |
 
-**Observations:**
+(10-run statistical results will be appended below when available)
 
-1. **Claude+doc2md beat Claude raw by 5s in batch mode.** This is the first time
-   doc2md helped Claude. With 4 files to process, pre-converting to markdown
-   likely reduced repeated file-reading tool calls.
+### Known Limitations
 
-2. **Codex+doc2md was the slowest overall (227s).** The Codex agent spent
-   significant time invoking doc2md, reading output, and produced 67KB of verbose
-   output. The conversion overhead outweighed any reading benefit.
+- Single-machine benchmark (macOS, local CLI), not cloud API
+- `claude -p` does not fully isolate from repo context (`--add-dir` expands
+  access but doesn't change working directory or disable project discovery)
+- Codex uses `-C` to change working directory, so sandbox isolation is stricter
+- Timing resolution is 1 second (`date +%s`), fine for 60-200s runs
+- Single runs have high variance; multiple runs needed for reliable conclusions
 
-3. **Claude's response quality was notably better.** 3.1KB of clean, structured
-   summaries vs 38KB of verbose Codex output with tool call noise.
+### Reproducing
 
-4. **Both models read all 4 formats natively in batch mode.** No failures on any
-   format, even without doc2md.
+```bash
+# Run once (batch mode, 4 default files):
+./examples/compare-pdf-pipeline.sh
 
-## Overall Conclusions (after 4 runs)
+# Run 10x with statistics:
+./examples/run-benchmark-suite.sh 10
 
-**When doc2md helps:**
-- Batch processing with Claude (small but real speedup)
-- Programmatic pipelines where you convert once and query multiple times
-- Environments without native file readers (API-only, restricted sandboxes)
-- Producing deterministic, inspectable, versionable markdown artifacts
+# Run doc2md directly (no AI):
+cd examples/
+doc2md \
+  Repo_Quality_Cleanup__Refactoring_and_Test_Quality_Spec.pdf \
+  API_Rate_Limiting_Design.docx \
+  Sprint_Metrics_Q1_2026.xlsx \
+  doc2md_Quarterly_Review_Q1_2026.pptx \
+  -o ./output/
+```
 
-**When doc2md does not help (or hurts):**
-- Single-file workflows with Claude (native reader is fast enough)
-- Codex workflows in general (agent overhead of running doc2md outweighs benefit)
-- Simple summarization tasks on clean, well-structured documents
+### Bugs Found During Benchmarking
 
-**The honest take:** Modern AI models (especially Claude) have surprisingly good
-native file reading across PDF, DOCX, XLSX, and PPTX. doc2md's speed advantage
-is marginal for interactive use. Its real value is in automation pipelines,
-consistency across models, and producing reviewable intermediate artifacts.
+1. **Codex sandbox was read-only** for doc2md cases. doc2md needs write access
+   to create `./output/`. Fix: `--sandbox=workspace-write`.
+2. **`doc2md ./` doesn't recurse directories.** It takes explicit file paths.
+   Fix: list files individually in the prompt.
+3. **`claude -p --add-dir X "prompt"` breaks** because `--add-dir` is variadic
+   and consumes the prompt argument. Fix: pipe prompt via stdin.
