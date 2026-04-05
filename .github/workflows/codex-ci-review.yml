@@ -141,10 +141,11 @@ jobs:
           PROMPT_LINES=$(wc -l < /tmp/review-prompt.md)
           echo "::notice::Review prompt: ${PROMPT_SIZE} bytes, ${PROMPT_LINES} lines"
 
-          codex exec \
+          # Give Codex up to 5 minutes to review, then collect whatever it produced
+          timeout 300 codex exec \
             --sandbox read-only \
             --output-last-message /tmp/review-output.json \
-            - < /tmp/review-prompt.md
+            - < /tmp/review-prompt.md || true
           CODEX_EXIT=$?
 
           if [ -s /tmp/review-output.json ]; then
