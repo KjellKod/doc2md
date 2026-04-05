@@ -1,75 +1,55 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Compare raw PDF ingestion versus doc2md-preprocessed markdown for Claude and
-# Codex. Each test case runs in its own isolated sandbox directory with only the
-# PDF file copied in. The agent does the doc2md conversion (not this script).
+# Benchmark: compare raw file ingestion versus doc2md preprocessing for Claude
+# and Codex. Tests how each model handles a batch of mixed office documents.
 #
-# Usage: ./examples/compare-pdf-pipeline.sh [pdf-path]
-# Defaults to examples/Repo_Quality_Cleanup__Refactoring_and_Test_Quality_Spec.pdf
-# and leaves all benchmark artifacts in temp directories printed at the end.
+# Default mode (batch): all files go into one sandbox per agent session.
+# The agent processes all files in a single session, which is the realistic
+# workflow. For doc2md cases, the agent runs doc2md on the entire folder.
+#
+# Usage:
+#   ./examples/compare-pdf-pipeline.sh                       # batch mode (default)
+#   ./examples/compare-pdf-pipeline.sh --per-file             # one session per file
+#   ./examples/compare-pdf-pipeline.sh file1.pdf file2.docx   # custom files, batch
+#   ./examples/compare-pdf-pipeline.sh --per-file my.pdf      # custom files, per-file
+#
+# Set BENCHMARK_QUESTION to add a comprehension question to the prompt:
+#   BENCHMARK_QUESTION="What is the Q2 budget request?" ./examples/compare-pdf-pipeline.sh
+#
+# Results and response files are saved to a temp directory printed at the end.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
-DEFAULT_PDF="$SCRIPT_DIR/Repo_Quality_Cleanup__Refactoring_and_Test_Quality_Spec.pdf"
 
-die() {
-  printf 'Error: %s\n' "$*" >&2
-  exit 1
-}
+DEFAULT_FILES=(
+  "$SCRIPT_DIR/Repo_Quality_Cleanup__Refactoring_and_Test_Quality_Spec.pdf"
+  "$SCRIPT_DIR/API_Rate_Limiting_Design.docx"
+  "$SCRIPT_DIR/Sprint_Metrics_Q1_2026.xlsx"
+  "$SCRIPT_DIR/doc2md_Quarterly_Review_Q1_2026.pptx"
+)
 
-warn() {
-  printf 'Warning: %s\n' "$*" >&2
-}
+BENCHMARK_QUESTION="${BENCHMARK_QUESTION:-}"
+PER_FILE_MODE=0
+
+die() { printf 'Error: %s\n' "$*" >&2; exit 1; }
+warn() { printf 'Warning: %s\n' "$*" >&2; }
 
 absolute_path() {
-  local target="$1"
   local dir base
-  dir="$(dirname "$target")"
-  base="$(basename "$target")"
+  dir="$(dirname "$1")"
+  base="$(basename "$1")"
   [ -d "$dir" ] || return 1
   printf '%s/%s\n' "$(cd "$dir" && pwd -P)" "$base"
 }
 
 format_seconds() {
-  local value="$1"
-  if [ "$value" = "n/a" ]; then
-    printf 'n/a'
-    return
-  fi
-  printf '%ss' "$value"
+  if [ "$1" = "n/a" ]; then printf 'n/a'; else printf '%ss' "$1"; fi
 }
-
-print_row() {
-  local label="$1"
-  local status="$2"
-  local exit_code="$3"
-  local seconds="$4"
-  local note="$5"
-  printf '%-24s %-8s %-6s %-8s %s\n' \
-    "$label" "$status" "$exit_code" \
-    "$(format_seconds "$seconds")" "$note"
-}
-
-codex_supports_ephemeral() {
-  codex exec --help 2>/dev/null | grep -q -- '--ephemeral'
-}
-
-codex_supports_quiet() {
-  codex exec --help 2>/dev/null | grep -q -- '--quiet'
-}
-
-# ---------------------------------------------------------------------------
-# Resolve PDF input
-# ---------------------------------------------------------------------------
-PDF_INPUT="${1:-$DEFAULT_PDF}"
-PDF_PATH="$(absolute_path "$PDF_INPUT")" || die "could not resolve PDF path: $PDF_INPUT"
-[ -f "$PDF_PATH" ] || die "PDF not found: $PDF_PATH"
-PDF_FILENAME="$(basename "$PDF_PATH")"
 
 # ---------------------------------------------------------------------------
 # Prerequisite checks
 # ---------------------------------------------------------------------------
-command -v doc2md >/dev/null 2>&1 || die "doc2md is not installed. It is required for the doc2md test cases."
+command -v doc2md >/dev/null 2>&1 || die "doc2md is not installed."
 
 HAVE_CLAUDE=1
 if ! command -v claude >/dev/null 2>&1; then
@@ -87,61 +67,54 @@ if [ "$HAVE_CLAUDE" -eq 0 ] && [ "$HAVE_CODEX" -eq 0 ]; then
   die "neither claude nor codex is installed. At least one AI CLI is required."
 fi
 
-# ---------------------------------------------------------------------------
-# Create per-case sandbox directories
-# ---------------------------------------------------------------------------
-BENCH_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/compare-pdf-bench-XXXXX")"
-
-SANDBOX_CLAUDE_RAW="$BENCH_ROOT/case-1-claude-raw"
-SANDBOX_CLAUDE_DOC2MD="$BENCH_ROOT/case-2-claude-doc2md"
-SANDBOX_CODEX_RAW="$BENCH_ROOT/case-3-codex-raw"
-SANDBOX_CODEX_DOC2MD="$BENCH_ROOT/case-4-codex-doc2md"
-
-for d in "$SANDBOX_CLAUDE_RAW" "$SANDBOX_CLAUDE_DOC2MD" \
-         "$SANDBOX_CODEX_RAW" "$SANDBOX_CODEX_DOC2MD"; do
-  mkdir -p "$d"
-  cp "$PDF_PATH" "$d/"
-done
-
-# ---------------------------------------------------------------------------
-# Prompts
-# ---------------------------------------------------------------------------
-RAW_PROMPT="Summarize the key findings in the PDF file at ./${PDF_FILENAME}
-Do not search for or reference any external files beyond what is provided."
-
-DOC2MD_PROMPT="First, run: doc2md ./${PDF_FILENAME} -o ./output/
-Then read the resulting markdown file in ./output/ and summarize the key findings.
-Do not search for or reference any external files beyond what is provided."
-
-# ---------------------------------------------------------------------------
-# Build Codex flags once
-# ---------------------------------------------------------------------------
+# Codex feature flags (probe once)
 CODEX_EXTRA_FLAGS=()
 if [ "$HAVE_CODEX" -eq 1 ]; then
-  if codex_supports_ephemeral; then
-    CODEX_EXTRA_FLAGS+=(--ephemeral)
-  fi
-  if codex_supports_quiet; then
-    CODEX_EXTRA_FLAGS+=(--quiet)
-  fi
+  codex exec --help 2>/dev/null | grep -q -- '--ephemeral' && CODEX_EXTRA_FLAGS+=(--ephemeral)
+  codex exec --help 2>/dev/null | grep -q -- '--quiet' && CODEX_EXTRA_FLAGS+=(--quiet)
 fi
 
 # ---------------------------------------------------------------------------
-# Result variables (defaults)
+# Parse arguments
 # ---------------------------------------------------------------------------
-CLAUDE_RAW_STATUS="SKIPPED"; CLAUDE_RAW_EXIT="n/a"; CLAUDE_RAW_SECONDS="n/a"; CLAUDE_RAW_NOTE="not run"
-CLAUDE_D2M_STATUS="SKIPPED"; CLAUDE_D2M_EXIT="n/a"; CLAUDE_D2M_SECONDS="n/a"; CLAUDE_D2M_NOTE="not run"
-CODEX_RAW_STATUS="SKIPPED";  CODEX_RAW_EXIT="n/a";  CODEX_RAW_SECONDS="n/a";  CODEX_RAW_NOTE="not run"
-CODEX_D2M_STATUS="SKIPPED";  CODEX_D2M_EXIT="n/a";  CODEX_D2M_SECONDS="n/a";  CODEX_D2M_NOTE="not run"
+INPUT_FILES=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --per-file) PER_FILE_MODE=1; shift ;;
+    --help|-h)
+      printf 'Usage: %s [--per-file] [file ...]\n' "$0"
+      printf '  --per-file   Run one session per file instead of batch mode\n'
+      printf '  file ...     Custom files to benchmark (default: 4 sample files)\n'
+      exit 0
+      ;;
+    *)
+      resolved="$(absolute_path "$1")" || die "could not resolve path: $1"
+      [ -f "$resolved" ] || die "file not found: $resolved"
+      INPUT_FILES+=("$resolved")
+      shift
+      ;;
+  esac
+done
 
-# Output file paths (inside each sandbox)
-CLAUDE_RAW_OUTPUT="$SANDBOX_CLAUDE_RAW/response.txt"
-CLAUDE_D2M_OUTPUT="$SANDBOX_CLAUDE_DOC2MD/response.txt"
-CODEX_RAW_OUTPUT="$SANDBOX_CODEX_RAW/response.txt"
-CODEX_D2M_OUTPUT="$SANDBOX_CODEX_DOC2MD/response.txt"
+if [ ${#INPUT_FILES[@]} -eq 0 ]; then
+  for f in "${DEFAULT_FILES[@]}"; do
+    if [ -f "$f" ]; then
+      INPUT_FILES+=("$f")
+    else
+      warn "default file not found, skipping: $f"
+    fi
+  done
+fi
+
+[ ${#INPUT_FILES[@]} -gt 0 ] || die "no input files to benchmark."
 
 # ---------------------------------------------------------------------------
-# Runner: execute a command, capture output, time it
+# Create benchmark root
+# ---------------------------------------------------------------------------
+BENCH_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/doc2md-bench-XXXXXX")"
+
+# ---------------------------------------------------------------------------
+# Runner: pipe prompt to a command, capture output, time it
 # ---------------------------------------------------------------------------
 run_case() {
   local output_file="$1"
@@ -158,135 +131,268 @@ run_case() {
 
   _RC_EXIT="$exit_code"
   _RC_SECONDS="$((finished_at - started_at))"
-  if [ "$exit_code" -eq 0 ]; then
-    _RC_STATUS="PASS"
+  if [ "$exit_code" -eq 0 ]; then _RC_STATUS="PASS"; else _RC_STATUS="FAIL"; fi
+}
+
+# ---------------------------------------------------------------------------
+# Result collection
+# ---------------------------------------------------------------------------
+RESULTS=()
+
+add_result() {
+  # label|status|exit|seconds|note
+  RESULTS+=("$1|$2|$3|$4|$5")
+}
+
+# ---------------------------------------------------------------------------
+# Build file listing for prompts
+# ---------------------------------------------------------------------------
+build_file_list() {
+  local dir="$1"
+  # List only the test files (not response.txt or output/)
+  local listing=""
+  for f in "$dir"/*; do
+    [ -f "$f" ] || continue
+    local base
+    base="$(basename "$f")"
+    [ "$base" = "response.txt" ] && continue
+    listing="${listing}  ./${base}\n"
+  done
+  printf '%b' "$listing"
+}
+
+# ---------------------------------------------------------------------------
+# Batch mode prompts
+# ---------------------------------------------------------------------------
+build_batch_task() {
+  local extra=""
+  if [ -n "$BENCHMARK_QUESTION" ]; then
+    extra=" Then answer this question: $BENCHMARK_QUESTION"
+  fi
+  printf 'Summarize the key findings in each document.%s Do not search for or reference any external files beyond what is provided in this directory.' "$extra"
+}
+
+build_batch_raw_prompt() {
+  local dir="$1"
+  printf 'This directory contains the following files:\n%s\nRead each file and complete this task: %s' "$(build_file_list "$dir")" "$(build_batch_task)"
+}
+
+build_batch_doc2md_prompt() {
+  local dir="$1"
+  printf 'This directory contains the following files:\n%s\nFirst, run doc2md on all files: doc2md ./ -o ./output/\nThen read the resulting markdown files in ./output/ and complete this task: %s' "$(build_file_list "$dir")" "$(build_batch_task)"
+}
+
+# ---------------------------------------------------------------------------
+# Per-file mode prompts
+# ---------------------------------------------------------------------------
+build_single_task() {
+  local extra=""
+  if [ -n "$BENCHMARK_QUESTION" ]; then
+    extra=" Then answer this question: $BENCHMARK_QUESTION"
+  fi
+  printf 'Summarize the key findings in this document.%s Do not search for or reference any external files beyond what is provided.' "$extra"
+}
+
+build_single_raw_prompt() {
+  local filename="$1"
+  printf 'Read the file at ./%s and complete this task: %s' "$filename" "$(build_single_task)"
+}
+
+build_single_doc2md_prompt() {
+  local filename="$1"
+  printf 'First, run: doc2md ./%s -o ./output/\nThen read the resulting markdown file in ./output/ and complete this task: %s' "$filename" "$(build_single_task)"
+}
+
+# ---------------------------------------------------------------------------
+# Batch mode: one sandbox per agent variant, all files inside
+# ---------------------------------------------------------------------------
+run_batch_benchmark() {
+  local sandbox label
+
+  # --- Claude raw ---
+  if [ "$HAVE_CLAUDE" -eq 1 ]; then
+    label="Claude raw"
+    sandbox="$BENCH_ROOT/batch-claude-raw"
+    mkdir -p "$sandbox"
+    for f in "${INPUT_FILES[@]}"; do cp "$f" "$sandbox/"; done
+    printf '  %s (batch)...' "$label"
+    run_case "$sandbox/response.txt" "$(build_batch_raw_prompt "$sandbox")" \
+      claude -p --no-session-persistence --add-dir "$sandbox"
+    printf ' %s (%ss)\n' "$_RC_STATUS" "$_RC_SECONDS"
+    add_result "$label" "$_RC_STATUS" "$_RC_EXIT" "$_RC_SECONDS" "${#INPUT_FILES[@]} files"
   else
-    _RC_STATUS="FAIL"
+    add_result "Claude raw" "SKIP" "n/a" "n/a" "not installed"
+  fi
+
+  # --- Claude + doc2md ---
+  if [ "$HAVE_CLAUDE" -eq 1 ]; then
+    label="Claude+doc2md"
+    sandbox="$BENCH_ROOT/batch-claude-doc2md"
+    mkdir -p "$sandbox"
+    for f in "${INPUT_FILES[@]}"; do cp "$f" "$sandbox/"; done
+    printf '  %s (batch)...' "$label"
+    run_case "$sandbox/response.txt" "$(build_batch_doc2md_prompt "$sandbox")" \
+      claude -p --no-session-persistence --add-dir "$sandbox"
+    printf ' %s (%ss)\n' "$_RC_STATUS" "$_RC_SECONDS"
+    add_result "$label" "$_RC_STATUS" "$_RC_EXIT" "$_RC_SECONDS" "${#INPUT_FILES[@]} files"
+  else
+    add_result "Claude+doc2md" "SKIP" "n/a" "n/a" "not installed"
+  fi
+
+  # --- Codex raw ---
+  if [ "$HAVE_CODEX" -eq 1 ]; then
+    label="Codex raw"
+    sandbox="$BENCH_ROOT/batch-codex-raw"
+    mkdir -p "$sandbox"
+    for f in "${INPUT_FILES[@]}"; do cp "$f" "$sandbox/"; done
+    printf '  %s (batch)...' "$label"
+    run_case "$sandbox/response.txt" "$(build_batch_raw_prompt "$sandbox")" \
+      codex exec -C "$sandbox" --add-dir "$sandbox" --skip-git-repo-check \
+      "${CODEX_EXTRA_FLAGS[@]}"
+    printf ' %s (%ss)\n' "$_RC_STATUS" "$_RC_SECONDS"
+    add_result "$label" "$_RC_STATUS" "$_RC_EXIT" "$_RC_SECONDS" "${#INPUT_FILES[@]} files"
+  else
+    add_result "Codex raw" "SKIP" "n/a" "n/a" "not installed"
+  fi
+
+  # --- Codex + doc2md ---
+  if [ "$HAVE_CODEX" -eq 1 ]; then
+    label="Codex+doc2md"
+    sandbox="$BENCH_ROOT/batch-codex-doc2md"
+    mkdir -p "$sandbox"
+    for f in "${INPUT_FILES[@]}"; do cp "$f" "$sandbox/"; done
+    printf '  %s (batch)...' "$label"
+    run_case "$sandbox/response.txt" "$(build_batch_doc2md_prompt "$sandbox")" \
+      codex exec -C "$sandbox" --add-dir "$sandbox" --skip-git-repo-check \
+      "${CODEX_EXTRA_FLAGS[@]}"
+    printf ' %s (%ss)\n' "$_RC_STATUS" "$_RC_SECONDS"
+    add_result "$label" "$_RC_STATUS" "$_RC_EXIT" "$_RC_SECONDS" "${#INPUT_FILES[@]} files"
+  else
+    add_result "Codex+doc2md" "SKIP" "n/a" "n/a" "not installed"
   fi
 }
 
 # ---------------------------------------------------------------------------
-# Print header
+# Per-file mode: one sandbox per file per agent variant
 # ---------------------------------------------------------------------------
-printf 'PDF benchmark source: %s\n' "$PDF_PATH"
-printf 'Benchmark root: %s\n\n' "$BENCH_ROOT"
+run_perfile_benchmark() {
+  local file_path filename ext sandbox label
+
+  for file_path in "${INPUT_FILES[@]}"; do
+    filename="$(basename "$file_path")"
+    ext="${filename##*.}"
+
+    printf '\n  --- %s ---\n' "$filename"
+
+    # Claude raw
+    if [ "$HAVE_CLAUDE" -eq 1 ]; then
+      label="${ext} Claude raw"
+      sandbox="$BENCH_ROOT/${ext}-claude-raw"
+      mkdir -p "$sandbox"
+      cp "$file_path" "$sandbox/"
+      printf '    Claude raw...'
+      run_case "$sandbox/response.txt" "$(build_single_raw_prompt "$filename")" \
+        claude -p --no-session-persistence --add-dir "$sandbox"
+      printf ' %s (%ss)\n' "$_RC_STATUS" "$_RC_SECONDS"
+      add_result "$label" "$_RC_STATUS" "$_RC_EXIT" "$_RC_SECONDS" ""
+    else
+      add_result "${ext} Claude raw" "SKIP" "n/a" "n/a" "not installed"
+    fi
+
+    # Claude + doc2md
+    if [ "$HAVE_CLAUDE" -eq 1 ]; then
+      label="${ext} Claude+d2m"
+      sandbox="$BENCH_ROOT/${ext}-claude-doc2md"
+      mkdir -p "$sandbox"
+      cp "$file_path" "$sandbox/"
+      printf '    Claude+doc2md...'
+      run_case "$sandbox/response.txt" "$(build_single_doc2md_prompt "$filename")" \
+        claude -p --no-session-persistence --add-dir "$sandbox"
+      printf ' %s (%ss)\n' "$_RC_STATUS" "$_RC_SECONDS"
+      add_result "$label" "$_RC_STATUS" "$_RC_EXIT" "$_RC_SECONDS" ""
+    else
+      add_result "${ext} Claude+d2m" "SKIP" "n/a" "n/a" "not installed"
+    fi
+
+    # Codex raw
+    if [ "$HAVE_CODEX" -eq 1 ]; then
+      label="${ext} Codex raw"
+      sandbox="$BENCH_ROOT/${ext}-codex-raw"
+      mkdir -p "$sandbox"
+      cp "$file_path" "$sandbox/"
+      printf '    Codex raw...'
+      run_case "$sandbox/response.txt" "$(build_single_raw_prompt "$filename")" \
+        codex exec -C "$sandbox" --add-dir "$sandbox" --skip-git-repo-check \
+        "${CODEX_EXTRA_FLAGS[@]}"
+      printf ' %s (%ss)\n' "$_RC_STATUS" "$_RC_SECONDS"
+      add_result "$label" "$_RC_STATUS" "$_RC_EXIT" "$_RC_SECONDS" ""
+    else
+      add_result "${ext} Codex raw" "SKIP" "n/a" "n/a" "not installed"
+    fi
+
+    # Codex + doc2md
+    if [ "$HAVE_CODEX" -eq 1 ]; then
+      label="${ext} Codex+d2m"
+      sandbox="$BENCH_ROOT/${ext}-codex-doc2md"
+      mkdir -p "$sandbox"
+      cp "$file_path" "$sandbox/"
+      printf '    Codex+doc2md...'
+      run_case "$sandbox/response.txt" "$(build_single_doc2md_prompt "$filename")" \
+        codex exec -C "$sandbox" --add-dir "$sandbox" --skip-git-repo-check \
+        "${CODEX_EXTRA_FLAGS[@]}"
+      printf ' %s (%ss)\n' "$_RC_STATUS" "$_RC_SECONDS"
+      add_result "$label" "$_RC_STATUS" "$_RC_EXIT" "$_RC_SECONDS" ""
+    else
+      add_result "${ext} Codex+d2m" "SKIP" "n/a" "n/a" "not installed"
+    fi
+  done
+}
 
 # ---------------------------------------------------------------------------
-# Case 1: Claude raw PDF
+# Main
 # ---------------------------------------------------------------------------
-if [ "$HAVE_CLAUDE" -eq 1 ]; then
-  printf 'Case 1: Claude raw PDF...\n'
-  run_case "$CLAUDE_RAW_OUTPUT" "$RAW_PROMPT" \
-    claude -p --no-session-persistence \
-      --add-dir "$SANDBOX_CLAUDE_RAW"
-  CLAUDE_RAW_STATUS="$_RC_STATUS"
-  CLAUDE_RAW_EXIT="$_RC_EXIT"
-  CLAUDE_RAW_SECONDS="$_RC_SECONDS"
-  if [ "$_RC_EXIT" -eq 0 ]; then
-    CLAUDE_RAW_NOTE="raw PDF prompt completed"
-  else
-    CLAUDE_RAW_NOTE="command exited $_RC_EXIT"
-  fi
+MODE="batch"
+[ "$PER_FILE_MODE" -eq 1 ] && MODE="per-file"
+
+printf 'doc2md benchmark (%s mode)\n' "$MODE"
+printf 'Files: %d\n' "${#INPUT_FILES[@]}"
+for f in "${INPUT_FILES[@]}"; do
+  printf '  %s (%s)\n' "$(basename "$f")" "${f##*.}"
+done
+printf 'Models: %s\n' "$([ "$HAVE_CLAUDE" -eq 1 ] && printf 'Claude ')$([ "$HAVE_CODEX" -eq 1 ] && printf 'Codex')"
+printf 'Artifacts: %s\n\n' "$BENCH_ROOT"
+
+if [ "$PER_FILE_MODE" -eq 1 ]; then
+  run_perfile_benchmark
 else
-  printf 'Case 1: Claude raw PDF... SKIPPED (claude not installed)\n'
-  printf 'Skipped: claude is not installed.\n' > "$CLAUDE_RAW_OUTPUT"
-  CLAUDE_RAW_NOTE="claude not installed"
+  run_batch_benchmark
 fi
 
 # ---------------------------------------------------------------------------
-# Case 2: Claude + doc2md
+# Summary table
 # ---------------------------------------------------------------------------
-if [ "$HAVE_CLAUDE" -eq 1 ]; then
-  printf 'Case 2: Claude + doc2md...\n'
-  run_case "$CLAUDE_D2M_OUTPUT" "$DOC2MD_PROMPT" \
-    claude -p --no-session-persistence \
-      --add-dir "$SANDBOX_CLAUDE_DOC2MD"
-  CLAUDE_D2M_STATUS="$_RC_STATUS"
-  CLAUDE_D2M_EXIT="$_RC_EXIT"
-  CLAUDE_D2M_SECONDS="$_RC_SECONDS"
-  if [ "$_RC_EXIT" -eq 0 ]; then
-    CLAUDE_D2M_NOTE="agent ran doc2md then summarized"
-  else
-    CLAUDE_D2M_NOTE="command exited $_RC_EXIT"
-  fi
-else
-  printf 'Case 2: Claude + doc2md... SKIPPED (claude not installed)\n'
-  printf 'Skipped: claude is not installed.\n' > "$CLAUDE_D2M_OUTPUT"
-  CLAUDE_D2M_NOTE="claude not installed"
-fi
+printf '\n'
+printf '=%.0s' {1..72}
+printf '\n'
+printf '%-20s %-8s %-6s %-8s %s\n' "Case" "Status" "Exit" "Time" "Notes"
+printf '%-20s %-8s %-6s %-8s %s\n' "--------------------" "--------" "------" "--------" "-----"
+
+for entry in "${RESULTS[@]}"; do
+  IFS='|' read -r label status exit_code seconds note <<< "$entry"
+  printf '%-20s %-8s %-6s %-8s %s\n' \
+    "$label" "$status" "$exit_code" \
+    "$(format_seconds "$seconds")" "$note"
+done
 
 # ---------------------------------------------------------------------------
-# Case 3: Codex raw PDF
+# Response file listing
 # ---------------------------------------------------------------------------
-if [ "$HAVE_CODEX" -eq 1 ]; then
-  printf 'Case 3: Codex raw PDF...\n'
-  run_case "$CODEX_RAW_OUTPUT" "$RAW_PROMPT" \
-    codex exec \
-      -C "$SANDBOX_CODEX_RAW" \
-      --add-dir "$SANDBOX_CODEX_RAW" \
-      --skip-git-repo-check \
-      "${CODEX_EXTRA_FLAGS[@]}"
-  CODEX_RAW_STATUS="$_RC_STATUS"
-  CODEX_RAW_EXIT="$_RC_EXIT"
-  CODEX_RAW_SECONDS="$_RC_SECONDS"
-  if [ "$_RC_EXIT" -eq 0 ]; then
-    CODEX_RAW_NOTE="raw PDF prompt completed"
-  else
-    CODEX_RAW_NOTE="command exited $_RC_EXIT"
-  fi
-else
-  printf 'Case 3: Codex raw PDF... SKIPPED (codex not installed)\n'
-  printf 'Skipped: codex is not installed.\n' > "$CODEX_RAW_OUTPUT"
-  CODEX_RAW_NOTE="codex not installed"
-fi
-
-# ---------------------------------------------------------------------------
-# Case 4: Codex + doc2md
-# ---------------------------------------------------------------------------
-if [ "$HAVE_CODEX" -eq 1 ]; then
-  printf 'Case 4: Codex + doc2md...\n'
-  run_case "$CODEX_D2M_OUTPUT" "$DOC2MD_PROMPT" \
-    codex exec \
-      -C "$SANDBOX_CODEX_DOC2MD" \
-      --add-dir "$SANDBOX_CODEX_DOC2MD" \
-      --skip-git-repo-check \
-      "${CODEX_EXTRA_FLAGS[@]}"
-  CODEX_D2M_STATUS="$_RC_STATUS"
-  CODEX_D2M_EXIT="$_RC_EXIT"
-  CODEX_D2M_SECONDS="$_RC_SECONDS"
-  if [ "$_RC_EXIT" -eq 0 ]; then
-    CODEX_D2M_NOTE="agent ran doc2md then summarized"
-  else
-    CODEX_D2M_NOTE="command exited $_RC_EXIT"
-  fi
-else
-  printf 'Case 4: Codex + doc2md... SKIPPED (codex not installed)\n'
-  printf 'Skipped: codex is not installed.\n' > "$CODEX_D2M_OUTPUT"
-  CODEX_D2M_NOTE="codex not installed"
-fi
-
-# ---------------------------------------------------------------------------
-# Results table
-# ---------------------------------------------------------------------------
-printf '\nResults\n'
-printf '%-24s %-8s %-6s %-8s %s\n' "Case" "Status" "Exit" "Time" "Notes"
-printf '%-24s %-8s %-6s %-8s %s\n' "------------------------" "--------" "------" "--------" "-----"
-print_row "Claude raw PDF"    "$CLAUDE_RAW_STATUS" "$CLAUDE_RAW_EXIT" "$CLAUDE_RAW_SECONDS" "$CLAUDE_RAW_NOTE"
-print_row "Claude + doc2md"   "$CLAUDE_D2M_STATUS" "$CLAUDE_D2M_EXIT" "$CLAUDE_D2M_SECONDS" "$CLAUDE_D2M_NOTE"
-print_row "Codex raw PDF"     "$CODEX_RAW_STATUS"  "$CODEX_RAW_EXIT"  "$CODEX_RAW_SECONDS"  "$CODEX_RAW_NOTE"
-print_row "Codex + doc2md"    "$CODEX_D2M_STATUS"  "$CODEX_D2M_EXIT"  "$CODEX_D2M_SECONDS"  "$CODEX_D2M_NOTE"
-
-# ---------------------------------------------------------------------------
-# Artifacts
-# ---------------------------------------------------------------------------
-printf '\nArtifacts\n'
-printf 'Case 1 (Claude raw):     %s\n' "$SANDBOX_CLAUDE_RAW"
-printf 'Case 2 (Claude + doc2md):%s\n' " $SANDBOX_CLAUDE_DOC2MD"
-printf 'Case 3 (Codex raw):      %s\n' "$SANDBOX_CODEX_RAW"
-printf 'Case 4 (Codex + doc2md): %s\n' "$SANDBOX_CODEX_DOC2MD"
 printf '\nResponse files:\n'
-printf '  %s\n' "$CLAUDE_RAW_OUTPUT"
-printf '  %s\n' "$CLAUDE_D2M_OUTPUT"
-printf '  %s\n' "$CODEX_RAW_OUTPUT"
-printf '  %s\n' "$CODEX_D2M_OUTPUT"
+for d in "$BENCH_ROOT"/*/; do
+  if [ -f "${d}response.txt" ]; then
+    size="$(wc -c < "${d}response.txt" | tr -d '[:space:]')"
+    printf '  %sresponse.txt (%s bytes)\n' "$d" "$size"
+  fi
+done
+
 printf '\nCleanup: rm -rf %s\n' "$BENCH_ROOT"
