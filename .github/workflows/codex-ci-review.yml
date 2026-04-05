@@ -141,18 +141,24 @@ jobs:
           PROMPT_LINES=$(wc -l < /tmp/review-prompt.md)
           echo "::notice::Review prompt: ${PROMPT_SIZE} bytes, ${PROMPT_LINES} lines"
 
-          # Give Codex up to 5 minutes to review, then collect whatever it produced
+          # Give Codex up to 5 minutes to review
+          CODEX_EXIT=0
           timeout 300 codex exec \
             --sandbox read-only \
             --output-last-message /tmp/review-output.json \
-            - < /tmp/review-prompt.md || true
-          CODEX_EXIT=$?
+            - < /tmp/review-prompt.md || CODEX_EXIT=$?
+
+          if [ "$CODEX_EXIT" -eq 124 ]; then
+            echo "::error::Codex timed out after 300 seconds. Prompt was ${PROMPT_SIZE} bytes. Consider reducing diff size or increasing timeout."
+          elif [ "$CODEX_EXIT" -ne 0 ]; then
+            echo "::error::Codex exited with code $CODEX_EXIT"
+          fi
 
           if [ -s /tmp/review-output.json ]; then
             OUTPUT_SIZE=$(wc -c < /tmp/review-output.json)
             echo "::notice::Review output: ${OUTPUT_SIZE} bytes"
           else
-            echo "::warning::codex exec exited $CODEX_EXIT but produced no output file"
+            echo "::error::No review output produced. Codex exit code: $CODEX_EXIT, prompt size: ${PROMPT_SIZE} bytes"
           fi
 
       - name: Post inline review
