@@ -79,13 +79,18 @@ files copied in. No repo context, no shared state between cases.
 
 **Batch extraction, 4 file types (corrected sandbox, 2026-04-04)**
 
-| Run | Claude raw | Claude+doc2md | Codex raw | Codex+doc2md |
-|-----|-----------|---------------|-----------|-------------|
-| 1   | 136s      | 64s           | 160s      | 100s        |
-| 2   | 133s      | 69s           | 205s      | 96s         |
-| 3   | 136s      | 71s           | 172s      | 96s         |
-
-(10-run statistical results will be appended below when available)
+| Run | doc2md | Claude raw | Claude+doc2md | Codex raw | Codex+doc2md |
+|-----|--------|-----------|---------------|-----------|-------------|
+| 1   | 1s     | 136s      | 64s           | 160s      | 100s        |
+| 2   | 1s     | 142s      | 71s           | 174s      | 106s        |
+| 3   | 1s     | 103s      | 70s           | 274s      | 108s        |
+| 4   | 1s     | 104s      | 73s           | 224s      | 97s         |
+| 5   | 0s     | 121s      | 63s           | 158s      | 107s        |
+| 6   | 1s     | 108s      | 69s           | 198s      | 102s        |
+| 7   | 1s     | 129s      | 68s           | 188s      | 103s        |
+| 8   | 1s     | 107s      | 70s           | 145s      | 104s        |
+| 9   | 1s     | 131s      | 66s           | 207s      | 100s        |
+| 10  | 1s     | 133s      | 69s           | 190s      | 106s        |
 
 ### Known Limitations
 
