@@ -29,9 +29,9 @@ npm run dev
 
 Open `http://localhost:5173/doc2md/` in your browser.
 
-## Use As A Package Or CLI
+## Use As A Package, CLI, Or Skill
 
-If you want automation, batch jobs, MCP/server-side preprocessing, or a reusable function call, use the `@doc2md/core` workspace package.
+If you want automation, batch jobs, MCP/server-side preprocessing, or a reusable function call, use `@doc2md/core`. Public npm publication is not planned at this time, so use the packed-tarball flow documented in [Using `@doc2md/core`](docs/using-doc2md-core.md).
 
 ```ts
 import { convertDocuments } from "@doc2md/core";
@@ -40,14 +40,14 @@ const result = await convertDocuments(
   ["/absolute/path/resume.pdf", "/absolute/path/notes.docx"],
   {
     outputDir: "/absolute/path/out",
-    maxDocuments: 10,
-  },
+    maxDocuments: 10
+  }
 );
 ```
 
-The package writes markdown files to disk and returns structured metadata about each document.
+The package writes markdown files to disk and returns structured metadata about each document. If you want a copyable agent wrapper, use `.skills/doc-to-markdown/`, which delegates to the same package contract.
 
-See [Using `@doc2md/core`](docs/using-doc2md-core.md) for the current install story, API examples, CLI usage, and output contract.
+See [Using `@doc2md/core`](docs/using-doc2md-core.md) for install options, API examples, CLI usage, output behavior, and skill setup.
 
 ## Principles
 
@@ -63,6 +63,7 @@ doc2md is a browser-only tool: conversion runs on the device, output stays local
 
 * [Architecture Note](docs/architecture.md) — browser-only data flow, stack, limits, and deployment model
 * [Using `@doc2md/core`](docs/using-doc2md-core.md) — Node/package usage, CLI usage, output contract, and current install path
+* [Publishing `@doc2md/core`](docs/publishing-doc2md-core.md) — what publish-ready means, real npm publication, and local package testing
 * [Product Specification](docs/product-spec.md) — full design, architecture, scope, and UX direction
 * [Provenance Guidance](docs/provenance.md) — lightweight attribution hygiene for future borrowed material
 * [Testing Strategy](docs/testing.md) — test coverage, fixtures, and manual review checklist

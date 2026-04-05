@@ -12,37 +12,61 @@ Use this package when you want:
 
 ## Install
 
-Install from npm when the package is published:
+If you do not already have Node.js and `npm` installed:
+
+- Windows and macOS: install Node.js from `https://nodejs.org/en/download/`
+- Installing Node.js also installs `npm`
+- Node 22+ is required for `@doc2md/core`
+
+`@doc2md/core` is not planned for public npm publication at this time.
+
+If a public npm release ever happens in the future, the install would look like this:
 
 ```bash
 npm install @doc2md/core
 ```
 
-This is the preferred option for most users because it keeps the CLI local to the project and avoids global version drift.
+For now, use a local tarball or local folder install instead.
 
-If you want the `doc2md` command available directly in your shell everywhere, install it globally:
+If a public npm release ever happens in the future, and you want the `doc2md` command available directly in your shell everywhere, the global install would look like this:
 
 ```bash
 npm install -g @doc2md/core
 ```
 
-Prefer global install only if you specifically want a machine-wide CLI.
+Until then, those npm registry commands will fail with `404`.
 
 If you are validating a local build before publication, install the packed artifact:
 
 ```bash
-npm run build --workspace=@doc2md/core
-cd packages/core
-npm pack
+npm run pack:local --workspace=@doc2md/core
 ```
 
-Then, from your consumer project:
+That creates a local tarball such as `packages/core/doc2md-core-<derived-version>.tgz`.
+
+If you want project-local install:
 
 ```bash
-npm install /absolute/path/to/doc2md-core-0.1.0.tgz
+npm install /absolute/path/to/doc2md-core-<derived-version>.tgz
 ```
 
-Node 22+ is required.
+Then run the CLI with `npx`:
+
+```bash
+npx doc2md /absolute/path/resume.pdf -o /absolute/path/out
+```
+
+If you want the `doc2md` command available directly in your shell right now, install that local tarball globally:
+
+```bash
+npm install -g /absolute/path/to/doc2md-core-<derived-version>.tgz
+```
+
+If you are already in `packages/core`, this also works:
+
+```bash
+npm install -g ./doc2md-core-<derived-version>.tgz
+```
 
 ## API
 
@@ -89,13 +113,13 @@ Equivalent `npm exec` form:
 npm exec doc2md -- /absolute/path/resume.pdf -o /absolute/path/out --max 10 --concurrency 4
 ```
 
-If you installed the package globally, this also works:
+If you installed the package globally, including from a local tarball, this also works:
 
 ```bash
 doc2md /absolute/path/resume.pdf -o /absolute/path/out --max 10 --concurrency 4
 ```
 
-Prefer `npx doc2md ...` for repo-specific use; prefer plain `doc2md ...` only after a global install when you want the command available everywhere.
+Prefer `npx doc2md ...` for repo-specific use. Use plain `doc2md ...` after a global install, including `npm install -g /absolute/path/to/doc2md-core-<derived-version>.tgz`.
 
 For mixed batches, you can pass multiple files in one call:
 

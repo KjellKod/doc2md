@@ -103,6 +103,13 @@ This directory contains specialized skills for AI agents working in this reposit
 
 **Location:** `.skills/celebrate/SKILL.md` + `.skills/jc-and-dexter/CELEBRATE.md` for routing
 
+### doc-to-markdown
+**Purpose:** Portable wrapper skill for converting one or more local documents to Markdown through `@doc2md/core` without reimplementing converter logic.
+
+**Use when:** A repo wants an agent-friendly document-to-markdown skill backed by the published package, especially for MCP preprocessing, resume screening, or batch document extraction.
+
+**Location:** `.skills/doc-to-markdown/SKILL.md`
+
 ## How Skills Work
 
 Skills use a three-level loading system:
