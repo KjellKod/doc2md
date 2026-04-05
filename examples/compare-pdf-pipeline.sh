@@ -148,6 +148,9 @@ doc2md_file_args() {
 #   task: Extract and output the full text content of this document. Do not
 #   search for or reference any external files beyond what is provided.
 #
+# To run doc2md directly (no AI, just conversion):
+#   doc2md ./file1.pdf ./file2.docx ./file3.xlsx ./file4.pptx -o ./output/
+#
 # To run manually with Claude:
 #   echo "<prompt>" | claude -p --no-session-persistence --add-dir /tmp/sandbox
 #
