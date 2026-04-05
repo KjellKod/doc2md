@@ -50,13 +50,47 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
         run: |
-          gh pr diff ${{ github.event.pull_request.number }} --patch > /tmp/pr.diff
+          # Exclude binary and non-reviewable files from the diff
+          gh pr diff ${{ github.event.pull_request.number }} --patch \
+            --exclude '*.pdf' \
+            --exclude '*.docx' \
+            --exclude '*.xlsx' \
+            --exclude '*.pptx' \
+            --exclude '*.tgz' \
+            --exclude '*.png' \
+            --exclude '*.jpg' \
+            --exclude '*.gif' \
+            --exclude '*.ico' \
+            --exclude '*.woff' \
+            --exclude '*.woff2' \
+            --exclude '*.ttf' \
+            > /tmp/pr.diff
           gh pr view ${{ github.event.pull_request.number }} \
             --json title,body --jq '.title + "\n\n" + (.body // "")' > /tmp/pr_description.txt
           gh pr view ${{ github.event.pull_request.number }} \
             --json headRefOid --jq '.headRefOid' > /tmp/pr_head_sha.txt
           gh pr view ${{ github.event.pull_request.number }} \
-            --json files --jq '.files[].path' > /tmp/changed_files.txt
+            --json files --jq '.files[].path' > /tmp/changed_files_raw.txt
+
+          # Filter binary extensions from changed files list
+          grep -vE '\.(pdf|docx|xlsx|pptx|tgz|png|jpg|gif|ico|woff|woff2|ttf)$' \
+            /tmp/changed_files_raw.txt > /tmp/changed_files.txt || true
+
+          DIFF_BYTES=$(wc -c < /tmp/pr.diff)
+          DIFF_LINES=$(wc -l < /tmp/pr.diff)
+          echo "::notice::Diff size: ${DIFF_BYTES} bytes, ${DIFF_LINES} lines"
+          echo "::notice::Reviewable files: $(wc -l < /tmp/changed_files.txt)"
+
+          # Cap diff size to avoid overwhelming the model (keep first ~100KB)
+          MAX_DIFF_BYTES=100000
+          if [ "$DIFF_BYTES" -gt "$MAX_DIFF_BYTES" ]; then
+            echo "::warning::Diff is ${DIFF_BYTES} bytes, truncating to ${MAX_DIFF_BYTES} bytes"
+            head -c "$MAX_DIFF_BYTES" /tmp/pr.diff > /tmp/pr.diff.truncated
+            # Append a note about truncation
+            printf '\n\n--- DIFF TRUNCATED (original: %s bytes, showing first %s bytes) ---\n' \
+              "$DIFF_BYTES" "$MAX_DIFF_BYTES" >> /tmp/pr.diff.truncated
+            mv /tmp/pr.diff.truncated /tmp/pr.diff
+          fi
 
           HEAD_SHA="$(cat /tmp/pr_head_sha.txt)"
           gh api \
@@ -92,9 +126,11 @@ jobs:
               -e '/{PLACEHOLDER_DIFF}/d' \
               .github/codex-review-prompt.md > /tmp/review-prompt.md
 
-      - name: Install Codex CLI
+      - name: Install Codex CLI and sandbox deps
         if: steps.check-key.outputs.skip != 'true'
-        run: npm install -g @openai/codex
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq bubblewrap >/dev/null 2>&1 || true
+          npm install -g @openai/codex
 
       - name: AI Code Review
         if: steps.check-key.outputs.skip != 'true'
@@ -103,10 +139,29 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          codex exec \
+          PROMPT_SIZE=$(wc -c < /tmp/review-prompt.md)
+          PROMPT_LINES=$(wc -l < /tmp/review-prompt.md)
+          echo "::notice::Review prompt: ${PROMPT_SIZE} bytes, ${PROMPT_LINES} lines"
+
+          # Give Codex up to 5 minutes to review
+          CODEX_EXIT=0
+          timeout 300 codex exec \
             --sandbox read-only \
             --output-last-message /tmp/review-output.json \
-            - < /tmp/review-prompt.md
+            - < /tmp/review-prompt.md || CODEX_EXIT=$?
+
+          if [ "$CODEX_EXIT" -eq 124 ]; then
+            echo "::error::Codex timed out after 300 seconds. Prompt was ${PROMPT_SIZE} bytes. Consider reducing diff size or increasing timeout."
+          elif [ "$CODEX_EXIT" -ne 0 ]; then
+            echo "::error::Codex exited with code $CODEX_EXIT"
+          fi
+
+          if [ -s /tmp/review-output.json ]; then
+            OUTPUT_SIZE=$(wc -c < /tmp/review-output.json)
+            echo "::notice::Review output: ${OUTPUT_SIZE} bytes"
+          else
+            echo "::error::No review output produced. Codex exit code: $CODEX_EXIT, prompt size: ${PROMPT_SIZE} bytes"
+          fi
 
       - name: Post inline review
         if: always() && steps.check-key.outputs.skip != 'true'
