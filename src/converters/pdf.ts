@@ -2,7 +2,6 @@ import {
   GlobalWorkerOptions,
   getDocument
 } from "pdfjs-dist/legacy/build/pdf.mjs";
-import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import type {
   TextItem,
   TextMarkedContent
@@ -47,8 +46,16 @@ const IS_NODE_LIKE =
   !PROCESS_INFO.versions?.nw &&
   !(PROCESS_INFO.versions?.electron && PROCESS_INFO.type !== "browser");
 
-if (!IS_NODE_LIKE) {
-  GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+let browserWorkerConfigured = false;
+
+async function ensureBrowserWorkerConfigured() {
+  if (IS_NODE_LIKE || browserWorkerConfigured) {
+    return;
+  }
+
+  const pdfWorker = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
+  GlobalWorkerOptions.workerSrc = pdfWorker.default;
+  browserWorkerConfigured = true;
 }
 
 function isTextItem(item: TextItem | TextMarkedContent): item is TextItem {
@@ -477,6 +484,7 @@ export const convertPdf: Converter = async (file) => {
     | undefined;
 
   try {
+    await ensureBrowserWorkerConfigured();
     const arrayBuffer = await readFileAsArrayBuffer(file);
 
     loadingTask = getDocument({

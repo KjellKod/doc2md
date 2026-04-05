@@ -56,6 +56,14 @@ describe("App", () => {
       screen.getByRole("button", { name: "Switch to day mode" }),
     ).toBeInTheDocument();
     expect(
+      screen.getByRole("link", {
+        name: /see how to use @doc2md\/core in node, scripts, and mcp-style tools\./i,
+      }),
+    ).toHaveAttribute(
+      "href",
+      "https://github.com/KjellKod/doc2md/blob/main/docs/using-doc2md-core.md",
+    );
+    expect(
       screen.getByText((_, element) => {
         return (
           element?.textContent ===

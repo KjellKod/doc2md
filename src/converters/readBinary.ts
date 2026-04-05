@@ -1,4 +1,10 @@
+import { isNodeCompatEnabled } from "./runtime";
+
 export function readFileAsArrayBuffer(file: Blob): Promise<ArrayBuffer> {
+  if (isNodeCompatEnabled() || typeof globalThis.FileReader !== "function") {
+    return file.arrayBuffer();
+  }
+
   return new Promise((resolve, reject) => {
     const reader = new globalThis.FileReader();
 

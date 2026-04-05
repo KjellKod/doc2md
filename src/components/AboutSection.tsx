@@ -43,7 +43,30 @@ export default function AboutSection() {
           well-scoped, honest, polished utility can look like when it refuses
           to pretend that every format is more cooperative than it really is.
         </p>
+        <p>
+          If you want the same conversion approach in Node, batch jobs, or
+          MCP-style tooling, there is now an automation path too:{" "}
+          <a
+            href="https://github.com/KjellKod/doc2md/blob/main/docs/using-doc2md-core.md"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            use the <code>@doc2md/core</code> package
+          </a>
+          .
+        </p>
       </div>
+
+      <p className="about-automation">
+        Need automation instead of the browser UI?{" "}
+        <a
+          href="https://github.com/KjellKod/doc2md/blob/main/docs/using-doc2md-core.md"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          See how to use <code>@doc2md/core</code> in Node, scripts, and MCP-style tools.
+        </a>
+      </p>
 
       <p className="about-tagline">
         <a
