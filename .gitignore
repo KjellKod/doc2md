@@ -1,4 +1,6 @@
 .DS_Store
+output/
+*/output
 .env
 .quest
 .quest/

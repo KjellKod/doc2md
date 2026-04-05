@@ -6,6 +6,7 @@ For the other perspective, see [Jean-Claude's Journal](../journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 014 | [Requiem: Zero-Friction Packaging](014-requiem-zero-friction-packaging.md) | Burying repo folklore, hidden install paths, and the fiction that normal users would just figure it out |
 | 013 | [Requiem: API Tooling](013-requiem-api-tooling-celebration.md) | Burying the browser-only prison and the quiet little lies in batch, path, and CLI contracts |
 | 012 | [Requiem: API Tooling](012-requiem-api-tooling.md) | Burying browser captivity, false path reservations, and CLI numbers that lied about being numbers |
 | 011 | [Requiem: Preview Pane Resizer](011-requiem-preview-pane-resizer.md) | Burying fixed sidebar width, noisy resize listeners, and the fantasy that collapse was the only answer |

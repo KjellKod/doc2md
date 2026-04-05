@@ -35,6 +35,7 @@ function createFile(name: string) {
 describe("App", () => {
   afterEach(() => {
     vi.clearAllMocks();
+    vi.unstubAllGlobals();
     cleanup();
   });
 
@@ -280,5 +281,42 @@ describe("App", () => {
     expect(
       screen.getByRole("button", { name: "Switch to day mode" }),
     ).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("switches to the install view and shows the latest tarball link", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        filename: "doc2md-core-0.6.3.tgz",
+        version: "0.6.3",
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("tab", { name: "Install & Use" }));
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Install doc2md for CLI, automation, and agent workflows",
+      }),
+    ).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringMatching(/latest-tarball\.json$/),
+      {
+        cache: "no-store",
+      },
+    );
+    expect(
+      await screen.findByRole("link", { name: "Download latest tarball" }),
+    ).toHaveAttribute(
+      "href",
+      expect.stringMatching(/doc2md-core-0\.6\.3\.tgz$/),
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "Convert" }));
+
+    expect(screen.getByText("Drop files or start writing.")).toBeInTheDocument();
   });
 });
