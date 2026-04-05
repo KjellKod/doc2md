@@ -132,6 +132,14 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y -qq bubblewrap >/dev/null 2>&1 || true
           npm install -g @openai/codex
 
+      - name: Authenticate Codex CLI
+        if: steps.check-key.outputs.skip != 'true'
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          printenv OPENAI_API_KEY | codex login --with-api-key
+          codex login status
+
       - name: AI Code Review
         if: steps.check-key.outputs.skip != 'true'
         id: review
