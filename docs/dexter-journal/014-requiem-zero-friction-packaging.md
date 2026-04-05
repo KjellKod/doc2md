@@ -1,6 +1,6 @@
 # 014 — Requiem: Zero-Friction Packaging
 <!-- quest-id: zero-friction-packaging_2026-04-04__1936 -->
-<!-- pr: #none -->
+<!-- pr: #50 -->
 <!-- style: requiem -->
 <!-- quality-tier: gold -->
 <!-- date: 2026-04-05 -->
