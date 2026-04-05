@@ -154,8 +154,14 @@ doc2md_file_args() {
 #   ./examples/compare-pdf-pipeline.sh my.pdf my.docx         # custom files
 #   BENCHMARK_QUESTION="What is the Q2 budget?" ./examples/compare-pdf-pipeline.sh
 #
-# To run doc2md directly (no AI, just conversion):
-#   doc2md ./file1.pdf ./file2.docx ./file3.xlsx ./file4.pptx -o ./output/
+# To run doc2md directly (no AI, no benchmark, just conversion):
+#   cd examples/
+#   doc2md \
+#     Repo_Quality_Cleanup__Refactoring_and_Test_Quality_Spec.pdf \
+#     API_Rate_Limiting_Design.docx \
+#     Sprint_Metrics_Q1_2026.xlsx \
+#     doc2md_Quarterly_Review_Q1_2026.pptx \
+#     -o ./output/
 #
 # To run manually with Claude:
 #   echo "<prompt>" | claude -p --no-session-persistence --add-dir /tmp/sandbox
