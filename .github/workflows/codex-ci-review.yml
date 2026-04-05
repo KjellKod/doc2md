@@ -51,13 +51,20 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           # Exclude binary and non-reviewable files from the diff
-          EXCLUDE_PATTERNS="*.pdf *.docx *.xlsx *.pptx *.tgz *.png *.jpg *.gif *.ico *.woff *.woff2 *.ttf"
-          EXCLUDE_ARGS=""
-          for pat in $EXCLUDE_PATTERNS; do
-            EXCLUDE_ARGS="$EXCLUDE_ARGS --exclude=$pat"
-          done
-
-          gh pr diff ${{ github.event.pull_request.number }} --patch $EXCLUDE_ARGS > /tmp/pr.diff
+          gh pr diff ${{ github.event.pull_request.number }} --patch \
+            --exclude '*.pdf' \
+            --exclude '*.docx' \
+            --exclude '*.xlsx' \
+            --exclude '*.pptx' \
+            --exclude '*.tgz' \
+            --exclude '*.png' \
+            --exclude '*.jpg' \
+            --exclude '*.gif' \
+            --exclude '*.ico' \
+            --exclude '*.woff' \
+            --exclude '*.woff2' \
+            --exclude '*.ttf' \
+            > /tmp/pr.diff
           gh pr view ${{ github.event.pull_request.number }} \
             --json title,body --jq '.title + "\n\n" + (.body // "")' > /tmp/pr_description.txt
           gh pr view ${{ github.event.pull_request.number }} \
