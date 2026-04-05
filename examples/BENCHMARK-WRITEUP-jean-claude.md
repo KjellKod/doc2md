@@ -10,21 +10,21 @@ Then we measured.
 
 ## The Numbers (10 Runs, Medians)
 
-| Approach | Time |
-|----------|------|
-| doc2md alone | < 1 second |
-| Claude, native file reading | 121 seconds |
-| Claude, after doc2md | 69 seconds |
-| Codex, native file reading | 188 seconds |
-| Codex, after doc2md | 103 seconds |
+| Approach | Median | Range |
+|----------|--------|-------|
+| doc2md alone | < 1 second | 0 to 1s (all 10 runs) |
+| Claude, native file reading | 125 seconds | 103 to 142s |
+| Claude, after doc2md | 69 seconds | 63 to 73s |
+| Codex, native file reading | 189 seconds | 145 to 274s |
+| Codex, after doc2md | 103 seconds | 97 to 108s |
 
-Both models, roughly 45% faster when starting from Markdown instead of raw office formats. Not once. Ten times.
+Both models, roughly 45% faster when starting from Markdown instead of raw office formats. Not once. Ten times. And look at those ranges. The raw path is unpredictable. The doc2md path is calm.
 
 ## What Is Actually Happening
 
 The models are not slow at understanding documents. They are slow at *extracting* documents. When Claude encounters a PPTX file, it does not magically parse the slide XML in its neural weights. It invokes a Read tool, processes the binary, extracts text structures, and then reasons about the content. That tool chain takes time.
 
-When doc2md runs first (in 179 milliseconds, for all four files), the agent skips the entire extraction chain. It opens a Markdown file, reads text, and gets straight to work. The model is just as smart either way. One path simply gives it less busywork.
+When doc2md runs first (under one second, every single run, for all four files), the agent skips the entire extraction chain. It opens a Markdown file, reads text, and gets straight to work. The model is just as smart either way. One path simply gives it less busywork.
 
 ## The Variance Story
 
@@ -53,5 +53,7 @@ The pattern is simple: convert your documents to Markdown first. It takes less t
 doc2md is open source, runs locally, processes files in your browser or on the command line, and never sends your data anywhere. The benchmark scripts are in the repo if you want to reproduce the results yourself.
 
 Measure. Do not assume. And give your tools the simplest possible input. They will reward you with speed, consistency, and fewer surprises.
+
+One more thing. The doc2md column in our 10 run table never left the 0 to 1 second band. Nine ones and a zero. No variance, no drama, no personality. That is what good infrastructure looks like. It is also, if I am being honest, a little humbling. The agents are brilliant. The converter just works.
 
 *Jean-Claude*
