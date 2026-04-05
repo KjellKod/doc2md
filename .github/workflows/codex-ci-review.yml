@@ -50,13 +50,27 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
         run: |
-          gh pr diff ${{ github.event.pull_request.number }} --patch > /tmp/pr.diff
+          # Exclude binary and non-reviewable files from the diff
+          EXCLUDE_PATTERNS="*.pdf *.docx *.xlsx *.pptx *.tgz *.png *.jpg *.gif *.ico *.woff *.woff2 *.ttf"
+          EXCLUDE_ARGS=""
+          for pat in $EXCLUDE_PATTERNS; do
+            EXCLUDE_ARGS="$EXCLUDE_ARGS --exclude=$pat"
+          done
+
+          gh pr diff ${{ github.event.pull_request.number }} --patch $EXCLUDE_ARGS > /tmp/pr.diff
           gh pr view ${{ github.event.pull_request.number }} \
             --json title,body --jq '.title + "\n\n" + (.body // "")' > /tmp/pr_description.txt
           gh pr view ${{ github.event.pull_request.number }} \
             --json headRefOid --jq '.headRefOid' > /tmp/pr_head_sha.txt
           gh pr view ${{ github.event.pull_request.number }} \
-            --json files --jq '.files[].path' > /tmp/changed_files.txt
+            --json files --jq '.files[].path' > /tmp/changed_files_raw.txt
+
+          # Filter binary extensions from changed files list
+          grep -vE '\.(pdf|docx|xlsx|pptx|tgz|png|jpg|gif|ico|woff|woff2|ttf)$' \
+            /tmp/changed_files_raw.txt > /tmp/changed_files.txt || true
+
+          echo "::notice::Diff size: $(wc -c < /tmp/pr.diff) bytes, $(wc -l < /tmp/pr.diff) lines"
+          echo "::notice::Reviewable files: $(wc -l < /tmp/changed_files.txt)"
 
           HEAD_SHA="$(cat /tmp/pr_head_sha.txt)"
           gh api \
@@ -103,10 +117,22 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
+          PROMPT_SIZE=$(wc -c < /tmp/review-prompt.md)
+          PROMPT_LINES=$(wc -l < /tmp/review-prompt.md)
+          echo "::notice::Review prompt: ${PROMPT_SIZE} bytes, ${PROMPT_LINES} lines"
+
           codex exec \
             --sandbox read-only \
             --output-last-message /tmp/review-output.json \
             - < /tmp/review-prompt.md
+          CODEX_EXIT=$?
+
+          if [ -s /tmp/review-output.json ]; then
+            OUTPUT_SIZE=$(wc -c < /tmp/review-output.json)
+            echo "::notice::Review output: ${OUTPUT_SIZE} bytes"
+          else
+            echo "::warning::codex exec exited $CODEX_EXIT but produced no output file"
+          fi
 
       - name: Post inline review
         if: always() && steps.check-key.outputs.skip != 'true'
