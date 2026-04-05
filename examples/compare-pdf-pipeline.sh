@@ -169,7 +169,7 @@ build_batch_task() {
   if [ -n "$BENCHMARK_QUESTION" ]; then
     extra=" Then answer this question: $BENCHMARK_QUESTION"
   fi
-  printf 'Summarize the key findings in each document.%s Do not search for or reference any external files beyond what is provided in this directory.' "$extra"
+  printf 'Extract and output the full text content of each document.%s Do not search for or reference any external files beyond what is provided in this directory.' "$extra"
 }
 
 build_batch_raw_prompt() {
@@ -177,9 +177,24 @@ build_batch_raw_prompt() {
   printf 'This directory contains the following files:\n%s\nRead each file and complete this task: %s' "$(build_file_list "$dir")" "$(build_batch_task)"
 }
 
+build_doc2md_file_args() {
+  local dir="$1"
+  local args=""
+  for f in "$dir"/*; do
+    [ -f "$f" ] || continue
+    local base
+    base="$(basename "$f")"
+    [ "$base" = "response.txt" ] && continue
+    args="${args} ./${base}"
+  done
+  printf '%s' "$args"
+}
+
 build_batch_doc2md_prompt() {
   local dir="$1"
-  printf 'This directory contains the following files:\n%s\nFirst, run doc2md on all files: doc2md ./ -o ./output/\nThen read the resulting markdown files in ./output/ and complete this task: %s' "$(build_file_list "$dir")" "$(build_batch_task)"
+  local file_args
+  file_args="$(build_doc2md_file_args "$dir")"
+  printf 'This directory contains the following files:\n%s\nFirst, convert all files to markdown by running: doc2md%s -o ./output/\nThen read the resulting markdown files in ./output/ and complete this task: %s' "$(build_file_list "$dir")" "$file_args" "$(build_batch_task)"
 }
 
 # ---------------------------------------------------------------------------
@@ -190,7 +205,7 @@ build_single_task() {
   if [ -n "$BENCHMARK_QUESTION" ]; then
     extra=" Then answer this question: $BENCHMARK_QUESTION"
   fi
-  printf 'Summarize the key findings in this document.%s Do not search for or reference any external files beyond what is provided.' "$extra"
+  printf 'Extract and output the full text content of this document.%s Do not search for or reference any external files beyond what is provided.' "$extra"
 }
 
 build_single_raw_prompt() {
@@ -208,6 +223,41 @@ build_single_doc2md_prompt() {
 # ---------------------------------------------------------------------------
 run_batch_benchmark() {
   local sandbox label
+
+  # --- doc2md baseline (no AI, just conversion) ---
+  label="doc2md only"
+  sandbox="$BENCH_ROOT/batch-doc2md-baseline"
+  mkdir -p "$sandbox"
+  for f in "${INPUT_FILES[@]}"; do cp "$f" "$sandbox/"; done
+  printf '  %s (baseline)...' "$label"
+  local doc2md_args=()
+  for f in "$sandbox"/*; do
+    [ -f "$f" ] || continue
+    doc2md_args+=("$f")
+  done
+  local d2m_start d2m_end d2m_exit
+  d2m_start="$(date +%s)"
+  set +e
+  doc2md "${doc2md_args[@]}" -o "$sandbox/output" > "$sandbox/response.txt" 2>&1
+  d2m_exit=$?
+  set -e
+  d2m_end="$(date +%s)"
+  local d2m_seconds="$((d2m_end - d2m_start))"
+  local d2m_status="PASS"
+  [ "$d2m_exit" -ne 0 ] && d2m_status="FAIL"
+  # Count output files and total size
+  local md_count=0 md_bytes=0
+  if [ -d "$sandbox/output" ]; then
+    for mf in "$sandbox/output"/*.md; do
+      [ -f "$mf" ] || continue
+      md_count=$((md_count + 1))
+      local sz
+      sz="$(wc -c < "$mf" | tr -d '[:space:]')"
+      md_bytes=$((md_bytes + sz))
+    done
+  fi
+  printf ' %s (%ss, %d files, %d bytes)\n' "$d2m_status" "$d2m_seconds" "$md_count" "$md_bytes"
+  add_result "$label" "$d2m_status" "$d2m_exit" "$d2m_seconds" "${#INPUT_FILES[@]} in, ${md_count} md out, ${md_bytes} bytes"
 
   # --- Claude raw ---
   if [ "$HAVE_CLAUDE" -eq 1 ]; then
