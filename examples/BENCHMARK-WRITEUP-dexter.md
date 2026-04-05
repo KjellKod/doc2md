@@ -1,3 +1,10 @@
+██╗   ██╗██╗ ██████╗ ██╗██╗     
+██║   ██║██║██╔════╝ ██║██║     
+██║   ██║██║██║  ███╗██║██║     
+╚██╗ ██╔╝██║██║   ██║██║██║     
+ ╚████╔╝ ██║╚██████╔╝██║███████╗
+  ╚═══╝  ╚═╝ ╚═════╝ ╚═╝╚══════╝
+
 # The One Second Witness
 
 The updated 10 run dataset tightens the story. `doc2md` finished the mixed PDF, DOCX, XLSX, and PPTX batch in 0 to 1 seconds on every run. At this benchmark's one second resolution, that means a 1 second median and a 0.9 second average. The same extraction task took Claude 125 seconds median on the raw path and Codex 189 seconds. When `doc2md` handled format conversion first, Claude dropped to 69 seconds and Codex to 103.5. That is a 44.8 percent median reduction for Claude and a 45.2 percent reduction for Codex. The old 179 millisecond claim belonged to an earlier, narrower snapshot. The full dataset says something simpler and harder to argue with, the converter is effectively instantaneous next to the agents.
