@@ -192,17 +192,24 @@ prompt_doc2md_single() {
 
 # ---------------------------------------------------------------------------
 # Agent runner: handles availability check, sandbox, prompt, result capture
-#   run_agent <label> <sandbox> <prompt> <agent: claude|codex>
+#   run_agent <label> <sandbox> <prompt> <agent: claude|codex> <mode: raw|doc2md>
 # ---------------------------------------------------------------------------
 run_agent() {
-  local label="$1" sandbox="$2" prompt="$3" agent="$4"
+  local label="$1" sandbox="$2" prompt="$3" agent="$4" mode="${5:-raw}"
 
+  # doc2md mode needs write access to create ./output/
+  local codex_sandbox="read-only"
+  [ "$mode" = "doc2md" ] && codex_sandbox="workspace-write"
+
+  local cmd_display=""
   case "$agent" in
     claude)
       if [ "$HAVE_CLAUDE" -eq 0 ]; then
         add_result "$label" "SKIP" "n/a" "n/a" "not installed"
         return
       fi
+      cmd_display="echo '<prompt>' | claude -p --no-session-persistence --add-dir $sandbox"
+      printf '\n    cmd: %s\n' "$cmd_display"
       run_timed "$sandbox/response.txt" "$prompt" \
         claude -p --no-session-persistence --add-dir "$sandbox"
       ;;
@@ -211,13 +218,16 @@ run_agent() {
         add_result "$label" "SKIP" "n/a" "n/a" "not installed"
         return
       fi
+      cmd_display="echo '<prompt>' | codex exec -C $sandbox --add-dir $sandbox --skip-git-repo-check -c sandbox_permissions=[\"$codex_sandbox\"] ${CODEX_EXTRA_FLAGS[*]}"
+      printf '\n    cmd: %s\n' "$cmd_display"
       run_timed "$sandbox/response.txt" "$prompt" \
         codex exec -C "$sandbox" --add-dir "$sandbox" --skip-git-repo-check \
+        -c "sandbox_permissions=[\"$codex_sandbox\"]" \
         "${CODEX_EXTRA_FLAGS[@]}"
       ;;
   esac
 
-  printf ' %s (%ss)\n' "$_RC_STATUS" "$_RC_SECONDS"
+  printf '    result: %s (%ss)\n' "$_RC_STATUS" "$_RC_SECONDS"
   add_result "$label" "$_RC_STATUS" "$_RC_EXIT" "$_RC_SECONDS" ""
 }
 
@@ -284,7 +294,7 @@ run_batch() {
       fi
 
       printf '  %s (batch)...' "$label"
-      run_agent "$label" "$sandbox" "$prompt" "$agent"
+      run_agent "$label" "$sandbox" "$prompt" "$agent" "$mode"
     done
   done
 }
@@ -319,7 +329,7 @@ run_perfile() {
         fi
 
         printf '    %s %s...' "${agent^}" "$mode"
-        run_agent "$label" "$sandbox" "$prompt" "$agent"
+        run_agent "$label" "$sandbox" "$prompt" "$agent" "$mode"
       done
     done
   done
