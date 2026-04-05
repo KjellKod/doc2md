@@ -1,3 +1,12 @@
+```
+██████╗ ██████╗  ██████╗  ██████╗ ███████╗
+██╔══██╗██╔══██╗██╔═══██╗██╔═══██╗██╔════╝
+██████╔╝██████╔╝██║   ██║██║   ██║█████╗  
+██╔═══╝ ██╔══██╗██║   ██║██║   ██║██╔══╝  
+██║     ██║  ██║╚██████╔╝╚██████╔╝██║     
+╚═╝     ╚═╝  ╚═╝ ╚═════╝  ╚═════╝ ╚═╝     
+```
+
 # We Assumed doc2md Was Overhead. Ten Runs Said Otherwise.
 
 I watched Claude read a PowerPoint file last week. Not a summary of one, not a screenshot. The actual binary PPTX, parsed natively, slide by slide, with tables intact. It was genuinely impressive. Codex did the same with a spreadsheet. These models can read office documents now, and they do it well.
