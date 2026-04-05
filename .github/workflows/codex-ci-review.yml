@@ -76,8 +76,21 @@ jobs:
           grep -vE '\.(pdf|docx|xlsx|pptx|tgz|png|jpg|gif|ico|woff|woff2|ttf)$' \
             /tmp/changed_files_raw.txt > /tmp/changed_files.txt || true
 
-          echo "::notice::Diff size: $(wc -c < /tmp/pr.diff) bytes, $(wc -l < /tmp/pr.diff) lines"
+          DIFF_BYTES=$(wc -c < /tmp/pr.diff)
+          DIFF_LINES=$(wc -l < /tmp/pr.diff)
+          echo "::notice::Diff size: ${DIFF_BYTES} bytes, ${DIFF_LINES} lines"
           echo "::notice::Reviewable files: $(wc -l < /tmp/changed_files.txt)"
+
+          # Cap diff size to avoid overwhelming the model (keep first ~100KB)
+          MAX_DIFF_BYTES=100000
+          if [ "$DIFF_BYTES" -gt "$MAX_DIFF_BYTES" ]; then
+            echo "::warning::Diff is ${DIFF_BYTES} bytes, truncating to ${MAX_DIFF_BYTES} bytes"
+            head -c "$MAX_DIFF_BYTES" /tmp/pr.diff > /tmp/pr.diff.truncated
+            # Append a note about truncation
+            printf '\n\n--- DIFF TRUNCATED (original: %s bytes, showing first %s bytes) ---\n' \
+              "$DIFF_BYTES" "$MAX_DIFF_BYTES" >> /tmp/pr.diff.truncated
+            mv /tmp/pr.diff.truncated /tmp/pr.diff
+          fi
 
           HEAD_SHA="$(cat /tmp/pr_head_sha.txt)"
           gh api \
