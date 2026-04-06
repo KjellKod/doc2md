@@ -14,7 +14,6 @@ concurrency:
 
 jobs:
   codex-review:
-    name: "advisory: codex-review"
     if: >-
       github.event.pull_request.draft == false &&
       github.event.pull_request.user.login == 'KjellKod' &&
