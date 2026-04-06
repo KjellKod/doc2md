@@ -1,5 +1,6 @@
 # doc2md
 
+<!-- CI trigger test: verify Codex review environment works on non-workflow PRs -->
 <div align="center">
 
 ### ✦ [**Use doc2md live →**](https://kjellkod.github.io/doc2md/) ✦
