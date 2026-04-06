@@ -21,10 +21,11 @@ fi
 
 echo ""
 echo "=== Step 2: Test codex exec with a simple prompt ==="
+OUTPUT_FILE="$(mktemp "${TMPDIR:-/tmp}/codex-test-output-XXXXXX.json")"
 echo "Summarize this in one sentence: Hello world" | \
   codex exec \
     --sandbox read-only \
-    --output-last-message /tmp/codex-test-output.json \
+    --output-last-message "$OUTPUT_FILE" \
     - 2>&1
 CODEX_EXIT=$?
 
@@ -32,10 +33,10 @@ echo ""
 echo "=== Results ==="
 echo "Codex exit code: $CODEX_EXIT"
 
-if [ -s /tmp/codex-test-output.json ]; then
-  echo "Output file exists: $(wc -c < /tmp/codex-test-output.json) bytes"
+if [ -s "$OUTPUT_FILE" ]; then
+  echo "Output file exists: $(wc -c < "$OUTPUT_FILE") bytes"
   echo "Content:"
-  cat /tmp/codex-test-output.json
+  cat "$OUTPUT_FILE"
 else
   echo "No output file produced"
 fi

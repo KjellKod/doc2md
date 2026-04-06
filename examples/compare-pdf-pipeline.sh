@@ -220,11 +220,18 @@ run_agent() {
         return
       fi
       printf '\n    prompt: %s\n' "$prompt"
-      printf '    cmd: echo <prompt> | codex exec -C %s --add-dir %s --skip-git-repo-check %s %s\n' "$sandbox" "$sandbox" "$codex_sandbox_flag" "${CODEX_EXTRA_FLAGS[*]}"
-      run_timed "$sandbox/response.txt" "$prompt" \
-        codex exec -C "$sandbox" --add-dir "$sandbox" --skip-git-repo-check \
-        "$codex_sandbox_flag" \
-        "${CODEX_EXTRA_FLAGS[@]}"
+      if [ "${#CODEX_EXTRA_FLAGS[@]}" -gt 0 ]; then
+        printf '    cmd: echo <prompt> | codex exec -C %s --add-dir %s --skip-git-repo-check %s %s\n' "$sandbox" "$sandbox" "$codex_sandbox_flag" "${CODEX_EXTRA_FLAGS[*]}"
+        run_timed "$sandbox/response.txt" "$prompt" \
+          codex exec -C "$sandbox" --add-dir "$sandbox" --skip-git-repo-check \
+          "$codex_sandbox_flag" \
+          "${CODEX_EXTRA_FLAGS[@]}"
+      else
+        printf '    cmd: echo <prompt> | codex exec -C %s --add-dir %s --skip-git-repo-check %s\n' "$sandbox" "$sandbox" "$codex_sandbox_flag"
+        run_timed "$sandbox/response.txt" "$prompt" \
+          codex exec -C "$sandbox" --add-dir "$sandbox" --skip-git-repo-check \
+          "$codex_sandbox_flag"
+      fi
       ;;
   esac
 

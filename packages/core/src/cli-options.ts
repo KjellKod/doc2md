@@ -10,9 +10,13 @@ export interface HelpRequest {
 }
 
 function parsePositiveInteger(flag: string, rawValue: string | undefined) {
-  const parsedValue = Number.parseInt(rawValue ?? "", 10);
+  if (!rawValue || !/^(0*[1-9]\d*)$/.test(rawValue)) {
+    throw new Error(`Invalid value for ${flag}: expected a positive integer.`);
+  }
 
-  if (Number.isNaN(parsedValue) || parsedValue < 1) {
+  const parsedValue = Number(rawValue);
+
+  if (!Number.isSafeInteger(parsedValue) || parsedValue < 1) {
     throw new Error(`Invalid value for ${flag}: expected a positive integer.`);
   }
 

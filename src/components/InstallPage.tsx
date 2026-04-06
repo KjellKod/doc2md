@@ -16,9 +16,11 @@ const SKILL_INSTALL_URL =
 function InstallStatus({
   manifest,
   state,
+  onRetry,
 }: {
   manifest: TarballManifest | null;
   state: "loading" | "ready" | "unavailable";
+  onRetry: () => void;
 }) {
   if (state === "loading") {
     return (
@@ -38,11 +40,16 @@ function InstallStatus({
   }
 
   return (
-    <p className="install-download-note">
-      The tarball manifest is not available in local dev builds yet. Use the
-      button after a Pages deploy, or build locally with{" "}
-      <code>npm run pack:local --workspace=@doc2md/core</code>.
-    </p>
+    <div className="install-download-note">
+      <p>
+        The tarball manifest is not available in local dev builds yet. Use the
+        button after a Pages deploy, or build locally with{" "}
+        <code>npm run pack:local --workspace=@doc2md/core</code>.
+      </p>
+      <button type="button" className="ghost-button" onClick={onRetry}>
+        Retry manifest fetch
+      </button>
+    </div>
   );
 }
 
@@ -51,6 +58,11 @@ export default function InstallPage({ active }: { active: boolean }) {
   const [manifestState, setManifestState] = useState<
     "loading" | "ready" | "unavailable"
   >("loading");
+
+  function retryManifestFetch() {
+    setManifest(null);
+    setManifestState("loading");
+  }
 
   useEffect(() => {
     if (!active || manifestState !== "loading") {
@@ -144,7 +156,11 @@ export default function InstallPage({ active }: { active: boolean }) {
           </a>
         </div>
 
-        <InstallStatus manifest={manifest} state={manifestState} />
+        <InstallStatus
+          manifest={manifest}
+          state={manifestState}
+          onRetry={retryManifestFetch}
+        />
 
         <div className="install-card-grid">
           <article className="install-card">

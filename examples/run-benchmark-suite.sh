@@ -25,12 +25,6 @@ for i in $(seq 1 "$RUNS"); do
   output="$RESULTS_DIR/run-${i}.txt"
   "$BENCHMARK" > "$output" 2>&1 || true
 
-  # Parse times from the summary table
-  # Lines look like: "doc2md only          PASS     0      0s       ..."
-  parse_time() {
-    grep "^$1" "$output" | awk '{print $NF}' | sed 's/[^0-9]//g'
-  }
-
   # The summary table has format: Case Status Exit Time Notes
   # Time is in column 4, formatted as "136s" or "n/a"
   extract_time() {
