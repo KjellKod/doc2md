@@ -161,11 +161,10 @@ export default function InstallPage({ active }: { active: boolean }) {
           </a>
           <a
             className="ghost-button"
-            href="https://github.com/KjellKod/doc2md/tree/main/.skills/doc-to-markdown"
-            target="_blank"
-            rel="noopener noreferrer"
+            href={`${BASE_PATH}doc-to-markdown-skill.zip`}
+            download
           >
-            Download skill (.skills/)
+            Download skill (.zip)
           </a>
         </div>
 
