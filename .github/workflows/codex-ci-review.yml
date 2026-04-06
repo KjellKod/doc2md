@@ -196,6 +196,29 @@ jobs:
           comments = None
           stripped = raw
 
+          def post_summary(message):
+              body = "\n".join(
+                  [
+                      "## Codex Review Summary",
+                      "",
+                      f"Commit: `{os.environ['COMMIT_SHA'][:7]}`",
+                      "",
+                      message,
+                  ]
+              )
+              subprocess.run(
+                  [
+                      "gh",
+                      "pr",
+                      "comment",
+                      os.environ["PR_NUMBER"],
+                      "--body",
+                      body,
+                  ],
+                  text=True,
+                  check=False,
+              )
+
           try:
               parsed = json.loads(raw)
               if isinstance(parsed, list):
@@ -234,10 +257,16 @@ jobs:
 
           if comments is None:
               print("No review comments -- could not parse JSON array from output.")
+              post_summary(
+                  "Codex review completed, but the response was not a parseable JSON comment array. No inline findings were posted."
+              )
               sys.exit(0)
 
           if not isinstance(comments, list) or not comments:
               print("No review comments.")
+              post_summary(
+                  "Codex review completed and returned no actionable findings."
+              )
               sys.exit(0)
 
           def is_valid_comment(comment):
@@ -260,6 +289,9 @@ jobs:
           comments = [comment for comment in comments if is_valid_comment(comment)]
           if not comments:
               print("No valid review comments after structural validation.")
+              post_summary(
+                  "Codex review completed, but none of the returned items were valid inline review comments."
+              )
               sys.exit(0)
 
           existing = []
@@ -305,6 +337,9 @@ jobs:
 
           if not filtered:
               print("No new review comments to post after deduplication.")
+              post_summary(
+                  "Codex review completed, but every finding was already covered by an existing bot comment or a resolved thread."
+              )
               sys.exit(0)
 
           failed_inline = []
