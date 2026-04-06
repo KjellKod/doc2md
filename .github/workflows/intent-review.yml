@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   advisory-intent-review:
-    name: advisory: intent-review
+    name: "advisory: intent-review"
     if: >-
       github.event.pull_request.draft == false &&
       github.event.pull_request.user.login == 'KjellKod' &&
