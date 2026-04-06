@@ -59,14 +59,15 @@ export default function AboutSection() {
       </div>
 
       <p className="about-automation">
-        Need automation instead of the browser UI?{" "}
+        Need automation instead of the browser UI? Use{" "}
         <a
           href="https://github.com/KjellKod/doc2md/blob/main/docs/using-doc2md-core.md"
           target="_blank"
           rel="noopener noreferrer"
         >
-          See how to use <code>@doc2md/core</code> in Node, scripts, MCP-style tools, or a portable skill.
-        </a>
+          <code>@doc2md/core</code>
+        </a>{" "}
+        in Node, scripts, MCP-style tools, or a portable skill.
       </p>
 
       <p className="about-tagline">
