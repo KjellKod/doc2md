@@ -117,6 +117,8 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isPageResizing, setIsPageResizing] = useState(false);
   const [pageMaxWidth, setPageMaxWidth] = useState(BASE_PAGE_MAX_WIDTH);
+  const convertTabRef = useRef<HTMLButtonElement>(null);
+  const installTabRef = useRef<HTMLButtonElement>(null);
   const dragStartXRef = useRef(0);
   const dragStartWidthRef = useRef(BASE_PAGE_MAX_WIDTH);
   const {
@@ -266,6 +268,39 @@ export default function App() {
     "--page-max-width": `${pageMaxWidth}px`,
   } as CSSProperties;
 
+  const focusPageTab = (page: PageView) => {
+    const tab =
+      page === "convert" ? convertTabRef.current : installTabRef.current;
+    tab?.focus();
+  };
+
+  const handleViewTabKeyDown = (
+    event: KeyboardEvent<HTMLButtonElement>,
+    currentPage: PageView,
+  ) => {
+    const pages: PageView[] = ["convert", "install"];
+    const currentIndex = pages.indexOf(currentPage);
+    let nextPage: PageView | null = null;
+
+    if (event.key === "ArrowRight") {
+      nextPage = pages[(currentIndex + 1) % pages.length];
+    } else if (event.key === "ArrowLeft") {
+      nextPage = pages[(currentIndex - 1 + pages.length) % pages.length];
+    } else if (event.key === "Home") {
+      nextPage = pages[0];
+    } else if (event.key === "End") {
+      nextPage = pages[pages.length - 1];
+    }
+
+    if (!nextPage) {
+      return;
+    }
+
+    event.preventDefault();
+    setActivePage(nextPage);
+    focusPageTab(nextPage);
+  };
+
   return (
     <ThemeProvider>
       <div className="app-shell">
@@ -304,6 +339,7 @@ export default function App() {
             <div className="view-switcher" role="tablist" aria-label="doc2md views">
               <button
                 id="view-tab-convert"
+                ref={convertTabRef}
                 type="button"
                 role="tab"
                 aria-selected={activePage === "convert"}
@@ -311,11 +347,13 @@ export default function App() {
                 tabIndex={activePage === "convert" ? 0 : -1}
                 className={`view-tab${activePage === "convert" ? " is-active" : ""}`}
                 onClick={() => setActivePage("convert")}
+                onKeyDown={(event) => handleViewTabKeyDown(event, "convert")}
               >
                 Convert
               </button>
               <button
                 id="view-tab-install"
+                ref={installTabRef}
                 type="button"
                 role="tab"
                 aria-selected={activePage === "install"}
@@ -323,135 +361,136 @@ export default function App() {
                 tabIndex={activePage === "install" ? 0 : -1}
                 className={`view-tab${activePage === "install" ? " is-active" : ""}`}
                 onClick={() => setActivePage("install")}
+                onKeyDown={(event) => handleViewTabKeyDown(event, "install")}
               >
                 Install & Use
               </button>
             </div>
 
-            {activePage === "convert" ? (
+            <section
+              id="view-panel-convert"
+              className="view-panel"
+              role="tabpanel"
+              aria-labelledby="view-tab-convert"
+              hidden={activePage !== "convert"}
+            >
               <section
-                id="view-panel-convert"
-                className="view-panel"
-                role="tabpanel"
-                aria-labelledby="view-tab-convert"
+                className={`workspace${sidebarCollapsed ? " sidebar-collapsed" : ""}`}
               >
-                <section
-                  className={`workspace${sidebarCollapsed ? " sidebar-collapsed" : ""}`}
-                >
-                  {sidebarCollapsed ? (
-                    <section className="panel collapse-rail" aria-label="Upload rail">
-                      <button
-                        type="button"
-                        className="collapse-rail-button"
-                        onClick={() => setSidebarCollapsed(false)}
-                        aria-label="Show upload panel"
-                        title="Show upload panel"
-                      >
-                        <PanelRightOpenIcon
-                          className="collapse-toggle-icon"
-                          aria-hidden="true"
-                        />
-                        <span className="collapse-rail-label">Upload</span>
-                      </button>
-                    </section>
-                  ) : (
-                    <section
-                      className="panel sidebar-panel"
-                      aria-labelledby="upload-title"
+                {sidebarCollapsed ? (
+                  <section className="panel collapse-rail" aria-label="Upload rail">
+                    <button
+                      type="button"
+                      className="collapse-rail-button"
+                      onClick={() => setSidebarCollapsed(false)}
+                      aria-label="Show upload panel"
+                      title="Show upload panel"
                     >
-                      <div className="panel-heading">
-                        <div>
-                          <h2 id="upload-title">Upload</h2>
-                          <p className="panel-copy">
-                            Drop in documents, spreadsheets, PDFs, or presentations,
-                            or start writing from scratch and keep everything in one
-                            session.
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          className="ghost-button collapse-toggle"
-                          onClick={() => setSidebarCollapsed(true)}
-                          aria-label="Hide upload panel"
-                          title="Hide upload panel"
-                        >
-                          <PanelRightCloseIcon
-                            className="collapse-toggle-icon"
-                            aria-hidden="true"
-                          />
-                        </button>
-                      </div>
-
-                      <DropZone onFilesAdded={addFiles} />
-
-                      <div className="panel-heading panel-heading-tight">
-                        <div>
-                          <h2>Files</h2>
-                          <p className="panel-copy">{fileSummary}</p>
-                        </div>
-                        <DownloadButton entry={selectedEntry} />
-                      </div>
-
-                      <FileList
-                        entries={entries}
-                        onClearAll={clearEntries}
-                        onDownloadAll={() => downloadAllEntries(entries)}
-                        onSelect={selectEntry}
+                      <PanelRightOpenIcon
+                        className="collapse-toggle-icon"
+                        aria-hidden="true"
                       />
-                    </section>
-                  )}
-
+                      <span className="collapse-rail-label">Upload</span>
+                    </button>
+                  </section>
+                ) : (
                   <section
-                    className="panel preview-panel"
-                    aria-labelledby="preview-title"
+                    className="panel sidebar-panel"
+                    aria-labelledby="upload-title"
                   >
                     <div className="panel-heading">
                       <div>
-                        <h2 id="preview-title">Preview</h2>
+                        <h2 id="upload-title">Upload</h2>
                         <p className="panel-copy">
-                          {selectedEntry
-                            ? entryDisplayName(selectedEntry)
-                            : "Start writing, paste Markdown, or convert a file and review it here."}
+                          Drop in documents, spreadsheets, PDFs, or presentations,
+                          or start writing from scratch and keep everything in one
+                          session.
                         </p>
                       </div>
                       <button
                         type="button"
-                        className="ghost-button page-width-handle"
-                        onMouseDown={handlePageResizeStart}
-                        onKeyDown={handlePageResizeKeyDown}
-                        aria-label="Resize workspace width"
-                        title="Drag to widen or narrow the workspace"
+                        className="ghost-button collapse-toggle"
+                        onClick={() => setSidebarCollapsed(true)}
+                        aria-label="Hide upload panel"
+                        title="Hide upload panel"
                       >
-                        <MoveHorizontalIcon
-                          className="page-width-icon"
+                        <PanelRightCloseIcon
+                          className="collapse-toggle-icon"
                           aria-hidden="true"
                         />
                       </button>
                     </div>
-                    <PreviewPanel
-                      entry={selectedEntry}
-                      onStartWriting={addScratchEntry}
-                      onMarkdownChange={(text) => {
-                        if (selectedEntry) {
-                          updateMarkdown(selectedEntry.id, text);
-                        }
-                      }}
+
+                    <DropZone onFilesAdded={addFiles} />
+
+                    <div className="panel-heading panel-heading-tight">
+                      <div>
+                        <h2>Files</h2>
+                        <p className="panel-copy">{fileSummary}</p>
+                      </div>
+                      <DownloadButton entry={selectedEntry} />
+                    </div>
+
+                    <FileList
+                      entries={entries}
+                      onClearAll={clearEntries}
+                      onDownloadAll={() => downloadAllEntries(entries)}
+                      onSelect={selectEntry}
                     />
                   </section>
-                </section>
+                )}
 
-                <AboutSection />
+                <section
+                  className="panel preview-panel"
+                  aria-labelledby="preview-title"
+                >
+                  <div className="panel-heading">
+                    <div>
+                      <h2 id="preview-title">Preview</h2>
+                      <p className="panel-copy">
+                        {selectedEntry
+                          ? entryDisplayName(selectedEntry)
+                          : "Start writing, paste Markdown, or convert a file and review it here."}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="ghost-button page-width-handle"
+                      onMouseDown={handlePageResizeStart}
+                      onKeyDown={handlePageResizeKeyDown}
+                      aria-label="Resize workspace width"
+                      title="Drag to widen or narrow the workspace"
+                    >
+                      <MoveHorizontalIcon
+                        className="page-width-icon"
+                        aria-hidden="true"
+                      />
+                    </button>
+                  </div>
+                  <PreviewPanel
+                    entry={selectedEntry}
+                    onStartWriting={addScratchEntry}
+                    onMarkdownChange={(text) => {
+                      if (selectedEntry) {
+                        updateMarkdown(selectedEntry.id, text);
+                      }
+                    }}
+                  />
+                </section>
               </section>
-            ) : (
-              <section
-                id="view-panel-install"
-                className="view-panel"
-                role="tabpanel"
-                aria-labelledby="view-tab-install"
-              >
-                <InstallPage />
-              </section>
-            )}
+
+              <AboutSection />
+            </section>
+
+            <section
+              id="view-panel-install"
+              className="view-panel"
+              role="tabpanel"
+              aria-labelledby="view-tab-install"
+              hidden={activePage !== "install"}
+            >
+              <InstallPage active={activePage === "install"} />
+            </section>
           </div>
         </main>
       </div>

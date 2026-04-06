@@ -319,4 +319,41 @@ describe("App", () => {
 
     expect(screen.getByText("Drop files or start writing.")).toBeInTheDocument();
   });
+
+  it("keeps both tab panels mounted and hides the inactive one", () => {
+    const { container } = render(<App />);
+
+    const convertPanel = container.querySelector("#view-panel-convert");
+    const installPanel = container.querySelector("#view-panel-install");
+
+    expect(convertPanel).toBeVisible();
+    expect(installPanel).toHaveAttribute("hidden");
+
+    fireEvent.click(screen.getByRole("tab", { name: "Install & Use" }));
+
+    expect(container.querySelector("#view-panel-convert")).toHaveAttribute("hidden");
+    expect(
+      screen.getByRole("tabpanel", { name: "Install & Use" }),
+    ).toBeVisible();
+  });
+
+  it("switches tabs with arrow keys and moves focus to the active tab", () => {
+    render(<App />);
+
+    const convertTab = screen.getByRole("tab", { name: "Convert" });
+    const installTab = screen.getByRole("tab", { name: "Install & Use" });
+
+    convertTab.focus();
+    fireEvent.keyDown(convertTab, { key: "ArrowRight" });
+
+    expect(installTab).toHaveFocus();
+    expect(installTab).toHaveAttribute("aria-selected", "true");
+    expect(convertTab).toHaveAttribute("tabindex", "-1");
+
+    fireEvent.keyDown(installTab, { key: "ArrowLeft" });
+
+    expect(convertTab).toHaveFocus();
+    expect(convertTab).toHaveAttribute("aria-selected", "true");
+    expect(installTab).toHaveAttribute("tabindex", "-1");
+  });
 });

@@ -12,11 +12,8 @@ Use this skill when you want to convert local files to Markdown from an agent wo
 Ship this directory as a self-contained repo asset:
 
 - `SKILL.md`
-- `INSTALL.md`
 - `examples/basic-usage.md`
 - `scripts/convert-documents.mjs`
-
-For setup steps, platform notes, and install paths, see [INSTALL.md](./INSTALL.md).
 
 ## What It Does
 
@@ -26,7 +23,30 @@ For setup steps, platform notes, and install paths, see [INSTALL.md](./INSTALL.m
 - prints JSON metadata to stdout
 - skips unsupported files without failing the whole batch
 
+## Supported Formats
+
+- `.md`
+- `.txt`
+- `.json`
+- `.csv`
+- `.tsv`
+- `.html`
+- `.docx`
+- `.xlsx`
+- `.pdf`
+- `.pptx`
+
 ## Helper Script
+
+Single file:
+
+```bash
+node .skills/doc-to-markdown/scripts/convert-documents.mjs \
+  --output-dir ./markdown-output \
+  ./docs/resume.pdf
+```
+
+Multiple files:
 
 ```bash
 node .skills/doc-to-markdown/scripts/convert-documents.mjs \
@@ -39,6 +59,32 @@ Optional flags:
 
 - `--max <n>`
 - `--concurrency <n>`
+
+## Host Setup
+
+### Claude app (uploaded skill)
+
+1. Zip the `.skills/doc-to-markdown/` folder.
+2. In Claude, open `Customize` -> `Skills` and upload that zip.
+3. Use this skill inside a repository that already has `@doc2md/core` installed so the helper script can resolve the package at runtime.
+
+### Claude CLI / repo-local
+
+1. Copy this folder into the target repo at `.skills/doc-to-markdown/`.
+2. Install `@doc2md/core` in that repo.
+3. Run the helper from the repo root, for example:
+
+```bash
+node .skills/doc-to-markdown/scripts/convert-documents.mjs \
+  --output-dir ./markdown-output \
+  ./docs/resume.pdf
+```
+
+### Codex
+
+1. Use the same repo-local layout: `.skills/doc-to-markdown/` inside the working repo.
+2. Install `@doc2md/core` in that repo before invoking the helper.
+3. Keep input and output paths inside the writable workspace so the sandbox can read sources and write Markdown results.
 
 ## Agent Behavior Contract
 
@@ -113,5 +159,4 @@ If `quality` is absent but the status is still `success`, report that the conver
 
 ## References
 
-- [INSTALL.md](./INSTALL.md)
 - [examples/basic-usage.md](./examples/basic-usage.md)

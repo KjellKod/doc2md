@@ -199,7 +199,7 @@ Suggested external-repo flow:
 
 1. Install `@doc2md/core` from the tarball in the target repo
 2. Copy `.skills/doc-to-markdown/` into your repo
-3. Review `.skills/doc-to-markdown/INSTALL.md` for platform-specific setup notes
+3. Review the portable skill section in [INSTALL.md](../INSTALL.md#portable-skill-wrapper) for host-specific setup notes
 4. Run the helper script or register the skill with your agent runtime
 
 Example helper-script invocation:

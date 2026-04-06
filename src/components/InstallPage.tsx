@@ -11,7 +11,7 @@ const BEGINNER_INSTALL_URL =
 const CORE_USAGE_URL =
   "https://github.com/KjellKod/doc2md/blob/main/docs/using-doc2md-core.md";
 const SKILL_INSTALL_URL =
-  "https://github.com/KjellKod/doc2md/blob/main/.skills/doc-to-markdown/INSTALL.md";
+  "https://github.com/KjellKod/doc2md/blob/main/INSTALL.md#portable-skill-wrapper";
 
 function InstallStatus({
   manifest,
@@ -46,13 +46,17 @@ function InstallStatus({
   );
 }
 
-export default function InstallPage() {
+export default function InstallPage({ active }: { active: boolean }) {
   const [manifest, setManifest] = useState<TarballManifest | null>(null);
   const [manifestState, setManifestState] = useState<
     "loading" | "ready" | "unavailable"
   >("loading");
 
   useEffect(() => {
+    if (!active || manifestState !== "loading") {
+      return;
+    }
+
     let isCancelled = false;
 
     async function loadManifest() {
@@ -91,7 +95,7 @@ export default function InstallPage() {
     return () => {
       isCancelled = true;
     };
-  }, []);
+  }, [active, manifestState]);
 
   const downloadHref = manifest ? `${BASE_PATH}${manifest.filename}` : null;
 
@@ -291,7 +295,7 @@ export default function InstallPage() {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    Skill install notes for Claude CLI, desktop flows, and Codex
+                    Portable skill wrapper setup
                   </a>
                 </li>
               </ul>

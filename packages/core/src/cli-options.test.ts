@@ -24,4 +24,12 @@ describe("parseArgs", () => {
       () => parseArgs(["sample.txt", "-o", "out", "--concurrency", "0"])
     ).toThrow("Invalid value for --concurrency");
   });
+
+  it("returns a help sentinel for --help", () => {
+    expect(parseArgs(["--help"])).toEqual({ help: true });
+  });
+
+  it("returns a help sentinel for -h", () => {
+    expect(parseArgs(["-h"])).toEqual({ help: true });
+  });
 });

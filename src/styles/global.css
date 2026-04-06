@@ -249,6 +249,10 @@ a {
   gap: 24px;
 }
 
+.view-panel[hidden] {
+  display: none;
+}
+
 .workspace {
   display: grid;
   grid-template-columns: minmax(350px, 430px) minmax(0, 1fr);

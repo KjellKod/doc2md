@@ -114,6 +114,45 @@ npx doc2md /absolute/path/to/resume.pdf -o ./out
 
 Successful runs write Markdown files into the output directory you pass with `-o`.
 
+## Portable Skill Wrapper
+
+Use the portable skill when you want an agent-friendly repo wrapper around the
+same `@doc2md/core` package contract.
+
+### Repo-local setup
+
+1. Install `@doc2md/core` in the target repo from the tarball
+2. Copy `.skills/doc-to-markdown/` into that repo
+3. Point your agent or repo instructions at `.skills/doc-to-markdown/SKILL.md`
+
+Project-local install:
+
+```bash
+npm install /absolute/path/to/doc2md-core-<derived-version>.tgz
+```
+
+Direct helper invocation:
+
+```bash
+node .skills/doc-to-markdown/scripts/convert-documents.mjs \
+  --output-dir ./markdown-output \
+  ./docs/resume.pdf
+```
+
+### Claude app custom skill
+
+If your Claude host supports uploaded custom skills, zip the
+`.skills/doc-to-markdown/` folder and upload that ZIP through the Skills UI.
+Keep the package contract the same: the helper still expects `@doc2md/core` to
+be available where the command runs.
+
+### Claude CLI and Codex
+
+For repo-local agent flows, keep the skill in the repo and reference
+`.skills/doc-to-markdown/SKILL.md` from your repo instructions or prompt. The
+helper script above remains the exact fallback when you want deterministic JSON
+output and written markdown files.
+
 ## Upgrade To A Newer Version
 
 1. Download or build a newer `doc2md-core-<version>.tgz`
@@ -155,4 +194,4 @@ Start from the browser UI at `https://kjellkod.github.io/doc2md/`, then use the 
 
 - [README.md](README.md)
 - [Using `@doc2md/core`](docs/using-doc2md-core.md)
-- [Portable skill install guide](.skills/doc-to-markdown/INSTALL.md)
+- [Portable skill wrapper](#portable-skill-wrapper)
