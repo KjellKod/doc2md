@@ -1453,28 +1453,34 @@ body.is-page-resizing * {
 }
 
 .about-automation {
-  margin: 2px 0 0;
-  padding: 14px 16px;
-  border: 1px solid var(--panel-border);
-  border-radius: 18px;
-  background: var(--surface-subtle);
+  margin: 12px 0 0;
+  padding: 16px 20px;
+  border: 1px solid var(--accent, #6366f1);
+  border-left: 4px solid var(--accent, #6366f1);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent, #6366f1) 6%, transparent);
   color: var(--text-primary);
-  font-size: 0.95rem;
+  font-size: 0.93rem;
+  line-height: 1.5;
 }
 
 .about-automation a {
   color: var(--accent);
-  font-weight: 700;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  font-weight: 600;
+  text-decoration: none;
 }
 
 .about-automation a:hover {
   color: var(--accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .about-automation code {
-  font-size: 0.92em;
+  font-size: 0.88em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent, #6366f1) 10%, transparent);
 }
 
 .about-support {
