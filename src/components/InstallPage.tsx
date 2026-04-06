@@ -208,7 +208,8 @@ export default function InstallPage({ active }: { active: boolean }) {
               <h3>Get the tarball from Pages or build it locally</h3>
               <p>
                 Use the button above after a deploy, or build the package inside
-                this repo when you are validating changes locally.
+                this repo when you are validating changes locally. The exact
+                local build command is shown below.
               </p>
               <pre className="install-code">
                 <code>npm run pack:local --workspace=@doc2md/core</code>
