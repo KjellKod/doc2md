@@ -6,7 +6,7 @@ If you only need one quick conversion, use the live site first:
 
 - Open `https://kjellkod.github.io/doc2md/`
 - Click the `Install & Use` tab
-- Download the latest `doc2md-core-<version>.tgz` package
+- Download the latest released `doc2md-core-<version>.tgz` package
 
 If you want the CLI for repeated work, automation, or agent workflows, follow the steps below.
 
@@ -31,7 +31,10 @@ You have two supported ways to get `@doc2md/core`.
 
 1. Open `https://kjellkod.github.io/doc2md/`
 2. Click `Install & Use`
-3. Download the latest `doc2md-core-<version>.tgz`
+3. Download the latest released `doc2md-core-<version>.tgz`
+
+The site tarball is a release artifact. It updates when a new version tag is
+deployed, not on every merge to `main`.
 
 ### Option B: Build it locally from this repo
 

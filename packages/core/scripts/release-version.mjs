@@ -40,6 +40,18 @@ export function deriveReleaseVersionFromRefs(latestTag, tagCommit, headCommit) {
   return bumpPatch(normalizedTag);
 }
 
+export function assertReleaseTagsAvailable(latestTag, env = process.env) {
+  if (latestTag !== "0.0.0") {
+    return;
+  }
+
+  if (env.REQUIRE_RELEASE_TAG === "true") {
+    throw new Error(
+      "REQUIRE_RELEASE_TAG is set but no numeric release tags were found. Ensure the checkout fetched tag history."
+    );
+  }
+}
+
 export function getReleaseVersionInfo() {
   let latestTag = "0.0.0";
 
@@ -48,6 +60,8 @@ export function getReleaseVersionInfo() {
   } catch {
     latestTag = "0.0.0";
   }
+
+  assertReleaseTagsAvailable(latestTag);
 
   let tagCommit = "";
 
@@ -68,4 +82,3 @@ export function getReleaseVersionInfo() {
     isTaggedCommit: tagCommit.length > 0 && tagCommit === headCommit
   };
 }
-

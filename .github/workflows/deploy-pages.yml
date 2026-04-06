@@ -2,12 +2,13 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    tags: ["[0-9]*.[0-9]*.[0-9]*", "v[0-9]*.[0-9]*.[0-9]*"]
   workflow_dispatch:
     inputs:
-      confirm:
-        description: 'Type "deploy" to confirm manual deployment from main'
+      ref:
+        description: "Tag or branch/ref to validate or deploy"
         required: true
+        type: string
 
 concurrency:
   group: pages
@@ -16,32 +17,78 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    if: >-
-      github.event_name == 'push' ||
-      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.event.inputs.confirm == 'deploy')
+    outputs:
+      is_release: ${{ steps.resolve.outputs.is_release }}
+      release_version: ${{ steps.resolve.outputs.release_version }}
     permissions:
       contents: read
     steps:
+      - id: resolve
+        env:
+          INPUT_REF: ${{ github.event.inputs.ref || '' }}
+        run: |
+          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            checkout_ref="${GITHUB_REF}"
+            candidate_ref="${GITHUB_REF#refs/tags/}"
+          else
+            checkout_ref="${INPUT_REF}"
+            candidate_ref="${INPUT_REF#refs/tags/}"
+          fi
+
+          release_version=""
+          is_release="false"
+          if printf '%s' "$candidate_ref" | grep -Eq '^v?[0-9]+\.[0-9]+\.[0-9]+$'; then
+            is_release="true"
+            release_version="${candidate_ref#v}"
+          fi
+
+          {
+            echo "checkout_ref=${checkout_ref}"
+            echo "candidate_ref=${candidate_ref}"
+            echo "is_release=${is_release}"
+            echo "release_version=${release_version}"
+          } >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.resolve.outputs.checkout_ref }}
+          fetch-depth: 0
+          fetch-tags: true
       - uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'npm'
+      - name: Explain non-release manual runs
+        if: steps.resolve.outputs.is_release != 'true'
+        run: |
+          echo "::notice::Ref '${{ steps.resolve.outputs.candidate_ref }}' is not a release tag. Running validation-only build; public Pages deploy will be skipped."
+      - name: Validate release tag checkout
+        if: steps.resolve.outputs.is_release == 'true'
+        run: |
+          if ! git tag --points-at HEAD | sed 's/^v//' | grep -Fx "${{ steps.resolve.outputs.release_version }}" >/dev/null; then
+            echo "::error::Expected checked-out commit to include release tag '${{ steps.resolve.outputs.release_version }}'."
+            exit 1
+          fi
       - run: npm ci
       - run: npm run build
       - name: Build and copy core tarball for Pages
+        if: steps.resolve.outputs.is_release == 'true'
+        env:
+          REQUIRE_RELEASE_TAG: "true"
         run: |
           npm run build --workspace=@doc2md/core
           npm run pack:local --workspace=@doc2md/core > "$RUNNER_TEMP/pack-output.txt"
           cat "$RUNNER_TEMP/pack-output.txt"
           node --input-type=module -e 'import { copyFileSync, readFileSync, writeFileSync } from "node:fs"; const output = readFileSync(process.argv[1], "utf8"); const packInfoMatch = output.match(/\{\s*"version"[\s\S]*\}\s*$/); if (!packInfoMatch) { throw new Error(`Could not parse pack JSON in output:\n${output}`); } const packResult = JSON.parse(packInfoMatch[0]); copyFileSync(packResult.tarballPath, `dist/${packResult.filename}`); writeFileSync("dist/latest-tarball.json", `${JSON.stringify({ filename: packResult.filename, version: packResult.version }, null, 2)}\n`, "utf8");' "$RUNNER_TEMP/pack-output.txt"
       - name: Package skill bundle for Pages
+        if: steps.resolve.outputs.is_release == 'true'
         run: |
           cd .skills/doc-to-markdown
           zip -r ../../dist/doc-to-markdown-skill.skill \
             SKILL.md INSTALL.md examples/ scripts/
           echo "Skill bundle: $(ls -la ../../dist/doc-to-markdown-skill.skill)"
       - name: Archive Pages artifact
+        if: steps.resolve.outputs.is_release == 'true'
         run: |
           tar \
             --dereference --hard-dereference \
@@ -52,6 +99,7 @@ jobs:
             --exclude=".[^/]*" \
             .
       - uses: actions/upload-artifact@v7
+        if: steps.resolve.outputs.is_release == 'true'
         with:
           name: github-pages
           path: ${{ runner.temp }}/github-pages.tar
@@ -60,6 +108,7 @@ jobs:
 
   deploy:
     needs: build
+    if: needs.build.outputs.is_release == 'true'
     runs-on: ubuntu-latest
     permissions:
       pages: write
