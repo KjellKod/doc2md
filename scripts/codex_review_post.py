@@ -168,22 +168,60 @@ def build_diff_details(metadata: dict[str, object]) -> str:
     return "Diff size unavailable."
 
 
+def build_response_details(
+    metadata: dict[str, object],
+    *,
+    valid_json: bool | None = None,
+    findings_count: int | None = None,
+) -> str:
+    parts: list[str] = []
+    review_exit_code = metadata.get("review_exit_code")
+    output_bytes = metadata.get("review_output_bytes")
+
+    if valid_json is True:
+        if isinstance(findings_count, int):
+            noun = "finding" if findings_count == 1 else "findings"
+            parts.append(
+                f"Response: Codex returned a valid JSON array with {findings_count} {noun}."
+            )
+        else:
+            parts.append("Response: Codex returned a valid JSON array.")
+    elif valid_json is False:
+        parts.append("Response: Codex did not return a valid JSON array.")
+    elif isinstance(review_exit_code, int):
+        parts.append(f"Response: Codex exited with code {review_exit_code}.")
+
+    if isinstance(output_bytes, int):
+        parts.append(f"Output: {output_bytes} bytes.")
+
+    return " ".join(parts)
+
+
 def post_summary(
     message: str,
     metadata: dict[str, object],
+    *,
+    valid_json: bool | None = None,
+    findings_count: int | None = None,
     runner=subprocess.run,
     env: dict[str, str] | None = None,
 ) -> bool:
     env_values = env or os.environ
     commit_sha = env_values.get("COMMIT_SHA", "")
+    response_details = build_response_details(
+        metadata,
+        valid_json=valid_json,
+        findings_count=findings_count,
+    )
     lines = [
         "## Codex Review Summary",
         "",
         f"Commit: `{commit_sha[:7]}`" if commit_sha else "Commit: unavailable",
         build_diff_details(metadata),
-        "",
-        message,
     ]
+    if response_details:
+        lines.extend(["", response_details])
+    lines.extend(["", message])
     result = runner(
         [
             "gh",
@@ -330,13 +368,19 @@ def main(argv: list[str] | None = None) -> int:
             post_summary(
                 "Review ran, but the response was not a parseable JSON comment array.",
                 metadata,
+                valid_json=False,
             ),
             "unparseable output outcome",
         )
 
     if not comments:
         return require_summary_posted(
-            post_summary("Review ran, no findings.", metadata),
+            post_summary(
+                "Review ran, no findings.",
+                metadata,
+                valid_json=True,
+                findings_count=0,
+            ),
             "empty findings outcome",
         )
 
@@ -346,6 +390,8 @@ def main(argv: list[str] | None = None) -> int:
             post_summary(
                 "Review ran, but none of the returned items were valid inline review comments.",
                 metadata,
+                valid_json=True,
+                findings_count=len(comments),
             ),
             "invalid findings outcome",
         )
@@ -359,6 +405,8 @@ def main(argv: list[str] | None = None) -> int:
             post_summary(
                 "Review ran, but every finding matched an existing bot comment or resolved thread.",
                 metadata,
+                valid_json=True,
+                findings_count=len(valid_comments),
             ),
             "deduplicated findings outcome",
         )
@@ -384,6 +432,8 @@ def main(argv: list[str] | None = None) -> int:
         summary_posted = post_summary(
             summary_message,
             metadata,
+            valid_json=True,
+            findings_count=len(valid_comments),
         )
         if not fallback_posted and not summary_posted:
             return fail_visible_outcome(
@@ -403,6 +453,8 @@ def main(argv: list[str] | None = None) -> int:
         post_summary(
             f"Posted {len(fresh_comments)} inline finding(s).",
             metadata,
+            valid_json=True,
+            findings_count=len(valid_comments),
         ),
         "successful review outcome",
     )
