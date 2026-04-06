@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    tags: ["[0-9]*.[0-9]*.[0-9]*", "v[0-9]*.[0-9]*.[0-9]*"]
+    tags: ["[0-9]*.[0-9]*.[0-9]*"]
   workflow_dispatch:
     inputs:
       ref:
@@ -37,9 +37,9 @@ jobs:
 
           release_version=""
           is_release="false"
-          if printf '%s' "$candidate_ref" | grep -Eq '^v?[0-9]+\.[0-9]+\.[0-9]+$'; then
+          if printf '%s' "$candidate_ref" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
             is_release="true"
-            release_version="${candidate_ref#v}"
+            release_version="${candidate_ref}"
           fi
 
           {
@@ -65,7 +65,7 @@ jobs:
       - name: Validate release tag checkout
         if: steps.resolve.outputs.is_release == 'true'
         run: |
-          if ! git tag --points-at HEAD | sed 's/^v//' | grep -Fx "${{ steps.resolve.outputs.release_version }}" >/dev/null; then
+          if ! git tag --points-at HEAD | grep -Fx "${{ steps.resolve.outputs.release_version }}" >/dev/null; then
             echo "::error::Expected checked-out commit to include release tag '${{ steps.resolve.outputs.release_version }}'."
             exit 1
           fi
