@@ -401,8 +401,9 @@ fi
 
 CODEX_EXTRA_FLAGS=()
 if [ "$HAVE_CODEX" -eq 1 ]; then
-  codex exec --help 2>/dev/null | grep -q -- '--ephemeral' && CODEX_EXTRA_FLAGS+=(--ephemeral)
-  codex exec --help 2>/dev/null | grep -q -- '--quiet' && CODEX_EXTRA_FLAGS+=(--quiet)
+  CODEX_HELP="$(codex exec --help 2>/dev/null || true)"
+  printf '%s' "$CODEX_HELP" | grep -q -- '--ephemeral' && CODEX_EXTRA_FLAGS+=(--ephemeral)
+  printf '%s' "$CODEX_HELP" | grep -q -- '--quiet' && CODEX_EXTRA_FLAGS+=(--quiet)
 fi
 
 # ---------------------------------------------------------------------------

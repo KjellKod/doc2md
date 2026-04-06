@@ -18,26 +18,24 @@ printf 'Results dir: %s\n\n' "$RESULTS_DIR"
 CSV="$RESULTS_DIR/timings.csv"
 printf 'run,doc2md_only,claude_raw,claude_doc2md,codex_raw,codex_doc2md\n' > "$CSV"
 
+# Extract timing value from a benchmark output file
+# Uses the global $output variable set in the loop
+extract_time() {
+  local pattern="$1"
+  local line
+  line="$(grep "$pattern" "$output" | tail -1)" || true
+  if [ -z "$line" ]; then
+    printf 'n/a'
+    return
+  fi
+  printf '%s' "$line" | awk '{for(i=1;i<=NF;i++) if($i ~ /^[0-9]+s$/) print $i}' | sed 's/s$//' | head -1
+}
+
 for i in $(seq 1 "$RUNS"); do
   printf '=== Run %d/%d ===\n' "$i" "$RUNS"
 
-  # Capture full output
   output="$RESULTS_DIR/run-${i}.txt"
   "$BENCHMARK" > "$output" 2>&1 || true
-
-  # The summary table has format: Case Status Exit Time Notes
-  # Time is in column 4, formatted as "136s" or "n/a"
-  extract_time() {
-    local pattern="$1"
-    local line
-    line="$(grep "$pattern" "$output" | tail -1)" || true
-    if [ -z "$line" ]; then
-      printf 'n/a'
-      return
-    fi
-    # Extract the time field (4th column-ish, ends with 's')
-    printf '%s' "$line" | awk '{for(i=1;i<=NF;i++) if($i ~ /^[0-9]+s$/) print $i}' | sed 's/s$//' | head -1
-  }
 
   t_d2m="$(extract_time "^doc2md only")"
   t_cr="$(extract_time "^Claude raw")"

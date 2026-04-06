@@ -93,6 +93,8 @@ function pluralize(count: number, singular: string, plural = `${singular}s`) {
   return count === 1 ? singular : plural;
 }
 
+const PAGES: PageView[] = ["convert", "install"];
+
 function clampPageWidth(width: number) {
   if (typeof window === "undefined") {
     return Math.min(
@@ -130,43 +132,37 @@ export default function App() {
     selectedEntry,
     updateMarkdown,
   } = useFileConversion();
-  const convertedCount = entries.filter(
-    (entry) => isDownloadableEntry(entry) && !entry.isScratch,
-  ).length;
-  const draftCount = entries.filter((entry) => entry.isScratch).length;
-  const activeCount = entries.filter(
-    (entry) => entry.status === "pending" || entry.status === "converting",
-  ).length;
-  const heroSummary =
-    entries.length === 0
-      ? "Start from scratch or with single and mixed-format batches"
-      : [
-          convertedCount > 0
-            ? `${convertedCount} ${pluralize(convertedCount, "converted file")}`
-            : null,
-          activeCount > 0 ? `${activeCount} processing` : null,
-          draftCount > 0
-            ? `${draftCount} ${pluralize(draftCount, "draft")} open`
-            : null,
-        ]
-          .filter(Boolean)
-          .join(", ") ||
-        `${entries.length} ${pluralize(entries.length, "entry")} in session`;
-  const fileSummary =
-    entries.length === 0
-      ? "No files or drafts yet."
-      : [
-          convertedCount > 0
-            ? `${convertedCount} ${pluralize(convertedCount, "converted file")}`
-            : null,
-          draftCount > 0
-            ? `${draftCount} ${pluralize(draftCount, "draft")}`
-            : null,
-          activeCount > 0 ? `${activeCount} processing` : null,
-        ]
-          .filter(Boolean)
-          .join(", ") ||
-        `${entries.length} ${pluralize(entries.length, "entry")} in session`;
+  let convertedCount = 0;
+  let draftCount = 0;
+  let activeCount = 0;
+  for (const entry of entries) {
+    if (isDownloadableEntry(entry) && !entry.isScratch) convertedCount++;
+    if (entry.isScratch) draftCount++;
+    if (entry.status === "pending" || entry.status === "converting")
+      activeCount++;
+  }
+  const buildSummary = (emptyLabel: string, draftSuffix: string) => {
+    if (entries.length === 0) return emptyLabel;
+    return (
+      [
+        convertedCount > 0
+          ? `${convertedCount} ${pluralize(convertedCount, "converted file")}`
+          : null,
+        activeCount > 0 ? `${activeCount} processing` : null,
+        draftCount > 0
+          ? `${draftCount} ${pluralize(draftCount, "draft")}${draftSuffix}`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(", ") ||
+      `${entries.length} ${pluralize(entries.length, "entry")} in session`
+    );
+  };
+  const heroSummary = buildSummary(
+    "Start from scratch or with single and mixed-format batches",
+    " open",
+  );
+  const fileSummary = buildSummary("No files or drafts yet.", "");
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") {
@@ -278,7 +274,7 @@ export default function App() {
     event: KeyboardEvent<HTMLButtonElement>,
     currentPage: PageView,
   ) => {
-    const pages: PageView[] = ["convert", "install"];
+    const pages = PAGES;
     const currentIndex = pages.indexOf(currentPage);
     let nextPage: PageView | null = null;
 
