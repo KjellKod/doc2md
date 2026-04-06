@@ -8,8 +8,8 @@ permissions:
   contents: read
 
 jobs:
-  ci:
-    name: ci
+  lint-and-type:
+    name: lint-and-type
     runs-on: ubuntu-latest
 
     steps:
@@ -31,8 +31,62 @@ jobs:
       - name: Run typecheck
         run: npm run typecheck
 
+  test:
+    name: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Run tests
         run: npm test -- --run
 
+  build:
+    name: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Build application
         run: npm run build
+
+  ci:
+    name: ci
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - lint-and-type
+      - test
+      - build
+
+    steps:
+      - name: Verify upstream jobs
+        run: |
+          if [ "${{ needs.lint-and-type.result }}" != "success" ] || \
+             [ "${{ needs.test.result }}" != "success" ] || \
+             [ "${{ needs.build.result }}" != "success" ]; then
+            echo "At least one upstream CI job failed."
+            exit 1
+          fi
+          echo "All CI jobs passed."

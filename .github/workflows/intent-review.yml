@@ -1,0 +1,53 @@
+name: Intent Review
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - synchronize
+      - ready_for_review
+      - reopened
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: intent-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  advisory-intent-review:
+    name: advisory: intent-review
+    if: >-
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.user.login == 'KjellKod' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    environment: intent-review
+    continue-on-error: true
+    timeout-minutes: 5
+
+    steps:
+      - name: Fetch intent review helper from PR head
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          mkdir -p /tmp/intent-review
+          gh api -H "Accept: application/vnd.github.raw" \
+            "repos/$REPO/contents/scripts/intent_review.py?ref=$HEAD_SHA" \
+            > /tmp/intent-review/intent_review.py
+          chmod +x /tmp/intent-review/intent_review.py
+
+      - name: Run intent review
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          python3 /tmp/intent-review/intent_review.py \
+            --pr-number "${{ github.event.pull_request.number }}" \
+            --repo "$REPO" \
+            --report-path /tmp/intent-review/report.json

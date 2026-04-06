@@ -2,6 +2,7 @@
 
 | Date | Quest | Outcome |
 |------|-------|---------|
+| 2026-04-06 | [ci-trustworthiness](ci-trustworthiness_2026-04-06.md) | Split CI into 3 jobs, extracted review scripts, added intent-review advisory lane, guaranteed visible review outcomes. |
 | 2026-04-04 | [api-tooling](api-tooling_2026-04-04.md) | Built `@doc2md/core`, hardened its batch and CLI contracts through two fix loops, and kept the browser app green. |
 | 2026-04-02 | [preview-pane-resizer](preview-pane-resizer_2026-04-02.md) | Added a live desktop divider so Upload and Preview can share width without sacrificing the collapse rail. |
 | 2026-04-02 | [preview-pane-collapse](preview-pane-collapse_2026-04-02.md) | Added a desktop collapse rail for the Upload sidebar so the preview pane can reclaim width without a resize system. |
