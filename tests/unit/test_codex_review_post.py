@@ -25,13 +25,19 @@ class CodexReviewPostTests(unittest.TestCase):
 
         posted = module.post_summary(
             "Review ran, no findings.",
-            {"review_diff_bytes": 10},
+            {"review_diff_bytes": 10, "review_output_bytes": 2},
+            valid_json=True,
+            findings_count=0,
             runner=runner,
             env={"PR_NUMBER": "12", "REPO": "owner/repo", "COMMIT_SHA": "abcdef1"},
         )
 
         self.assertTrue(posted)
         runner.assert_called_once()
+        summary_body = runner.call_args.args[0][-1]
+        self.assertIn("Commit: `abcdef1`", summary_body)
+        self.assertIn("Response: Codex returned a valid JSON array with 0 findings.", summary_body)
+        self.assertIn("Output: 2 bytes.", summary_body)
 
     def test_post_inline_returns_failed_comments(self):
         module = load_module()
@@ -142,6 +148,41 @@ class CodexReviewPostTests(unittest.TestCase):
 
         self.assertEqual(rc, 0)
         post_summary.assert_called_once()
+
+    def test_main_empty_findings_summary_mentions_valid_json_response(self):
+        module = load_module()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            review_output = tmp / "review-output.json"
+            existing_comments = tmp / "existing.json"
+            metadata = tmp / "metadata.json"
+
+            review_output.write_text("[]", encoding="utf-8")
+            existing_comments.write_text("[]", encoding="utf-8")
+            metadata.write_text(
+                json.dumps({"review_exit_code": 0, "review_output_bytes": 2}),
+                encoding="utf-8",
+            )
+
+            with mock.patch.object(module, "post_summary", return_value=True) as post_summary:
+                rc = module.main(
+                    [
+                        "--review-output",
+                        str(review_output),
+                        "--existing-comments",
+                        str(existing_comments),
+                        "--metadata",
+                        str(metadata),
+                    ]
+                )
+
+        self.assertEqual(rc, 0)
+        post_summary.assert_called_once_with(
+            "Review ran, no findings.",
+            {"review_exit_code": 0, "review_output_bytes": 2},
+            valid_json=True,
+            findings_count=0,
+        )
 
     def test_main_posts_summary_on_timeout(self):
         module = load_module()

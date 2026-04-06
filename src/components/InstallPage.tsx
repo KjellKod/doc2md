@@ -161,10 +161,10 @@ export default function InstallPage({ active }: { active: boolean }) {
           </a>
           <a
             className="ghost-button"
-            href={`${BASE_PATH}doc-to-markdown-skill.zip`}
+            href={`${BASE_PATH}doc-to-markdown-skill.skill`}
             download
           >
-            Download skill (.zip)
+            Download skill (.skill ZIP bundle)
           </a>
         </div>
 

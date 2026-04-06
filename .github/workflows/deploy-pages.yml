@@ -35,12 +35,12 @@ jobs:
           npm run pack:local --workspace=@doc2md/core > "$RUNNER_TEMP/pack-output.txt"
           cat "$RUNNER_TEMP/pack-output.txt"
           node --input-type=module -e 'import { copyFileSync, readFileSync, writeFileSync } from "node:fs"; const output = readFileSync(process.argv[1], "utf8"); const packInfoMatch = output.match(/\{\s*"version"[\s\S]*\}\s*$/); if (!packInfoMatch) { throw new Error(`Could not parse pack JSON in output:\n${output}`); } const packResult = JSON.parse(packInfoMatch[0]); copyFileSync(packResult.tarballPath, `dist/${packResult.filename}`); writeFileSync("dist/latest-tarball.json", `${JSON.stringify({ filename: packResult.filename, version: packResult.version }, null, 2)}\n`, "utf8");' "$RUNNER_TEMP/pack-output.txt"
-      - name: Package skill zip for Pages
+      - name: Package skill bundle for Pages
         run: |
           cd .skills/doc-to-markdown
-          zip -r ../../dist/doc-to-markdown-skill.zip \
+          zip -r ../../dist/doc-to-markdown-skill.skill \
             SKILL.md INSTALL.md examples/ scripts/
-          echo "Skill zip: $(ls -la ../../dist/doc-to-markdown-skill.zip)"
+          echo "Skill bundle: $(ls -la ../../dist/doc-to-markdown-skill.skill)"
       - name: Archive Pages artifact
         run: |
           tar \

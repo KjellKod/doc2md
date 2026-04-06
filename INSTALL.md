@@ -141,10 +141,11 @@ node .skills/doc-to-markdown/scripts/convert-documents.mjs \
 
 ### Claude app custom skill
 
-If your Claude host supports uploaded custom skills, zip the
-`.skills/doc-to-markdown/` folder and upload that ZIP through the Skills UI.
-Keep the package contract the same: the helper still expects `@doc2md/core` to
-be available where the command runs.
+If your Claude host supports uploaded custom skills, package the
+`.skills/doc-to-markdown/` folder as a `.skill` file. In practice, that means a
+ZIP-format bundle using Anthropic's `.skill` extension rather than a plain
+`.zip` filename. Keep the package contract the same: the helper still expects
+`@doc2md/core` to be available where the command runs.
 
 ### Claude CLI and Codex
 
