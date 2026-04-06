@@ -227,7 +227,10 @@ def main(argv: list[str] | None = None) -> int:
             encoding="utf-8",
         )
 
-    return 1 if findings else 0
+    # Always exit 0: this is an advisory check. Findings are reported
+    # via PR comment, not via exit code. A non-zero exit makes the check
+    # show as "failing" in the GitHub UI, which is misleading for advisory lanes.
+    return 0
 
 
 if __name__ == "__main__":
