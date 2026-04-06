@@ -35,6 +35,7 @@ function createFile(name: string) {
 describe("App", () => {
   afterEach(() => {
     vi.clearAllMocks();
+    vi.unstubAllGlobals();
     cleanup();
   });
 
@@ -57,7 +58,7 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole("link", {
-        name: /see how to use @doc2md\/core in node, scripts, mcp-style tools, or a portable skill\./i,
+        name: /@doc2md\/core/i,
       }),
     ).toHaveAttribute(
       "href",
@@ -280,5 +281,79 @@ describe("App", () => {
     expect(
       screen.getByRole("button", { name: "Switch to day mode" }),
     ).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("switches to the install view and shows the latest tarball link", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        filename: "doc2md-core-0.6.3.tgz",
+        version: "0.6.3",
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("tab", { name: "Install & Use" }));
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Install doc2md for CLI, automation, and agent workflows",
+      }),
+    ).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringMatching(/latest-tarball\.json$/),
+      {
+        cache: "no-store",
+      },
+    );
+    expect(
+      await screen.findByRole("link", { name: /Download tarball/i }),
+    ).toHaveAttribute(
+      "href",
+      expect.stringMatching(/doc2md-core-0\.6\.3\.tgz$/),
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "Convert" }));
+
+    expect(screen.getByText("Drop files or start writing.")).toBeInTheDocument();
+  });
+
+  it("keeps both tab panels mounted and hides the inactive one", () => {
+    const { container } = render(<App />);
+
+    const convertPanel = container.querySelector("#view-panel-convert");
+    const installPanel = container.querySelector("#view-panel-install");
+
+    expect(convertPanel).toBeVisible();
+    expect(installPanel).toHaveAttribute("hidden");
+
+    fireEvent.click(screen.getByRole("tab", { name: "Install & Use" }));
+
+    expect(container.querySelector("#view-panel-convert")).toHaveAttribute("hidden");
+    expect(
+      screen.getByRole("tabpanel", { name: "Install & Use" }),
+    ).toBeVisible();
+  });
+
+  it("switches tabs with arrow keys and moves focus to the active tab", () => {
+    render(<App />);
+
+    const convertTab = screen.getByRole("tab", { name: "Convert" });
+    const installTab = screen.getByRole("tab", { name: "Install & Use" });
+
+    convertTab.focus();
+    fireEvent.keyDown(convertTab, { key: "ArrowRight" });
+
+    expect(installTab).toHaveFocus();
+    expect(installTab).toHaveAttribute("aria-selected", "true");
+    expect(convertTab).toHaveAttribute("tabindex", "-1");
+
+    fireEvent.keyDown(installTab, { key: "ArrowLeft" });
+
+    expect(convertTab).toHaveFocus();
+    expect(convertTab).toHaveAttribute("aria-selected", "true");
+    expect(installTab).toHaveAttribute("tabindex", "-1");
   });
 });

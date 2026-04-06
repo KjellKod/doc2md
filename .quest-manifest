@@ -35,6 +35,8 @@
 .skills/ci-code-reviewer/SKILL.md
 .skills/code-reviewer/SKILL.md
 .skills/doc-to-markdown/SKILL.md
+.skills/doc-to-markdown/INSTALL.md
+.skills/doc-to-markdown/examples/basic-usage.md
 .skills/doc-to-markdown/scripts/convert-documents.mjs
 .skills/git-commit-assistant/SKILL.md
 .skills/gpt/SKILL.md
@@ -114,6 +116,7 @@ scripts/validate-quest-state.sh
 .skills/ci-code-reviewer
 .skills/code-reviewer
 .skills/doc-to-markdown
+.skills/doc-to-markdown/examples
 .skills/doc-to-markdown/scripts
 .skills/git-commit-assistant
 .skills/gpt

@@ -1,6 +1,6 @@
 {
   "name": "@doc2md/core",
-  "version": "0.6.2",
+  "version": "1.0.1",
   "description": "Publish-ready Node API and CLI for doc2md document-to-markdown conversion.",
   "license": "MIT",
   "type": "module",

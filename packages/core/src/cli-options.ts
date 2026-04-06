@@ -5,17 +5,25 @@ export interface CliOptions {
   inputs: string[];
 }
 
-function parsePositiveInteger(flag: string, rawValue: string | undefined) {
-  const parsedValue = Number.parseInt(rawValue ?? "", 10);
+export interface HelpRequest {
+  help: true;
+}
 
-  if (Number.isNaN(parsedValue) || parsedValue < 1) {
+function parsePositiveInteger(flag: string, rawValue: string | undefined) {
+  if (!rawValue || !/^(0*[1-9]\d*)$/.test(rawValue)) {
+    throw new Error(`Invalid value for ${flag}: expected a positive integer.`);
+  }
+
+  const parsedValue = Number(rawValue);
+
+  if (!Number.isSafeInteger(parsedValue) || parsedValue < 1) {
     throw new Error(`Invalid value for ${flag}: expected a positive integer.`);
   }
 
   return parsedValue;
 }
 
-export function parseArgs(argv: string[]): CliOptions {
+export function parseArgs(argv: string[]): CliOptions | HelpRequest {
   const inputs: string[] = [];
   let outputDir = "";
   let maxDocuments: number | undefined;
@@ -40,6 +48,10 @@ export function parseArgs(argv: string[]): CliOptions {
       concurrency = parsePositiveInteger(value, argv[index + 1]);
       index += 1;
       continue;
+    }
+
+    if (value === "--help" || value === "-h") {
+      return { help: true };
     }
 
     if (value.startsWith("-")) {
