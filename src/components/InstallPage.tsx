@@ -131,12 +131,17 @@ export default function InstallPage({ active }: { active: boolean }) {
         <div className="install-actions" role="group" aria-label="Install actions">
           {downloadHref ? (
             <a className="download-button" href={downloadHref} download>
-              Download latest tarball
+              Download tarball (.tgz)
             </a>
           ) : (
-            <button type="button" className="download-button" disabled>
-              Latest tarball on deploy builds
-            </button>
+            <a
+              className="download-button"
+              href="https://kjellkod.github.io/doc2md/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Download tarball from live site
+            </a>
           )}
           <a
             className="secondary-button"
@@ -144,7 +149,7 @@ export default function InstallPage({ active }: { active: boolean }) {
             target="_blank"
             rel="noopener noreferrer"
           >
-            Open beginner install guide
+            Beginner install guide
           </a>
           <a
             className="ghost-button"
@@ -152,7 +157,15 @@ export default function InstallPage({ active }: { active: boolean }) {
             target="_blank"
             rel="noopener noreferrer"
           >
-            Read core usage docs
+            Core usage docs
+          </a>
+          <a
+            className="ghost-button"
+            href="https://github.com/KjellKod/doc2md/tree/main/.skills/doc-to-markdown"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Download skill (.skills/)
           </a>
         </div>
 

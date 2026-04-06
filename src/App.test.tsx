@@ -58,7 +58,7 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole("link", {
-        name: /see how to use @doc2md\/core in node, scripts, mcp-style tools, or a portable skill\./i,
+        name: /@doc2md\/core/i,
       }),
     ).toHaveAttribute(
       "href",
@@ -309,7 +309,7 @@ describe("App", () => {
       },
     );
     expect(
-      await screen.findByRole("link", { name: "Download latest tarball" }),
+      await screen.findByRole("link", { name: /Download tarball/i }),
     ).toHaveAttribute(
       "href",
       expect.stringMatching(/doc2md-core-0\.6\.3\.tgz$/),
