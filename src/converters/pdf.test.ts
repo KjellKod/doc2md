@@ -18,8 +18,14 @@ async function importPdfModule() {
   return import("./pdf");
 }
 
-function textItem(str: string, transform: number[], fontName: string, hasEOL = true) {
-  return { str, transform, fontName, hasEOL, dir: "ltr" as const, width: 100, height: transform[0] };
+function textItem(
+  str: string,
+  transform: number[],
+  fontName: string,
+  hasEOL = true,
+  width = 100
+) {
+  return { str, transform, fontName, hasEOL, dir: "ltr" as const, width, height: transform[0] };
 }
 
 function repeatedCharacters(length: number) {
@@ -85,6 +91,201 @@ describe("renderPdfPageText", () => {
     const result = renderPdfPageText(items, profile);
 
     expect(result).toContain("### Only Heading");
+  });
+
+  it("folds superscript symbols into the surrounding heading text", async () => {
+    const { renderPdfPageText } = await importPdfModule();
+    const profile = { bodyFontSize: 12, bodyFontName: "f2", boldFontNames: new Set<string>() };
+    const items = [
+      textItem("Acme", [20, 0, 0, 20, 0, 700], "f1", false, 45),
+      textItem("®", [12, 0, 0, 12, 48, 700], "f1", false, 10),
+      textItem("Coverage", [20, 0, 0, 20, 62, 700], "f1", true, 90),
+      textItem("Body text.", [12, 0, 0, 12, 0, 660], "f2"),
+    ];
+
+    expect(renderPdfPageText(items, profile)).toContain("# Acme® Coverage");
+  });
+
+  it("does not fold small non-symbol text into the previous item", async () => {
+    const { renderPdfPageText } = await importPdfModule();
+    const profile = { bodyFontSize: 12, bodyFontName: "f2", boldFontNames: new Set<string>() };
+    const items = [
+      textItem("Acme", [20, 0, 0, 20, 0, 700], "f1", false, 45),
+      textItem("beta", [12, 0, 0, 12, 48, 700], "f1", false, 24),
+      textItem("Coverage", [20, 0, 0, 20, 82, 700], "f1", true, 90),
+      textItem("Body text.", [12, 0, 0, 12, 0, 660], "f2"),
+    ];
+    const result = renderPdfPageText(items, profile);
+
+    expect(result).toContain("# Acme beta Coverage");
+    expect(result).not.toContain("# Acmebeta Coverage");
+  });
+
+  it("suppresses spaces for tightly kerned text while keeping real word gaps", async () => {
+    const { renderPdfPageText } = await importPdfModule();
+    const profile = { bodyFontSize: 12, bodyFontName: "f2", boldFontNames: new Set<string>() };
+    const items = [
+      textItem("202", [12, 0, 0, 12, 0, 700], "f2", false, 18),
+      textItem("6", [12, 0, 0, 12, 19, 700], "f2", true, 6),
+      textItem("hello", [12, 0, 0, 12, 0, 660], "f2", false, 30),
+      textItem("world", [12, 0, 0, 12, 48, 660], "f2", true, 30),
+    ];
+
+    expect(renderPdfPageText(items, profile)).toContain("2026");
+    expect(renderPdfPageText(items, profile)).toContain("hello world");
+  });
+
+  it("preserves hasEOL line breaks even when adjacent rows share the same y-position", async () => {
+    const { renderPdfPageText } = await importPdfModule();
+    const profile = { bodyFontSize: 12, bodyFontName: "f2", boldFontNames: new Set<string>() };
+    const items = [
+      textItem("First", [12, 0, 0, 12, 0, 700], "f2", false, 24),
+      textItem("line", [12, 0, 0, 12, 36, 700], "f2", true, 18),
+      textItem("Second", [12, 0, 0, 12, 0, 700], "f2", false, 36),
+      textItem("line", [12, 0, 0, 12, 48, 700], "f2", true, 18),
+    ];
+
+    expect(renderPdfPageText(items, profile)).toContain("First line\nSecond line");
+    expect(renderPdfPageText(items, profile)).not.toContain("First line Second line");
+  });
+
+  it("strips TOC dot leaders without removing normal punctuation", async () => {
+    const { renderPdfPageText } = await importPdfModule();
+    const profile = { bodyFontSize: 12, bodyFontName: "f2", boldFontNames: new Set<string>() };
+    const items = [
+      textItem("Coverage Rationale ............................................................ 12", [12, 0, 0, 12, 0, 700], "f2"),
+      textItem("Examples include etc.", [12, 0, 0, 12, 0, 660], "f2"),
+    ];
+    const result = renderPdfPageText(items, profile);
+
+    expect(result).toContain("Coverage Rationale");
+    expect(result).not.toContain("....");
+    expect(result).toContain("Examples include etc.");
+  });
+
+  it("detects aligned rows as a markdown table before prose rendering", async () => {
+    const { renderPdfPageText } = await importPdfModule();
+    const profile = { bodyFontSize: 12, bodyFontName: "f2", boldFontNames: new Set<string>() };
+    const items = [
+      textItem("HCPCS Code", [12, 0, 0, 12, 36, 720], "f2", false, 60),
+      textItem("Description", [12, 0, 0, 12, 180, 720], "f2", true, 80),
+      textItem("J1745", [12, 0, 0, 12, 36, 700], "f2", false, 40),
+      textItem("Infusion", [12, 0, 0, 12, 180, 700], "f2", true, 60),
+      textItem("J9999", [12, 0, 0, 12, 36, 680], "f2", false, 40),
+      textItem("Review needed", [12, 0, 0, 12, 180, 680], "f2", true, 90),
+      textItem("J1111", [12, 0, 0, 12, 36, 660], "f2", false, 40),
+      textItem("Approved", [12, 0, 0, 12, 180, 660], "f2", true, 60),
+      textItem("Closing prose line.", [12, 0, 0, 12, 36, 620], "f2"),
+    ];
+    const result = renderPdfPageText(items, profile);
+
+    expect(result).toContain("| HCPCS Code | Description |");
+    expect(result).toContain("| --- | --- |");
+    expect(result).toContain("| J1745 | Infusion |");
+    expect(result).toContain("Closing prose line.");
+  });
+
+  it("clusters close x-positions so multi-fragment table cells stay in one column", async () => {
+    const { renderPdfPageText } = await importPdfModule();
+    const profile = { bodyFontSize: 12, bodyFontName: "f2", boldFontNames: new Set<string>() };
+    const items = [
+      textItem("HCPCS Code", [12, 0, 0, 12, 36, 720], "f2", false, 60),
+      textItem("Description", [12, 0, 0, 12, 180, 720], "f2", true, 80),
+      textItem("J1745", [12, 0, 0, 12, 36, 700], "f2", false, 40),
+      textItem("App", [12, 0, 0, 12, 180, 700], "fBold", false, 12),
+      textItem("roved", [12, 0, 0, 12, 187, 700], "f2", true, 28),
+      textItem("J9999", [12, 0, 0, 12, 36, 680], "f2", false, 40),
+      textItem("Pending", [12, 0, 0, 12, 180, 680], "f2", true, 54),
+      textItem("J1111", [12, 0, 0, 12, 36, 660], "f2", false, 40),
+      textItem("Denied", [12, 0, 0, 12, 180, 660], "f2", true, 48),
+    ];
+    const result = renderPdfPageText(items, profile);
+
+    expect(result).toContain("| HCPCS Code | Description |");
+    expect(result).toContain("| J1745 | Approved |");
+    expect(result).not.toContain("| J1745 | App | roved |");
+  });
+
+  it("does not trigger table rendering for prose with scattered x-positions", async () => {
+    const { renderPdfPageText } = await importPdfModule();
+    const profile = { bodyFontSize: 12, bodyFontName: "f2", boldFontNames: new Set<string>() };
+    const items = [
+      textItem("This", [12, 0, 0, 12, 36, 720], "f2", false, 24),
+      textItem("paragraph", [12, 0, 0, 12, 122, 720], "f2", false, 54),
+      textItem("wanders.", [12, 0, 0, 12, 248, 720], "f2", true, 48),
+      textItem("Another", [12, 0, 0, 12, 42, 700], "f2", false, 42),
+      textItem("sentence", [12, 0, 0, 12, 168, 700], "f2", false, 48),
+      textItem("shifts.", [12, 0, 0, 12, 314, 700], "f2", true, 42),
+      textItem("Final", [12, 0, 0, 12, 58, 680], "f2", false, 30),
+      textItem("line", [12, 0, 0, 12, 144, 680], "f2", false, 24),
+      textItem("floats.", [12, 0, 0, 12, 286, 680], "f2", true, 42),
+    ];
+    const result = renderPdfPageText(items, profile);
+
+    expect(result).toContain("This paragraph wanders.");
+    expect(result).toContain("Another sentence shifts.");
+    expect(result).toContain("Final line floats.");
+    expect(result).not.toContain("| --- |");
+  });
+
+  it("preserves nested list indentation from x-position and non-body o bullets", async () => {
+    const { renderPdfPageText } = await importPdfModule();
+    const profile = { bodyFontSize: 12, bodyFontName: "f2", boldFontNames: new Set<string>(["fBold"]) };
+    const items = [
+      textItem("Overview paragraph.", [12, 0, 0, 12, 18, 740], "f2"),
+      textItem("•", [12, 0, 0, 12, 18, 700], "f2", false, 8),
+      textItem("Parent", [12, 0, 0, 12, 34, 700], "f2", true, 40),
+      textItem("o", [12, 0, 0, 12, 36, 680], "CourierNewPSMT", false, 8),
+      textItem("Child", [12, 0, 0, 12, 52, 680], "f2", true, 34),
+      textItem("•", [12, 0, 0, 12, 54, 660], "f2", false, 8),
+      textItem("Grandchild", [12, 0, 0, 12, 70, 660], "f2", true, 70),
+    ];
+    const result = renderPdfPageText(items, profile);
+
+    expect(result).toContain("- Parent");
+    expect(result).toContain("  - Child");
+    expect(result).toContain("    - Grandchild");
+  });
+
+  it("ignores table rows when deriving the base x for later bullets", async () => {
+    const { renderPdfPageText } = await importPdfModule();
+    const profile = { bodyFontSize: 12, bodyFontName: "f2", boldFontNames: new Set<string>() };
+    const items = [
+      textItem("Column A", [12, 0, 0, 12, 18, 760], "f2", false, 52),
+      textItem("Column B", [12, 0, 0, 12, 180, 760], "f2", true, 52),
+      textItem("A1", [12, 0, 0, 12, 18, 740], "f2", false, 16),
+      textItem("B1", [12, 0, 0, 12, 180, 740], "f2", true, 16),
+      textItem("A2", [12, 0, 0, 12, 18, 720], "f2", false, 16),
+      textItem("B2", [12, 0, 0, 12, 180, 720], "f2", true, 16),
+      textItem("A3", [12, 0, 0, 12, 18, 700], "f2", false, 16),
+      textItem("B3", [12, 0, 0, 12, 180, 700], "f2", true, 16),
+      textItem("Lead-in paragraph.", [12, 0, 0, 12, 36, 660], "f2"),
+      textItem("•", [12, 0, 0, 12, 36, 640], "f2", false, 8),
+      textItem("Flat bullet after table", [12, 0, 0, 12, 52, 640], "f2", true, 110),
+    ];
+    const result = renderPdfPageText(items, profile);
+
+    expect(result).toContain("| Column A | Column B |");
+    expect(result).toContain("Lead-in paragraph.");
+    expect(result).toContain("- Flat bullet after table");
+    expect(result).not.toContain("  - Flat bullet after table");
+  });
+
+  it("emits inline bold markers for mixed-font body lines", async () => {
+    const { renderPdfPageText } = await importPdfModule();
+    const profile = { bodyFontSize: 12, bodyFontName: "f2", boldFontNames: new Set<string>(["fBold"]) };
+    const items = [
+      textItem("See", [12, 0, 0, 12, 0, 700], "f2", false, 18),
+      textItem("Benefit Considerations", [12, 0, 0, 12, 28, 700], "fBold", false, 126),
+      textItem("for details", [12, 0, 0, 12, 160, 700], "f2", true, 60),
+      textItem("Important Note", [12, 0, 0, 12, 0, 660], "fBold"),
+      textItem("Plain follow-up.", [12, 0, 0, 12, 0, 620], "f2"),
+    ];
+    const result = renderPdfPageText(items, profile);
+
+    expect(result).toContain("See **Benefit Considerations** for details");
+    expect(result).toContain("**Important Note**");
+    expect(result).toContain("Plain follow-up.");
   });
 });
 
@@ -158,6 +359,19 @@ describe("mergeBulletContinuations", () => {
       "- First bullet",
       "- Second bullet",
       "## A Heading",
+    ]);
+  });
+
+  it("does not merge indented child bullets into their parent bullet", async () => {
+    const { mergeBulletContinuations } = await importPdfModule();
+    const result = mergeBulletContinuations([
+      "- Parent bullet",
+      "  - Child bullet",
+    ]);
+
+    expect(result).toEqual([
+      "- Parent bullet",
+      "  - Child bullet",
     ]);
   });
 });
@@ -541,5 +755,107 @@ describe("convertPdf", () => {
 
     expect(result).toMatchObject({ markdown: expect.any(String) });
     expect(destroyFn).toHaveBeenCalled();
+  });
+
+  it("strips repeating headers and footers across three or more pages", async () => {
+    const destroy = vi.fn().mockResolvedValue(undefined);
+    const header = {
+      str: "Policy Handbook",
+      transform: [12, 0, 0, 12, 0, 1000],
+      fontName: "f1",
+      hasEOL: true,
+      width: 140
+    };
+    const footerForPage = (pageNumber: number) => ({
+      str: `Page ${pageNumber}`,
+      transform: [12, 0, 0, 12, 0, 20],
+      fontName: "f1",
+      hasEOL: true,
+      width: 60
+    });
+
+    vi.doMock("pdfjs-dist/legacy/build/pdf.mjs", () => ({
+      GlobalWorkerOptions: {
+        workerSrc: ""
+      },
+      getDocument: vi.fn(() => ({
+        promise: Promise.resolve({
+          numPages: 3,
+          getPage: vi.fn(async (pageNumber: number) => ({
+            getTextContent: vi.fn(async () => ({
+              items: [
+                header,
+                footerForPage(pageNumber),
+                {
+                  str: `Body copy on page ${pageNumber} with enough readable text to avoid the sparse-quality warning threshold.`,
+                  transform: [12, 0, 0, 12, 0, 760],
+                  fontName: "f2",
+                  hasEOL: true,
+                  width: 540
+                }
+              ]
+            }))
+          }))
+        }),
+        destroy
+      }))
+    }));
+
+    const { convertPdf } = await import("./pdf");
+    const result = await convertPdf(createPdfFile([new Uint8Array([1, 2, 3])], "repeating-layout.pdf"));
+
+    expect(result.markdown).toContain("Body copy on page 1");
+    expect(result.markdown).toContain("Body copy on page 2");
+    expect(result.markdown).toContain("Body copy on page 3");
+    expect(result.markdown).not.toContain("Policy Handbook");
+    expect(result.markdown).not.toContain("Page 1");
+    expect(result.markdown).not.toContain("Page 2");
+    expect(result.markdown).not.toContain("Page 3");
+  });
+
+  it("does not strip repeated body rows when viewport height keeps them out of header bands", async () => {
+    const destroy = vi.fn().mockResolvedValue(undefined);
+
+    vi.doMock("pdfjs-dist/legacy/build/pdf.mjs", () => ({
+      GlobalWorkerOptions: {
+        workerSrc: ""
+      },
+      getDocument: vi.fn(() => ({
+        promise: Promise.resolve({
+          numPages: 3,
+          getPage: vi.fn(async (pageNumber: number) => ({
+            getViewport: vi.fn(() => ({ height: 1000 })),
+            getTextContent: vi.fn(async () => ({
+              items: [
+                {
+                  str: "Repeated body row stays in content.",
+                  transform: [12, 0, 0, 12, 0, 760],
+                  fontName: "f2",
+                  hasEOL: true,
+                  width: 220
+                },
+                {
+                  str: `Page ${pageNumber} details remain visible with enough readable text to avoid sparse output.`,
+                  transform: [12, 0, 0, 12, 0, 700],
+                  fontName: "f2",
+                  hasEOL: true,
+                  width: 520
+                }
+              ]
+            }))
+          }))
+        }),
+        destroy
+      }))
+    }));
+
+    const { convertPdf } = await import("./pdf");
+    const result = await convertPdf(createPdfFile([new Uint8Array([1, 2, 3])], "body-rows.pdf"));
+    const repeatedCount = result.markdown.match(/Repeated body row stays in content\./g)?.length ?? 0;
+
+    expect(repeatedCount).toBe(3);
+    expect(result.markdown).toContain("Page 1 details remain visible");
+    expect(result.markdown).toContain("Page 2 details remain visible");
+    expect(result.markdown).toContain("Page 3 details remain visible");
   });
 });
