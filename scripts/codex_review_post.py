@@ -132,7 +132,6 @@ def deduplicate(
     comments: list[dict[str, object]],
     existing: list[object],
 ) -> list[dict[str, object]]:
-    bot_bodies: set[str] = set()
     bot_bodies_by_path: dict[str, list[str]] = {}
 
     for item in existing:
@@ -144,7 +143,6 @@ def deduplicate(
         if not isinstance(body, str):
             continue
         normalized_body = _normalize_existing_body(body)
-        bot_bodies.add(normalized_body)
         path = item.get("path")
         if isinstance(path, str) and path.strip():
             bot_bodies_by_path.setdefault(path.strip(), []).append(normalized_body)
@@ -153,11 +151,12 @@ def deduplicate(
     for comment in comments:
         body = str(comment["body"]).strip()
         path = str(comment["path"]).strip()
-        if body in bot_bodies:
+        same_path_bodies = bot_bodies_by_path.get(path, [])
+        if body in same_path_bodies:
             continue
         if any(
             _jaccard_similarity(body, existing_body) >= JACCARD_SIMILARITY_THRESHOLD
-            for existing_body in bot_bodies_by_path.get(path, [])
+            for existing_body in same_path_bodies
         ):
             continue
         filtered.append(comment)

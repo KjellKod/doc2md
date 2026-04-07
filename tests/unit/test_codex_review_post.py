@@ -276,6 +276,30 @@ class CodexReviewPostTests(unittest.TestCase):
 
         self.assertEqual(filtered, comments)
 
+    def test_deduplicate_exact_match_different_path_not_suppressed(self):
+        module = load_module()
+        comments = [
+            {
+                "path": "a.py",
+                "line": 1,
+                "side": "RIGHT",
+                "severity": "high",
+                "body": "Identical body text",
+            }
+        ]
+        existing = [
+            {
+                "id": 1,
+                "user": "github-actions[bot]",
+                "path": "b.py",
+                "body": "Identical body text",
+            }
+        ]
+
+        filtered = module.deduplicate(comments, existing)
+
+        self.assertEqual(filtered, comments)
+
     def test_build_severity_summary(self):
         module = load_module()
 
