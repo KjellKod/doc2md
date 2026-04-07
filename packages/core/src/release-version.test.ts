@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  assertReleaseTagsAvailable,
   bumpPatch,
   deriveReleaseVersionFromRefs
 } from "../scripts/release-version.mjs";
@@ -21,6 +22,24 @@ describe("release version derivation", () => {
     expect(
       deriveReleaseVersionFromRefs("0.0.0", "", "def456")
     ).toBe("0.0.1");
+  });
+
+  it("throws in strict release mode when no numeric release tags are available", () => {
+    expect(() =>
+      assertReleaseTagsAvailable("0.0.0", { REQUIRE_RELEASE_TAG: "true" })
+    ).toThrow("REQUIRE_RELEASE_TAG is set");
+  });
+
+  it("allows missing tags outside strict release mode", () => {
+    expect(() =>
+      assertReleaseTagsAvailable("0.0.0", { REQUIRE_RELEASE_TAG: "false" })
+    ).not.toThrow();
+  });
+
+  it("allows strict release mode when a numeric release tag is available", () => {
+    expect(() =>
+      assertReleaseTagsAvailable("1.1.1", { REQUIRE_RELEASE_TAG: "true" })
+    ).not.toThrow();
   });
 
   it("supports tags with a leading v but emits X.Y.Z versions", () => {

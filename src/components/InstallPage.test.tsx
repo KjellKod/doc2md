@@ -65,7 +65,7 @@ describe("InstallPage", () => {
     });
 
     expect(
-      screen.getAllByText("Latest Pages artifact:", { exact: false }).length
+      screen.getAllByText("Latest released Pages tarball:", { exact: false }).length
     ).toBeGreaterThan(0);
   });
 });

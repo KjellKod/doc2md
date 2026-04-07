@@ -21,6 +21,11 @@ If your workflow cannot answer those questions fast, the automation is theater.
 
 That is why we split the old monolithic CI job into `lint-and-type`, `test`, and `build`. A red build should say what is red. "CI failed" is not a diagnosis. It is a shrug.
 
+We also tightened the GitHub Actions allowlist. If a workflow starts depending on
+an unapproved action version, the run should fail visibly as a policy problem
+instead of half-working behind the scenes. Trust improves when the workflow's
+dependencies are explicit too.
+
 ## Make the AI lane tell the truth
 
 The easy mistake is treating "the agent process exited" as the same thing as "the review was useful."

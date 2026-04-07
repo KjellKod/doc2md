@@ -13,7 +13,7 @@ If you are new to Node, npm, or tarball installs, use the beginner-first [INSTAL
 That guide covers:
 
 - prerequisites
-- downloading the latest Pages tarball from the `Install & Use` tab
+- downloading the latest released Pages tarball from the `Install & Use` tab
 - global tarball install
 - project-local tarball install
 - deleting the tarball after install
@@ -30,7 +30,7 @@ That means:
 
 - `npm install @doc2md/core` is not the path to use today
 - `npm install -g @doc2md/core` is also not the path to use today
-- use the local `.tgz` artifact from GitHub Pages or from `npm run pack:local --workspace=@doc2md/core`
+- use the released `.tgz` artifact from GitHub Pages or one built locally with `npm run pack:local --workspace=@doc2md/core`
 
 If you are validating the package from this repo:
 

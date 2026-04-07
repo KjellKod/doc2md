@@ -25,7 +25,7 @@ function InstallStatus({
   if (state === "loading") {
     return (
       <p className="install-download-note">
-        Checking for the latest packaged tarball from GitHub Pages.
+        Checking for the latest released tarball from GitHub Pages.
       </p>
     );
   }
@@ -33,8 +33,8 @@ function InstallStatus({
   if (state === "ready" && manifest) {
     return (
       <p className="install-download-note">
-        Latest Pages artifact: <strong>{manifest.filename}</strong> (version{" "}
-        {manifest.version}).
+        Latest released Pages tarball: <strong>{manifest.filename}</strong>{" "}
+        (version {manifest.version}).
       </p>
     );
   }
@@ -43,7 +43,7 @@ function InstallStatus({
     <div className="install-download-note">
       <p>
         The tarball manifest is not available in local dev builds yet. Use the
-        button after a Pages deploy, or build locally with{" "}
+        button after a release deploy, or build locally with{" "}
         <code>npm run pack:local --workspace=@doc2md/core</code>.
       </p>
       <button type="button" className="ghost-button" onClick={onRetry}>
@@ -122,8 +122,8 @@ export default function InstallPage({ active }: { active: boolean }) {
             </h2>
             <p className="panel-copy">
               The browser UI is still the fastest path for one-off work. This
-              page is for the packaged tarball, the Node CLI, and the portable
-              repo skill.
+              page is for the latest released tarball, the Node CLI, and the
+              portable repo skill.
             </p>
           </div>
         </div>
@@ -208,8 +208,8 @@ export default function InstallPage({ active }: { active: boolean }) {
             <div>
               <h2 id="install-steps-title">Fastest supported setup</h2>
               <p className="panel-copy">
-                Use the tarball when you want the current supported package path
-                without waiting for public npm publication.
+                Use the released tarball when you want the current supported
+                package path without waiting for public npm publication.
               </p>
             </div>
           </div>
@@ -219,9 +219,9 @@ export default function InstallPage({ active }: { active: boolean }) {
               <p className="eyebrow">1. Download</p>
               <h3>Get the tarball from Pages or build it locally</h3>
               <p>
-                Use the button above after a deploy, or build the package inside
-                this repo when you are validating changes locally. The exact
-                local build command is shown below.
+                Use the button above after a release deploy, or build the
+                package inside this repo when you are validating changes
+                locally. The exact local build command is shown below.
               </p>
               <pre className="install-code">
                 <code>npm run pack:local --workspace=@doc2md/core</code>
