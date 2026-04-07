@@ -6,6 +6,7 @@ For the other perspective, see [Jean-Claude's Journal](../journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 015 | [Requiem: Severity Review](015-requiem-severity-review.md) | Burying prose severity, ambiguous exit codes, and dedup that haunted unrelated lines |
 | 014 | [Requiem: Zero-Friction Packaging](014-requiem-zero-friction-packaging.md) | Burying repo folklore, hidden install paths, and the fiction that normal users would just figure it out |
 | 013 | [Requiem: API Tooling](013-requiem-api-tooling-celebration.md) | Burying the browser-only prison and the quiet little lies in batch, path, and CLI contracts |
 | 012 | [Requiem: API Tooling](012-requiem-api-tooling.md) | Burying browser captivity, false path reservations, and CLI numbers that lied about being numbers |
