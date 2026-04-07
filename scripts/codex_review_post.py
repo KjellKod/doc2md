@@ -7,8 +7,34 @@ import argparse
 import json
 import os
 import re
+import string
 import subprocess
+from collections import Counter
 from pathlib import Path
+
+
+SEVERITY_LEVELS = ("critical", "high", "medium", "low", "praise")
+BLOCKING_SEVERITIES = ("critical", "high")
+SEVERITY_ANNOTATION_MAP = {
+    "critical": "error",
+    "high": "error",
+    "medium": "warning",
+    "low": "notice",
+    "praise": "notice",
+}
+SEVERITY_PREFIX_RE = re.compile(
+    r"^\*\*\[(critical|high|medium|low|praise)\]\*\*\s*",
+    re.IGNORECASE,
+)
+LEGACY_SEVERITY_PREFIX_RE = re.compile(
+    r"^\*\*(Blocker|Must fix|Should fix)\*\*\s*(?:[-:]\s*)?",
+    re.IGNORECASE,
+)
+BOT_FOOTER_RE = re.compile(
+    r"\n*\*Automated review by[^*]*\*\.?\s*$",
+    re.IGNORECASE,
+)
+JACCARD_SIMILARITY_THRESHOLD = 0.4
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -93,12 +119,14 @@ def validate_comments(comments: list[object]) -> list[dict[str, object]]:
         if line < 1:
             continue
         side = comment.get("side")
+        severity = _normalize_severity(comment.get("severity"))
         valid.append(
             {
-                "path": path,
+                "path": path.strip(),
                 "line": line,
                 "side": side if side in {"LEFT", "RIGHT"} else "RIGHT",
-                "body": body,
+                "severity": severity,
+                "body": body.strip(),
             }
         )
     return valid
@@ -108,38 +136,32 @@ def deduplicate(
     comments: list[dict[str, object]],
     existing: list[object],
 ) -> list[dict[str, object]]:
-    bot_bodies = {
-        item["body"].strip()
-        for item in existing
-        if isinstance(item, dict)
-        and item.get("user") == "github-actions[bot]"
-        and isinstance(item.get("body"), str)
-    }
-    replied_ids = {
-        item.get("in_reply_to_id")
-        for item in existing
-        if isinstance(item, dict) and item.get("in_reply_to_id")
-    }
-    resolved_bot_ids = {
-        item["id"]
-        for item in existing
-        if isinstance(item, dict)
-        and item.get("user") == "github-actions[bot]"
-        and item.get("id") in replied_ids
-    }
-    resolved_bot_bodies = {
-        item["body"].strip()
-        for item in existing
-        if isinstance(item, dict)
-        and item.get("user") == "github-actions[bot]"
-        and item.get("id") in resolved_bot_ids
-        and isinstance(item.get("body"), str)
-    }
+    bot_bodies_by_path: dict[str, list[str]] = {}
+
+    for item in existing:
+        if not isinstance(item, dict):
+            continue
+        if item.get("user") != "github-actions[bot]":
+            continue
+        body = item.get("body")
+        if not isinstance(body, str):
+            continue
+        normalized_body = _normalize_existing_body(body)
+        path = item.get("path")
+        if isinstance(path, str) and path.strip():
+            bot_bodies_by_path.setdefault(path.strip(), []).append(normalized_body)
 
     filtered: list[dict[str, object]] = []
     for comment in comments:
-        body = str(comment["body"]).strip()
-        if body in bot_bodies or body in resolved_bot_bodies:
+        normalized_new = _normalize_existing_body(str(comment["body"]))
+        path = str(comment["path"]).strip()
+        same_path_bodies = bot_bodies_by_path.get(path, [])
+        if normalized_new in same_path_bodies:
+            continue
+        if any(
+            _jaccard_similarity(normalized_new, existing_body) >= JACCARD_SIMILARITY_THRESHOLD
+            for existing_body in same_path_bodies
+        ):
             continue
         filtered.append(comment)
     return filtered
@@ -249,7 +271,7 @@ def post_inline(
     failed: list[dict[str, object]] = []
     for comment in comments:
         payload = {
-            "body": comment["body"],
+            "body": _format_body(comment),
             "commit_id": commit_sha,
             "path": comment["path"],
             "line": comment["line"],
@@ -281,10 +303,10 @@ def post_fallback_comment(
     env: dict[str, str] | None = None,
 ) -> bool:
     env_values = env or os.environ
-    body_parts = ["## Codex Review (inline posting failed)", ""]
+    body_parts = ["## Codex Review (inline posting failed)", "", "<!-- codex-review-fallback -->", ""]
     for comment in failed_comments:
         body_parts.append(f"**{comment['path']}:{comment['line']}**")
-        body_parts.append(str(comment["body"]))
+        body_parts.append(_format_body(comment))
         body_parts.append("")
     result = runner(
         [
@@ -303,15 +325,85 @@ def post_fallback_comment(
     return result.returncode == 0
 
 
-def fail_visible_outcome(message: str) -> int:
-    print(f"::error::{message}")
-    return 1
+def _normalize_severity(value: object) -> str:
+    candidate = value.strip().lower() if isinstance(value, str) else ""
+    if candidate in SEVERITY_LEVELS:
+        return candidate
+    if candidate:
+        print(f"::notice::Unknown severity '{candidate}' defaulted to medium.")
+    else:
+        print("::notice::Missing severity defaulted to medium.")
+    return "medium"
+
+
+def _normalize_existing_body(body: str) -> str:
+    stripped = body.strip()
+    stripped = SEVERITY_PREFIX_RE.sub("", stripped)
+    stripped = LEGACY_SEVERITY_PREFIX_RE.sub("", stripped)
+    stripped = BOT_FOOTER_RE.sub("", stripped)
+    return stripped.strip()
+
+
+def _format_body(comment: dict[str, object]) -> str:
+    return f"**[{comment['severity']}]** {comment['body']}"
+
+
+def _tokenize_for_similarity(value: str) -> set[str]:
+    translator = str.maketrans("", "", string.punctuation)
+    return {
+        token.translate(translator)
+        for token in value.lower().split()
+        if token.translate(translator)
+    }
+
+
+def _jaccard_similarity(a: str, b: str) -> float:
+    tokens_a = _tokenize_for_similarity(a)
+    tokens_b = _tokenize_for_similarity(b)
+    union = tokens_a | tokens_b
+    if not union:
+        return 0.0
+    return len(tokens_a & tokens_b) / len(union)
+
+
+def _escape_annotation(value: str) -> str:
+    """Escape special characters for GitHub Actions workflow commands."""
+    return value.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A").replace(":", "%3A").replace(",", "%2C")
+
+
+def emit_annotations(comments: list[dict[str, object]]) -> None:
+    for comment in comments:
+        severity = str(comment.get("severity", "medium"))
+        level = SEVERITY_ANNOTATION_MAP.get(severity, "warning")
+        message = re.sub(r"\s+", " ", str(comment["body"]).strip())
+        if len(message) > 200:
+            message = f"{message[:197].rstrip()}..."
+        escaped_path = _escape_annotation(str(comment["path"]))
+        escaped_message = _escape_annotation(message)
+        print(f"::{level} file={escaped_path},line={comment['line']}::{escaped_message}")
+
+
+def build_severity_summary(comments: list[dict[str, object]]) -> str:
+    counts = Counter(str(comment.get("severity", "medium")) for comment in comments)
+    parts = [f"{counts[level]} {level}" for level in SEVERITY_LEVELS if counts[level]]
+    if not parts:
+        return "Findings: none."
+    return f"Findings: {', '.join(parts)}."
+
+
+def has_blocking_findings(comments: list[dict[str, object]]) -> bool:
+    return any(str(comment.get("severity")) in BLOCKING_SEVERITIES for comment in comments)
+
+
+def warn_visible_outcome(message: str) -> int:
+    print(f"::warning::{message}")
+    return 0
 
 
 def require_summary_posted(posted: bool, context: str) -> int:
     if posted:
         return 0
-    return fail_visible_outcome(f"Failed to post summary comment for {context}.")
+    return warn_visible_outcome(f"Failed to post summary comment for {context}.")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -417,17 +509,21 @@ def main(argv: list[str] | None = None) -> int:
         pr_number=env["PR_NUMBER"],
         commit_sha=env["COMMIT_SHA"],
     )
+
     if failed_inline:
         fallback_posted = post_fallback_comment(failed_inline)
+        emit_annotations(fresh_comments)
+        severity_summary = build_severity_summary(fresh_comments)
         if fallback_posted:
             summary_message = (
                 f"Posted {len(fresh_comments) - len(failed_inline)} inline finding(s); "
-                f"{len(failed_inline)} finding(s) fell back to a PR comment."
+                f"{len(failed_inline)} finding(s) fell back to a PR comment. {severity_summary}"
             )
         else:
             summary_message = (
                 f"Posted {len(fresh_comments) - len(failed_inline)} inline finding(s); "
-                f"{len(failed_inline)} finding(s) could not be posted inline or as a fallback comment."
+                f"{len(failed_inline)} finding(s) could not be posted inline or as a fallback comment. "
+                f"{severity_summary}"
             )
         summary_posted = post_summary(
             summary_message,
@@ -436,28 +532,41 @@ def main(argv: list[str] | None = None) -> int:
             findings_count=len(valid_comments),
         )
         if not fallback_posted and not summary_posted:
-            return fail_visible_outcome(
+            warn_visible_outcome(
                 "Failed to post any visible review outcome after inline comment failures."
             )
-        if not fallback_posted:
-            return fail_visible_outcome(
+        elif not fallback_posted:
+            warn_visible_outcome(
                 "Failed to post fallback PR comment for inline comment failures."
             )
-        if not summary_posted:
-            return fail_visible_outcome(
+        elif not summary_posted:
+            warn_visible_outcome(
                 "Failed to post summary comment after inline comment failures."
             )
-        return 1 if args.strict_inline_posting else 0
+        exit_code = 0
+        if args.strict_inline_posting:
+            print("::error::Inline posting failed (strict mode).")
+            exit_code = 1
+        if has_blocking_findings(fresh_comments):
+            print("::error::Blocking severity findings")
+            exit_code = 1
+        return exit_code
 
-    return require_summary_posted(
+    emit_annotations(fresh_comments)
+    severity_summary = build_severity_summary(fresh_comments)
+    require_summary_posted(
         post_summary(
-            f"Posted {len(fresh_comments)} inline finding(s).",
+            f"Posted {len(fresh_comments)} inline finding(s). {severity_summary}",
             metadata,
             valid_json=True,
             findings_count=len(valid_comments),
         ),
         "successful review outcome",
     )
+    if has_blocking_findings(fresh_comments):
+        print("::error::Blocking severity findings")
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
