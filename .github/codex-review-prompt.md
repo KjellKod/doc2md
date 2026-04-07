@@ -15,13 +15,15 @@ Review for real issues only:
 - **No duplicate concerns.** If the same issue appears in multiple places, raise it once on the most relevant file.
 - If the code looks fine, return an empty array.
 - Be specific about the failure mode and the change needed.
-- Include severity in each comment body: `**Blocker**`, `**Must fix**`, `**Should fix**`.
+- The `severity` field is required and must be one of: `critical`, `high`, `medium`, `low`, `praise`.
 
 ## Severity Model
 
-- **Blocker**: merge must not proceed
-- **Must fix**: should be fixed before merge
-- **Should fix**: important, but can be deferred with rationale
+- **critical**: security, data loss, crash, or serious correctness issues; merge must not proceed
+- **high**: broken behavior, incorrect logic, or severe maintainability issues; fix before merge
+- **medium**: real issue, advisory only
+- **low**: minor but worthwhile advisory issue
+- **praise**: sparse, specific positive reinforcement tied to changed lines
 
 ## Output format
 
@@ -31,7 +33,8 @@ Return a JSON array. Each element:
   "path": "src/App.tsx",
   "line": 4,
   "side": "RIGHT",
-  "body": "**Must fix** - The placeholder renders, but the test never exercises the production entry point. Add coverage for the real render path or explain why it is intentionally deferred.\n\n*Automated review by OpenAI Codex*"
+  "severity": "high",
+  "body": "The placeholder renders, but the test never exercises the production entry point. Add coverage for the real render path or explain why it is intentionally deferred.\n\n*Automated review by OpenAI Codex*"
 }
 ```
 
