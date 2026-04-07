@@ -276,6 +276,38 @@ class CodexReviewPostTests(unittest.TestCase):
 
         self.assertEqual(filtered, comments)
 
+    def test_deduplicate_strips_boilerplate_before_comparison(self):
+        module = load_module()
+        comments = [
+            {
+                "path": "a.py",
+                "line": 10,
+                "side": "RIGHT",
+                "severity": "medium",
+                "body": "Distinct finding about error handling",
+            },
+            {
+                "path": "a.py",
+                "line": 20,
+                "side": "RIGHT",
+                "severity": "medium",
+                "body": "Different finding about null checks",
+            },
+        ]
+        existing = [
+            {
+                "id": 1,
+                "user": "github-actions[bot]",
+                "path": "a.py",
+                "body": "**[medium]** Distinct finding about error handling\n\n*Automated review by OpenAI Codex*",
+            }
+        ]
+
+        filtered = module.deduplicate(comments, existing)
+
+        self.assertEqual(len(filtered), 1)
+        self.assertEqual(filtered[0]["body"], "Different finding about null checks")
+
     def test_deduplicate_exact_match_different_path_not_suppressed(self):
         module = load_module()
         comments = [

@@ -30,6 +30,10 @@ LEGACY_SEVERITY_PREFIX_RE = re.compile(
     r"^\*\*(Blocker|Must fix|Should fix)\*\*\s*(?:[-:]\s*)?",
     re.IGNORECASE,
 )
+BOT_FOOTER_RE = re.compile(
+    r"\n*\*Automated review by[^*]*\*\.?\s*$",
+    re.IGNORECASE,
+)
 JACCARD_SIMILARITY_THRESHOLD = 0.4
 
 
@@ -149,13 +153,13 @@ def deduplicate(
 
     filtered: list[dict[str, object]] = []
     for comment in comments:
-        body = str(comment["body"]).strip()
+        normalized_new = _normalize_existing_body(str(comment["body"]))
         path = str(comment["path"]).strip()
         same_path_bodies = bot_bodies_by_path.get(path, [])
-        if body in same_path_bodies:
+        if normalized_new in same_path_bodies:
             continue
         if any(
-            _jaccard_similarity(body, existing_body) >= JACCARD_SIMILARITY_THRESHOLD
+            _jaccard_similarity(normalized_new, existing_body) >= JACCARD_SIMILARITY_THRESHOLD
             for existing_body in same_path_bodies
         ):
             continue
@@ -336,6 +340,7 @@ def _normalize_existing_body(body: str) -> str:
     stripped = body.strip()
     stripped = SEVERITY_PREFIX_RE.sub("", stripped)
     stripped = LEGACY_SEVERITY_PREFIX_RE.sub("", stripped)
+    stripped = BOT_FOOTER_RE.sub("", stripped)
     return stripped.strip()
 
 
