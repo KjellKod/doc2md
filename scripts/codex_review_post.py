@@ -362,6 +362,11 @@ def _jaccard_similarity(a: str, b: str) -> float:
     return len(tokens_a & tokens_b) / len(union)
 
 
+def _escape_annotation(value: str) -> str:
+    """Escape special characters for GitHub Actions workflow commands."""
+    return value.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A").replace(":", "%3A").replace(",", "%2C")
+
+
 def emit_annotations(comments: list[dict[str, object]]) -> None:
     for comment in comments:
         severity = str(comment.get("severity", "medium"))
@@ -369,7 +374,9 @@ def emit_annotations(comments: list[dict[str, object]]) -> None:
         message = re.sub(r"\s+", " ", str(comment["body"]).strip())
         if len(message) > 200:
             message = f"{message[:197].rstrip()}..."
-        print(f"::{level} file={comment['path']},line={comment['line']}::{message}")
+        escaped_path = _escape_annotation(str(comment["path"]))
+        escaped_message = _escape_annotation(message)
+        print(f"::{level} file={escaped_path},line={comment['line']}::{escaped_message}")
 
 
 def build_severity_summary(comments: list[dict[str, object]]) -> str:

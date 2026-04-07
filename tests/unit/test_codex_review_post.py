@@ -316,6 +316,23 @@ class CodexReviewPostTests(unittest.TestCase):
             ],
         )
 
+    def test_emit_annotations_escapes_injection(self):
+        module = load_module()
+
+        comments = [
+            {"path": "src/foo:bar.py", "line": 1, "severity": "high",
+             "body": "bad%0Ainjection::warning file=x,line=1::pwned"},
+        ]
+
+        with mock.patch("builtins.print") as mocked_print:
+            module.emit_annotations(comments)
+
+        printed = mocked_print.call_args_list[0].args[0]
+        self.assertNotIn("::warning file=x", printed)
+        self.assertIn("%3A", printed)
+        # %0A in input becomes %250A (% escaped first), which is correct
+        self.assertIn("%250A", printed)
+
     def test_main_exits_1_on_critical_finding(self):
         module = load_module()
         with tempfile.TemporaryDirectory() as tmpdir:
