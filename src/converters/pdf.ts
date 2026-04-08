@@ -31,6 +31,10 @@ const TABLE_HEADER_TOLERANCE = 20;
 const TABLE_MIN_ROWS = 3;
 const LIST_INDENT_STEP = 18;
 const MARKDOWN_BULLET_PATTERN = /^\s*-\s/;
+const ROW_CLUSTER_GAP_THRESHOLD = 24;
+const TOC_SIDEBAR_X_OFFSET = 260;
+const TOC_SIDEBAR_X_RATIO = 0.55;
+const TOC_SIDEBAR_MIN_ROWS = 2;
 const POOR_PDF_QUALITY_SUMMARY =
   "Poor: Little or no selectable text detected. This PDF may be scanned or image-based.";
 const UNREADABLE_PDF_QUALITY_SUMMARY =
@@ -93,6 +97,10 @@ function getItemWidth(item: TextItem) {
 
   const fontSize = getFontSize(item.transform as [number, number, number, number, number, number]);
   return Math.max(normalizeTextValue(item.str).length, 1) * Math.max(fontSize * 0.5, 1);
+}
+
+function getItemEndX(item: TextItem) {
+  return getItemX(item) + getItemWidth(item);
 }
 
 function getAverageCharacterWidth(item: TextItem) {
@@ -231,10 +239,16 @@ function foldSuperscripts(items: TextItem[]) {
     const currentFontSize = getFontSize(
       item.transform as [number, number, number, number, number, number]
     );
+    const verticalTolerance = Math.max(LINE_BREAK_THRESHOLD, previousFontSize * 0.35);
+    const horizontalTolerance = Math.max(previousFontSize, 12);
+    const previousEndX = getItemEndX(previousItem);
+    const currentStartX = getItemX(item);
 
     if (
-      Math.abs(currentY - previousY) <= LINE_BREAK_THRESHOLD &&
+      Math.abs(currentY - previousY) <= verticalTolerance &&
       currentFontSize < previousFontSize * 0.75 &&
+      currentStartX >= previousEndX - horizontalTolerance &&
+      currentStartX <= previousEndX + horizontalTolerance &&
       isSuperscriptSymbol(value)
     ) {
       foldedItems[foldedItems.length - 1] = {
@@ -253,7 +267,9 @@ function foldSuperscripts(items: TextItem[]) {
 }
 
 function stripDotLeaders(line: string) {
-  return line.replace(/\s+\.{3,}\s*\d*\s*$/, "").trimEnd();
+  return line.replace(/\s*\.{3,}\s*(\d+)?\s*$/, (_, pageNumber: string | undefined) =>
+    pageNumber ? ` ${pageNumber}` : ""
+  ).trimEnd();
 }
 
 function getEstimatedPageHeight(items: TextItem[]) {
@@ -667,6 +683,129 @@ function getRowColumnXs(row: TextRow, fontProfile: FontProfile) {
   return getRowColumnClusters(row, fontProfile)?.map((cluster) => cluster.x) ?? null;
 }
 
+function getRowStartX(row: TextRow) {
+  const firstItem = row.items.find((item) => normalizeTextValue(item.str).length > 0);
+  return firstItem ? getItemX(firstItem) : null;
+}
+
+function splitRowIntoGapClusters(row: TextRow, gapThreshold = ROW_CLUSTER_GAP_THRESHOLD) {
+  const meaningfulItems = row.items.filter((item) => normalizeTextValue(item.str).length > 0);
+  if (meaningfulItems.length <= 1) {
+    return meaningfulItems.length === 0 ? [] : [{ y: row.y, items: meaningfulItems }];
+  }
+
+  const clusters: TextRow[] = [];
+  let currentItems: TextItem[] = [];
+  let previousItem: TextItem | undefined;
+
+  for (const item of meaningfulItems) {
+    if (
+      previousItem &&
+      getItemX(item) - getItemEndX(previousItem) > gapThreshold
+    ) {
+      if (currentItems.length > 0) {
+        clusters.push({ y: row.y, items: currentItems });
+      }
+      currentItems = [];
+    }
+
+    currentItems.push(item);
+    previousItem = item;
+  }
+
+  if (currentItems.length > 0) {
+    clusters.push({ y: row.y, items: currentItems });
+  }
+
+  return clusters;
+}
+
+interface TocSidebarPlan {
+  deferredRows: TextRow[];
+  insertBeforeIndex: number;
+  mainRowOverrides: Map<number, TextRow | null>;
+}
+
+function createTocSidebarPlan(
+  rows: TextRow[],
+  fontProfile: FontProfile,
+  baseX: number
+): TocSidebarPlan | null {
+  const tocStartIndex = rows.findIndex((row) => /table of contents/i.test(joinRowText(row.items)));
+  if (tocStartIndex < 0) {
+    return null;
+  }
+
+  const pageWidth = rows.reduce((maxWidth, row) => {
+    const rowWidth = row.items.reduce((maxX, item) => Math.max(maxX, getItemEndX(item)), 0);
+    return Math.max(maxWidth, rowWidth);
+  }, 0);
+  const sidebarThreshold = Math.max(baseX + TOC_SIDEBAR_X_OFFSET, pageWidth * TOC_SIDEBAR_X_RATIO);
+
+  let insertBeforeIndex = rows.length;
+  for (let index = tocStartIndex + 1; index < rows.length; index += 1) {
+    const rowStartX = getRowStartX(rows[index]);
+    if (rowStartX === null || rowStartX > baseX + LIST_INDENT_STEP) {
+      continue;
+    }
+
+    const line = buildLineInfoFromRow(rows[index], fontProfile, baseX);
+    if (!line) {
+      continue;
+    }
+
+    if (/^#{1,3} /.test(classifyLine(line, fontProfile))) {
+      insertBeforeIndex = index;
+      break;
+    }
+  }
+
+  const deferredRows: TextRow[] = [];
+  const mainRowOverrides = new Map<number, TextRow | null>();
+
+  for (let index = tocStartIndex; index < insertBeforeIndex; index += 1) {
+    const row = rows[index];
+    const clusters = splitRowIntoGapClusters(row);
+    if (clusters.length === 0) {
+      continue;
+    }
+
+    const mainClusters = clusters.filter((cluster) => {
+      const clusterStartX = getRowStartX(cluster);
+      return clusterStartX === null || clusterStartX < sidebarThreshold;
+    });
+    const sidebarClusters = clusters.filter((cluster) => {
+      const clusterStartX = getRowStartX(cluster);
+      return clusterStartX !== null && clusterStartX >= sidebarThreshold;
+    });
+
+    if (sidebarClusters.length === 0) {
+      continue;
+    }
+
+    deferredRows.push(...sidebarClusters);
+    if (mainClusters.length === 0) {
+      mainRowOverrides.set(index, null);
+      continue;
+    }
+
+    mainRowOverrides.set(index, {
+      y: row.y,
+      items: mainClusters.flatMap((cluster) => cluster.items)
+    });
+  }
+
+  if (deferredRows.length < TOC_SIDEBAR_MIN_ROWS) {
+    return null;
+  }
+
+  return {
+    deferredRows,
+    insertBeforeIndex,
+    mainRowOverrides
+  };
+}
+
 function rowMatchesColumns(row: TextRow, columnXs: number[], fontProfile: FontProfile, tolerance: number) {
   const rowColumns = getRowColumnXs(row, fontProfile);
   if (!rowColumns || rowColumns.length !== columnXs.length) {
@@ -746,6 +885,13 @@ function classifyLine(line: LineInfo, fontProfile: FontProfile): string {
   const { text, fontSize, fontName, isBullet, indentLevel, spans } = line;
   const { bodyFontSize, boldFontNames } = fontProfile;
   const sizeDelta = fontSize - bodyFontSize;
+  const normalizedTocHeader = text.match(/^table of contents(?:\s+page)?$/i)
+    ? "**Table of Contents**"
+    : null;
+
+  if (normalizedTocHeader) {
+    return normalizedTocHeader;
+  }
 
   if (isBullet) {
     return `${"  ".repeat(indentLevel)}- ${cleanBulletText(text)}`;
@@ -784,13 +930,55 @@ export function renderPdfPageText(
   const rows = groupItemsByRow(preparedItems).filter((row) => joinRowText(row.items).length > 0);
   const tableRegions = detectTableRegions(rows, profile);
   const baseX = detectBaseX(rows, profile, tableRegions);
+  const tocSidebarPlan = createTocSidebarPlan(rows, profile, baseX);
   const tableRegionByStart = new Map<number, TableRegion>(
     tableRegions.map((region) => [region.startIndex, region])
   );
   const outputLines: string[] = [];
   let previousRenderedY: number | null = null;
 
+  const renderRow = (row: TextRow) => {
+    const line = buildLineInfoFromRow(row, profile, baseX);
+    if (!line) {
+      return;
+    }
+
+    if (
+      previousRenderedY !== null &&
+      Math.abs(row.y - previousRenderedY) > profile.bodyFontSize * PARAGRAPH_GAP_FACTOR &&
+      outputLines.length > 0 &&
+      outputLines[outputLines.length - 1] !== ""
+    ) {
+      outputLines.push("");
+    }
+
+    const classified = stripDotLeaders(classifyLine(line, profile));
+    const isHeading = /^#{1,3} /.test(classified);
+
+    if (isHeading && outputLines.length > 0 && outputLines[outputLines.length - 1] !== "") {
+      outputLines.push("");
+    }
+
+    outputLines.push(classified);
+
+    if (isHeading) {
+      outputLines.push("");
+    }
+
+    previousRenderedY = row.y;
+  };
+
   for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+    if (tocSidebarPlan && rowIndex === tocSidebarPlan.insertBeforeIndex) {
+      if (outputLines.length > 0 && outputLines[outputLines.length - 1] !== "") {
+        outputLines.push("");
+      }
+
+      for (const deferredRow of tocSidebarPlan.deferredRows) {
+        renderRow(deferredRow);
+      }
+    }
+
     const tableRegion = tableRegionByStart.get(rowIndex);
     if (tableRegion) {
       if (
@@ -817,34 +1005,21 @@ export function renderPdfPageText(
       continue;
     }
 
-    const line = buildLineInfoFromRow(rows[rowIndex], profile, baseX);
-    if (!line) {
+    const overrideRow = tocSidebarPlan?.mainRowOverrides.get(rowIndex);
+    if (overrideRow === null) {
       continue;
     }
+    renderRow(overrideRow ?? rows[rowIndex]);
+  }
 
-    if (
-      previousRenderedY !== null &&
-      Math.abs(rows[rowIndex].y - previousRenderedY) > profile.bodyFontSize * PARAGRAPH_GAP_FACTOR &&
-      outputLines.length > 0 &&
-      outputLines[outputLines.length - 1] !== ""
-    ) {
+  if (tocSidebarPlan && tocSidebarPlan.insertBeforeIndex >= rows.length) {
+    if (outputLines.length > 0 && outputLines[outputLines.length - 1] !== "") {
       outputLines.push("");
     }
 
-    const classified = stripDotLeaders(classifyLine(line, profile));
-    const isHeading = /^#{1,3} /.test(classified);
-
-    if (isHeading && outputLines.length > 0 && outputLines[outputLines.length - 1] !== "") {
-      outputLines.push("");
+    for (const deferredRow of tocSidebarPlan.deferredRows) {
+      renderRow(deferredRow);
     }
-
-    outputLines.push(classified);
-
-    if (isHeading) {
-      outputLines.push("");
-    }
-
-    previousRenderedY = rows[rowIndex].y;
   }
 
   return mergeBulletContinuations(outputLines).join("\n").trim();

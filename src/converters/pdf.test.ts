@@ -106,6 +106,19 @@ describe("renderPdfPageText", () => {
     expect(renderPdfPageText(items, profile)).toContain("# Acme® Coverage");
   });
 
+  it("folds superscript symbols when the glyph sits slightly above the text baseline", async () => {
+    const { renderPdfPageText } = await importPdfModule();
+    const profile = { bodyFontSize: 12, bodyFontName: "f2", boldFontNames: new Set<string>() };
+    const items = [
+      textItem("Acme", [20, 0, 0, 20, 0, 700], "f1", false, 45),
+      textItem("®", [12, 0, 0, 12, 46, 705], "f1", false, 10),
+      textItem("Coverage", [20, 0, 0, 20, 60, 700], "f1", true, 90),
+      textItem("Body text.", [12, 0, 0, 12, 0, 660], "f2"),
+    ];
+
+    expect(renderPdfPageText(items, profile)).toContain("# Acme® Coverage");
+  });
+
   it("does not fold small non-symbol text into the previous item", async () => {
     const { renderPdfPageText } = await importPdfModule();
     const profile = { bodyFontSize: 12, bodyFontName: "f2", boldFontNames: new Set<string>() };
@@ -149,7 +162,7 @@ describe("renderPdfPageText", () => {
     expect(renderPdfPageText(items, profile)).not.toContain("First line Second line");
   });
 
-  it("strips TOC dot leaders without removing normal punctuation", async () => {
+  it("strips TOC dot leaders while preserving page numbers and normal punctuation", async () => {
     const { renderPdfPageText } = await importPdfModule();
     const profile = { bodyFontSize: 12, bodyFontName: "f2", boldFontNames: new Set<string>() };
     const items = [
@@ -158,9 +171,38 @@ describe("renderPdfPageText", () => {
     ];
     const result = renderPdfPageText(items, profile);
 
-    expect(result).toContain("Coverage Rationale");
+    expect(result).toContain("Coverage Rationale 12");
     expect(result).not.toContain("....");
     expect(result).toContain("Examples include etc.");
+  });
+
+  it("keeps TOC entries together before rendering a right-side policy sidebar", async () => {
+    const { renderPdfPageText } = await importPdfModule();
+    const profile = {
+      bodyFontSize: 10,
+      bodyFontName: "f2",
+      boldFontNames: new Set<string>(["fBold"])
+    };
+    const items = [
+      textItem("Table of Contents", [10, 0, 0, 10, 36, 700], "fBold", false, 96),
+      textItem("Page", [10, 0, 0, 10, 280, 700], "fBold", true, 24),
+      textItem("Related Commercial Policies", [10, 0, 0, 10, 340, 698], "fBold", true, 140),
+      textItem("Coverage Rationale ............................................................ 1", [10, 0, 0, 10, 36, 680], "f2"),
+      textItem("•", [10, 0, 0, 10, 340, 678], "f2", false, 6),
+      textItem("Maximum Dosage and Frequency", [10, 0, 0, 10, 356, 678], "f2", true, 148),
+      textItem("Applicable Codes ................................................................ 7", [10, 0, 0, 10, 36, 660], "f2"),
+      textItem("Coverage Rationale", [14, 0, 0, 14, 36, 620], "fBold"),
+    ];
+
+    const result = renderPdfPageText(items, profile);
+
+    expect(result.indexOf("Coverage Rationale")).toBeLessThan(result.indexOf("Applicable Codes"));
+    expect(result.indexOf("Applicable Codes")).toBeLessThan(
+      result.indexOf("Related Commercial Policies")
+    );
+    expect(result).toContain("**Table of Contents**");
+    expect(result).toContain("**Related Commercial Policies**");
+    expect(result).toContain("- Maximum Dosage and Frequency");
   });
 
   it("detects aligned rows as a markdown table before prose rendering", async () => {
