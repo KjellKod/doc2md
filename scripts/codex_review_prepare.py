@@ -25,6 +25,11 @@ EXCLUDED_EXTENSIONS = (
     ".woff2",
     ".ttf",
 )
+UNTRUSTED_DELIMITER_RE = re.compile(r"</?\s*untrusted_content\s*>", re.IGNORECASE)
+DIFF_HEADER_RE = re.compile(r"^diff --git a/(.+?) b/(.+)$")
+HUNK_HEADER_RE = re.compile(
+    r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@"
+)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -192,6 +197,53 @@ def truncate_diff(diff_text: str, max_diff_bytes: int) -> tuple[str, dict[str, o
     )
 
 
+def sanitize_untrusted(text: str) -> str:
+    return UNTRUSTED_DELIMITER_RE.sub("", text)
+
+
+def parse_diff_ranges(diff_text: str) -> dict[str, dict[str, list[tuple[int, int]]]]:
+    ranges: dict[str, dict[str, list[tuple[int, int]]]] = {}
+    current_path = ""
+
+    for line in diff_text.splitlines():
+        diff_match = DIFF_HEADER_RE.match(line)
+        if diff_match:
+            current_path = diff_match.group(2)
+            continue
+
+        if line.startswith("rename to "):
+            current_path = line[len("rename to ") :].strip()
+            continue
+
+        if line.startswith("+++ "):
+            if line == "+++ /dev/null":
+                current_path = ""
+            elif line.startswith("+++ b/"):
+                current_path = line[6:]
+            continue
+
+        hunk_match = HUNK_HEADER_RE.match(line)
+        if not hunk_match or not current_path:
+            continue
+
+        old_start = int(hunk_match.group(1))
+        old_count = int(hunk_match.group(2) or "1")
+        new_start = int(hunk_match.group(3))
+        new_count = int(hunk_match.group(4) or "1")
+
+        side_ranges = ranges.setdefault(current_path, {})
+        if old_count > 0:
+            side_ranges.setdefault("LEFT", []).append(
+                (old_start, old_start + old_count - 1)
+            )
+        if new_count > 0:
+            side_ranges.setdefault("RIGHT", []).append(
+                (new_start, new_start + new_count - 1)
+            )
+
+    return ranges
+
+
 def build_prompt(
     template_text: str,
     pr_description: str,
@@ -199,10 +251,14 @@ def build_prompt(
     pr_head_files: str,
     diff_text: str,
 ) -> str:
-    prompt = template_text.replace("{PLACEHOLDER_PR_DESCRIPTION}", pr_description)
-    prompt = prompt.replace("{PLACEHOLDER_EXISTING_COMMENTS}", existing_comments_json)
-    prompt = prompt.replace("{PLACEHOLDER_PR_HEAD_FILES}", pr_head_files)
-    prompt = prompt.replace("{PLACEHOLDER_DIFF}", diff_text)
+    prompt = template_text.replace(
+        "{PLACEHOLDER_PR_DESCRIPTION}", sanitize_untrusted(pr_description)
+    )
+    prompt = prompt.replace(
+        "{PLACEHOLDER_EXISTING_COMMENTS}", sanitize_untrusted(existing_comments_json)
+    )
+    prompt = prompt.replace("{PLACEHOLDER_PR_HEAD_FILES}", sanitize_untrusted(pr_head_files))
+    prompt = prompt.replace("{PLACEHOLDER_DIFF}", sanitize_untrusted(diff_text))
     return prompt
 
 
@@ -241,6 +297,7 @@ def main(argv: list[str] | None = None) -> int:
         if isinstance(file_info, dict) and isinstance(file_info.get("path"), str)
     ]
     changed_files = filter_binary_files(changed_files_raw)
+    excluded_files_count = len(changed_files_raw) - len(changed_files)
 
     pr_description = (
         f"{pr_details.get('title', '')}\n\n{pr_details.get('body') or ''}".strip() + "\n"
@@ -255,6 +312,12 @@ def main(argv: list[str] | None = None) -> int:
     (output_dir / "pr_description.txt").write_text(pr_description, encoding="utf-8")
     (output_dir / "existing_comments.json").write_text(
         json.dumps(existing_comments, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+    diff_ranges_path = output_dir / "diff_ranges.json"
+    diff_ranges_path.write_text(
+        json.dumps(parse_diff_ranges(diff_text), indent=2) + "\n",
         encoding="utf-8",
     )
 
@@ -297,6 +360,7 @@ def main(argv: list[str] | None = None) -> int:
         "max_diff_bytes": args.max_diff_bytes,
         "reviewable_files_count": len(changed_files),
         "changed_files_count": len(changed_files_raw),
+        "excluded_files_count": excluded_files_count,
         "prompt_bytes": len((prompt_text + "\n").encode("utf-8")),
         "prompt_lines": (prompt_text + "\n").count("\n"),
         "review_exit_code": None,
