@@ -4,7 +4,7 @@ When starting, say: "Now I understand the Quest." Then proceed directly with the
 
 Follow these steps in order. After each step that modifies state, update `.quest/<id>/state.json`.
 
-**State update helper:** Use `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition <phase> ...` for state mutations instead of hand-editing `state.json`. The `--transition` flag validates the transition against `validate-quest-state.sh` before writing — if validation fails, state.json is not modified. Use `--phase` only for non-transition updates (e.g., setting status without changing phase).
+**State update helper:** Use `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition <phase> ...` for state mutations instead of hand-editing `state.json`. The `--transition` flag validates the transition against `validate-quest-state.sh` before writing — if validation fails, state.json is not modified. Use `--phase` only for non-transition updates (e.g., setting status without changing phase). Add `--expect-phase <current>` for optimistic locking — the transition is rejected immediately if the on-disk phase doesn't match the expected value, preventing TOCTOU race conditions when multiple agents update state concurrently. **Recommended for all Codex-orchestrated transitions.**
 
 ### Defaults (Opinionated)
 
@@ -36,8 +36,9 @@ If the preflight result was already cached by SKILL.md Step 2b, use the cached v
 1. `codex_available` is always true (Codex is the active runtime — no MCP needed).
 2. Run `scripts/quest_preflight.sh --orchestrator codex` and parse the JSON output.
 3. Cache the `available` field as `claude_bridge_available` (boolean) for the rest of the session.
-4. If `claude_bridge_available` is false: Claude-designated roles block unless that step defines an explicit Codex fallback (see Claude Bridge Probe section below).
-4. If `codex_available` is true:
+4. If the JSON includes `runtime_requirement: "host_context"`, Claude bridge probing and Claude-designated role execution must run in the same host-visible context that can see Claude CLI auth. A sandbox-local probe result is not authoritative by itself.
+5. If `claude_bridge_available` is false: Claude-designated roles block unless that step defines an explicit Codex fallback (see Claude Bridge Probe section below).
+6. If `codex_available` is true:
    - Proceed normally with Codex invocations per the workflow below.
 
 **This rule is global.** Individual steps do not repeat the `codex_available` check — they just say `mcp__codex__codex` and this section governs what actually happens. The orchestrator applies the substitution transparently.
@@ -51,22 +52,23 @@ Quest may need to run Claude-designated roles in environments where native Claud
 Before the first Claude-designated role invocation in a Codex-orchestrated session, the orchestrator MUST probe bridge availability:
 
 1. Verify `scripts/claude_cli_bridge.py` exists.
-2. Verify Claude CLI is reachable, authenticated, and able to write Quest artifacts by running the real probe helper:
+2. Verify Claude CLI is reachable, authenticated, and able to write Quest artifacts by running the real probe helper in a host-visible context:
    - `python3 scripts/quest_claude_probe.py --quest-dir .quest/<id> --model opus`
    - This probe is the source of truth for bridge readiness. It writes a tiny artifact plus `probe_handoff.json` under `.quest/<id>/logs/bridge_probe/`.
-3. Cache the result as `claude_bridge_available` (boolean) for the rest of the session.
-4. If `claude_bridge_available` is false:
+3. `scripts/quest_preflight.sh --orchestrator codex` retains a successful host probe in `.quest/cache/claude_bridge_codex.json` by default. A fresh sandboxed session may reuse that cache while the TTL is valid, but Claude roles still need the same host-visible execution path.
+4. Cache the result as `claude_bridge_available` (boolean) for the rest of the session.
+5. If `claude_bridge_available` is false:
    - Log: `"Claude bridge unavailable in this Codex-led session — Claude-designated slots requiring Claude runtime will block unless that step defines an explicit Codex path."`
    - Do not keep retrying the probe for later Claude roles.
-5. If `claude_bridge_available` is true:
+6. If `claude_bridge_available` is true:
    - Claude-designated roles may be invoked through the bridge with the same artifact paths and handoff contract used by native Claude execution.
-   - **Preferred Codex-led execution path:** use `python3 scripts/quest_claude_runner.py` instead of calling `scripts/claude_cli_bridge.py` directly. The helper sets `--permission-mode bypassPermissions` by default, adds explicit repo/quest filesystem access via `--add-dir`, polls `handoff.json`, and appends the `context_health.log` line for `runtime=claude`.
+   - **Preferred Codex-led execution path:** use `python3 scripts/quest_claude_runner.py` instead of calling `scripts/claude_cli_bridge.py` directly, and run that helper in the same host-visible context used for the successful probe/cache refresh. The helper sets `--permission-mode bypassPermissions` by default, adds explicit repo/quest filesystem access via `--add-dir`, polls `handoff.json`, and appends the `context_health.log` line for `runtime=claude`.
 
 **Global runtime-selection rule:** the workflow chooses execution path by selected model/runtime, not by role label alone.
 
 - If the selected role model/runtime is Codex, use `mcp__codex__codex` (or Codex agent tools).
 - If the selected role model/runtime is Claude and native `Task(...)` is available in the orchestrator, use `Task(...)`.
-- If the selected role model/runtime is Claude and the orchestrator is Codex, use `python3 scripts/quest_claude_runner.py` when `claude_bridge_available` is true. `scripts/claude_cli_bridge.py` stays the transport layer behind that runner.
+- If the selected role model/runtime is Claude and the orchestrator is Codex, use `python3 scripts/quest_claude_runner.py` in the same host-visible context used for bridge probing/cache refresh when `claude_bridge_available` is true. `scripts/claude_cli_bridge.py` stays the transport layer behind that runner.
 - If the selected role model/runtime is Claude, native `Task(...)` is unavailable, and the bridge probe failed, block that step unless the workflow section for that role defines an explicit Codex execution path.
 
 This rule is global. Individual steps below name the target runtime and artifact contract; the orchestrator applies native Claude task execution, bridge execution, or Codex execution based on the selected model/runtime and session capabilities.
@@ -296,7 +298,16 @@ This workflow expects to be invoked with a quest brief already prepared.
 
 1. Verify `.quest/<id>/quest_brief.md` exists
 2. If it does not exist, STOP and report error: "Quest brief not found. The routing layer should have created it before invoking workflow."
-3. If it exists, proceed to Step 2
+3. Read `.quest/<id>/state.json` and determine the source workspace root for code-bearing phases:
+   - If `worktree_path` exists and the directory is present, set `source_workspace_root = worktree_path`
+   - Otherwise set `source_workspace_root = <repo root>`
+   - All source edits plus `git status`, `git diff`, and `git log` commands in Steps 4-7 MUST run from `source_workspace_root`
+   - Quest artifacts always remain under `.quest/<id>/` in the original repo root; when `source_workspace_root != <repo root>`, prefer absolute quest artifact paths when invoking builder, reviewers, and fixer
+4. Verify branch context:
+   - If `branch` exists in state.json and `branch_mode == "branch"`, compare it to `git branch --show-current` in `source_workspace_root`
+   - If `branch_mode == "worktree"`, verify the directory at `worktree_path` still exists
+   - If verification fails, warn the user but do not block automatically; they may have switched context intentionally
+5. If the checks pass, proceed to Step 2
 
 ### Step 2: Route Intent
 
@@ -518,7 +529,7 @@ gates.max_plan_iterations (default: 4)
    - Fallback: if handoff.json missing or unparsable after that precedence, parse text handoff from response
 
 6. **Check verdict:**
-   - If `NEXT: builder` → Plan approved! Transition state atomically: `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition plan_reviewed --status complete --last-verdict approve` — if this fails, report the validation error to the user and STOP. Do NOT modify state.json manually.
+   - If `NEXT: builder` → Plan approved! Transition state atomically: `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition plan_reviewed --status complete --last-verdict approve --expect-phase plan` — if this fails, report the validation error to the user and STOP. Do NOT modify state.json manually.
 
      **Conversation hook (non-blocking):** If the second model is available (see protocol Availability rules above), invoke the Cross-Agent Conversation & Journaling Protocol. Topic: the plan that was just approved — what's strong, what's risky, what they'd watch during implementation. Plans that took 3+ iterations to approve are especially worth discussing. If the second model is unavailable or invocation fails, log to `.quest/<id>/logs/conversation.log` and continue. Solo mode: write a solo reflection instead.
 
@@ -534,7 +545,7 @@ After plan approval, present the plan interactively before proceeding to build.
 
 **THIS IS A MANDATORY STOP POINT.** You MUST present the plan to the human user, ask for their approval, and STOP execution until the human responds. Do not assume approval. Do not skip this step. Do not auto-approve. Do not proceed to Step 4 until the human has explicitly approved.
 
-**On entry:** Transition state atomically: `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition presenting --status in_progress` — if this fails, report the validation error to the user and STOP. Do NOT modify state.json manually.
+**On entry:** Transition state atomically: `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition presenting --status in_progress --expect-phase plan_reviewed` — if this fails, report the validation error to the user and STOP. Do NOT modify state.json manually.
 
 **1. Show Brief Summary:**
    Extract a 1-3 sentence summary using this precedence:
@@ -550,7 +561,7 @@ After plan approval, present the plan interactively before proceeding to build.
    - Ask: "Would you like to see the detailed phase-by-phase walkthrough? (yes/no)"
 
 **2. Handle Response:**
-   - If user declines ("no", "n", "nope", "skip", "proceed", etc.) -> Transition state atomically: `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition presentation_complete --status complete` — if this fails, report the validation error to the user and STOP. Do NOT modify state.json manually. Then proceed to Step 4 (Build Phase)
+   - If user declines ("no", "n", "nope", "skip", "proceed", etc.) -> Transition state atomically: `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition presentation_complete --status complete --expect-phase presenting` — if this fails, report the validation error to the user and STOP. Do NOT modify state.json manually. Then proceed to Step 4 (Build Phase)
    - If user accepts ("yes", "y", "yeah", "sure", "detailed", etc.) -> Continue to phase extraction
 
 **3. Extract Phases from Plan:**
@@ -599,7 +610,7 @@ After plan approval, present the plan interactively before proceeding to build.
    e. Ask: "Questions about this phase? Or changes you'd like to request? (continue/question/change)"
 
 **6. Handle Phase Response:**
-   - If "continue" (or "c", "next", "ok", "looks good", etc.) -> Move to next phase, or if last phase: Transition state atomically: `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition presentation_complete --status complete` — if this fails, report the validation error to the user and STOP. Do NOT modify state.json manually. Then proceed to Step 4
+   - If "continue" (or "c", "next", "ok", "looks good", etc.) -> Move to next phase, or if last phase: Transition state atomically: `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition presentation_complete --status complete --expect-phase presenting` — if this fails, report the validation error to the user and STOP. Do NOT modify state.json manually. Then proceed to Step 4
    - If "question" (or "q", "?", user asks a question directly) -> Answer the question using plan context, then re-ask: "Any other questions, or ready to continue? (continue/question/change)"
    - If "change" (or "modify", "revise", "update", user requests a change directly) -> Proceed to Change Handling
 
@@ -632,12 +643,13 @@ After plan approval, present the plan interactively before proceeding to build.
 
 **Build:**
 
-1. **Atomic transition:** `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition building --status in_progress --last-role builder_agent` — if this fails, report the validation error to the user and STOP. Do NOT modify state.json manually.
+1. **Atomic transition:** `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition building --status in_progress --last-role builder_agent --expect-phase presentation_complete` — if this fails, report the validation error to the user and STOP. Do NOT modify state.json manually.
 
 2. **Invoke Builder** (default Codex `mcp__codex__codex`, Claude runtime fallback):
    - Read `models.builder` from allowlist.
    - If builder model is Codex, invoke via `mcp__codex__codex` with `sandbox_permissions: "workspace-write"`.
    - If builder model is Claude, invoke through Claude runtime (native `Task(...)` when available, bridge in Codex-led sessions).
+   - Run the builder from `source_workspace_root`. If this quest uses a separate worktree, source changes happen there while `.quest/<id>/...` artifacts still point at the original repo root.
    - **Artifact preparation** (per Handoff File Polling §5): Resolve and prepare `pr_description.md`, `builder_feedback_discussion.md`, and `handoff.json` in `.quest/<id>/phase_02_implementation/`.
    - Prompt: Reference file paths only, do not embed content:
      - Approved plan: `.quest/<id>/phase_01_plan/plan.md`
@@ -667,7 +679,7 @@ After plan approval, present the plan interactively before proceeding to build.
      - Only ask the user questions if the Claude runtime fallback returns `needs_human`.
    - If the final selected attempt still has missing/unparsable handoff.json, parse text handoff from response as last-resort compatibility fallback.
 
-3. **Atomic transition:** `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition reviewing --status in_progress` — if this fails, report the validation error to the user and STOP. Do NOT modify state.json manually.
+3. **Atomic transition:** `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition reviewing --status in_progress --expect-phase building` — if this fails, report the validation error to the user and STOP. Do NOT modify state.json manually.
 
 4. Proceed to Step 5
 
@@ -682,7 +694,7 @@ After plan approval, present the plan interactively before proceeding to build.
 
 
 3. **Build a change summary for Codex:**
-   - Compute from git (the canonical source for what changed):
+   - Compute from git in `source_workspace_root` (the canonical source for what changed):
      - File list: `git diff --name-only`
      - Diff stats: `git diff --stat`
      - LOC totals: `git diff --numstat` and sum added + deleted.
@@ -721,9 +733,9 @@ After plan approval, present the plan interactively before proceeding to build.
      Changed files: <file list>
      Diff summary: <git diff --stat>
 
-     Review ONLY the files listed above. Use git diff for details.
+     Review ONLY the files listed above. Use git diff for details. Do NOT modify any source code.
 
-     Artifact files have been prepared for you. Overwrite these files directly:
+     Write ONLY to these review artifact files (do NOT modify any source code):
      - .quest/<id>/phase_03_review/review_code-reviewer-a.md
      - .quest/<id>/phase_03_review/handoff_code-reviewer-a.json
      Do not create Quest artifacts via shell redirection, heredocs, or echo.
@@ -745,10 +757,10 @@ After plan approval, present the plan interactively before proceeding to build.
      Changed files: <file list>
      Diff summary: <git diff --stat>
 
-     Review ONLY the files listed above.
+     Review ONLY the files listed above. Do NOT modify any source code.
      List up to 5 issues, highest severity first.
 
-     Artifact files have been prepared for you. Overwrite these files directly:
+     Write ONLY to these review artifact files:
      - .quest/<id>/phase_03_review/review_code-reviewer-a.md
      - .quest/<id>/phase_03_review/handoff_code-reviewer-a.json
      Do not create Quest artifacts via shell redirection, heredocs, or echo.
@@ -764,6 +776,7 @@ After plan approval, present the plan interactively before proceeding to build.
    ```
    mcp__codex__codex(
      model: <models.code-reviewer-b from allowlist>,
+     sandbox_permissions: "workspace-write",
      prompt: "You are Code Reviewer B.
      Non-interactive rule: do not ask questions and do not return STATUS: needs_human. If details are missing, make explicit assumptions and continue.
 
@@ -777,9 +790,9 @@ After plan approval, present the plan interactively before proceeding to build.
      Changed files: <file list>
      Diff summary: <git diff --stat>
 
-     Review ONLY the files listed above. Use git diff for details.
+     Review ONLY the files listed above. Use git diff for details. Do NOT modify any source code.
 
-     Artifact files have been prepared for you. Overwrite these files directly:
+     Write ONLY to these review artifact files:
      - .quest/<id>/phase_03_review/review_code-reviewer-b.md
      - .quest/<id>/phase_03_review/handoff_code-reviewer-b.json
      Do not create Quest artifacts via shell redirection, heredocs, or echo.
@@ -792,6 +805,7 @@ After plan approval, present the plan interactively before proceeding to build.
    ```
    mcp__codex__codex(
      model: <models.code-reviewer-b from allowlist>,
+     sandbox_permissions: "workspace-write",
      prompt: "You are Code Reviewer B.
      Non-interactive rule: do not ask questions and do not return STATUS: needs_human. If details are missing, make explicit assumptions and continue.
 
@@ -802,10 +816,10 @@ After plan approval, present the plan interactively before proceeding to build.
      Changed files: <file list>
      Diff summary: <git diff --stat>
 
-     Review ONLY the files listed above.
+     Review ONLY the files listed above. Do NOT modify any source code.
      List up to 5 issues, highest severity first.
 
-     Artifact files have been prepared for you. Overwrite these files directly:
+     Write ONLY to these review artifact files:
      - .quest/<id>/phase_03_review/review_code-reviewer-b.md
      - .quest/<id>/phase_03_review/handoff_code-reviewer-b.json
      Do not create Quest artifacts via shell redirection, heredocs, or echo.
@@ -839,8 +853,8 @@ After plan approval, present the plan interactively before proceeding to build.
      - If fallback was triggered after applying deterministic precedence (retry/fallback chain) → use `NEXT` and `SUMMARY` from parsed text `---HANDOFF---`
 
    **If `quest_mode == "solo"`:** Only Reviewer A's verdict matters:
-   - If `next: "fixer"` → Transition atomically: `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition fixing --status in_progress` — if fails, report to user and STOP. Issues found, proceed to Step 6
-   - If `next: null` → Transition atomically: `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition complete --status complete` — if fails, report to user and STOP. Review passed! Go to Step 7
+   - If `next: "fixer"` → Transition atomically: `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition fixing --status in_progress --expect-phase reviewing` — if fails, report to user and STOP. Issues found, proceed to Step 6
+   - If `next: null` → Transition atomically: `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition complete --status complete --expect-phase reviewing` — if fails, report to user and STOP. Review passed! Go to Step 7
    - Present summary:
      ```
      Review complete (solo):
@@ -849,8 +863,8 @@ After plan approval, present the plan interactively before proceeding to build.
      ```
 
    **If `quest_mode == "workflow"` (default):**
-   - If EITHER slot has `next: "fixer"` → Transition atomically: `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition fixing --status in_progress` — if fails, report to user and STOP. Issues found, proceed to Step 6
-   - If BOTH have `next: null` → Transition atomically: `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition complete --status complete` — if fails, report to user and STOP. Review passed! Go to Step 7
+   - If EITHER slot has `next: "fixer"` → Transition atomically: `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition fixing --status in_progress --expect-phase reviewing` — if fails, report to user and STOP. Issues found, proceed to Step 6
+   - If BOTH have `next: null` → Transition atomically: `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition complete --status complete --expect-phase reviewing` — if fails, report to user and STOP. Review passed! Go to Step 7
    - Present summaries to user:
      ```
      Review complete:
@@ -880,8 +894,9 @@ After plan approval, present the plan interactively before proceeding to build.
 
 2. **Invoke Fixer** (default Codex `mcp__codex__codex`, Claude runtime fallback):
    - Read `models.fixer` from allowlist.
-   - If fixer model is Codex, invoke via `mcp__codex__codex`.
+   - If fixer model is Codex, invoke via `mcp__codex__codex` with `sandbox_permissions: "workspace-write"`.
    - If fixer model is Claude, invoke through Claude runtime (native `Task(...)` when available, bridge in Codex-led sessions).
+   - Run the fixer from `source_workspace_root`. If this quest uses a separate worktree, source fixes happen there while `.quest/<id>/...` artifacts remain in the original repo root.
    - Prompt: Reference file paths only, do not embed content:
      - Code review A: `.quest/<id>/phase_03_review/review_code-reviewer-a.md`
      - Code review B: `.quest/<id>/phase_03_review/review_code-reviewer-b.md`
@@ -891,7 +906,7 @@ After plan approval, present the plan interactively before proceeding to build.
    - **Artifact preparation** (per Handoff File Polling §5): Resolve and prepare `review_fix_feedback_discussion.md` and `handoff_fixer.json` in `.quest/<id>/phase_03_review/`.
    - Require the prompt to include:
      - If using Codex path: `Read your instructions: .skills/quest/agents/fixer.md`
-     - Artifact files have been prepared for you. Overwrite these files directly:
+     - Write ONLY to these artifact files (source code changes go through normal edits):
        - `.quest/<id>/phase_03_review/review_fix_feedback_discussion.md`
        - `.quest/<id>/phase_03_review/handoff_fixer.json`
      - Do not create Quest artifacts via shell redirection, heredocs, or echo.
@@ -914,7 +929,7 @@ After plan approval, present the plan interactively before proceeding to build.
 
 3. **Clear stale handoff files:** Delete any existing `handoff_code-reviewer-a.json` (and `handoff_code-reviewer-b.json` if workflow mode) in `.quest/<id>/phase_03_review/` to prevent stale data from the previous review iteration being read when code reviewers are re-invoked.
 
-4. **Atomic transition:** `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition reviewing --status in_progress` — if fails, report to user and STOP. Do NOT modify state.json manually.
+4. **Atomic transition:** `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition reviewing --status in_progress --expect-phase fixing` — if fails, report to user and STOP. Do NOT modify state.json manually.
 
 5. **Re-invoke Code Reviewers** (same dispatch rules as Step 5 — solo dispatches only Reviewer A, workflow dispatches both)
 
@@ -922,13 +937,13 @@ After plan approval, present the plan interactively before proceeding to build.
    - For each reviewer slot, use the `next` value obtained in step 5 (handoff.json preferred; text fallback only after deterministic precedence)
 
    **If `quest_mode == "solo"`:** Only Reviewer A's verdict matters:
-   - If `next: null` → Fixed! Transition atomically: `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition complete --status complete` — if fails, report to user and STOP. Proceed to Step 7
+   - If `next: null` → Fixed! Transition atomically: `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition complete --status complete --expect-phase reviewing` — if fails, report to user and STOP. Proceed to Step 7
    - If `next: "fixer"`:
      - If `fix_iteration >= max_fix_iterations` (capped at `min(solo.max_fix_iterations, gates.max_fix_iterations)`): Warn user, ask to proceed or review manually
      - Otherwise: Loop back to step 1
 
    **If `quest_mode == "workflow"` (default):**
-   - If BOTH have `next: null` → Fixed! Transition atomically: `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition complete --status complete` — if fails, report to user and STOP. Proceed to Step 7
+   - If BOTH have `next: null` → Fixed! Transition atomically: `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition complete --status complete --expect-phase reviewing` — if fails, report to user and STOP. Proceed to Step 7
    - If EITHER has `next: "fixer"`:
      - If `fix_iteration >= max_fix_iterations`: Warn user, ask to proceed or review manually
      - Otherwise: Loop back to step 1
@@ -1028,11 +1043,12 @@ After plan approval, present the plan interactively before proceeding to build.
 
 5. **Show summary:**
     - Quest ID
-    - Files changed (from `git diff --name-only` and `state.json` artifact paths)
+    - Files changed (from `git diff --name-only` in `source_workspace_root` and `state.json` artifact paths)
     - Total iterations (plan + fix, from `state.json`)
     - Parallel execution stats (read from `.quest/<id>/logs/parallelism.log` if it exists — show each line)
     - Location of artifacts (will be archived to `.quest/archive/<id>/`)
     - Location of journal entry
+    - If `branch_mode == "worktree"` and `worktree_path` exists, remind the user that the implementation branch lives in that worktree and cleanup is manual via `git worktree remove <worktree_path>`
 
 6. **Context health report:**
    If `.quest/<id>/logs/context_health.log` exists, display it in full:
@@ -1191,6 +1207,9 @@ If a Claude role returns `STATUS: needs_human`:
 {
   "quest_id": "feature-x_2026-02-02__1430",
   "slug": "feature-x",
+  "branch": "quest/feature-x",
+  "branch_mode": "branch | worktree | none",
+  "worktree_path": "/absolute/path/to/worktree or null",
   "phase": "plan | plan_reviewed | presenting | presentation_complete | building | reviewing | fixing | complete",
   "status": "pending | in_progress | complete | blocked",
   "plan_iteration": 2,

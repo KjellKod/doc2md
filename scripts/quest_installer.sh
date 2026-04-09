@@ -33,6 +33,7 @@ HAS_QUEST=false
 LOCAL_VERSION=""
 UPSTREAM_SHA=""
 LATEST_RELEASE=""
+QUEST_UPDATED_FILES=()
 
 # Dry-run summary counters
 DRY_RUN_WOULD_CREATE=0
@@ -1037,6 +1038,7 @@ install_user_customized_file() {
     log_action "Create: $updated_path (upstream has changes)"
   else
     mv "$temp_file" "$updated_path"
+    QUEST_UPDATED_FILES+=("$updated_path")
     log_warn "Created: $updated_path (review and merge manually)"
   fi
   rm -f "$temp_file"
@@ -1118,6 +1120,7 @@ install_merge_carefully_file() {
       log_action "Create: $updated_path (upstream has changes)"
     else
       mv "$temp_file" "$updated_path"
+      QUEST_UPDATED_FILES+=("$updated_path")
       log_warn "Created: $updated_path (merge manually)"
     fi
     rm -f "$temp_file"
@@ -1152,6 +1155,7 @@ install_merge_carefully_file() {
         log_action "Create: $updated_path"
       else
         mv "$temp_file" "$updated_path"
+        QUEST_UPDATED_FILES+=("$updated_path")
         log_info "Created: $updated_path (merge manually)"
       fi
       ;;
@@ -1365,6 +1369,7 @@ offer_codex_setup() {
   fi
 
   # Codex CLI is available — check if MCP server is registered
+  log_info "Validating agent configurations, please stand by..."
   # Try to detect if claude CLI is available for MCP registration
   if ! command -v claude &>/dev/null; then
     log_warn "Claude CLI not found — cannot register Codex MCP server automatically"
@@ -1471,7 +1476,16 @@ print_next_steps() {
   else
     echo "Quest has been updated to version ${UPSTREAM_SHA:0:8}."
     echo ""
-    echo "Review any .quest_updated files for upstream changes to merge."
+    if [ ${#QUEST_UPDATED_FILES[@]} -gt 0 ]; then
+      echo "Files with upstream changes to review and merge:"
+      for f in "${QUEST_UPDATED_FILES[@]}"; do
+        echo "  - $f"
+      done
+      echo ""
+      echo "Compare each .quest_updated file with the original, merge what you want, then delete the .quest_updated file."
+    else
+      echo "All files are up to date. No manual merges needed."
+    fi
     echo ""
   fi
 

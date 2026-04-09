@@ -51,6 +51,7 @@ EXPECTED_PATTERNS=(
   "scripts/claude_cli_bridge.py"
   "scripts/quest_claude_probe.py"
   "scripts/quest_claude_runner.py"
+  "scripts/quest_startup_branch.py"
   "scripts/quest_checks/*.py"
   "scripts/quest_runtime/*.py"
   "scripts/validate-quest-config.sh"
@@ -58,37 +59,9 @@ EXPECTED_PATTERNS=(
 
 # Find all files matching our patterns
 FOUND_FILES=""
-PRUNE_DIRS=(
-  "./.claude/worktrees"
-  "./.worktrees"
-  "./.ws"
-)
-
-find_manifest_matches() {
-  local pattern="$1"
-  local -a find_args=(.)
-
-  if [ "${#PRUNE_DIRS[@]}" -gt 0 ]; then
-    find_args+=("(")
-    local first=1
-    local dir
-    for dir in "${PRUNE_DIRS[@]}"; do
-      if [ "$first" -eq 0 ]; then
-        find_args+=("-o")
-      fi
-      find_args+=("-path" "$dir" "-o" "-path" "$dir/*")
-      first=0
-    done
-    find_args+=(")" "-prune" "-o")
-  fi
-
-  find_args+=("-path" "./$pattern" "-type" f "-print")
-  find "${find_args[@]}" 2>/dev/null | sed 's|^\./||' || true
-}
-
 for pattern in "${EXPECTED_PATTERNS[@]}"; do
-  # Use find with -path to handle glob patterns while pruning nested worktree/scratch copies.
-  matches=$(find_manifest_matches "$pattern")
+  # Use find with -path to handle glob patterns
+  matches=$(find . -path "./$pattern" -type f 2>/dev/null | sed 's|^\./||' || true)
   if [ -n "$matches" ]; then
     FOUND_FILES="$FOUND_FILES"$'\n'"$matches"
   fi
