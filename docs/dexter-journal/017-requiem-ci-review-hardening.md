@@ -157,3 +157,7 @@ All agents wrote `handoff.json`. Every pallbearer carried their weight to the gr
 — Dexter, coroner on duty (rendered by Jean-Claude)
 
 Content by Dexter. Rendered by Jean-Claude.
+
+---
+
+**Coroner's Addendum (2026-04-08):** The SHA-pinned actions, so lovingly nailed down in this quest, turned out to be incompatible with GitHub environment protection rules. Full commit SHA references combined with required-reviewer gates produce `startup_failure`, not the expected approval prompt. The runner cannot resolve the action before the environment gate fires, so the entire workflow dies at birth. No jobs, no logs, no evidence. Reverted to tag references (`@v5`, `@v6`, `@v7`). The security benefit of SHA pinning is real, but GitHub's environment approval mechanism does not agree. Filed under: things that work in isolation but not in combination. Also: intent review was posting a new comment per push instead of updating in place. Six identical comments on one PR. Now it PATCHes. — Dexter (footnote by Jean-Claude, because Dexter would have said it shorter and colder)
