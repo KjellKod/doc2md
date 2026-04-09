@@ -52,6 +52,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Path to existing PR review comments JSON.",
     )
     parser.add_argument(
+        "--diff-ranges",
+        default="/tmp/codex-review/diff_ranges.json",
+        help="Path to the diff range JSON emitted by the prepare step.",
+    )
+    parser.add_argument(
         "--metadata",
         default="/tmp/codex-review/review-metadata.json",
         help="Path to review metadata JSON.",
@@ -178,16 +183,22 @@ def load_json_file(path: str, default: object) -> object:
 
 
 def build_diff_details(metadata: dict[str, object]) -> str:
+    parts: list[str] = []
     original = metadata.get("original_diff_bytes")
     reviewed = metadata.get("review_diff_bytes")
-    max_diff = metadata.get("max_diff_bytes")
-    if isinstance(original, int) and metadata.get("diff_truncated"):
-        visible = max_diff if isinstance(max_diff, int) else reviewed
-        if isinstance(visible, int):
-            return f"Diff: {original} bytes total; reviewed first {visible} bytes (truncated)."
-    if isinstance(reviewed, int):
-        return f"Diff: {reviewed} bytes."
-    return "Diff size unavailable."
+    if isinstance(original, int) and metadata.get("diff_truncated") and isinstance(reviewed, int):
+        parts.append(f"Diff: {original} bytes total; reviewed {reviewed} bytes after truncation.")
+    elif isinstance(reviewed, int):
+        parts.append(f"Diff: {reviewed} bytes reviewed; not truncated.")
+    else:
+        parts.append("Diff size unavailable.")
+
+    excluded_files_count = metadata.get("excluded_files_count")
+    if isinstance(excluded_files_count, int):
+        noun = "file" if excluded_files_count == 1 else "files"
+        parts.append(f"Excluded files: {excluded_files_count} {noun}.")
+
+    return " ".join(parts)
 
 
 def build_response_details(
@@ -297,6 +308,74 @@ def post_inline(
     return failed
 
 
+def _normalize_line_ranges(raw_ranges: object) -> list[tuple[int, int]]:
+    if not isinstance(raw_ranges, list):
+        return []
+    normalized_ranges: list[tuple[int, int]] = []
+    for line_range in raw_ranges:
+        if not isinstance(line_range, (list, tuple)) or len(line_range) != 2:
+            continue
+        start, end = line_range
+        if not isinstance(start, int) or not isinstance(end, int):
+            continue
+        normalized_ranges.append((start, end))
+    return normalized_ranges
+
+
+def load_diff_ranges(path: str) -> dict[str, dict[str, list[tuple[int, int]]]] | None:
+    file_path = Path(path)
+    if not file_path.exists():
+        return None
+    try:
+        raw = json.loads(file_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError, ValueError):
+        return None
+    if not isinstance(raw, dict):
+        return None
+
+    diff_ranges: dict[str, dict[str, list[tuple[int, int]]]] = {}
+    for filepath_key, raw_ranges in raw.items():
+        if not isinstance(filepath_key, str):
+            continue
+
+        if isinstance(raw_ranges, list):
+            normalized_ranges = _normalize_line_ranges(raw_ranges)
+            if normalized_ranges:
+                diff_ranges[filepath_key] = {"RIGHT": normalized_ranges}
+            continue
+
+        if not isinstance(raw_ranges, dict):
+            continue
+
+        side_ranges: dict[str, list[tuple[int, int]]] = {}
+        for side in ("LEFT", "RIGHT"):
+            normalized_ranges = _normalize_line_ranges(raw_ranges.get(side))
+            if normalized_ranges:
+                side_ranges[side] = normalized_ranges
+        if side_ranges:
+            diff_ranges[filepath_key] = side_ranges
+    return diff_ranges
+
+
+def validate_line_in_diff_range(
+    comment: dict[str, object],
+    diff_ranges: dict[str, dict[str, list[tuple[int, int]]]],
+) -> bool:
+    path = comment.get("path")
+    line = comment.get("line")
+    if not isinstance(path, str):
+        return False
+    if not isinstance(line, int):
+        return False
+    side = comment.get("side")
+    if side not in {"LEFT", "RIGHT"}:
+        side = "RIGHT"
+    ranges = diff_ranges.get(path, {}).get(side)
+    if not ranges:
+        return False
+    return any(start <= line <= end for start, end in ranges)
+
+
 def post_fallback_comment(
     failed_comments: list[dict[str, object]],
     runner=subprocess.run,
@@ -368,7 +447,13 @@ def _jaccard_similarity(a: str, b: str) -> float:
 
 def _escape_annotation(value: str) -> str:
     """Escape special characters for GitHub Actions workflow commands."""
-    return value.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A").replace(":", "%3A").replace(",", "%2C")
+    return (
+        value.replace("%", "%25")
+        .replace("\r", "%0D")
+        .replace("\n", "%0A")
+        .replace(":", "%3A")
+        .replace(",", "%2C")
+    )
 
 
 def emit_annotations(comments: list[dict[str, object]]) -> None:
@@ -381,6 +466,15 @@ def emit_annotations(comments: list[dict[str, object]]) -> None:
         escaped_path = _escape_annotation(str(comment["path"]))
         escaped_message = _escape_annotation(message)
         print(f"::{level} file={escaped_path},line={comment['line']}::{escaped_message}")
+
+
+def emit_dropped_comment_notices(comments: list[dict[str, object]]) -> None:
+    for comment in comments:
+        escaped_path = _escape_annotation(str(comment["path"]))
+        escaped_message = _escape_annotation(
+            "Dropped model comment outside changed diff lines."
+        )
+        print(f"::notice file={escaped_path},line={comment['line']}::{escaped_message}")
 
 
 def build_severity_summary(comments: list[dict[str, object]]) -> str:
@@ -488,17 +582,48 @@ def main(argv: list[str] | None = None) -> int:
             "invalid findings outcome",
         )
 
+    diff_ranges = load_diff_ranges(args.diff_ranges)
+    dropped_out_of_range: list[dict[str, object]] = []
+    ranged_comments = valid_comments
+    if diff_ranges is not None:
+        ranged_comments = []
+        for comment in valid_comments:
+            if validate_line_in_diff_range(comment, diff_ranges):
+                ranged_comments.append(comment)
+            else:
+                dropped_out_of_range.append(comment)
+
+    if dropped_out_of_range:
+        emit_dropped_comment_notices(dropped_out_of_range)
+
+    if not ranged_comments:
+        return require_summary_posted(
+            post_summary(
+                f"Review ran, but all {len(dropped_out_of_range)} finding(s) pointed outside changed diff lines and were dropped.",
+                metadata,
+                valid_json=True,
+                findings_count=len(comments),
+            ),
+            "out-of-range findings outcome",
+        )
+
     existing_comments = load_json_file(args.existing_comments, [])
     if not isinstance(existing_comments, list):
         existing_comments = []
-    fresh_comments = deduplicate(valid_comments, existing_comments)
+    fresh_comments = deduplicate(ranged_comments, existing_comments)
     if not fresh_comments:
+        message = "Review ran, but every finding matched an existing bot comment or resolved thread."
+        if dropped_out_of_range:
+            message = (
+                f"Review ran, dropped {len(dropped_out_of_range)} out-of-range finding(s), "
+                "and every remaining finding matched an existing bot comment or resolved thread."
+            )
         return require_summary_posted(
             post_summary(
-                "Review ran, but every finding matched an existing bot comment or resolved thread.",
+                message,
                 metadata,
                 valid_json=True,
-                findings_count=len(valid_comments),
+                findings_count=len(ranged_comments),
             ),
             "deduplicated findings outcome",
         )

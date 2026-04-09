@@ -42,22 +42,30 @@ If no issues found, return: `[]`
 
 ## PR Description
 <pr_description>
+<untrusted_content>
 {PLACEHOLDER_PR_DESCRIPTION}
+</untrusted_content>
 </pr_description>
 
 ## Existing review comments and replies (already posted)
 
 <existing_comments>
+<untrusted_content>
 {PLACEHOLDER_EXISTING_COMMENTS}
+</untrusted_content>
 </existing_comments>
 
 ## PR-Head File Snapshots
 
 <pr_head_files>
+<untrusted_content>
 {PLACEHOLDER_PR_HEAD_FILES}
+</untrusted_content>
 </pr_head_files>
 
 ## Diff
 <diff>
+<untrusted_content>
 {PLACEHOLDER_DIFF}
+</untrusted_content>
 </diff>

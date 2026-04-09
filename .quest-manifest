@@ -80,6 +80,7 @@ scripts/quest_runtime/__init__.py
 scripts/quest_runtime/artifacts.py
 scripts/quest_runtime/claude_runner.py
 scripts/quest_runtime/state.py
+scripts/quest_startup_branch.py
 scripts/quest_state.py
 scripts/validate-handoff-contracts.sh
 scripts/validate-manifest.sh

@@ -186,7 +186,41 @@ def build_comment_body(
     return "\n".join(lines)
 
 
+def find_existing_comment(repo: str, pr_number: int) -> int | None:
+    """Find an existing Intent Review Summary comment posted by github-actions bot."""
+    try:
+        raw = run_command(
+            [
+                "gh",
+                "api",
+                f"repos/{repo}/issues/{pr_number}/comments",
+                "--jq",
+                '.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("## Intent Review Summary"))) | .id',
+            ]
+        )
+        ids = [int(line) for line in raw.strip().splitlines() if line.strip()]
+        return ids[0] if ids else None
+    except (subprocess.CalledProcessError, ValueError):
+        return None
+
+
 def post_comment(repo: str, pr_number: int, body: str) -> bool:
+    existing_id = find_existing_comment(repo, pr_number)
+    if existing_id:
+        result = subprocess.run(
+            [
+                "gh",
+                "api",
+                "--method",
+                "PATCH",
+                f"repos/{repo}/issues/comments/{existing_id}",
+                "-f",
+                f"body={body}",
+            ],
+            text=True,
+            check=False,
+        )
+        return result.returncode == 0
     result = subprocess.run(
         [
             "gh",

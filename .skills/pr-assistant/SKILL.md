@@ -1,12 +1,12 @@
 ---
 name: pr-assistant
-description: Creates and updates GitHub pull requests ready for review. Generates PR title and description from branch commits, shows for approval before executing, then auto-shepherds. Use when the user asks to create a PR, update a PR description, or open a pull request.
+description: Creates and updates GitHub pull requests in draft mode. Generates PR title and description from branch commits, shows for approval before executing. Use when the user asks to create a PR, update a PR description, or open a pull request.
 user-invocable: true
 ---
 
 # PR Assistant
 
-Generate a pull request title and description from the current branch, then create or update the PR via `gh` CLI. After creation, automatically invoke pr-shepherd to monitor CI and handle reviews.
+Generate a pull request title and description from the current branch, then create or update the PR via `gh` CLI. PRs are always created in **draft mode**.
 
 ---
 
@@ -107,14 +107,47 @@ Rules:
 
 ### Validation section
 
-Each checkbox should be a concrete verification step — what to do and what result to expect. A reviewer reading the list should be able to pull the branch and verify without guessing.
+#### Purpose
 
-Rules:
+The goal of validation is not just correctness — it is comprehension. Write steps as a guided walkthrough so that a reviewer who follows them will have *used* the new functionality and built a mental model of the change, not just confirmed it didn't error.
+
+#### Principles
+
+- **Reduce reviewer ambiguity** — every step must be executable without context the reviewer doesn't have
+- **Resolve all commands and addresses** — every step must include the full runnable command or address. Never write "run the tests" — write the actual command. For services, resolve host, port, and base path from the project's configuration.
+- **Cheapest path first** — lead with validations needing no special tooling, credentials, or setup
+- **Separate tooling requirements** — clearly distinguish local-only checks from steps needing external access
+- **Point to real files** — reference actual paths and configs in the repo, not abstract examples
+- **Truthful and bounded** — only claim what the validation actually proves; don't overstate coverage
+
+#### Rules
+
 - Use checkboxes (`- [ ]`) for every verification step.
-- Describe the action and the expected outcome in one line (e.g. "Run X, confirm Y").
-- Only include steps that a human needs to perform. Skip anything CI already covers (linting, syntax checks, type checks).
+- Only include steps that a human needs to perform. Skip anything CI already covers.
+- Order steps from cheapest to most expensive — local commands first, external integrations last.
 - If there is a known risk or edge case worth watching, add a `Watch for:` line at the end — no checkbox, just a heads-up.
 - Keep it short. 2-5 steps is typical. If you need more, the PR may be too large.
+
+#### Structured format (required for every non-CI step)
+
+Every validation step that is not a simple automated command must use this structure:
+
+1. **Prerequisites** — what must be set up before testing (env vars, credentials, running services, test data, app state)
+2. **Action** — the specific command, API request, or UI action to perform. Include full addresses and copy-pasteable commands.
+3. **Expected result** — what the reviewer should observe, including specific fields, status codes, or visible behavior.
+4. **Negative/edge cases** — include at least one when the feature introduces meaningful failure modes or graceful-degradation behavior.
+
+Do not write vague steps like "test this with the real API" or "verify it works". Write the setup, action, and expected outcome clearly enough that someone unfamiliar with the project can execute the check without guessing.
+
+#### Example (illustrative — adapt to your project)
+
+Bad:
+`- [ ] Verify the new command works`
+
+Good:
+`- [ ] **Walkthrough — run the new export command**: Prerequisites: build the project (`make` or project-equivalent). Action: run `./quest export --format json --output /tmp/out.json`, then inspect `/tmp/out.json`. Expected: valid JSON containing entries matching the current quest state, with `status` and `slug` fields populated. Then run with a nonexistent quest dir (`--quest-dir /tmp/bogus`) — observe a clear error message and non-zero exit code.`
+
+The good example walks the reviewer through the feature so they understand what was built, not just whether it errors.
 
 ### Notes section (optional)
 
@@ -135,15 +168,14 @@ When updating an existing PR body, preserve bot-managed sections exactly:
 - Regenerate only the human-authored section.
 - Never remove, rewrite, or reorder bot-managed blocks, badges, or hidden anchors/comments.
 
-### Ready for review (default)
+### Draft mode (required)
 
-- Create PRs **without** the `--draft` flag by default. The PR should be ready for review immediately.
-- If the user explicitly asks for a draft, use `--draft`.
-- When updating an existing PR, do not change its review-readiness status.
+- Always create PRs with the `--draft` flag.
+- When updating an existing PR, do not change its draft status.
 
 ### Use gh CLI
 
-- Create: `gh pr create --title "..." --body "..."`
+- Create: `gh pr create --draft --title "..." --body "..."`
 - Update: `gh pr edit <number> --title "..." --body "..."`
 - Push first if the remote branch is behind: `git push -u origin HEAD`
 - Run `gh` directly — do not wrap in `bash -lc` or `sh -c`. Permission prefixes only match when `gh` is the top-level command.
@@ -165,15 +197,33 @@ Append this block at the end of the PR body:
      ▐▛███▜▌
     ▝▜█████▛▘
       ▘▘ ▝▝
-Quest/Co-Authored by <claude label>, <codex label> in Collaboration with <github username>
+Quest/Co-Authored by
+<model lines — one per model that participated>
+in collaboration with <human author identity>
 </pre>
 ```
 
-Replace:
+Each model line uses standard `Co-Authored-By:` format:
 
-- **claude label** with the current Claude model label when it is known from the active session or quest artifacts; otherwise use `Claude`.
-- **codex label** with the current Codex model label when it is known from the active session, CLI invocation, or quest artifacts; otherwise use `Codex`.
-- **github username** with the actual GitHub username.
+```
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+Co-Authored-By: Codex <noreply@openai.com>
+```
+
+Rules:
+
+- **Only include models that actually participated** in the work being committed. Do not list a model that was not involved.
+- If model participation is unclear, do not ask by default. Include only the current model when it clearly participated, and omit any other model you cannot verify.
+- Use the specific model label (e.g., "Claude Opus 4.6", "Codex mini") when known from the session or quest artifacts.
+- Known model email mappings:
+  - Claude → `noreply@anthropic.com`
+  - Codex / OpenAI → `noreply@openai.com`
+  - OpenCode → `noreply@opencode.ai`
+- Resolve `<human author identity>` from local git config when available:
+  - Prefer `git config user.name` + `git config user.email` and format as `Name <email>`
+  - If only a GitHub username can be inferred from git config or the remote URL, use that username
+  - If no human identity can be verified, use `the repository author`
+- The `in collaboration with` line is always present and always last.
 
 Never omit the trailer.
 
@@ -188,9 +238,3 @@ Always show the intended PR title and full body to the user and wait for explici
 ## Output
 
 Output only the final PR title and body. Do not use emojis.
-
----
-
-## After PR Creation
-
-After a PR is successfully created (not updated), invoke the **pr-shepherd** skill (`/pr-shepherd`) to push, monitor CI, respond to review comments, fix issues, and mark ready for review when clean. This is automatic — do not ask the user for permission to shepherd.

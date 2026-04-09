@@ -14,6 +14,10 @@ concurrency:
 
 jobs:
   codex-review:
+    # Trusted execution rules:
+    # - non-draft only: avoid running review on work in progress
+    # - trusted author only: restrict the write-capable flow to the maintainer account
+    # - same-repo heads only: never run this secret-bearing workflow for forked PRs
     if: >-
       github.event.pull_request.draft == false &&
       github.event.pull_request.user.login == 'KjellKod' &&
@@ -23,6 +27,7 @@ jobs:
     timeout-minutes: 10
 
     steps:
+      # Trust zone: prep. Read repository and PR state, then assemble untrusted inputs.
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
@@ -62,6 +67,9 @@ jobs:
           gh api -H "Accept: application/vnd.github.raw" \
             "repos/$REPO/contents/scripts/codex_review_post.py?ref=$HEAD_SHA" \
             > /tmp/codex-review/codex_review_post.py
+          # Prompt template sourced from base ref (already checked out), not HEAD,
+          # so a PR cannot modify the reviewer instructions it will be judged by.
+          cp .github/codex-review-prompt.md /tmp/codex-review/codex-review-prompt.md
           chmod +x /tmp/codex-review/*.py
 
       - name: Prepare review context
@@ -75,7 +83,7 @@ jobs:
             --pr-number "${{ github.event.pull_request.number }}" \
             --repo "$REPO" \
             --output-dir /tmp/codex-review \
-            --prompt-template .github/codex-review-prompt.md \
+            --prompt-template /tmp/codex-review/codex-review-prompt.md \
             --build-pr-head-files-script /tmp/codex-review/build_pr_head_files.py \
             --github-output "$GITHUB_OUTPUT"
 
@@ -93,6 +101,7 @@ jobs:
           printenv OPENAI_API_KEY | codex login --with-api-key
           codex login status
 
+      # Trust zone: model. Run Codex with sanitized inputs and no GitHub token in env.
       - name: AI Code Review
         if: steps.check-key.outputs.skip != 'true'
         id: review
@@ -145,10 +154,12 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
           path: |
+            /tmp/codex-review/diff_ranges.json
             /tmp/codex-review/review-output.json
             /tmp/codex-review/review-metadata.json
             /tmp/codex-review/review-prompt.md
 
+      # Trust zone: publish. Validate and post findings with GitHub token only.
       - name: Post review results
         if: always()
         env:
@@ -161,6 +172,7 @@ jobs:
           if [ -s /tmp/codex-review/codex_review_post.py ]; then
             python3 /tmp/codex-review/codex_review_post.py \
               --review-output /tmp/codex-review/review-output.json \
+              --diff-ranges /tmp/codex-review/diff_ranges.json \
               --existing-comments /tmp/codex-review/existing_comments.json \
               --metadata /tmp/codex-review/review-metadata.json \
               --skip-reason "$REVIEW_SKIP_REASON"

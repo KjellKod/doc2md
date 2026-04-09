@@ -2,6 +2,7 @@
 output/
 */output
 !examples/output/
+.worktrees/
 examples/output/*
 !examples/output/doc2md-baseline/
 .env
