@@ -67,9 +67,9 @@ jobs:
           gh api -H "Accept: application/vnd.github.raw" \
             "repos/$REPO/contents/scripts/codex_review_post.py?ref=$HEAD_SHA" \
             > /tmp/codex-review/codex_review_post.py
-          gh api -H "Accept: application/vnd.github.raw" \
-            "repos/$REPO/contents/.github/codex-review-prompt.md?ref=$HEAD_SHA" \
-            > /tmp/codex-review/codex-review-prompt.md
+          # Prompt template sourced from base ref (already checked out), not HEAD,
+          # so a PR cannot modify the reviewer instructions it will be judged by.
+          cp .github/codex-review-prompt.md /tmp/codex-review/codex-review-prompt.md
           chmod +x /tmp/codex-review/*.py
 
       - name: Prepare review context
