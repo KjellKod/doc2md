@@ -87,8 +87,8 @@ Co-Authored-By: Codex <noreply@openai.com>
 
 Rules:
 
-- **Only include models that actually participated** in the work being committed. Do not list a model that was not involved.
-- If model participation is unclear, do not ask by default. Include only the current model when it clearly participated, and omit any other model you cannot verify.
+- **Include every model that participated** in the work being committed: planning, building, reviewing (including CI review bots that posted findings or approvals on the PR), and fixing. Check quest artifacts, PR comments, and CI review summaries to identify all participants.
+- When generating a squash commit for a PR, check `gh pr view --comments` for automated review comments (e.g., Codex CI review) to ensure no participant is missed.
 - Use the specific model label (e.g., "Claude Opus 4.6", "Codex mini") when known from the session or quest artifacts.
 - Known model email mappings:
   - Claude → `noreply@anthropic.com`
