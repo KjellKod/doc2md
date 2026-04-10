@@ -417,7 +417,7 @@ export function detectWatermarkItems(pages: PdfPageText[]): WatermarkDetection {
     }
   }
 
-  const threshold = Math.max(1, Math.ceil(pages.length * WATERMARK_PAGE_RATIO));
+  const threshold = Math.max(2, Math.ceil(pages.length * WATERMARK_PAGE_RATIO));
   const fingerprints = new Set<string>();
   let watermarkText: string | null = null;
 

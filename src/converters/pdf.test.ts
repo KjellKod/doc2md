@@ -1021,6 +1021,26 @@ describe("detectWatermarkItems", () => {
     expect(result.watermarkText).toBe("HIGH RISK ALERT");
   });
 
+  it("does not strip rotated text on a single-page PDF", async () => {
+    const { detectWatermarkItems } = await importPdfModule();
+    const angle45 = Math.PI / 4;
+    const cos45 = Math.cos(angle45) * 72;
+    const sin45 = Math.sin(angle45) * 72;
+
+    const watermarkItem =
+      textItem("CONFIDENTIAL", [cos45, sin45, -sin45, cos45, 100, 400], "wm-font", true);
+    const bodyItem = textItem("Some content", [12, 0, 0, 12, 50, 700], "f2", true);
+
+    const pages = [
+      { items: [watermarkItem, bodyItem], height: 800 },
+    ];
+
+    const result = detectWatermarkItems(pages);
+
+    expect(result.fingerprints.size).toBe(0);
+    expect(result.watermarkText).toBeNull();
+  });
+
   it("ignores rotated text appearing on too few pages", async () => {
     const { detectWatermarkItems } = await importPdfModule();
     const angle45 = Math.PI / 4;
