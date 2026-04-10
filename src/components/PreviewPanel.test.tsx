@@ -5,6 +5,40 @@ import type { ConversionQuality } from "../converters/types";
 import type { FileEntry } from "../types";
 import PreviewPanel from "./PreviewPanel";
 
+class MockClipboardItem {
+  readonly types: string[];
+  private readonly items: Record<string, Blob>;
+
+  constructor(items: Record<string, Blob>) {
+    this.items = items;
+    this.types = Object.keys(items);
+  }
+
+  async getType(type: string) {
+    const item = this.items[type];
+
+    if (!item) {
+      throw new Error(`Unknown clipboard type: ${type}`);
+    }
+
+    return item;
+  }
+}
+
+class MockBlob {
+  readonly type: string;
+  private readonly content: string;
+
+  constructor(parts: unknown[], options?: { type?: string }) {
+    this.content = parts.map((part) => String(part)).join("");
+    this.type = options?.type ?? "";
+  }
+
+  async text() {
+    return this.content;
+  }
+}
+
 const REVIEW_QUALITY: ConversionQuality = {
   level: "review",
   summary:
@@ -29,15 +63,34 @@ afterEach(() => {
   cleanup();
 });
 
+const originalClipboardItem = globalThis.ClipboardItem;
+const originalBlob = globalThis.Blob;
 let clipboardWriteText: ReturnType<typeof vi.fn>;
+let clipboardWrite: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
+  clipboardWrite = vi.fn().mockResolvedValue(undefined);
   clipboardWriteText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(globalThis, "ClipboardItem", {
+    configurable: true,
+    value: MockClipboardItem,
+  });
   Object.defineProperty(navigator, "clipboard", {
     configurable: true,
-    value: { writeText: clipboardWriteText },
+    value: { write: clipboardWrite, writeText: clipboardWriteText },
   });
   vi.useRealTimers();
+});
+
+afterEach(() => {
+  Object.defineProperty(globalThis, "ClipboardItem", {
+    configurable: true,
+    value: originalClipboardItem,
+  });
+  Object.defineProperty(globalThis, "Blob", {
+    configurable: true,
+    value: originalBlob,
+  });
 });
 
 describe("PreviewPanel", () => {
@@ -256,14 +309,71 @@ describe("PreviewPanel", () => {
     );
   });
 
-  it("copies the markdown document in preview mode", async () => {
-    render(<PreviewPanel entry={createEntry()} />);
+  it("copies the rendered preview as html and plain text in preview mode", async () => {
+    const { container } = render(<PreviewPanel entry={createEntry()} />);
+    const previewSurface = container.querySelector(".markdown-surface");
 
-    fireEvent.click(screen.getByRole("button", { name: "Copy markdown document" }));
+    expect(previewSurface).not.toBeNull();
+    Object.defineProperty(previewSurface!, "innerText", {
+      configurable: true,
+      value: "Hello World",
+    });
+    Object.defineProperty(globalThis, "Blob", {
+      configurable: true,
+      value: MockBlob,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy formatted text" }));
 
     await waitFor(() => {
-      expect(clipboardWriteText).toHaveBeenCalledWith("# Hello World");
+      expect(clipboardWrite).toHaveBeenCalledTimes(1);
     });
+
+    const [items] = clipboardWrite.mock.calls[0] as [MockClipboardItem[]];
+    const clipboardItem = items[0];
+    const htmlBlob = await clipboardItem.getType("text/html");
+    const plainBlob = await clipboardItem.getType("text/plain");
+
+    expect(clipboardItem.types).toEqual(["text/html", "text/plain"]);
+    await expect(htmlBlob.text()).resolves.toContain("<h1>Hello World</h1>");
+    await expect(plainBlob.text()).resolves.toBe("Hello World");
+    expect(screen.getByText("Copied")).toBeInTheDocument();
+  });
+
+  it("falls back to copying rendered plain text when rich clipboard support is unavailable", async () => {
+    const execCommand = vi.fn(() => true);
+    const appendChildSpy = vi.spyOn(document.body, "appendChild");
+
+    Object.defineProperty(document, "execCommand", {
+      configurable: true,
+      value: execCommand,
+    });
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: clipboardWriteText },
+    });
+
+    const { container } = render(<PreviewPanel entry={createEntry()} />);
+    const previewSurface = container.querySelector(".markdown-surface");
+
+    expect(previewSurface).not.toBeNull();
+    Object.defineProperty(previewSurface!, "innerText", {
+      configurable: true,
+      value: "Hello World",
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy formatted text" }));
+
+    await waitFor(() => {
+      expect(execCommand).toHaveBeenCalledWith("copy");
+    });
+
+    const appendedTextarea = appendChildSpy.mock.calls.find(
+      ([element]) => element instanceof HTMLTextAreaElement,
+    )?.[0] as HTMLTextAreaElement | undefined;
+
+    expect(appendedTextarea?.value).toBe("Hello World");
+    expect(clipboardWriteText).not.toHaveBeenCalled();
     expect(screen.getByText("Copied")).toBeInTheDocument();
   });
 
@@ -294,6 +404,24 @@ describe("PreviewPanel", () => {
     });
 
     expect(screen.getByText("Copy")).toBeInTheDocument();
+  });
+
+  it("uses mode-specific copy button labels", () => {
+    render(<PreviewPanel entry={createEntry()} />);
+
+    expect(
+      screen.getByRole("button", { name: "Copy formatted text" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "LinkedIn" }));
+    expect(
+      screen.getByRole("button", { name: "Copy LinkedIn text" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    expect(
+      screen.getByRole("button", { name: "Copy markdown document" }),
+    ).toBeInTheDocument();
   });
 
   it("refuses the linkedin view for markdown tables", () => {

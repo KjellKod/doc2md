@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { FileEntry } from "../types";
@@ -115,6 +115,7 @@ export default function PreviewPanel({
 }: PreviewPanelProps) {
   const [mode, setMode] = useState<"edit" | "preview" | "linkedin">("preview");
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
+  const previewRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setMode(entry?.isScratch ? "edit" : "preview");
@@ -216,8 +217,44 @@ export default function PreviewPanel({
       : effectiveMarkdown;
   const showCopyButton = showToggle && typeof copyText === "string";
 
+  async function copyRenderedContent() {
+    const previewElement = previewRef.current;
+
+    if (!previewElement) {
+      return false;
+    }
+
+    const html = previewElement.innerHTML;
+    const plain = previewElement.innerText;
+
+    try {
+      if (!navigator.clipboard?.write || typeof ClipboardItem === "undefined") {
+        throw new Error("Rich clipboard is unavailable");
+      }
+
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          "text/html": new Blob([html], { type: "text/html" }),
+          "text/plain": new Blob([plain], { type: "text/plain" }),
+        }),
+      ]);
+    } catch {
+      fallbackCopyText(plain);
+    }
+
+    return true;
+  }
+
   async function handleCopy() {
     if (!copyText) {
+      return;
+    }
+
+    if (mode === "preview") {
+      if (await copyRenderedContent()) {
+        setCopyState("copied");
+      }
+
       return;
     }
 
@@ -271,7 +308,7 @@ export default function PreviewPanel({
         </pre>
       )
     ) : (
-      <div className="markdown-surface">
+      <div className="markdown-surface" ref={previewRef}>
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{previewMarkdown}</ReactMarkdown>
       </div>
     );
@@ -331,9 +368,11 @@ export default function PreviewPanel({
                 className="preview-copy-button"
                 onClick={handleCopy}
                 aria-label={
-                  mode === "linkedin"
-                    ? "Copy LinkedIn text"
-                    : "Copy markdown document"
+                  mode === "preview"
+                    ? "Copy formatted text"
+                    : mode === "linkedin"
+                      ? "Copy LinkedIn text"
+                      : "Copy markdown document"
                 }
               >
                 <svg
