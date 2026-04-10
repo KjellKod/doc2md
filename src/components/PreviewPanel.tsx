@@ -239,7 +239,15 @@ export default function PreviewPanel({
         }),
       ]);
     } catch {
-      fallbackCopyText(plain);
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(plain);
+        } else {
+          fallbackCopyText(plain);
+        }
+      } catch {
+        fallbackCopyText(plain);
+      }
     }
 
     return true;

@@ -340,7 +340,31 @@ describe("PreviewPanel", () => {
     expect(screen.getByText("Copied")).toBeInTheDocument();
   });
 
-  it("falls back to copying rendered plain text when rich clipboard support is unavailable", async () => {
+  it("falls back to writeText with rendered plain text when rich clipboard is unavailable", async () => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: clipboardWriteText },
+    });
+
+    const { container } = render(<PreviewPanel entry={createEntry()} />);
+    const previewSurface = container.querySelector(".markdown-surface");
+
+    expect(previewSurface).not.toBeNull();
+    Object.defineProperty(previewSurface!, "innerText", {
+      configurable: true,
+      value: "Hello World",
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy formatted text" }));
+
+    await waitFor(() => {
+      expect(clipboardWriteText).toHaveBeenCalledWith("Hello World");
+    });
+
+    expect(screen.getByText("Copied")).toBeInTheDocument();
+  });
+
+  it("falls back to execCommand when both clipboard.write and writeText are unavailable", async () => {
     const execCommand = vi.fn(() => true);
     const appendChildSpy = vi.spyOn(document.body, "appendChild");
 
@@ -350,7 +374,7 @@ describe("PreviewPanel", () => {
     });
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
-      value: { writeText: clipboardWriteText },
+      value: {},
     });
 
     const { container } = render(<PreviewPanel entry={createEntry()} />);
@@ -373,7 +397,6 @@ describe("PreviewPanel", () => {
     )?.[0] as HTMLTextAreaElement | undefined;
 
     expect(appendedTextarea?.value).toBe("Hello World");
-    expect(clipboardWriteText).not.toHaveBeenCalled();
     expect(screen.getByText("Copied")).toBeInTheDocument();
   });
 
