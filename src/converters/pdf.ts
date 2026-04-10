@@ -1,5 +1,6 @@
 import {
   GlobalWorkerOptions,
+  OPS,
   getDocument
 } from "pdfjs-dist/legacy/build/pdf.mjs";
 import type {
@@ -26,6 +27,8 @@ const SHORT_LINE_CHARACTER_THRESHOLD = 24;
 const KERNING_GAP_FACTOR = 0.3;
 const SUPERSCRIPT_SYMBOL_PATTERN = /^[®™©°¹²³]+$/;
 const HEADER_FOOTER_BAND_RATIO = 0.05;
+const WATERMARK_ANGLE_THRESHOLD_DEGREES = 5;
+const WATERMARK_PAGE_RATIO = 0.5;
 const TABLE_COLUMN_TOLERANCE = 10;
 const TABLE_HEADER_TOLERANCE = 20;
 const TABLE_MIN_ROWS = 3;
@@ -80,6 +83,10 @@ function normalizeTextValue(value: string) {
 
 function getFontSize(transform: [number, number, number, number, number, number]) {
   return Math.round(Math.hypot(transform[0], transform[1]));
+}
+
+function getItemAngle(item: TextItem) {
+  return Math.abs(Math.atan2(item.transform[1], item.transform[0]) * (180 / Math.PI));
 }
 
 function getItemX(item: TextItem) {
@@ -378,6 +385,68 @@ function stripHeaderFooterForPage(page: PdfPageText, repeatedFingerprints: Set<s
   }
 
   return stripHeaderFooter(page.items, repeatedFingerprints, page.height);
+}
+
+interface WatermarkDetection {
+  fingerprints: Set<string>;
+  watermarkText: string | null;
+}
+
+export function detectWatermarkItems(pages: PdfPageText[]): WatermarkDetection {
+  const candidates = new Map<string, Set<number>>();
+  const displayTexts = new Map<string, string>();
+
+  for (const [pageIndex, page] of pages.entries()) {
+    for (const item of page.items) {
+      const angle = getItemAngle(item);
+      if (angle <= WATERMARK_ANGLE_THRESHOLD_DEGREES) {
+        continue;
+      }
+
+      const text = normalizeTextValue(item.str);
+      if (!text) {
+        continue;
+      }
+
+      const key = text.toLowerCase();
+      if (!candidates.has(key)) {
+        candidates.set(key, new Set());
+        displayTexts.set(key, text);
+      }
+      candidates.get(key)!.add(pageIndex);
+    }
+  }
+
+  const threshold = Math.max(1, Math.ceil(pages.length * WATERMARK_PAGE_RATIO));
+  const fingerprints = new Set<string>();
+  let watermarkText: string | null = null;
+
+  for (const [key, pageIndexes] of candidates) {
+    if (pageIndexes.size >= threshold) {
+      fingerprints.add(key);
+      if (!watermarkText) {
+        watermarkText = displayTexts.get(key) ?? key;
+      }
+    }
+  }
+
+  return { fingerprints, watermarkText };
+}
+
+export function stripWatermarkItems(items: TextItem[], watermarkFingerprints: Set<string>): TextItem[] {
+  if (watermarkFingerprints.size === 0) {
+    return items;
+  }
+
+  return items.filter((item) => {
+    const angle = getItemAngle(item);
+    if (angle <= WATERMARK_ANGLE_THRESHOLD_DEGREES) {
+      return true;
+    }
+
+    const text = normalizeTextValue(item.str).toLowerCase();
+    return !watermarkFingerprints.has(text);
+  });
 }
 
 interface FontProfile {
@@ -1089,6 +1158,7 @@ export interface PdfQualitySignals {
   lowSelectableText: boolean;
   sparseText: boolean;
   fragmentedLines: boolean;
+  imageCount?: number;
 }
 
 export interface PdfQualityAssessment {
@@ -1098,7 +1168,11 @@ export interface PdfQualityAssessment {
   signals: PdfQualitySignals;
 }
 
-export function classifyPdfQuality(pageTexts: string[]): PdfQualityAssessment {
+function imageCountNote(count: number) {
+  return ` ${count} image(s) detected that could not be converted to markdown.`;
+}
+
+export function classifyPdfQuality(pageTexts: string[], imageCount = 0): PdfQualityAssessment {
   const nonEmptyPages = pageTexts.filter((pageText) => pageText.trim().length > 0);
   const totalCharacters = pageTexts.reduce(
     (sum, pageText) => sum + countMeaningfulCharacters(pageText),
@@ -1124,35 +1198,43 @@ export function classifyPdfQuality(pageTexts: string[]): PdfQualityAssessment {
   const fragmentedLines =
     averageCharactersPerLine < SHORT_LINE_CHARACTER_THRESHOLD || shortLineRatio > 0.75;
 
+  const signals: PdfQualitySignals = {
+    lowSelectableText,
+    sparseText,
+    fragmentedLines,
+    ...(imageCount > 0 ? { imageCount } : {})
+  };
+
   if (lowSelectableText) {
+    const summary = POOR_PDF_QUALITY_SUMMARY + (imageCount > 0 ? imageCountNote(imageCount) : "");
     return {
       status: "error" as const,
       warnings: [PDF_LOW_TEXT_MESSAGE],
-      quality: {
-        level: "poor" as const,
-        summary: POOR_PDF_QUALITY_SUMMARY
-      },
-      signals: {
-        lowSelectableText,
-        sparseText,
-        fragmentedLines
-      }
+      quality: { level: "poor" as const, summary },
+      signals
     };
   }
 
   if (sparseText || fragmentedLines) {
+    const summary = "Review: Text was extracted, but layout may be fragmented or out of reading order."
+      + (imageCount > 0 ? imageCountNote(imageCount) : "");
     return {
       status: "warning" as const,
       warnings: [PDF_LAYOUT_WARNING_MESSAGE],
+      quality: { level: "review" as const, summary },
+      signals
+    };
+  }
+
+  if (imageCount > 0) {
+    return {
+      status: "warning" as const,
+      warnings: [],
       quality: {
         level: "review" as const,
-        summary: "Review: Text was extracted, but layout may be fragmented or out of reading order."
+        summary: "Review: Selectable text detected. Layout looks straightforward." + imageCountNote(imageCount)
       },
-      signals: {
-        lowSelectableText,
-        sparseText,
-        fragmentedLines
-      }
+      signals
     };
   }
 
@@ -1163,11 +1245,7 @@ export function classifyPdfQuality(pageTexts: string[]): PdfQualityAssessment {
       level: "good" as const,
       summary: "Good: Selectable text detected. Layout looks straightforward."
     },
-    signals: {
-      lowSelectableText,
-      sparseText,
-      fragmentedLines
-    }
+    signals
   };
 }
 
@@ -1230,6 +1308,21 @@ export function mergePageTexts(pageTexts: string[]): string {
   return result.join("\n").trim();
 }
 
+const IMAGE_OPS = new Set([
+  OPS.paintImageXObject,
+  OPS.paintInlineImageXObject,
+  OPS.paintImageXObjectRepeat
+]);
+
+async function countPageImages(page: { getOperatorList: () => Promise<{ fnArray: number[] }> }): Promise<number> {
+  try {
+    const operatorList = await page.getOperatorList();
+    return operatorList.fnArray.filter((op) => IMAGE_OPS.has(op)).length;
+  } catch {
+    return 0;
+  }
+}
+
 export const convertPdf: Converter = async (file) => {
   let loadingTask:
     | ReturnType<typeof getDocument>
@@ -1249,6 +1342,7 @@ export const convertPdf: Converter = async (file) => {
     const allItems: Array<TextItem | TextMarkedContent> = [];
     const pageItemRanges: Array<{ start: number; end: number }> = [];
     const pages: PdfPageText[] = [];
+    let totalImageCount = 0;
 
     for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
       const page = await document.getPage(pageNumber);
@@ -1273,18 +1367,20 @@ export const convertPdf: Converter = async (file) => {
         // Keep the max-y fallback for environments/pages where viewport lookup fails.
       }
 
+      totalImageCount += await countPageImages(page);
       pages.push({ items: pageItems, height: pageHeight });
     }
 
     const fontProfile = detectFontProfile(allItems);
     const repeatedHeaderFooterFingerprints = detectHeaderFooterItems(pages);
+    const { fingerprints: watermarkFingerprints, watermarkText } = detectWatermarkItems(pages);
     const pageTexts: string[] = [];
 
     for (const [pageIndex, { start, end }] of pageItemRanges.entries()) {
       const pageItems = allItems.slice(start, end);
-      const strippedPageItems = stripHeaderFooterForPage(
-        pages[pageIndex],
-        repeatedHeaderFooterFingerprints
+      const strippedPageItems = stripWatermarkItems(
+        stripHeaderFooterForPage(pages[pageIndex], repeatedHeaderFooterFingerprints),
+        watermarkFingerprints
       );
       const strippedItems = pageItems.filter(
         (item) => !isTextItem(item) || strippedPageItems.includes(item)
@@ -1292,8 +1388,13 @@ export const convertPdf: Converter = async (file) => {
       pageTexts.push(renderPdfPageText(strippedItems, fontProfile));
     }
 
-    const markdown = mergePageTexts(pageTexts);
-    const quality = classifyPdfQuality(pageTexts);
+    let markdown = mergePageTexts(pageTexts);
+
+    if (watermarkText) {
+      markdown = `> [Watermark removed: ${watermarkText}]\n\n${markdown}`;
+    }
+
+    const quality = classifyPdfQuality(pageTexts, totalImageCount);
 
     if (quality.status === "error") {
       return {
