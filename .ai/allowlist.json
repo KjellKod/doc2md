@@ -62,7 +62,7 @@
     "builder_agent": {
       "file_write": [".quest/**", ".ai/**", "docs/**", "ideas/**", "scripts/**", ".skills/**", "*.md", "*.json", "*.txt", "*.sh", "*.py"],
       "file_read": ["**"],
-      "bash": ["python", "python3", "pytest", "git status", "git diff", "git log", "rg", "grep", "find", "ls", "wc"]
+      "bash": ["python", "python3", "pytest", "bash", "git status", "git diff", "git log", "rg", "grep", "find", "ls", "wc"]
     },
     "code_review_agent": {
       "file_write": [".quest/**"],
@@ -72,7 +72,7 @@
     "fixer_agent": {
       "file_write": [".quest/**", ".ai/**", "docs/**", "ideas/**", "scripts/**", ".skills/**", "*.md", "*.json", "*.txt", "*.sh", "*.py"],
       "file_read": ["**"],
-      "bash": ["python", "python3", "pytest", "git status", "git diff", "git log", "rg", "grep", "find", "ls", "wc"]
+      "bash": ["python", "python3", "pytest", "bash", "git status", "git diff", "git log", "rg", "grep", "find", "ls", "wc"]
     }
   },
   "solo": {
