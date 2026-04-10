@@ -5,7 +5,7 @@ This example keeps the skill wrapper thin and uses the helper script exactly as 
 ## Single file
 
 ```bash
-node .skills/doc-to-markdown/scripts/convert-documents.mjs \
+node .skills/doc2md/scripts/convert-documents.mjs \
   --output-dir ./markdown-output \
   ./docs/resume.pdf
 ```
@@ -13,7 +13,7 @@ node .skills/doc-to-markdown/scripts/convert-documents.mjs \
 ## Multiple files
 
 ```bash
-node .skills/doc-to-markdown/scripts/convert-documents.mjs \
+node .skills/doc2md/scripts/convert-documents.mjs \
   --output-dir ./markdown-output \
   ./docs/resume.pdf \
   ./docs/notes.docx \

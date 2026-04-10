@@ -161,7 +161,7 @@ export default function InstallPage({ active }: { active: boolean }) {
           </a>
           <a
             className="ghost-button"
-            href={`${BASE_PATH}doc-to-markdown-skill.skill`}
+            href={`${BASE_PATH}doc2md-skill.skill`}
             download
           >
             Download skill (.skill ZIP bundle)
@@ -195,7 +195,7 @@ export default function InstallPage({ active }: { active: boolean }) {
             <p className="eyebrow">Agents</p>
             <h3>Portable skill packaging</h3>
             <p>
-              Ship `.skills/doc-to-markdown/` with your repo when you want a
+              Ship `.skills/doc2md/` with your repo when you want a
               thin, copyable wrapper around the same package contract.
             </p>
           </article>
@@ -289,7 +289,7 @@ export default function InstallPage({ active }: { active: boolean }) {
               </p>
               <pre className="install-code">
                 <code>
-                  node .skills/doc-to-markdown/scripts/convert-documents.mjs
+                  node .skills/doc2md/scripts/convert-documents.mjs
                   {" \\\n"}  --output-dir ./out
                   {" \\\n"}  ./docs/resume.pdf
                 </code>
