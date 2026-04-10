@@ -649,16 +649,13 @@ describe("convertPdf", () => {
     );
     const result = await convertPdf(createPdfFile([fixture], "sample-scanned.pdf"));
 
-    expect(result).toEqual({
-      markdown: "",
-      warnings: [PDF_LOW_TEXT_MESSAGE],
-      status: "error",
-      quality: {
-        level: "poor",
-        summary:
-          "Poor: Little or no selectable text detected. This PDF may be scanned or image-based.",
-      },
-    });
+    expect(result.markdown).toBe("");
+    expect(result.warnings).toEqual([PDF_LOW_TEXT_MESSAGE]);
+    expect(result.status).toBe("error");
+    expect(result.quality?.level).toBe("poor");
+    expect(result.quality?.summary).toContain(
+      "Poor: Little or no selectable text detected. This PDF may be scanned or image-based."
+    );
   });
 
   it("warns when extractable text looks sparse and merges pages", async () => {
@@ -668,10 +665,12 @@ describe("convertPdf", () => {
       GlobalWorkerOptions: {
         workerSrc: ""
       },
+      OPS: { paintImageXObject: 85, paintInlineImageXObject: 86, paintImageXObjectRepeat: 88 },
       getDocument: vi.fn(() => ({
         promise: Promise.resolve({
           numPages: 2,
           getPage: vi.fn(async (pageNumber: number) => ({
+            getOperatorList: vi.fn(async () => ({ fnArray: [], argsArray: [] })),
             getTextContent: vi.fn(async () => ({
               items:
                 pageNumber === 1
@@ -737,6 +736,7 @@ describe("convertPdf", () => {
       GlobalWorkerOptions: {
         workerSrc: ""
       },
+      OPS: { paintImageXObject: 85, paintInlineImageXObject: 86, paintImageXObjectRepeat: 88 },
       getDocument: vi.fn(() => ({
         promise: Promise.reject(new Error("bad pdf")),
         destroy: vi.fn().mockResolvedValue(undefined)
@@ -765,10 +765,12 @@ describe("convertPdf", () => {
       GlobalWorkerOptions: {
         workerSrc: ""
       },
+      OPS: { paintImageXObject: 85, paintInlineImageXObject: 86, paintImageXObjectRepeat: 88 },
       getDocument: vi.fn(() => ({
         promise: Promise.resolve({
           numPages: 1,
           getPage: vi.fn(async () => ({
+            getOperatorList: vi.fn(async () => ({ fnArray: [], argsArray: [] })),
             getTextContent: vi.fn(async () => ({
               items: [
                 {
@@ -820,10 +822,12 @@ describe("convertPdf", () => {
       GlobalWorkerOptions: {
         workerSrc: ""
       },
+      OPS: { paintImageXObject: 85, paintInlineImageXObject: 86, paintImageXObjectRepeat: 88 },
       getDocument: vi.fn(() => ({
         promise: Promise.resolve({
           numPages: 3,
           getPage: vi.fn(async (pageNumber: number) => ({
+            getOperatorList: vi.fn(async () => ({ fnArray: [], argsArray: [] })),
             getTextContent: vi.fn(async () => ({
               items: [
                 header,
@@ -862,10 +866,12 @@ describe("convertPdf", () => {
       GlobalWorkerOptions: {
         workerSrc: ""
       },
+      OPS: { paintImageXObject: 85, paintInlineImageXObject: 86, paintImageXObjectRepeat: 88 },
       getDocument: vi.fn(() => ({
         promise: Promise.resolve({
           numPages: 3,
           getPage: vi.fn(async (pageNumber: number) => ({
+            getOperatorList: vi.fn(async () => ({ fnArray: [], argsArray: [] })),
             getViewport: vi.fn(() => ({ height: 1000 })),
             getTextContent: vi.fn(async () => ({
               items: [
@@ -899,5 +905,231 @@ describe("convertPdf", () => {
     expect(result.markdown).toContain("Page 1 details remain visible");
     expect(result.markdown).toContain("Page 2 details remain visible");
     expect(result.markdown).toContain("Page 3 details remain visible");
+  });
+
+  it("strips diagonal watermark text and prepends a watermark note", async () => {
+    const destroy = vi.fn().mockResolvedValue(undefined);
+    const angle45 = Math.PI / 4;
+    const cos45 = Math.cos(angle45) * 72;
+    const sin45 = Math.sin(angle45) * 72;
+
+    vi.doMock("pdfjs-dist/legacy/build/pdf.mjs", () => ({
+      GlobalWorkerOptions: { workerSrc: "" },
+      OPS: { paintImageXObject: 85, paintInlineImageXObject: 86, paintImageXObjectRepeat: 88 },
+      getDocument: vi.fn(() => ({
+        promise: Promise.resolve({
+          numPages: 3,
+          getPage: vi.fn(async (pageNumber: number) => ({
+            getViewport: vi.fn(() => ({ height: 1000 })),
+            getOperatorList: vi.fn(async () => ({ fnArray: [], argsArray: [] })),
+            getTextContent: vi.fn(async () => ({
+              items: [
+                {
+                  str: "HIGH RISK ALERT",
+                  transform: [cos45, sin45, -sin45, cos45, 104, 159],
+                  fontName: "watermark-font",
+                  hasEOL: true,
+                  width: 300
+                },
+                {
+                  str: `Body content on page ${pageNumber} with enough text to pass the quality threshold check for sparse detection.`,
+                  transform: [12, 0, 0, 12, 50, 700],
+                  fontName: "f2",
+                  hasEOL: true,
+                  width: 500
+                }
+              ]
+            }))
+          }))
+        }),
+        destroy
+      }))
+    }));
+
+    const { convertPdf } = await import("./pdf");
+    const result = await convertPdf(createPdfFile([new Uint8Array([1, 2, 3])], "watermark.pdf"));
+
+    expect(result.markdown).toContain("> [Watermark removed: HIGH RISK ALERT]");
+    expect(result.markdown).not.toMatch(/(?<!> \[Watermark removed: )HIGH RISK ALERT(?!\])/);
+    expect(result.markdown).toContain("Body content on page 1");
+    expect(result.markdown).toContain("Body content on page 2");
+    expect(result.markdown).toContain("Body content on page 3");
+  });
+
+  it("detects embedded images and downgrades quality from good to review", async () => {
+    const destroy = vi.fn().mockResolvedValue(undefined);
+
+    vi.doMock("pdfjs-dist/legacy/build/pdf.mjs", () => ({
+      GlobalWorkerOptions: { workerSrc: "" },
+      OPS: { paintImageXObject: 85, paintInlineImageXObject: 86, paintImageXObjectRepeat: 88 },
+      getDocument: vi.fn(() => ({
+        promise: Promise.resolve({
+          numPages: 1,
+          getPage: vi.fn(async () => ({
+            getOperatorList: vi.fn(async () => ({
+              fnArray: [85, 85, 86],
+              argsArray: [[], [], []]
+            })),
+            getTextContent: vi.fn(async () => ({
+              items: [
+                {
+                  str: "This document has embedded images alongside plenty of text content to be considered well formatted.",
+                  transform: [12, 0, 0, 12, 50, 700],
+                  fontName: "f1",
+                  hasEOL: true,
+                  width: 500
+                }
+              ]
+            }))
+          }))
+        }),
+        destroy
+      }))
+    }));
+
+    const { convertPdf } = await import("./pdf");
+    const result = await convertPdf(createPdfFile([new Uint8Array([1, 2, 3])], "images.pdf"));
+
+    expect(result.quality?.level).toBe("review");
+    expect(result.quality?.summary).toContain("3 image(s) detected that could not be converted to markdown");
+    expect(result.status).toBe("warning");
+  });
+});
+
+describe("detectWatermarkItems", () => {
+  it("identifies rotated text appearing on majority of pages", async () => {
+    const { detectWatermarkItems } = await importPdfModule();
+    const angle45 = Math.PI / 4;
+    const cos45 = Math.cos(angle45) * 72;
+    const sin45 = Math.sin(angle45) * 72;
+
+    const watermarkItem = (pageY: number) =>
+      textItem("HIGH RISK ALERT", [cos45, sin45, -sin45, cos45, 104, pageY], "wm-font", true);
+    const bodyItem = (text: string, y: number) =>
+      textItem(text, [12, 0, 0, 12, 50, y], "f2", true);
+
+    const pages = [
+      { items: [watermarkItem(159), bodyItem("Page 1", 700)], height: 800 },
+      { items: [watermarkItem(159), bodyItem("Page 2", 700)], height: 800 },
+      { items: [watermarkItem(159), bodyItem("Page 3", 700)], height: 800 },
+    ];
+
+    const result = detectWatermarkItems(pages);
+
+    expect(result.fingerprints.size).toBe(1);
+    expect(result.fingerprints.has("high risk alert")).toBe(true);
+    expect(result.watermarkText).toBe("HIGH RISK ALERT");
+  });
+
+  it("does not strip rotated text on a single-page PDF", async () => {
+    const { detectWatermarkItems } = await importPdfModule();
+    const angle45 = Math.PI / 4;
+    const cos45 = Math.cos(angle45) * 72;
+    const sin45 = Math.sin(angle45) * 72;
+
+    const watermarkItem =
+      textItem("CONFIDENTIAL", [cos45, sin45, -sin45, cos45, 100, 400], "wm-font", true);
+    const bodyItem = textItem("Some content", [12, 0, 0, 12, 50, 700], "f2", true);
+
+    const pages = [
+      { items: [watermarkItem, bodyItem], height: 800 },
+    ];
+
+    const result = detectWatermarkItems(pages);
+
+    expect(result.fingerprints.size).toBe(0);
+    expect(result.watermarkText).toBeNull();
+  });
+
+  it("ignores rotated text appearing on too few pages", async () => {
+    const { detectWatermarkItems } = await importPdfModule();
+    const angle45 = Math.PI / 4;
+    const cos45 = Math.cos(angle45) * 72;
+    const sin45 = Math.sin(angle45) * 72;
+
+    const watermarkItem =
+      textItem("DRAFT", [cos45, sin45, -sin45, cos45, 100, 400], "wm-font", true);
+    const bodyItem = (text: string) =>
+      textItem(text, [12, 0, 0, 12, 50, 700], "f2", true);
+
+    const pages = [
+      { items: [watermarkItem, bodyItem("Page 1")], height: 800 },
+      { items: [bodyItem("Page 2")], height: 800 },
+      { items: [bodyItem("Page 3")], height: 800 },
+      { items: [bodyItem("Page 4")], height: 800 },
+    ];
+
+    const result = detectWatermarkItems(pages);
+
+    expect(result.fingerprints.size).toBe(0);
+    expect(result.watermarkText).toBeNull();
+  });
+});
+
+describe("stripWatermarkItems", () => {
+  it("removes rotated matches and keeps non-rotated text with same content", async () => {
+    const { stripWatermarkItems } = await importPdfModule();
+    const angle45 = Math.PI / 4;
+    const cos45 = Math.cos(angle45) * 72;
+    const sin45 = Math.sin(angle45) * 72;
+
+    const rotatedItem = textItem("DRAFT", [cos45, sin45, -sin45, cos45, 100, 400], "wm", true);
+    const bodyItem = textItem("DRAFT", [12, 0, 0, 12, 50, 700], "f2", true);
+    const otherItem = textItem("Normal text", [12, 0, 0, 12, 50, 600], "f2", true);
+
+    const fingerprints = new Set(["draft"]);
+    const result = stripWatermarkItems([rotatedItem, bodyItem, otherItem], fingerprints);
+
+    expect(result).toHaveLength(2);
+    expect(result[0].str).toBe("DRAFT");
+    expect(result[0].transform[1]).toBe(0);
+    expect(result[1].str).toBe("Normal text");
+  });
+});
+
+describe("classifyPdfQuality with imageCount", () => {
+  it("downgrades good to review when images are present", async () => {
+    const { classifyPdfQuality } = await importPdfModule();
+    const pages = [
+      "x".repeat(200) + "\n" + "y".repeat(200),
+    ];
+    const result = classifyPdfQuality(pages, 3);
+
+    expect(result.quality.level).toBe("review");
+    expect(result.quality.summary).toContain("3 image(s) detected");
+    expect(result.status).toBe("warning");
+    expect(result.signals.imageCount).toBe(3);
+  });
+
+  it("appends image note to existing review without changing level", async () => {
+    const { classifyPdfQuality } = await importPdfModule();
+    const pages = ["a".repeat(60) + "\n" + "b".repeat(10)];
+    const result = classifyPdfQuality(pages, 2);
+
+    expect(result.quality.level).toBe("review");
+    expect(result.quality.summary).toContain("2 image(s) detected");
+  });
+
+  it("returns unchanged result when imageCount is 0", async () => {
+    const { classifyPdfQuality } = await importPdfModule();
+    const pages = [
+      "x".repeat(200) + "\n" + "y".repeat(200),
+    ];
+    const result = classifyPdfQuality(pages, 0);
+
+    expect(result.quality.level).toBe("good");
+    expect(result.quality.summary).not.toContain("image");
+    expect(result.signals.imageCount).toBeUndefined();
+  });
+
+  it("defaults imageCount to 0 when omitted", async () => {
+    const { classifyPdfQuality } = await importPdfModule();
+    const pages = [
+      "x".repeat(200) + "\n" + "y".repeat(200),
+    ];
+    const result = classifyPdfQuality(pages);
+
+    expect(result.quality.level).toBe("good");
+    expect(result.signals.imageCount).toBeUndefined();
   });
 });

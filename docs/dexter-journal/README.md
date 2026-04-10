@@ -6,6 +6,7 @@ For the other perspective, see [Jean-Claude's Journal](../journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 018 | [Requiem: Watermark & Image Detection](018-requiem-watermark-image-detection.md) | Burying diagonal noise, dishonest green badges, and the fiction that missing images were fine |
 | 017 | [Requiem: CI Review Hardening](017-requiem-ci-review-hardening.md) | Burying trust-zone fiction, floating action tags, and a diff validator that had to learn LEFT from RIGHT |
 | 016 | [Requiem: PDF Formatting Preservation](016-requiem-pdf-formatting.md) | Burying raw item positions, hallucinated headings, and a table detector that died twice before learning to cluster |
 | 015 | [Requiem: Severity Review](015-requiem-severity-review.md) | Burying prose severity, ambiguous exit codes, and dedup that haunted unrelated lines |
