@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 interface TarballManifest {
   filename: string;
+  latest?: string;
   version: string;
 }
 
@@ -14,10 +15,12 @@ const SKILL_INSTALL_URL =
   "https://github.com/KjellKod/doc2md/blob/main/INSTALL.md#portable-skill-wrapper";
 
 function InstallStatus({
+  basePath,
   manifest,
   state,
   onRetry,
 }: {
+  basePath: string;
   manifest: TarballManifest | null;
   state: "loading" | "ready" | "unavailable";
   onRetry: () => void;
@@ -32,10 +35,19 @@ function InstallStatus({
 
   if (state === "ready" && manifest) {
     return (
-      <p className="install-download-note">
-        Latest released Pages tarball: <strong>{manifest.filename}</strong>{" "}
-        (version {manifest.version}).
-      </p>
+      <div className="install-download-note">
+        <p>
+          Latest released Pages tarball: <strong>{manifest.filename}</strong>{" "}
+          (version {manifest.version}).
+        </p>
+        {manifest.latest ? (
+          <p>
+            Stable latest URL:{" "}
+            <a href={`${basePath}${manifest.latest}`}>{manifest.latest}</a>.
+            Currently resolves to <strong>{manifest.filename}</strong>.
+          </p>
+        ) : null}
+      </div>
     );
   }
 
@@ -90,6 +102,7 @@ export default function InstallPage({ active }: { active: boolean }) {
         if (!isCancelled) {
           setManifest({
             filename: data.filename,
+            latest: typeof data.latest === "string" ? data.latest : undefined,
             version: data.version,
           });
           setManifestState("ready");
@@ -169,6 +182,7 @@ export default function InstallPage({ active }: { active: boolean }) {
         </div>
 
         <InstallStatus
+          basePath={BASE_PATH}
           manifest={manifest}
           state={manifestState}
           onRetry={retryManifestFetch}
@@ -234,7 +248,9 @@ export default function InstallPage({ active }: { active: boolean }) {
               <p>
                 Global installs give you `doc2md` everywhere. Project-local
                 installs keep the package inside one repo and pair naturally
-                with `npx`.
+                with `npx`. Use the versioned tarball for reproducible installs
+                and the stable latest URL when you intentionally want the moving
+                alias.
               </p>
               <pre className="install-code">
                 <code>
@@ -244,6 +260,11 @@ export default function InstallPage({ active }: { active: boolean }) {
               <pre className="install-code">
                 <code>
                   npm install /absolute/path/to/doc2md-core-&lt;version&gt;.tgz
+                </code>
+              </pre>
+              <pre className="install-code">
+                <code>
+                  npm install https://kjellkod.github.io/doc2md/doc2md-core-latest.tgz
                 </code>
               </pre>
             </article>
