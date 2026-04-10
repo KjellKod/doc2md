@@ -1,0 +1,8 @@
+{
+  "name": "doc2md-skill",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@doc2md/core": "https://kjellkod.github.io/doc2md/doc2md-core-latest.tgz"
+  }
+}

@@ -34,10 +34,10 @@
 .skills/celebrate/SKILL.md
 .skills/ci-code-reviewer/SKILL.md
 .skills/code-reviewer/SKILL.md
-.skills/doc-to-markdown/SKILL.md
-.skills/doc-to-markdown/INSTALL.md
-.skills/doc-to-markdown/examples/basic-usage.md
-.skills/doc-to-markdown/scripts/convert-documents.mjs
+.skills/doc2md/SKILL.md
+.skills/doc2md/package.json
+.skills/doc2md/examples/basic-usage.md
+.skills/doc2md/scripts/convert-documents.mjs
 .skills/git-commit-assistant/SKILL.md
 .skills/gpt/SKILL.md
 .skills/implementer/SKILL.md
@@ -116,9 +116,9 @@ scripts/validate-quest-state.sh
 .skills/celebrate
 .skills/ci-code-reviewer
 .skills/code-reviewer
-.skills/doc-to-markdown
-.skills/doc-to-markdown/examples
-.skills/doc-to-markdown/scripts
+.skills/doc2md
+.skills/doc2md/examples
+.skills/doc2md/scripts
 .skills/git-commit-assistant
 .skills/gpt
 .skills/implementer
