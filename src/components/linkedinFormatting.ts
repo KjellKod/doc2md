@@ -153,7 +153,12 @@ function mapMathematicalLetter(
   }
 
   if (codePoint >= 97 && codePoint <= 122) {
-    return String.fromCodePoint(lowercaseBase + (codePoint - 97));
+    const mapped = lowercaseBase + (codePoint - 97);
+    // U+1D455 is unassigned; the correct italic lowercase 'h' is U+210E
+    if (mapped === 0x1d455) {
+      return String.fromCodePoint(0x210e);
+    }
+    return String.fromCodePoint(mapped);
   }
 
   return char;

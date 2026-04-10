@@ -135,6 +135,19 @@ describe("formatLinkedInUnicode", () => {
     );
   });
 
+  it("maps italic lowercase h to U+210E instead of the unassigned U+1D455", () => {
+    const result = formatLinkedInUnicode("*h*");
+
+    expect(result).toBe("\u{210E}");
+    expect(result).not.toContain("\u{1D455}");
+  });
+
+  it("renders italic text containing h with correct Unicode characters", () => {
+    expect(formatLinkedInUnicode("*the*")).toBe(
+      "\u{1D461}\u{210E}\u{1D452}",
+    );
+  });
+
   it("produces deterministic output", () => {
     const markdown = "# Title\n\n- One\n- Two";
 
