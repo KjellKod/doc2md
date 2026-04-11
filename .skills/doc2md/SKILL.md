@@ -1,9 +1,9 @@
 ---
-name: doc-to-markdown
+name: doc2md
 description: Portable wrapper skill for converting one or more local documents to Markdown via @doc2md/core. Use when a repo wants an agent-friendly document-to-markdown entrypoint without reimplementing converter logic.
 ---
 
-# doc-to-markdown
+# doc2md
 
 Use this skill when you want to convert local files to Markdown from an agent workflow, script, or repo utility while keeping the real conversion logic inside `@doc2md/core`.
 
@@ -12,6 +12,7 @@ Use this skill when you want to convert local files to Markdown from an agent wo
 Ship this directory as a self-contained repo asset:
 
 - `SKILL.md`
+- `package.json`
 - `examples/basic-usage.md`
 - `scripts/convert-documents.mjs`
 
@@ -41,7 +42,7 @@ Ship this directory as a self-contained repo asset:
 Single file:
 
 ```bash
-node .skills/doc-to-markdown/scripts/convert-documents.mjs \
+node .skills/doc2md/scripts/convert-documents.mjs \
   --output-dir ./markdown-output \
   ./docs/resume.pdf
 ```
@@ -49,7 +50,7 @@ node .skills/doc-to-markdown/scripts/convert-documents.mjs \
 Multiple files:
 
 ```bash
-node .skills/doc-to-markdown/scripts/convert-documents.mjs \
+node .skills/doc2md/scripts/convert-documents.mjs \
   --output-dir ./markdown-output \
   ./docs/resume.pdf \
   ./docs/notes.docx
@@ -60,31 +61,48 @@ Optional flags:
 - `--max <n>`
 - `--concurrency <n>`
 
+## Dependency Management
+
+`@doc2md/core` installs automatically on first run from
+`https://kjellkod.github.io/doc2md/doc2md-core-latest.tgz`.
+
+To pin a specific version, edit `package.json` and replace `latest` with the
+version number:
+
+```json
+{
+  "dependencies": {
+    "@doc2md/core": "https://kjellkod.github.io/doc2md/doc2md-core-1.2.2.tgz"
+  }
+}
+```
+
+Then delete `node_modules/` and re-run the helper to fetch the pinned version.
+
 ## Host Setup
 
 ### Claude app (uploaded skill)
 
-1. Zip the `.skills/doc-to-markdown/` folder.
+1. Zip the `.skills/doc2md/` folder.
 2. In Claude, open `Customize` -> `Skills` and upload that zip.
-3. Use this skill inside a repository that already has `@doc2md/core` installed so the helper script can resolve the package at runtime.
+3. On first run, the helper installs `@doc2md/core` automatically from the hosted tarball URL in `package.json`.
 
 ### Claude CLI / repo-local
 
-1. Copy this folder into the target repo at `.skills/doc-to-markdown/`.
-2. Install `@doc2md/core` in that repo.
-3. Run the helper from the repo root, for example:
+1. Copy this folder into the target repo at `.skills/doc2md/`.
+2. Run the helper from the repo root, for example:
 
 ```bash
-node .skills/doc-to-markdown/scripts/convert-documents.mjs \
+node .skills/doc2md/scripts/convert-documents.mjs \
   --output-dir ./markdown-output \
   ./docs/resume.pdf
 ```
 
 ### Codex
 
-1. Use the same repo-local layout: `.skills/doc-to-markdown/` inside the working repo.
-2. Install `@doc2md/core` in that repo before invoking the helper.
-3. Keep input and output paths inside the writable workspace so the sandbox can read sources and write Markdown results.
+1. Use the same repo-local layout: `.skills/doc2md/` inside the working repo.
+2. Keep input and output paths inside the writable workspace so the sandbox can read sources and write Markdown results.
+3. The first invocation bootstraps `@doc2md/core` automatically if `node_modules/@doc2md/core` is missing.
 
 ## Agent Behavior Contract
 

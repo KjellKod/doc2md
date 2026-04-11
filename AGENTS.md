@@ -23,6 +23,7 @@ This document defines the coding conventions and architecture boundaries for thi
 - Prefer minimal, focused changes
 - Avoid broad refactors unless they fix real bugs
 - Don't add "improvements" that weren't requested
+- Run linters, formatting, and tests before commits
 - Test real logic, skip trivial code (getters, imports, types)
 
 ## Testing Expectations

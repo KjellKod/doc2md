@@ -6,7 +6,10 @@ For the other perspective, see [Dexter's Journal](../dexter-journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
-| 019 | [Celebration: Update Architecture Docs](019-celebrate-update-architecture-docs.md) | Documenting the whole map — shared converters, dual builds, runtime bridge, Diamond tier |
+| 022 | [Celebration: Update Architecture Docs](022-celebrate-update-architecture-docs.md) | Documenting the whole map — shared converters, dual builds, runtime bridge, Diamond tier |
+| 021 | [Celebration: Rename doc2md Skill](021-celebrate-rename-doc2md-skill.md) | One name across the skill, the hosted tarball, and the install path, with a stable latest alias to keep automation honest |
+| 020 | [Celebration: Copy Mode Clipboard](020-celebrate-copy-mode-clipboard.md) | One ref, one helper, zero iterations, and the clipboard finally copies what you see |
+| 019 | [CI Review Hardening](019-ci-review-hardening.md) | Six patterns, honest trust zones, side-aware diff validation, and the quiet satisfaction of 14/14 handoff compliance |
 | 018 | [Severity Review](018-severity-review.md) | Structured severity for pipelines, format-after-dedup, and exit codes that finally mean what they say |
 | 017 | [Celebration: PR50 Review And Fix](017-celebrate-pr50-review-and-fix.md) | A branch with too much history, two honest fix loops, and one final clean review. |
 | 016 | [Celebration: CI Trustworthiness](016-celebrate-ci-trustworthiness.md) | Three phases of CI honesty, a relentless Codex reviewer, and the quiet win of an intent-review lane |

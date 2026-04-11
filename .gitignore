@@ -2,6 +2,7 @@
 output/
 */output
 !examples/output/
+.worktrees/
 examples/output/*
 !examples/output/doc2md-baseline/
 .env
@@ -14,3 +15,4 @@ node_modules
 __pycache__/
 *.py[cod]
 packages/core/doc2md-core-*.tgz
+.skills/doc2md/package-lock.json

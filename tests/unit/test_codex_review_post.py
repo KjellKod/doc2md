@@ -21,6 +21,162 @@ def load_module():
 class CodexReviewPostTests(unittest.TestCase):
     maxDiff = None
 
+    def test_load_diff_ranges_returns_normalized_ranges(self):
+        module = load_module()
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "diff_ranges.json"
+            path.write_text(
+                json.dumps(
+                    {
+                        "src/app.py": {
+                            "LEFT": [[3, 4]],
+                            "RIGHT": [[10, 12], [20, 20]],
+                        },
+                        "ignored.py": [["x", 2]],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            diff_ranges = module.load_diff_ranges(str(path))
+
+        self.assertEqual(
+            diff_ranges,
+            {"src/app.py": {"LEFT": [(3, 4)], "RIGHT": [(10, 12), (20, 20)]}},
+        )
+
+    def test_load_diff_ranges_accepts_legacy_right_side_shape(self):
+        module = load_module()
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "diff_ranges.json"
+            path.write_text(json.dumps({"src/app.py": [[10, 12]]}), encoding="utf-8")
+
+            diff_ranges = module.load_diff_ranges(str(path))
+
+        self.assertEqual(diff_ranges, {"src/app.py": {"RIGHT": [(10, 12)]}})
+
+    def test_validate_line_in_diff_range_accepts_valid(self):
+        module = load_module()
+
+        self.assertTrue(
+            module.validate_line_in_diff_range(
+                {"path": "src/app.py", "line": 10, "side": "RIGHT"},
+                {"src/app.py": {"RIGHT": [(10, 12)]}},
+            )
+        )
+        self.assertTrue(
+            module.validate_line_in_diff_range(
+                {"path": "src/app.py", "line": 11, "side": "RIGHT"},
+                {"src/app.py": {"RIGHT": [(10, 12)]}},
+            )
+        )
+        self.assertTrue(
+            module.validate_line_in_diff_range(
+                {"path": "src/app.py", "line": 12, "side": "RIGHT"},
+                {"src/app.py": {"RIGHT": [(10, 12)]}},
+            )
+        )
+        self.assertTrue(
+            module.validate_line_in_diff_range(
+                {"path": "src/app.py", "line": 5, "side": "LEFT"},
+                {"src/app.py": {"LEFT": [(5, 6)]}},
+            )
+        )
+
+    def test_validate_line_in_diff_range_rejects_out_of_range(self):
+        module = load_module()
+
+        self.assertFalse(
+            module.validate_line_in_diff_range(
+                {"path": "src/app.py", "line": 13, "side": "RIGHT"},
+                {"src/app.py": {"RIGHT": [(10, 12)]}},
+            )
+        )
+        self.assertFalse(
+            module.validate_line_in_diff_range(
+                {"path": "missing.py", "line": 11, "side": "RIGHT"},
+                {"src/app.py": {"RIGHT": [(10, 12)]}},
+            )
+        )
+        self.assertFalse(
+            module.validate_line_in_diff_range(
+                {"path": "src/app.py", "line": 5, "side": "LEFT"},
+                {"src/app.py": {"RIGHT": [(5, 6)]}},
+            )
+        )
+
+    def test_build_diff_details_reports_truncation_and_exclusions(self):
+        module = load_module()
+
+        details = module.build_diff_details(
+            {
+                "original_diff_bytes": 120,
+                "review_diff_bytes": 90,
+                "diff_truncated": True,
+                "excluded_files_count": 2,
+            }
+        )
+
+        self.assertEqual(
+            details,
+            "Diff: 120 bytes total; reviewed 90 bytes after truncation. Excluded files: 2 files.",
+        )
+
+    def test_build_diff_details_reports_non_truncated_diff(self):
+        module = load_module()
+
+        details = module.build_diff_details({"review_diff_bytes": 90, "excluded_files_count": 1})
+
+        self.assertEqual(details, "Diff: 90 bytes reviewed; not truncated. Excluded files: 1 file.")
+
+    def test_build_response_details_reports_valid_json_with_findings(self):
+        module = load_module()
+
+        details = module.build_response_details(
+            {"review_output_bytes": 42},
+            valid_json=True,
+            findings_count=1,
+        )
+
+        self.assertEqual(
+            details,
+            "Response: Codex returned a valid JSON array with 1 finding. Output: 42 bytes.",
+        )
+
+    def test_build_response_details_reports_valid_json_without_count(self):
+        module = load_module()
+
+        details = module.build_response_details({"review_output_bytes": 42}, valid_json=True)
+
+        self.assertEqual(
+            details,
+            "Response: Codex returned a valid JSON array. Output: 42 bytes.",
+        )
+
+    def test_build_response_details_reports_invalid_json(self):
+        module = load_module()
+
+        details = module.build_response_details(
+            {"review_exit_code": 0, "review_output_bytes": 42},
+            valid_json=False,
+        )
+
+        self.assertEqual(
+            details,
+            "Response: Codex did not return a valid JSON array. Output: 42 bytes.",
+        )
+
+    def test_build_response_details_reports_exit_code_when_json_state_unknown(self):
+        module = load_module()
+
+        details = module.build_response_details(
+            {"review_exit_code": 17, "review_output_bytes": 0},
+        )
+
+        self.assertEqual(details, "Response: Codex exited with code 17. Output: 0 bytes.")
+
     def test_post_summary_returns_true_on_success(self):
         module = load_module()
         runner = mock.Mock(return_value=mock.Mock(returncode=0))
@@ -389,6 +545,26 @@ class CodexReviewPostTests(unittest.TestCase):
         # %0A in input becomes %250A (% escaped first), which is correct
         self.assertIn("%250A", printed)
 
+    def test_emit_dropped_comment_notices_emits_notice_per_comment(self):
+        module = load_module()
+
+        with mock.patch("builtins.print") as mocked_print:
+            module.emit_dropped_comment_notices(
+                [
+                    {"path": "src/app.py", "line": 14},
+                    {"path": "src/lib.py", "line": 9},
+                ]
+            )
+
+        printed = [call.args[0] for call in mocked_print.call_args_list]
+        self.assertEqual(
+            printed,
+            [
+                "::notice file=src/app.py,line=14::Dropped model comment outside changed diff lines.",
+                "::notice file=src/lib.py,line=9::Dropped model comment outside changed diff lines.",
+            ],
+        )
+
     def test_main_exits_1_on_critical_finding(self):
         module = load_module()
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -520,6 +696,161 @@ class CodexReviewPostTests(unittest.TestCase):
         mocked_print.assert_called_once_with(
             "::warning::Failed to post summary comment for timeout outcome."
         )
+
+    def test_main_drops_out_of_range_comments_before_posting(self):
+        module = load_module()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            review_output = tmp / "review-output.json"
+            existing_comments = tmp / "existing.json"
+            metadata = tmp / "metadata.json"
+            diff_ranges = tmp / "diff_ranges.json"
+
+            review_output.write_text(
+                json.dumps(
+                    [
+                        {
+                            "path": "a.py",
+                            "line": 9,
+                            "side": "RIGHT",
+                            "severity": "medium",
+                            "body": "out of range",
+                        },
+                        {
+                            "path": "a.py",
+                            "line": 2,
+                            "side": "RIGHT",
+                            "severity": "low",
+                            "body": "in range",
+                        },
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            existing_comments.write_text("[]", encoding="utf-8")
+            metadata.write_text(json.dumps({"review_exit_code": 0}), encoding="utf-8")
+            diff_ranges.write_text(
+                json.dumps({"a.py": {"RIGHT": [[1, 3]]}}),
+                encoding="utf-8",
+            )
+
+            with mock.patch.object(module, "post_inline", return_value=[] ) as post_inline:
+                with mock.patch.object(module, "post_summary", return_value=True):
+                    with mock.patch.object(module, "emit_annotations"):
+                        with mock.patch("builtins.print") as mocked_print:
+                            with mock.patch.dict(
+                                module.os.environ,
+                                {
+                                    "REPO": "owner/repo",
+                                    "PR_NUMBER": "12",
+                                    "COMMIT_SHA": "abcdef1",
+                                },
+                                clear=False,
+                            ):
+                                rc = module.main(
+                                    [
+                                        "--review-output",
+                                        str(review_output),
+                                        "--diff-ranges",
+                                        str(diff_ranges),
+                                        "--existing-comments",
+                                        str(existing_comments),
+                                        "--metadata",
+                                        str(metadata),
+                                    ]
+                                )
+
+        self.assertEqual(rc, 0)
+        post_inline.assert_called_once_with(
+            [
+                {
+                    "path": "a.py",
+                    "line": 2,
+                    "side": "RIGHT",
+                    "severity": "low",
+                    "body": "in range",
+                }
+            ],
+            repo="owner/repo",
+            pr_number="12",
+            commit_sha="abcdef1",
+        )
+        mocked_print.assert_called_once_with(
+            "::notice file=a.py,line=9::Dropped model comment outside changed diff lines."
+        )
+
+    def test_main_keeps_left_side_deleted_line_comments(self):
+        module = load_module()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            review_output = tmp / "review-output.json"
+            existing_comments = tmp / "existing.json"
+            metadata = tmp / "metadata.json"
+            diff_ranges = tmp / "diff_ranges.json"
+
+            review_output.write_text(
+                json.dumps(
+                    [
+                        {
+                            "path": "a.py",
+                            "line": 5,
+                            "side": "LEFT",
+                            "severity": "high",
+                            "body": "deleted line finding",
+                        }
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            existing_comments.write_text("[]", encoding="utf-8")
+            metadata.write_text(json.dumps({"review_exit_code": 0}), encoding="utf-8")
+            diff_ranges.write_text(
+                json.dumps({"a.py": {"LEFT": [[5, 6]], "RIGHT": [[5, 5]]}}),
+                encoding="utf-8",
+            )
+
+            with mock.patch.object(module, "post_inline", return_value=[]) as post_inline:
+                with mock.patch.object(module, "post_summary", return_value=True):
+                    with mock.patch.object(module, "emit_annotations"):
+                        with mock.patch("builtins.print") as mocked_print:
+                            with mock.patch.dict(
+                                module.os.environ,
+                                {
+                                    "REPO": "owner/repo",
+                                    "PR_NUMBER": "12",
+                                    "COMMIT_SHA": "abcdef1",
+                                },
+                                clear=False,
+                            ):
+                                rc = module.main(
+                                    [
+                                        "--review-output",
+                                        str(review_output),
+                                        "--diff-ranges",
+                                        str(diff_ranges),
+                                        "--existing-comments",
+                                        str(existing_comments),
+                                        "--metadata",
+                                        str(metadata),
+                                    ]
+                                )
+
+        self.assertEqual(rc, 1)
+        post_inline.assert_called_once_with(
+            [
+                {
+                    "path": "a.py",
+                    "line": 5,
+                    "side": "LEFT",
+                    "severity": "high",
+                    "body": "deleted line finding",
+                }
+            ],
+            repo="owner/repo",
+            pr_number="12",
+            commit_sha="abcdef1",
+        )
+        mocked_print.assert_called_once_with("::error::Blocking severity findings")
 
     def test_has_blocking_findings(self):
         module = load_module()
