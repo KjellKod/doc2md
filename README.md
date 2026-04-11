@@ -12,7 +12,7 @@
 
 A browser-based tool that converts documents to Markdown. Drop in a file, convert it locally, review the result, download `.md`.
 
-Built for people entering AI-assisted workflows who need a frictionless way to turn existing documents into Markdown for tools like Claude Code, coding agents, or text-first editing.
+(_[Quest](https://github.com/KjellKod/quest/blob/main/README.md)_) Built for people entering AI-assisted workflows who need a frictionless way to turn existing documents into Markdown for tools like Claude Code, coding agents, or text-first editing.
 
 **Supported formats:** `.md` `.docx` `.xlsx` `.pdf` `.csv` `.tsv` `.pptx` `.html` `.txt` `.json`
 
