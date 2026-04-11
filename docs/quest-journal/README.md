@@ -2,6 +2,7 @@
 
 | Date | Quest | Outcome |
 |------|-------|---------|
+| 2026-04-11 | [update-architecture-docs](update-architecture-docs_2026-04-11.md) | Rewrote architecture doc to cover full system: shared converters, dual Vite builds, npm package, runtime bridge. |
 | 2026-04-08 | [ci-review-hardening](ci-review-hardening_2026-04-08.md) | 6 CI hardening patterns: trust zone docs, untrusted content delimiters, SHA pinning, diff-range validation, partial coverage surfacing. |
 | 2026-04-07 | [severity-review](severity-review_2026-04-07.md) | Added structured severity field, CI blocks on critical/high only, advisory infrastructure failures, Jaccard dedup. |
 | 2026-04-06 | [ci-trustworthiness](ci-trustworthiness_2026-04-06.md) | Split CI into 3 jobs, extracted review scripts, added intent-review advisory lane, guaranteed visible review outcomes. |
