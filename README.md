@@ -51,6 +51,27 @@ The package writes markdown files to disk and returns structured metadata about 
 
 See [INSTALL.md](INSTALL.md) for global and project-local tarball install steps, and [Using `@doc2md/core`](docs/using-doc2md-core.md) for API examples, CLI usage, output behavior, and skill setup.
 
+
+Single file with a project-local install:
+
+```bash
+npx doc2md /absolute/path/resume.pdf -o ./out
+```
+
+Multiple files in one run:
+
+```bash
+npx doc2md /absolute/path/a.pdf /absolute/path/b.docx -o ./out
+```
+
+Command line access:
+
+```bash
+doc2md /absolute/path/resume.pdf -o ./out
+```
+
+
+
 ## Principles
 
 * **Client-side first** — files processed in the browser, never uploaded
