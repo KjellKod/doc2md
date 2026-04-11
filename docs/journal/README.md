@@ -6,6 +6,7 @@ For the other perspective, see [Dexter's Journal](../dexter-journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 019 | [Celebration: Update Architecture Docs](019-celebrate-update-architecture-docs.md) | Documenting the whole map — shared converters, dual builds, runtime bridge, Diamond tier |
 | 018 | [Severity Review](018-severity-review.md) | Structured severity for pipelines, format-after-dedup, and exit codes that finally mean what they say |
 | 017 | [Celebration: PR50 Review And Fix](017-celebrate-pr50-review-and-fix.md) | A branch with too much history, two honest fix loops, and one final clean review. |
 | 016 | [Celebration: CI Trustworthiness](016-celebrate-ci-trustworthiness.md) | Three phases of CI honesty, a relentless Codex reviewer, and the quiet win of an intent-review lane |
