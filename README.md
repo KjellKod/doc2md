@@ -70,6 +70,11 @@ Command line access:
 doc2md /absolute/path/resume.pdf -o ./out
 ```
 
+Agent instructions using skills:
+```claude
+/doc2md convert /absolute/path/resume.pdf and <some instruction>
+```
+
 
 
 ## Principles
