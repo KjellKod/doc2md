@@ -10,7 +10,6 @@ import {
   REMOTE_DOCUMENT_BROWSER_ACCESS_MESSAGE,
   REMOTE_DOCUMENT_DOWNLOAD_TIMEOUT_MS,
   REMOTE_DOCUMENT_TIMEOUT_MESSAGE,
-  UNSUPPORTED_GITHUB_BLOB_URL_MESSAGE,
 } from "./remoteDocument";
 
 describe("remoteDocument", () => {
@@ -142,61 +141,21 @@ describe("remoteDocument", () => {
     );
   });
 
-  it("rejects GitHub blob URLs that cannot be normalized safely", async () => {
-    await expect(
-      downloadRemoteDocument(
-        "https://github.com/KjellKod/doc2md/blob/main",
-        { fetchImpl: vi.fn() },
-      ),
-    ).rejects.toThrow(UNSUPPORTED_GITHUB_BLOB_URL_MESSAGE);
-  });
-
-  it("rejects malformed GitHub blob URLs even when raw mode is already present", async () => {
-    await expect(
-      downloadRemoteDocument(
-        "https://github.com/KjellKod/doc2md/blob/main?raw=1",
-        { fetchImpl: vi.fn() },
-      ),
-    ).rejects.toThrow(UNSUPPORTED_GITHUB_BLOB_URL_MESSAGE);
-  });
-
-  it("normalizes GitHub blob URLs before fetching", async () => {
+  it("passes through direct remote URLs unchanged", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      url: "https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md",
-      headers: new Headers(),
-      blob: vi.fn().mockResolvedValue(new Blob(["# docs"], { type: "text/markdown" })),
-    });
-
-    const file = await downloadRemoteDocument(
-      "https://github.com/KjellKod/doc2md/blob/main/README.md",
-      { fetchImpl: fetchMock },
-    );
-
-    expect(fetchMock).toHaveBeenCalledWith(
-      "https://github.com/KjellKod/doc2md/blob/main/README.md?raw=1",
-      expect.objectContaining({
-        signal: expect.any(AbortSignal),
-      }),
-    );
-    expect(file.name).toBe("README.md");
-  });
-
-  it("passes through GitHub raw URLs unchanged", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      url: "https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md",
+      url: "https://example.com/docs/README.md",
       headers: new Headers(),
       blob: vi.fn().mockResolvedValue(new Blob(["# docs"], { type: "text/markdown" })),
     });
 
     await downloadRemoteDocument(
-      "https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md",
+      "https://example.com/docs/README.md",
       { fetchImpl: fetchMock },
     );
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md",
+      "https://example.com/docs/README.md",
       expect.objectContaining({
         signal: expect.any(AbortSignal),
       }),

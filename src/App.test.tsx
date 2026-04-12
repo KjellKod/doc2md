@@ -289,69 +289,6 @@ describe("App", () => {
     });
   });
 
-  it("requires explicit confirmation before importing a query-param document URL", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/?file=https://github.com/KjellKod/doc2md/blob/main/README.md",
-    );
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      headers: new Headers(),
-      blob: vi.fn().mockResolvedValue(
-        new Blob(["# Remote README"], { type: "text/markdown" }),
-      ),
-    });
-    vi.stubGlobal("fetch", fetchMock);
-    convertFileMock.mockResolvedValue(createSuccessResult("# Remote README"));
-
-    render(<App />);
-
-    expect(fetchMock).not.toHaveBeenCalled();
-    expect(
-      screen.getByRole("button", { name: "Import linked URL" }),
-    ).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Import linked URL" }));
-
-    expect(
-      await screen.findByRole("button", { name: /README\.md/i }),
-    ).toBeInTheDocument();
-
-    await waitFor(() => {
-      expect(
-        screen.getByRole("heading", { name: "Remote README" }),
-      ).toBeInTheDocument();
-    });
-
-    expect(fetchMock).toHaveBeenCalledWith(
-      "https://github.com/KjellKod/doc2md/blob/main/README.md?raw=1",
-      expect.objectContaining({
-        signal: expect.any(AbortSignal),
-      }),
-    );
-  });
-
-  it("shows query-param import failures inline after confirmation", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/?file=https://example.com/private.docx",
-    );
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockRejectedValue(new TypeError("Failed to fetch")),
-    );
-
-    render(<App />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Import linked URL" }));
-
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "We couldn't download that document in the browser. The site may block direct access or require sign-in.",
-    );
-  });
-
   it("shows URL import failures inline", async () => {
     vi.stubGlobal(
       "fetch",

@@ -51,13 +51,13 @@ npx doc2md /absolute/path/resume.pdf -o ./out
 Single remote URL:
 
 ```bash
-npx doc2md https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md -o ./out
+npx doc2md https://example.com/docs/guide.md -o ./out
 ```
 
 Multiple files in one run:
 
 ```bash
-npx doc2md /absolute/path/a.pdf /absolute/path/b.docx https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md -o ./out
+npx doc2md /absolute/path/a.pdf /absolute/path/b.docx https://example.com/docs/guide.md -o ./out
 ```
 
 Global tarball install flow:
@@ -88,7 +88,7 @@ const result = await convertDocuments(
     "/absolute/path/resume.pdf",
     "/absolute/path/notes.docx",
     "/absolute/path/sheet.xlsx",
-    "https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md"
+    "https://example.com/docs/guide.md"
   ],
   {
     outputDir: "/absolute/path/out",
@@ -108,7 +108,7 @@ console.log(result.results);
 import { convertDocument } from "@doc2md/core";
 
 const result = await convertDocument(
-  "https://github.com/KjellKod/doc2md/blob/main/README.md",
+  "https://example.com/docs/guide.md",
   {
     outputDir: "/absolute/path/out"
   }
@@ -141,19 +141,19 @@ void main();
 If `@doc2md/core` is installed in your project from a local tarball, run the CLI with `npx` or `npm exec`:
 
 ```bash
-npx doc2md /absolute/path/resume.pdf https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md -o /absolute/path/out --max 10 --concurrency 4 --remote-timeout-ms 30000
+npx doc2md /absolute/path/resume.pdf https://example.com/docs/guide.md -o /absolute/path/out --max 10 --concurrency 4 --remote-timeout-ms 30000
 ```
 
 Equivalent `npm exec` form:
 
 ```bash
-npm exec doc2md -- /absolute/path/resume.pdf https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md -o /absolute/path/out --max 10 --concurrency 4 --remote-timeout-ms 30000
+npm exec doc2md -- /absolute/path/resume.pdf https://example.com/docs/guide.md -o /absolute/path/out --max 10 --concurrency 4 --remote-timeout-ms 30000
 ```
 
 If you installed the package globally, including from a local tarball, this also works:
 
 ```bash
-doc2md /absolute/path/resume.pdf https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md -o /absolute/path/out --max 10 --concurrency 4 --remote-timeout-ms 30000
+doc2md /absolute/path/resume.pdf https://example.com/docs/guide.md -o /absolute/path/out --max 10 --concurrency 4 --remote-timeout-ms 30000
 ```
 
 Prefer `npx doc2md ...` for repo-specific use. Use plain `doc2md ...` after a global install, including `npm install -g /absolute/path/to/doc2md-core-<derived-version>.tgz`.
@@ -202,12 +202,11 @@ Direct-fetch rules:
 - Remote downloads time out after 30 seconds by default. Use `remoteTimeoutMs` in the API or `--remote-timeout-ms` in the CLI to override that.
 - Browser-only size guards do not apply here. The package does not impose a byte-size limit on remote URLs.
 
-GitHub URL normalization:
+Remote URL handling:
 
-- Supported blob shape: `https://github.com/<owner>/<repo>/blob/<branch>/<path>`
-- Supported raw shape: `https://raw.githubusercontent.com/<owner>/<repo>/refs/heads/<branch>/<path>`
-- Blob URLs are requested in GitHub raw mode (`?raw=1`), and GitHub's redirect to the raw file response is used for conversion and filename inference.
-- Malformed or unsupported GitHub blob URLs are rejected before fetch instead of falling back to a GitHub HTML page.
+- doc2md fetches remote URLs exactly as provided.
+- doc2md does not normalize provider-specific view URLs into download URLs.
+- If a site exposes both a page URL and a direct-download/raw URL, provide the direct-download/raw URL.
 
 ## Supported Formats
 

@@ -103,8 +103,7 @@ export default function DropZone({ onFilesAdded, onUrlAdded }: DropZoneProps) {
       />
 
       <p className="drop-zone-kicker">
-        No doc2md upload backend. Local files stay local, and URL imports fetch
-        directly in your browser.
+        YOUR FILES STAY ON YOUR DEVICE. NOTHING IS UPLOADED.
       </p>
       <p className="drop-zone-title">Drop files or import a document URL</p>
       <p className="drop-zone-copy">

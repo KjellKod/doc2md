@@ -18,7 +18,7 @@ describe("parseArgs", () => {
     expect(
       parseArgs([
         "sample.txt",
-        "https://github.com/KjellKod/doc2md/blob/main/README.md",
+        "https://example.com/docs/README.md",
         "-o",
         "out",
         "--remote-timeout-ms",
@@ -27,7 +27,7 @@ describe("parseArgs", () => {
     ).toEqual({
       inputs: [
         "sample.txt",
-        "https://github.com/KjellKod/doc2md/blob/main/README.md"
+        "https://example.com/docs/README.md"
       ],
       outputDir: "out",
       maxDocuments: undefined,

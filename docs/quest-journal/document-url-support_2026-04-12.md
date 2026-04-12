@@ -8,7 +8,7 @@
 
 ## What Shipped
 
-**Problem:** Users must manually download documents before converting them with doc2md. They should be able to paste a URL (including GitHub blob/raw URLs) and get the same conversion result as a local file drop.
+**Problem:** Users must manually download documents before converting them with doc2md. They should be able to paste a direct document URL and get the same conversion result as a local file drop.
 
 **Impact:** Reduces friction for all users. Especially valuable for GitHub README/d...
 

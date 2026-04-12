@@ -97,50 +97,6 @@ describe("convertDocuments", () => {
     expect(result.results[1].outputPath?.endsWith("remote-brief.md")).toBe(true);
   });
 
-  it("supports both GitHub blob and raw URL shapes", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      url: "https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md",
-      headers: new Headers(),
-      blob: vi.fn().mockResolvedValue(new Blob(["# doc2md"], { type: "text/markdown" }))
-    });
-    vi.stubGlobal("fetch", fetchMock);
-    const outputDir = await createTempDir("doc2md-core-batch-github-");
-
-    const result = await convertDocuments(
-      [
-        "https://github.com/KjellKod/doc2md/blob/main/README.md",
-        "https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md"
-      ],
-      {
-        outputDir
-      }
-    );
-
-    expect(result.results).toHaveLength(2);
-    expect(result.results[0].status).toBe("success");
-    expect(result.results[1].status).toBe("success");
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      1,
-      "https://github.com/KjellKod/doc2md/blob/main/README.md?raw=1",
-      expect.objectContaining({
-        signal: expect.any(AbortSignal)
-      })
-    );
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      2,
-      "https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md",
-      expect.objectContaining({
-        signal: expect.any(AbortSignal)
-      })
-    );
-    expect(
-      result.results
-        .map((entry) => path.basename(entry.outputPath ?? ""))
-        .sort()
-    ).toEqual(["README-1.md", "README.md"]);
-  });
-
   it("returns a per-document error for remote download timeouts without failing the batch", async () => {
     vi.useFakeTimers();
     vi.stubGlobal("fetch", vi.fn((_input, init?: RequestInit) => {

@@ -76,7 +76,7 @@ import { convertDocuments } from "@doc2md/core";
 const result = await convertDocuments(
   [
     "/absolute/path/resume.pdf",
-    "https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md"
+    "https://example.com/docs/guide.md"
   ],
   {
     outputDir: "/absolute/path/out",
@@ -96,7 +96,7 @@ Single-document conversion:
 import { convertDocument } from "@doc2md/core";
 
 const result = await convertDocument(
-  "https://github.com/KjellKod/doc2md/blob/main/README.md",
+  "https://example.com/docs/guide.md",
   {
     outputDir: "/absolute/path/out"
   }
@@ -111,19 +111,19 @@ console.log(result.outputPath);
 If `@doc2md/core` is installed in your project, run the CLI with `npx` or `npm exec`:
 
 ```bash
-npx doc2md /absolute/path/resume.pdf https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md -o /absolute/path/out --max 10 --concurrency 4 --remote-timeout-ms 30000
+npx doc2md /absolute/path/resume.pdf https://example.com/docs/guide.md -o /absolute/path/out --max 10 --concurrency 4 --remote-timeout-ms 30000
 ```
 
 Equivalent `npm exec` form:
 
 ```bash
-npm exec doc2md -- /absolute/path/resume.pdf https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md -o /absolute/path/out --max 10 --concurrency 4 --remote-timeout-ms 30000
+npm exec doc2md -- /absolute/path/resume.pdf https://example.com/docs/guide.md -o /absolute/path/out --max 10 --concurrency 4 --remote-timeout-ms 30000
 ```
 
 If you installed the package globally, including from a local tarball, this also works:
 
 ```bash
-doc2md /absolute/path/resume.pdf https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md -o /absolute/path/out --max 10 --concurrency 4 --remote-timeout-ms 30000
+doc2md /absolute/path/resume.pdf https://example.com/docs/guide.md -o /absolute/path/out --max 10 --concurrency 4 --remote-timeout-ms 30000
 ```
 
 Prefer `npx doc2md ...` for repo-specific use. Use plain `doc2md ...` after a global install, including `npm install -g /absolute/path/to/doc2md-core-<derived-version>.tgz`.
@@ -150,13 +150,7 @@ npx doc2md /absolute/path/a.pdf /absolute/path/b.docx -o /absolute/path/out
 
 `@doc2md/core` and the CLI accept local file paths and direct remote document URLs in the same input list.
 
-Supported GitHub URL shapes:
-
-- `https://github.com/<owner>/<repo>/blob/<branch>/<path>` -> requested in GitHub raw mode (`?raw=1`)
-- `https://raw.githubusercontent.com/<owner>/<repo>/refs/heads/<branch>/<path>` -> fetched as-is
-
-GitHub blob URLs are requested in GitHub raw mode (`?raw=1`), and GitHub's redirect to the raw file response is used for conversion and filename inference. Raw GitHub URLs are fetched as-is.
-Malformed or unsupported GitHub blob URLs are rejected before fetch instead of falling back to a GitHub HTML page.
+Remote URLs are fetched exactly as provided. doc2md does not normalize provider-specific page URLs into download URLs, so if a host exposes a separate raw/download URL, pass that direct URL explicitly.
 
 ## Supported Formats
 

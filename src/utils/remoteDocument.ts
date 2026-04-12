@@ -6,15 +6,11 @@ import {
   deriveRemoteDocumentFileName,
   getRemoteDocumentResponseMessage,
   INVALID_REMOTE_DOCUMENT_URL_MESSAGE,
-  normalizeGitHubDocumentUrl,
-  shouldRejectGitHubBlobUrl,
-  UNSUPPORTED_GITHUB_BLOB_URL_MESSAGE,
 } from "../shared/remoteDocumentShared";
 
 export {
   deriveRemoteDocumentFileName,
   INVALID_REMOTE_DOCUMENT_URL_MESSAGE,
-  UNSUPPORTED_GITHUB_BLOB_URL_MESSAGE,
 };
 
 export const REMOTE_DOCUMENT_BROWSER_ACCESS_MESSAGE =
@@ -84,17 +80,13 @@ export async function downloadRemoteDocument(
     throw new Error(INVALID_REMOTE_DOCUMENT_URL_MESSAGE);
   }
 
-  const normalizedUrl = normalizeGitHubDocumentUrl(parsedUrl);
-  if (shouldRejectGitHubBlobUrl(parsedUrl, normalizedUrl)) {
-    throw new Error(UNSUPPORTED_GITHUB_BLOB_URL_MESSAGE);
-  }
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   try {
     let response: Response;
 
     try {
-      response = await fetchImpl(normalizedUrl.toString(), {
+      response = await fetchImpl(parsedUrl.toString(), {
         signal: controller.signal,
       });
     } catch (error) {
@@ -133,7 +125,7 @@ export async function downloadRemoteDocument(
     if (blob.size > MAX_BROWSER_FILE_SIZE_BYTES) {
       throw new Error(OVERSIZED_FILE_MESSAGE);
     }
-    const responseUrl = new URL(response.url || normalizedUrl.toString());
+    const responseUrl = new URL(response.url || parsedUrl.toString());
     const fileName = deriveRemoteDocumentFileName(
       responseUrl,
       response.headers,

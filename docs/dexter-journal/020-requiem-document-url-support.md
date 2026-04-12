@@ -28,7 +28,7 @@
 
 > Here lies the old manual-download tax. A document URL now enters the same converter boundary as a local file and dies with dignity.
 
-> Here lies the GitHub blob page that wanted to masquerade as content. It was denied entry and told to bring a raw URL like an adult.
+> Here lies the old copy-paste dance. A direct document URL now enters the converter boundary without the ritual download detour.
 
 > Here lies the generic HTTP shrug. `403`, `404`, and the rest now identify themselves before the autopsy begins.
 
@@ -51,7 +51,7 @@
 
 ## 🔬 Coroner's Report
 
-Remote document URLs now work across the web UI, `@doc2md/core`, and the CLI without introducing a backend service. Browser fetches remain browser-local, with the existing 50 MiB guard and a dedicated download timeout; Node fetches remain local to the calling machine, with a direct-fetch timeout and no new byte-size cap. Cause of death was duplication and wishful thinking: GitHub blob normalization moved into one shared pure module, malformed blob URLs stopped falling through to HTML, and the shipped CLI now proves its own remote behavior instead of asking the parser to testify on its behalf.
+Remote document URLs now work across the web UI, `@doc2md/core`, and the CLI without introducing a backend service. Browser fetches remain browser-local, with the existing 50 MiB guard and a dedicated download timeout; Node fetches remain local to the calling machine, with a direct-fetch timeout and no new byte-size cap. Cause of death was duplication and wishful thinking: direct remote URLs now cross the same converter boundary as local files, failure mapping is honest, and the shipped CLI now proves its own remote behavior instead of asking the parser to testify on its behalf.
 
 ---
 

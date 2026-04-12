@@ -119,15 +119,6 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isPageResizing, setIsPageResizing] = useState(false);
   const [pageMaxWidth, setPageMaxWidth] = useState(BASE_PAGE_MAX_WIDTH);
-  const [startupImportUrl, setStartupImportUrl] = useState<string | null>(() =>
-    typeof window === "undefined"
-      ? null
-      : new URLSearchParams(window.location.search).get("file")?.trim() ?? null,
-  );
-  const [isImportingStartupUrl, setIsImportingStartupUrl] = useState(false);
-  const [startupUrlImportError, setStartupUrlImportError] = useState<
-    string | null
-  >(null);
   const convertTabRef = useRef<HTMLButtonElement>(null);
   const installTabRef = useRef<HTMLButtonElement>(null);
   const dragStartXRef = useRef(0);
@@ -308,30 +299,7 @@ export default function App() {
   };
 
   async function handleUrlAdded(url: string) {
-    setStartupUrlImportError(null);
     await addUrl(url);
-  }
-
-  async function handleStartupUrlImport() {
-    if (!startupImportUrl) {
-      return;
-    }
-
-    setIsImportingStartupUrl(true);
-    setStartupUrlImportError(null);
-
-    try {
-      await addUrl(startupImportUrl);
-      setStartupImportUrl(null);
-    } catch (error) {
-      setStartupUrlImportError(
-        error instanceof Error
-          ? error.message
-          : "We couldn't import that document URL.",
-      );
-    } finally {
-      setIsImportingStartupUrl(false);
-    }
   }
 
   return (
@@ -453,36 +421,6 @@ export default function App() {
                         />
                       </button>
                     </div>
-
-                    {startupImportUrl ? (
-                      <div className="panel-heading panel-heading-tight">
-                        <div>
-                          <h2>Linked URL</h2>
-                          <p className="panel-copy">
-                            A `?file=` link prepared a document URL. Import it
-                            explicitly before any browser fetch starts.
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          className="secondary-button"
-                          onClick={() => {
-                            void handleStartupUrlImport();
-                          }}
-                          disabled={isImportingStartupUrl}
-                        >
-                          {isImportingStartupUrl
-                            ? "Importing..."
-                            : "Import linked URL"}
-                        </button>
-                      </div>
-                    ) : null}
-
-                    {startupUrlImportError ? (
-                      <p className="drop-zone-error" role="alert">
-                        {startupUrlImportError}
-                      </p>
-                    ) : null}
 
                     <DropZone
                       onFilesAdded={addFiles}

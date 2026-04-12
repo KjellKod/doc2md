@@ -1,7 +1,5 @@
 export const INVALID_REMOTE_DOCUMENT_URL_MESSAGE =
   "Enter a valid http:// or https:// document URL.";
-export const UNSUPPORTED_GITHUB_BLOB_URL_MESSAGE =
-  "This GitHub blob URL can't be normalized safely. Use a raw GitHub URL instead.";
 
 const MIME_TYPE_EXTENSION_MAP: Record<string, string> = {
   "application/json": "json",
@@ -99,54 +97,6 @@ function appendExtensionIfMissing(fileName: string, mimeType: string) {
 
 export function normalizeMimeType(mimeType: string | null | undefined) {
   return mimeType?.split(";")[0]?.trim().toLowerCase() ?? "";
-}
-
-export function isGitHubBlobUrl(url: URL) {
-  const segments = url.pathname.split("/").filter(Boolean);
-  return url.hostname === "github.com" && segments[2] === "blob";
-}
-
-export function normalizeGitHubDocumentUrl(url: URL) {
-  if (url.hostname === "raw.githubusercontent.com") {
-    return new URL(url.toString());
-  }
-
-  if (url.hostname !== "github.com") {
-    return new URL(url.toString());
-  }
-
-  const segments = url.pathname.split("/").filter(Boolean);
-
-  if (segments.length < 5) {
-    return new URL(url.toString());
-  }
-
-  const [owner, repo, marker, ...restSegments] = segments;
-  const filePathSegments = restSegments.slice(1);
-
-  if (
-    !owner ||
-    !repo ||
-    marker !== "blob" ||
-    filePathSegments.length === 0
-  ) {
-    return new URL(url.toString());
-  }
-
-  const normalizedUrl = new URL(url.toString());
-  normalizedUrl.searchParams.set("raw", "1");
-  return normalizedUrl;
-}
-
-export function shouldRejectGitHubBlobUrl(url: URL, normalizedUrl: URL) {
-  const segments = url.pathname.split("/").filter(Boolean);
-
-  return (
-    isGitHubBlobUrl(url) &&
-    (segments.length < 5 ||
-    normalizedUrl.searchParams.get("raw") !== "1"
-    )
-  );
 }
 
 export function deriveRemoteDocumentFileName(

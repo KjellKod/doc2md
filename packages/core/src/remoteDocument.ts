@@ -2,9 +2,6 @@ import {
   deriveRemoteDocumentFileName,
   getRemoteDocumentResponseMessage,
   INVALID_REMOTE_DOCUMENT_URL_MESSAGE,
-  normalizeGitHubDocumentUrl,
-  shouldRejectGitHubBlobUrl,
-  UNSUPPORTED_GITHUB_BLOB_URL_MESSAGE,
 } from "../../../src/shared/remoteDocumentShared";
 
 export const DEFAULT_REMOTE_DOCUMENT_TIMEOUT_MS = 30_000;
@@ -53,8 +50,6 @@ export function isRemoteUrl(input: string) {
 export {
   deriveRemoteDocumentFileName,
   INVALID_REMOTE_DOCUMENT_URL_MESSAGE,
-  normalizeGitHubDocumentUrl,
-  UNSUPPORTED_GITHUB_BLOB_URL_MESSAGE,
 };
 
 export async function createInputFileFromUrl(
@@ -68,19 +63,13 @@ export async function createInputFileFromUrl(
   const parsedUrl = new URL(urlInput);
   const fetchImpl = options.fetchImpl ?? fetch;
   const timeoutMs = options.timeoutMs ?? DEFAULT_REMOTE_DOCUMENT_TIMEOUT_MS;
-  const normalizedUrl = normalizeGitHubDocumentUrl(parsedUrl);
-
-  if (shouldRejectGitHubBlobUrl(parsedUrl, normalizedUrl)) {
-    throw new Error(UNSUPPORTED_GITHUB_BLOB_URL_MESSAGE);
-  }
-
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   try {
     let response: Response;
 
     try {
-      response = await fetchImpl(normalizedUrl.toString(), {
+      response = await fetchImpl(parsedUrl.toString(), {
         signal: controller.signal,
       });
     } catch (error) {
@@ -107,7 +96,7 @@ export async function createInputFileFromUrl(
       throw new Error(REMOTE_DOCUMENT_ACCESS_FAILED_MESSAGE);
     }
 
-    const responseUrl = new URL(response.url || normalizedUrl.toString());
+    const responseUrl = new URL(response.url || parsedUrl.toString());
     const fileName = deriveRemoteDocumentFileName(
       responseUrl,
       response.headers,
