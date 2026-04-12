@@ -50,13 +50,13 @@ The key insight: **the core never imports an adapter**. Adapters import the core
 
 ## The Smart Path: Fast First, Fallback on Quality
 
-The most interesting adapter isn't a single backend — it's a **cascading adapter** that tries the fast path first and auto-escalates when quality signals indicate trouble.
+The most interesting adapter isn't a single backend — it's a **auto adapter** that tries the fast path first and auto-escalates when quality signals indicate trouble.
 
-doc2md already produces quality signals: `"good" | "review" | "poor"`, image detection, watermark detection, table heuristics. Today those signals become warnings for the user. With a fallback adapter, they become *triggers for automatic re-conversion*.
+doc2md already produces quality signals: `"good" | "review" | "poor"`, image detection, watermark detection, table heuristics. Today those signals become warnings for the user. With `--pdf-auto`, they become *triggers for automatic re-conversion*.
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  CascadingPdfConverter                                       │
+│  AutoPdfConverter                                       │
 │                                                              │
 │  Step 1: PDF.js (fast path)                                  │
 │    ├── quality: "good"  → return result ✓  (milliseconds)    │
@@ -83,11 +83,11 @@ doc2md already produces quality signals: `"good" | "review" | "poor"`, image det
 - The quality heuristics we already built become the routing logic, not just warnings
 
 ```typescript
-// adapters/cascading-converter.ts
+// adapters/auto-converter.ts
 
 import type { PdfConverter, PdfConvertResult } from "../ports/pdf-converter.js";
 
-export interface CascadingConfig {
+export interface AutoPdfConfig {
   /** Primary (fast) converter — always tried first */
   primary: PdfConverter;
   /** Fallback converter — used when primary quality is insufficient */
@@ -96,12 +96,12 @@ export interface CascadingConfig {
   escalateAt?: "review" | "poor";
 }
 
-export class CascadingPdfConverter implements PdfConverter {
+export class AutoPdfConverter implements PdfConverter {
   private primary: PdfConverter;
   private fallback: PdfConverter;
   private escalateAt: "review" | "poor";
 
-  constructor(config: CascadingConfig) {
+  constructor(config: AutoPdfConfig) {
     this.primary = config.primary;
     this.fallback = config.fallback;
     this.escalateAt = config.escalateAt ?? "review";
@@ -152,7 +152,7 @@ export class CascadingPdfConverter implements PdfConverter {
 **Wiring example:**
 
 ```typescript
-const converter = new CascadingPdfConverter({
+const converter = new AutoPdfConverter({
   primary: new PdfJsConverter(),
   fallback: new DoclingServeConverter({ baseUrl: "http://localhost:5001" }),
   escalateAt: "review",  // escalate on "review" or "poor"
@@ -166,15 +166,18 @@ const result = await converter.convert(pdfBuffer);
 **CLI behavior:**
 
 ```bash
-# No fallback configured — same as today
+# Default (PDF.js only)
 doc2md report.pdf -o ./out
 
-# With auto-escalation — user doesn't pick, quality decides
-doc2md report.pdf -o ./out \
-  --pdf-fallback docling-serve \
+# Auto mode — PDF.js first, escalates if quality is poor
+doc2md report.pdf -o ./out --pdf-auto
+
+# Auto with specific fallback target
+doc2md scanned-report.pdf -o ./out \
+  --pdf-auto docling-serve \
   --docling-url http://localhost:5001
 
-# Force a specific backend (skip fast path)
+# Force backend (skip fast path)
 doc2md scanned.pdf -o ./out \
   --pdf-backend docling-serve \
   --docling-url http://localhost:5001
@@ -189,7 +192,7 @@ doc2md scanned.pdf -o ./out \
 
 ## The Port: PdfConverter Interface
 
-One interface. Every PDF backend implements it — including the cascading adapter.
+One interface. Every PDF backend implements it — including the auto adapter.
 
 ```typescript
 // ports/pdf-converter.ts
@@ -243,7 +246,7 @@ export class PdfJsConverter implements PdfConverter {
 - Fast — often fractions of a second per document
 - Privacy-first — file never leaves the machine
 - Limited — no OCR, no formula recognition (LaTeX/math equations). Has table detection via column clustering and heuristics, but not ML-powered table structure recognition
-- Produces quality signals that drive the cascading adapter
+- Produces quality signals that drive the auto adapter
 
 ## Adapter 2: Docling Serve (Remote ML)
 
@@ -325,7 +328,7 @@ export class LlmOcrConverter implements PdfConverter {
 
 ## Wiring: Adapter Selection at Startup
 
-The factory supports both explicit backend selection and the cascading pattern.
+The factory supports both explicit backend selection and the auto pattern.
 
 ```typescript
 // factory/create-pdf-converter.ts
@@ -336,8 +339,8 @@ import { PdfJsConverter } from "../adapters/pdfjs-converter.js";
 export interface PdfBackendConfig {
   /** Explicit backend — skips fast path, uses this directly */
   backend?: "pdfjs" | "docling-serve" | "llm-ocr";
-  /** Fallback — uses PDF.js first, escalates on quality signals */
-  fallback?: "docling-serve" | "llm-ocr";
+  /** Auto mode — uses PDF.js first, escalates on quality signals */
+  auto?: "docling-serve" | "llm-ocr";
   /** When to escalate. Default: "review" */
   escalateAt?: "review" | "poor";
   doclingServe?: {
@@ -357,13 +360,13 @@ export async function createPdfConverter(config?: PdfBackendConfig): Promise<Pdf
     return createDirectAdapter(config);
   }
 
-  // Fallback configured — cascading pattern
-  if (config?.fallback) {
-    const { CascadingPdfConverter } = await import("../adapters/cascading-converter.js");
-    return new CascadingPdfConverter({
+  // Auto mode — PDF.js first, escalate on quality signals
+  if (config?.auto) {
+    const { AutoPdfConverter } = await import("../adapters/auto-converter.js");
+    return new AutoPdfConverter({
       primary: new PdfJsConverter(),
       fallback: await createDirectAdapter({
-        backend: config.fallback,
+        backend: config.auto,
         ...config,
       }),
       escalateAt: config.escalateAt ?? "review",
@@ -383,11 +386,11 @@ const result = await convertDocument("/path/report.pdf", {
   outputDir: "./out",
 });
 
-// Auto-escalation — fast path first, Docling Serve if quality is poor
+// Auto mode — PDF.js first, Docling Serve if quality is poor
 const result = await convertDocument("/path/scanned-report.pdf", {
   outputDir: "./out",
-  pdfFallback: {
-    fallback: "docling-serve",
+  pdfAuto: {
+    auto: "docling-serve",
     doclingServe: { baseUrl: "http://localhost:5001" },
   },
 });
@@ -412,9 +415,12 @@ CLI equivalent:
 # Default (PDF.js only)
 doc2md report.pdf -o ./out
 
-# Auto-escalation (fast path + fallback)
+# Auto mode — PDF.js first, escalates if quality is poor
+doc2md report.pdf -o ./out --pdf-auto
+
+# Auto with specific fallback target
 doc2md scanned-report.pdf -o ./out \
-  --pdf-fallback docling-serve \
+  --pdf-auto docling-serve \
   --docling-url http://localhost:5001
 
 # Force backend (skip fast path)
@@ -460,6 +466,6 @@ We have one PDF backend. Adding an interface around a single implementation is Y
 - At that point, the refactor is small: extract the interface from the existing PDF.js converter, write the new adapter, add the cascading wrapper, add the factory
 - Two real implementations tell you what the interface *actually needs* — one implementation only tells you what you *guess* it needs
 
-**The cascading pattern is the key insight.** It means the common case (text PDFs) stays instant, and the user never needs to know which backend handled their file. Quality signals we already produce become the routing logic. The abstraction pays for itself only when there's a real fallback to cascade to.
+**The auto pattern is the key insight.** It means the common case (text PDFs) stays instant, and the user never needs to know which backend handled their file. Quality signals we already produce become the routing logic. The abstraction pays for itself only when there's a real fallback to cascade to.
 
 As the `AGENTS.md` says: YAGNI — You Aren't Gonna Need It. Until you do.
