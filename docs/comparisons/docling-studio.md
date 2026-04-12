@@ -43,7 +43,7 @@ The user noted: *"we could be for the npm part if we wanted"* — meaning `@doc2
 | **PDF approach** | PDF.js text extraction with quality detection | Docling ML: OCR, table extraction, formula recognition |
 | **LoC** | ~11,100 TypeScript | ~15,000 (Python + TypeScript + Vue) |
 | **Unit tests** | 37 files, 5,321 lines (Vitest) | 199 backend (pytest) + 129 frontend (Vitest) |
-| **E2E tests** | None | 31 Karate feature files (API + UI) |
+| **E2E tests** | 15 converter smoke tests (no browser e2e) | 31 Karate feature files (API + UI) |
 | **Coverage config** | No thresholds | No thresholds found |
 | **CI workflows** | 5 (lint, test, build, deploy, security) | 6 (CI, release-gate, release, docs, compat, auto-close) |
 | **Release gate** | lint + typecheck + test + build | 10 checks in 4 phases + PR verdict comment |
@@ -98,7 +98,7 @@ doc2md optimizes for **zero-friction adoption** (drag a file into a browser, get
 
 **Test inventory:** 37 test files, 5,321 lines of test code, Vitest 4.1.2.
 
-**Test pyramid:** Almost entirely unit tests, with a smoke test suite (`src/__tests__/smoke.test.ts`, 248 lines, 15 cases) serving as the closest thing to integration tests. No e2e tests.
+**Test pyramid:** Strong unit tests plus a smoke test suite (`src/__tests__/smoke.test.ts`, 248 lines, 15 cases) that exercises every format end-to-end through the converter pipeline — including real fixture files (.docx, .xlsx, .pdf, .pptx), batch conversion, 10-PDF concurrent conversion, and error paths (unsupported format, empty file, malformed input). These are reliable converter-level e2e tests, not browser automation tests.
 
 **Testing style** — co-located test files, direct assertion on converter outputs:
 
@@ -206,14 +206,14 @@ This means PRs get fast `@smoke` checks, release branches get full regression, a
 | Aspect | doc2md | Docling-Studio |
 |--------|--------|----------------|
 | Unit test count | ~158 across 37 files | 328 across 28 files |
-| E2E tests | None | 31 Karate features |
-| Test pyramid shape | Very bottom-heavy | Balanced (unit + integration + e2e) |
+| E2E tests | 15 converter smoke tests (no browser e2e) | 31 Karate features (API + browser) |
+| Test pyramid shape | Unit-heavy + converter smoke | Balanced (unit + integration + e2e) |
 | Async testing | Fake timers + renderHook | pytest.mark.asyncio + AsyncMock |
 | Fixture approach | Static files (22) | Static + generated (`generate-test-data.py`) |
 | CI test gating | Single pass (all tests) | Tiered by branch (`@smoke` vs `@regression`) |
 | Coverage enforcement | None | None |
 
-**Verdict:** Docling-Studio has a meaningfully more mature test strategy, especially the e2e layer and the tag-based CI gating. doc2md's unit tests are solid but the absence of e2e tests is a gap.
+**Verdict:** Docling-Studio has a more mature test strategy, especially the browser e2e layer and the tag-based CI gating. doc2md's converter smoke tests are reliable and cover all formats end-to-end including concurrency, but it lacks browser-level UI automation (Playwright/Cypress). The smoke suite is a genuine strength — not "no e2e" — but it doesn't test drag-and-drop, UI rendering, or user flows.
 
 ---
 
@@ -419,7 +419,7 @@ doc2md doesn't need this level of architecture, but `@doc2md/core` might benefit
 ### 6.3 E2E Testing with Karate
 31 feature files with strict conventions, tag-based gating, and a clear separation between API and UI tests. The `e2e/CONVENTIONS.md` is a model document — golden rules against `Thread.sleep()`, mandatory `data-e2e` attributes, "setup via API / verify via UI / cleanup via API" pattern.
 
-doc2md has zero e2e tests. The smoke test in `src/__tests__/smoke.test.ts` tests converters, not user flows.
+doc2md has 15 converter smoke tests that exercise every format through real fixtures, including 10-PDF concurrent conversion — but no browser-level UI automation. The smoke suite is reliable for converter correctness; the gap is in testing user flows (drag-and-drop, preview rendering, download).
 
 ### 6.4 Release Process Maturity
 The 4-phase release gate (`release-gate.yml`) validates lint, tests, Docker builds, Docker smoke tests, Trivy image scans, e2e API tests, and e2e UI tests before posting a GO/NO-GO verdict as a PR comment. The 12-audit framework with weighted scoring and CRITICAL/MAJOR/MINOR levels is thorough.
