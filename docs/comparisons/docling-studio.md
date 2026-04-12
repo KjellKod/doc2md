@@ -370,7 +370,9 @@ def mark_running(self) -> None:
 4. **Analysis history** — Persist and revisit past analyses. Target: teams doing repeated document processing.
 5. **Remote processing proxy** — Lightweight Docker image delegates to a Docling Serve cluster. Target: enterprises with existing Docling infrastructure.
 
-**Key characteristic:** Deep PDF analysis with visual verification, requiring infrastructure.
+All interaction is through the web UI — there is no CLI, no npm package, and no documented API for scripting. The REST API exists (`/api/documents`, `/api/analyses`) but is internal to the frontend, not a published consumption surface.
+
+**Key characteristic:** Deep PDF analysis with visual verification, requiring infrastructure and a browser.
 
 ### Use Case Overlap
 
