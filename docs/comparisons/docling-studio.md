@@ -356,9 +356,9 @@ def mark_running(self) -> None:
 ### doc2md Use Cases
 
 1. **One-off document conversion** — Drag a file into the browser, get markdown. No install, no account, no upload. Target: anyone entering an AI-assisted workflow.
-2. **Batch CLI conversion** — `npx doc2md *.pdf *.docx -o ./out` for converting document collections. Target: developers, technical writers.
+2. **Batch CLI conversion** — `doc2md *.pdf *.docx -o ./out` (global install) or `npx doc2md *.pdf *.docx -o ./out` (no install) for converting document collections. Use `npx` for one-off runs without installing; use `doc2md` directly after `npm install -g` for frequent use. Target: developers, technical writers.
 3. **Programmatic API** — `import { convertDocuments } from "@doc2md/core"` for integrating into Node.js pipelines. Target: toolchain builders.
-4. **Agent skill** — `.skills/doc-to-markdown/` portable wrapper for Claude Code, Codex, and other coding agents. Target: agentic workflows.
+4. **Agent skill** — Portable `.skills/doc-to-markdown/` wrapper for coding agents. In Claude Code: `/doc2md convert the quarterly reports in ./docs/finance to markdown for the AI review pipeline`. Target: agentic workflows.
 
 **Key characteristic:** Four consumption surfaces from one codebase, zero infrastructure for any of them.
 
