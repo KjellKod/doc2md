@@ -303,7 +303,7 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "Import URL" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "We couldn't download that document in the browser. The site may block direct access or require sign-in.",
+      "We couldn't fetch that URL in the browser. Try downloading it first or use @doc2md/core.",
     );
   });
 

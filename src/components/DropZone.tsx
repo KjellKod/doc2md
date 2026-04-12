@@ -105,7 +105,7 @@ export default function DropZone({ onFilesAdded, onUrlAdded }: DropZoneProps) {
       <p className="drop-zone-kicker">
         YOUR FILES STAY ON YOUR DEVICE. NOTHING IS UPLOADED.
       </p>
-      <p className="drop-zone-title">Drop files or import a document URL</p>
+      <p className="drop-zone-title">Drop files to convert</p>
       <p className="drop-zone-copy">
         Drag in one or more files, or{" "}
         <button
@@ -123,6 +123,17 @@ export default function DropZone({ onFilesAdded, onUrlAdded }: DropZoneProps) {
           browse from your device
         </button>
         .
+      </p>
+      <div className="drop-zone-format-list" aria-label="Supported formats">
+        {SUPPORTED_FORMATS.map((format) => (
+          <span key={format} className="drop-zone-format-pill">
+            .{format}
+          </span>
+        ))}
+      </div>
+      <p className="drop-zone-note">
+        Mix supported file types. URL imports must allow direct browser access.
+        Up to {maxSizeInMb} MB each.
       </p>
       <form
         className="drop-zone-url-form"
@@ -164,17 +175,6 @@ export default function DropZone({ onFilesAdded, onUrlAdded }: DropZoneProps) {
           {urlError}
         </p>
       ) : null}
-      <div className="drop-zone-format-list" aria-label="Supported formats">
-        {SUPPORTED_FORMATS.map((format) => (
-          <span key={format} className="drop-zone-format-pill">
-            .{format}
-          </span>
-        ))}
-      </div>
-      <p className="drop-zone-note">
-        Mix supported file types. URL imports must allow direct browser access.
-        Up to {maxSizeInMb} MB each.
-      </p>
     </div>
   );
 }

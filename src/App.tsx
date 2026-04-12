@@ -403,9 +403,9 @@ export default function App() {
                       <div>
                         <h2 id="upload-title">Upload</h2>
                         <p className="panel-copy">
-                          Drop in documents, spreadsheets, PDFs, or presentations,
-                          or start writing from scratch and keep everything in one
-                          session.
+                          Drop in documents, spreadsheets, PDFs, or
+                          presentations, add a doc URL, or start writing from
+                          scratch and keep everything in one session.
                         </p>
                       </div>
                       <button

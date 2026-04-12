@@ -14,7 +14,7 @@ export {
 };
 
 export const REMOTE_DOCUMENT_BROWSER_ACCESS_MESSAGE =
-  "We couldn't download that document in the browser. The site may block direct access or require sign-in.";
+  "We couldn't fetch that URL in the browser. Try downloading it first or use @doc2md/core.";
 export const REMOTE_DOCUMENT_DOWNLOAD_TIMEOUT_MS = 30_000;
 export const REMOTE_DOCUMENT_TIMEOUT_MESSAGE =
   "Downloading that document URL timed out. Try again or download it locally first.";
