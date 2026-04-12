@@ -141,7 +141,7 @@ a {
 
 .page-version {
   position: absolute;
-  top: 0.1rem;
+  bottom: 0.1rem;
   right: 0.35rem;
   margin: 0;
   color: var(--text-muted);
