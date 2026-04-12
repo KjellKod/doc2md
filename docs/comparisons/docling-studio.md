@@ -94,7 +94,7 @@ doc2md optimizes for **zero-friction adoption** (drag a file into a browser, get
 
 ## 2. Test Approach
 
-### doc2md: Unit-Heavy, No E2E
+### doc2md: Unit-Heavy, No Browser E2E
 
 **Test inventory:** 37 test files, 5,321 lines of test code, Vitest 4.1.2.
 
@@ -356,7 +356,7 @@ def mark_running(self) -> None:
 ### doc2md Use Cases
 
 1. **One-off document conversion** — Drag a file into the browser, get markdown. No install, no account, no upload. Target: anyone entering an AI-assisted workflow.
-2. **Batch CLI conversion** — `doc2md *.pdf *.docx -o ./out` (global install) or `npx doc2md *.pdf *.docx -o ./out` (project-local install) for converting document collections. Use `npx` after a project-local tarball install; use `doc2md` directly after a global tarball install for frequent use. Target: developers, technical writers.
+2. **Batch CLI conversion** — `doc2md *.pdf *.docx -o ./out` (global tarball install) or `npx doc2md *.pdf *.docx -o ./out` (project-local tarball install) for converting document collections. Both require installing from the `@doc2md/core` tarball first (see `INSTALL.md`); the package is not published to the npm registry. Target: developers, technical writers.
 3. **Programmatic API** — `import { convertDocuments } from "@doc2md/core"` for integrating into Node.js pipelines. Target: toolchain builders.
 4. **Agent skill** — Portable `.skills/doc2md/` wrapper for coding agents. In Claude Code: `/doc2md convert the quarterly reports in ./docs/finance to markdown for the AI review pipeline`. Target: agentic workflows.
 
