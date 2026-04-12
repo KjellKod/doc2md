@@ -141,8 +141,8 @@ a {
 
 .page-version {
   position: absolute;
-  bottom: 0.1rem;
-  right: 0.35rem;
+  bottom: 0.45rem;
+  right: 0.65rem;
   z-index: 2;
   margin: 0;
   color: var(--text-muted);
