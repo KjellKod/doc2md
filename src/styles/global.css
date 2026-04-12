@@ -135,7 +135,20 @@ a {
 }
 
 .page {
+  position: relative;
   min-width: 0;
+}
+
+.page-version {
+  position: absolute;
+  top: 0.1rem;
+  right: 0.35rem;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1;
 }
 
 .hero h1,
@@ -148,7 +161,6 @@ a {
 }
 
 .hero {
-  position: relative;
   padding: 32px 8px 34px;
 }
 
@@ -157,18 +169,6 @@ a {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-}
-
-.hero-version {
-  position: absolute;
-  right: 0.15rem;
-  bottom: 0.15rem;
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  line-height: 1;
 }
 
 .eyebrow {
