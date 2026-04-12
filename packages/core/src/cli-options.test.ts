@@ -9,7 +9,30 @@ describe("parseArgs", () => {
       inputs: ["sample.txt"],
       outputDir: "out",
       maxDocuments: 5,
-      concurrency: 2
+      concurrency: 2,
+      remoteTimeoutMs: undefined
+    });
+  });
+
+  it("accepts mixed local paths and remote URLs", () => {
+    expect(
+      parseArgs([
+        "sample.txt",
+        "https://example.com/docs/README.md",
+        "-o",
+        "out",
+        "--remote-timeout-ms",
+        "45000"
+      ])
+    ).toEqual({
+      inputs: [
+        "sample.txt",
+        "https://example.com/docs/README.md"
+      ],
+      outputDir: "out",
+      maxDocuments: undefined,
+      concurrency: undefined,
+      remoteTimeoutMs: 45000
     });
   });
 
@@ -29,6 +52,12 @@ describe("parseArgs", () => {
     expect(
       () => parseArgs(["sample.txt", "-o", "out", "--concurrency", "0"])
     ).toThrow("Invalid value for --concurrency");
+  });
+
+  it("rejects invalid --remote-timeout-ms values", () => {
+    expect(
+      () => parseArgs(["sample.txt", "-o", "out", "--remote-timeout-ms", "0"])
+    ).toThrow("Invalid value for --remote-timeout-ms");
   });
 
   it("returns a help sentinel for --help", () => {

@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -41,6 +41,124 @@ async function pathExists(filePath: string) {
   }
 }
 
+async function startRemoteFixtureServer() {
+  const serverProcess = spawn(
+    process.execPath,
+    [
+      "-e",
+      `
+        const { createServer } = require("node:http");
+
+        const server = createServer((request, response) => {
+          if (request.url === "/remote-success.txt") {
+            response.writeHead(200, {
+              "content-disposition": 'attachment; filename="remote-cli.txt"',
+              "content-type": "text/plain; charset=utf-8"
+            });
+            response.end("remote cli");
+            return;
+          }
+
+          if (request.url === "/remote-missing.txt") {
+            response.writeHead(404, {
+              "content-type": "text/plain; charset=utf-8"
+            });
+            response.end("missing");
+            return;
+          }
+
+          response.writeHead(404, {
+            "content-type": "text/plain; charset=utf-8"
+          });
+          response.end("missing");
+        });
+
+        server.listen(0, "127.0.0.1", () => {
+          const address = server.address();
+
+          process.stdout.write(
+            JSON.stringify({
+              remoteMissingInput: "http://127.0.0.1:" + address.port + "/remote-missing.txt",
+              remoteSuccessInput: "http://127.0.0.1:" + address.port + "/remote-success.txt"
+            }) + "\\n"
+          );
+        });
+
+        function shutdown() {
+          server.close(() => process.exit(0));
+        }
+
+        process.on("SIGTERM", shutdown);
+        process.on("SIGINT", shutdown);
+      `
+    ],
+    {
+      stdio: ["ignore", "pipe", "pipe"]
+    }
+  );
+
+  const serverInfo = await new Promise<{
+    remoteMissingInput: string;
+    remoteSuccessInput: string;
+  }>((resolve, reject) => {
+    let stdoutBuffer = "";
+    let stderrBuffer = "";
+
+    serverProcess.stdout.setEncoding("utf8");
+    serverProcess.stderr.setEncoding("utf8");
+
+    const handleStdout = (chunk: string) => {
+      stdoutBuffer += chunk;
+      const newlineIndex = stdoutBuffer.indexOf("\n");
+
+      if (newlineIndex === -1) {
+        return;
+      }
+
+      const line = stdoutBuffer.slice(0, newlineIndex).trim();
+
+      if (!line) {
+        return;
+      }
+
+      serverProcess.stdout.off("data", handleStdout);
+      resolve(
+        JSON.parse(line) as {
+          remoteMissingInput: string;
+          remoteSuccessInput: string;
+        }
+      );
+    };
+
+    serverProcess.stdout.on("data", handleStdout);
+    serverProcess.stderr.on("data", (chunk: string) => {
+      stderrBuffer += chunk;
+    });
+    serverProcess.once("error", reject);
+    serverProcess.once("exit", (code) => {
+      reject(
+        new Error(
+          `Remote fixture server exited early with code ${code ?? "unknown"}${stderrBuffer ? `: ${stderrBuffer}` : "."}`
+        )
+      );
+    });
+  });
+
+  return {
+    ...serverInfo,
+    close: () =>
+      new Promise<void>((resolve) => {
+        if (serverProcess.killed || serverProcess.exitCode !== null) {
+          resolve();
+          return;
+        }
+
+        serverProcess.once("exit", () => resolve());
+        serverProcess.kill("SIGTERM");
+      })
+  };
+}
+
 describe("install smoke", () => {
   it(
     "packs, installs, follows the documented examples, and runs without React or inline markdown in result JSON",
@@ -54,8 +172,12 @@ describe("install smoke", () => {
       const missingInput = path.join(consumerDir, "missing.txt");
       const outputDir = path.join(consumerDir, "markdown-output");
       let tarballPath = "";
+      let remoteServer:
+        | Awaited<ReturnType<typeof startRemoteFixtureServer>>
+        | null = null;
 
       try {
+        remoteServer = await startRemoteFixtureServer();
         const packOutput = run("npm", ["run", "pack:local"], packageDir);
         const packInfoMatch = packOutput.match(/\{\s*"version"[\s\S]*\}\s*$/);
 
@@ -174,6 +296,8 @@ void main();
           cliPath,
           [
             supportedInput,
+            remoteServer.remoteSuccessInput,
+            remoteServer.remoteMissingInput,
             unsupportedInput,
             missingInput,
             "-o",
@@ -186,21 +310,52 @@ void main();
           consumerDir
         );
         const parsedCliOutput = JSON.parse(cliOutput);
-        expect(parsedCliOutput.results).toHaveLength(3);
-        expect(parsedCliOutput.results[0].status).toBe("success");
-        expect(parsedCliOutput.results[1].status).toBe("skipped");
-        expect(parsedCliOutput.results[2].status).toBe("error");
+        expect(parsedCliOutput.results).toHaveLength(5);
         expect(parsedCliOutput.results[0].markdown).toBeUndefined();
         expect(parsedCliOutput.results[1].markdown).toBeUndefined();
         expect(parsedCliOutput.results[2].markdown).toBeUndefined();
-        expect(parsedCliOutput.summary.succeeded).toBe(1);
+        expect(parsedCliOutput.results[3].markdown).toBeUndefined();
+        expect(parsedCliOutput.results[4].markdown).toBeUndefined();
+        expect(parsedCliOutput.summary.succeeded).toBe(2);
         expect(parsedCliOutput.summary.skipped).toBe(1);
-        expect(parsedCliOutput.summary.failed).toBe(1);
+        expect(parsedCliOutput.summary.failed).toBe(2);
+
+        const localResult = parsedCliOutput.results.find(
+          (entry: { inputPath: string }) => entry.inputPath === supportedInput
+        );
+        const remoteSuccessResult = parsedCliOutput.results.find(
+          (entry: { inputPath: string }) =>
+            entry.inputPath === remoteServer.remoteSuccessInput
+        );
+        const remoteMissingResult = parsedCliOutput.results.find(
+          (entry: { inputPath: string }) =>
+            entry.inputPath === remoteServer.remoteMissingInput
+        );
+        const unsupportedResult = parsedCliOutput.results.find(
+          (entry: { inputPath: string }) => entry.inputPath === unsupportedInput
+        );
+        const missingResult = parsedCliOutput.results.find(
+          (entry: { inputPath: string }) => entry.inputPath === missingInput
+        );
+
+        expect(localResult?.status).toBe("success");
+        expect(remoteSuccessResult?.status).toBe("success");
+        expect(remoteSuccessResult?.outputPath?.endsWith("remote-cli.md")).toBe(true);
+        expect(remoteMissingResult?.status).toBe("error");
+        expect(remoteMissingResult?.error).toContain("404 Not Found");
+        expect(unsupportedResult?.status).toBe("skipped");
+        expect(missingResult?.status).toBe("error");
 
         const markdownOutput = path.join(outputDir, "sample.md");
+        const remoteMarkdownOutput = path.join(outputDir, "remote-cli.md");
         expect(await pathExists(markdownOutput)).toBe(true);
+        expect(await pathExists(remoteMarkdownOutput)).toBe(true);
         expect((await readFile(markdownOutput, "utf8")).trim().length).toBeGreaterThan(0);
+        expect((await readFile(remoteMarkdownOutput, "utf8")).trim()).toBe("remote cli");
       } finally {
+        if (remoteServer) {
+          await remoteServer.close();
+        }
         if (tarballPath.length > 0) {
           await rm(tarballPath, { force: true });
         }

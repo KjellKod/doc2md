@@ -6,6 +6,7 @@ import {
   OVERSIZED_FILE_MESSAGE,
 } from "../converters/messages";
 import type { FileEntry } from "../types";
+import { downloadRemoteDocument } from "../utils/remoteDocument";
 import {
   applyConversionResult,
   createScratchEntry,
@@ -103,6 +104,11 @@ export function useFileConversion() {
     void processWithConcurrencyLimit(nextEntries, 3);
   }
 
+  async function addUrl(url: string) {
+    const file = await downloadRemoteDocument(url);
+    addFiles([file]);
+  }
+
   function addScratchEntry() {
     setEntries((currentEntries) => [
       ...currentEntries.map((entry) => ({
@@ -135,6 +141,7 @@ export function useFileConversion() {
   return {
     entries,
     addFiles,
+    addUrl,
     addScratchEntry,
     clearEntries,
     selectEntry,

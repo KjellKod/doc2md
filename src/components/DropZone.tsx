@@ -4,12 +4,16 @@ import { SUPPORTED_FORMATS } from "../types";
 
 interface DropZoneProps {
   onFilesAdded: (files: FileList | File[]) => void;
+  onUrlAdded: (url: string) => Promise<void>;
 }
 
-export default function DropZone({ onFilesAdded }: DropZoneProps) {
+export default function DropZone({ onFilesAdded, onUrlAdded }: DropZoneProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const dragDepthRef = useRef(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [urlValue, setUrlValue] = useState("");
+  const [urlError, setUrlError] = useState<string | null>(null);
+  const [isImportingUrl, setIsImportingUrl] = useState(false);
   const maxSizeInMb = Math.round(MAX_BROWSER_FILE_SIZE_BYTES / (1024 * 1024));
 
   function handleFiles(files: FileList | null) {
@@ -22,6 +26,29 @@ export default function DropZone({ onFilesAdded }: DropZoneProps) {
 
   function openFilePicker() {
     inputRef.current?.click();
+  }
+
+  async function handleUrlImport() {
+    if (!urlValue.trim()) {
+      setUrlError("Enter a document URL to import.");
+      return;
+    }
+
+    setIsImportingUrl(true);
+    setUrlError(null);
+
+    try {
+      await onUrlAdded(urlValue.trim());
+      setUrlValue("");
+    } catch (error) {
+      setUrlError(
+        error instanceof Error
+          ? error.message
+          : "We couldn't import that document URL.",
+      );
+    } finally {
+      setIsImportingUrl(false);
+    }
   }
 
   return (
@@ -75,7 +102,9 @@ export default function DropZone({ onFilesAdded }: DropZoneProps) {
         }}
       />
 
-      <p className="drop-zone-kicker">Your files stay on your device. Nothing is uploaded.</p>
+      <p className="drop-zone-kicker">
+        YOUR FILES STAY ON YOUR DEVICE. NOTHING IS UPLOADED.
+      </p>
       <p className="drop-zone-title">Drop files to convert</p>
       <p className="drop-zone-copy">
         Drag in one or more files, or{" "}
@@ -103,8 +132,49 @@ export default function DropZone({ onFilesAdded }: DropZoneProps) {
         ))}
       </div>
       <p className="drop-zone-note">
-        Mix different file types. Up to {maxSizeInMb} MB each.
+        Mix supported file types. URL imports must allow direct browser access.
+        Up to {maxSizeInMb} MB each.
       </p>
+      <form
+        className="drop-zone-url-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void handleUrlImport();
+        }}
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+      >
+        <label className="visually-hidden" htmlFor="remote-document-url">
+          Document URL
+        </label>
+        <input
+          id="remote-document-url"
+          className="drop-zone-url-input"
+          type="url"
+          inputMode="url"
+          placeholder="https://example.com/report.pdf"
+          value={urlValue}
+          onChange={(event) => {
+            setUrlValue(event.target.value);
+            if (urlError) {
+              setUrlError(null);
+            }
+          }}
+          disabled={isImportingUrl}
+        />
+        <button
+          type="submit"
+          className="secondary-button drop-zone-url-button"
+          disabled={isImportingUrl}
+        >
+          {isImportingUrl ? "Importing..." : "Import URL"}
+        </button>
+      </form>
+      {urlError ? (
+        <p className="drop-zone-error" role="alert">
+          {urlError}
+        </p>
+      ) : null}
     </div>
   );
 }

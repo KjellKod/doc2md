@@ -4,13 +4,13 @@
 
 ### ✦ [**Use doc2md live →**](https://kjellkod.github.io/doc2md/) ✦
 
-*Client-side, private, no upload. Your files never leave your browser.*
+*Client-side conversion, no doc2md upload backend. Local files stay in your browser.*
 
 </div>
 
 ---
 
-A browser-based tool that converts documents to Markdown. Drop in a file, convert it locally, review the result, download `.md`.
+A browser-based tool that converts documents to Markdown. Drop in a file or import a document URL, convert it in the browser, review the result, download `.md`. The Node package and CLI also accept direct remote document URLs.
 
 (_[Quest](https://github.com/KjellKod/quest/blob/main/README.md)_) Built for people entering AI-assisted workflows who need a frictionless way to turn existing documents into Markdown for tools like Claude Code, Codex, coding agents, or text-first editing.
 
@@ -27,7 +27,7 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173/doc2md/` in your browser.
+Open `http://localhost:5173/` in your browser.
 
 The live site now includes an **Install & Use** tab for the package, tarball, and portable skill paths.
 
@@ -79,13 +79,13 @@ Agent instructions using skills:
 
 ## Principles
 
-* **Client-side first** — files processed in the browser, never uploaded
+* **Client-side first** — local files are processed in the browser, and remote URLs are fetched directly by it
 * **Honest over magical** — PDFs degrade gracefully with clear warnings
 * **Simple over clever** — common cases handled well, no fake completeness
 
 ## Architecture
 
-doc2md is a browser-only tool: conversion runs on the device, output stays local, and there is no backend, server-side worker, or server path in the current product. The PDF converter does use a browser-side PDF.js worker as an implementation detail. See [docs/architecture.md](docs/architecture.md) for the bounded design and format limits.
+doc2md is a browser-first tool: conversion runs in the browser, output stays local, and there is no backend, server-side worker, or server path in the current product. Local files never leave the browser; remote document URLs are downloaded directly by it and still avoid any doc2md-owned upload path. The PDF converter does use a browser-side PDF.js worker as an implementation detail. See [docs/architecture.md](docs/architecture.md) for the bounded design and format limits.
 
 ## Documentation
 

@@ -126,6 +126,7 @@ export default function App() {
   const {
     entries,
     addFiles,
+    addUrl,
     addScratchEntry,
     clearEntries,
     selectEntry,
@@ -297,6 +298,10 @@ export default function App() {
     focusPageTab(nextPage);
   };
 
+  async function handleUrlAdded(url: string) {
+    await addUrl(url);
+  }
+
   return (
     <ThemeProvider>
       <div className="app-shell">
@@ -312,13 +317,13 @@ export default function App() {
               </div>
               <h1>Edit or convert to Markdown, without leaving the browser.</h1>
               <p className="hero-copy">
-                Start with a blank draft, paste in existing content, or drop in a
-                file to convert locally before you review and download clean
-                Markdown.
+                Start with a blank draft, paste in existing content, or bring in
+                a local file or document URL to convert in your browser before
+                you review and download clean Markdown.
               </p>
               <div className="hero-meta" aria-label="Product highlights">
                 <span className="hero-pill">
-                  Private by design: your files never leave your browser
+                  Browser-side conversion with no doc2md upload backend
                 </span>
                 <span className="hero-pill">
                   Supports .md, .txt, .json, .csv, .tsv, .html, .docx, .xlsx,
@@ -398,9 +403,9 @@ export default function App() {
                       <div>
                         <h2 id="upload-title">Upload</h2>
                         <p className="panel-copy">
-                          Drop in documents, spreadsheets, PDFs, or presentations,
-                          or start writing from scratch and keep everything in one
-                          session.
+                          Drop in documents, spreadsheets, PDFs, or
+                          presentations, add a doc URL, or start writing from
+                          scratch and keep everything in one session.
                         </p>
                       </div>
                       <button
@@ -417,7 +422,10 @@ export default function App() {
                       </button>
                     </div>
 
-                    <DropZone onFilesAdded={addFiles} />
+                    <DropZone
+                      onFilesAdded={addFiles}
+                      onUrlAdded={handleUrlAdded}
+                    />
 
                     <div className="panel-heading panel-heading-tight">
                       <div>

@@ -2,6 +2,7 @@ export interface CliOptions {
   outputDir: string;
   maxDocuments?: number;
   concurrency?: number;
+  remoteTimeoutMs?: number;
   inputs: string[];
 }
 
@@ -28,6 +29,7 @@ export function parseArgs(argv: string[]): CliOptions | HelpRequest {
   let outputDir = "";
   let maxDocuments: number | undefined;
   let concurrency: number | undefined;
+  let remoteTimeoutMs: number | undefined;
 
   for (let index = 0; index < argv.length; index += 1) {
     const value = argv[index];
@@ -46,6 +48,12 @@ export function parseArgs(argv: string[]): CliOptions | HelpRequest {
 
     if (value === "--concurrency") {
       concurrency = parsePositiveInteger(value, argv[index + 1]);
+      index += 1;
+      continue;
+    }
+
+    if (value === "--remote-timeout-ms") {
+      remoteTimeoutMs = parsePositiveInteger(value, argv[index + 1]);
       index += 1;
       continue;
     }
@@ -73,6 +81,7 @@ export function parseArgs(argv: string[]): CliOptions | HelpRequest {
     outputDir,
     maxDocuments,
     concurrency,
+    remoteTimeoutMs,
     inputs
   };
 }

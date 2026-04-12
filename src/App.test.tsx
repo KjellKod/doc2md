@@ -36,6 +36,7 @@ describe("App", () => {
   afterEach(() => {
     vi.clearAllMocks();
     vi.unstubAllGlobals();
+    window.history.replaceState({}, "", "/");
     cleanup();
   });
 
@@ -49,9 +50,7 @@ describe("App", () => {
     ).toBeInTheDocument();
 
     expect(
-      screen.getByText(
-        "Private by design: your files never leave your browser",
-      ),
+      screen.getByText("Browser-side conversion with no doc2md upload backend"),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Switch to day mode" }),
@@ -257,6 +256,108 @@ describe("App", () => {
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "Beta" })).toBeInTheDocument();
     });
+  });
+
+  it("imports a remote document URL through the browser path", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        headers: new Headers({
+          "content-disposition": 'attachment; filename="remote-brief.txt"',
+        }),
+        blob: vi.fn().mockResolvedValue(new Blob(["remote"], { type: "text/plain" })),
+      }),
+    );
+    convertFileMock.mockResolvedValue(createSuccessResult("# Remote Brief"));
+
+    render(<App />);
+
+    fireEvent.change(screen.getByLabelText("Document URL"), {
+      target: { value: "https://example.com/download?brief=1" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Import URL" }));
+
+    expect(
+      await screen.findByRole("button", { name: /remote-brief\.txt/i }),
+    ).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: "Remote Brief" }),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("shows URL import failures inline", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockRejectedValue(new TypeError("Failed to fetch")),
+    );
+
+    render(<App />);
+
+    fireEvent.change(screen.getByLabelText("Document URL"), {
+      target: { value: "https://example.com/private.docx" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Import URL" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "We couldn't fetch that URL in the browser. Try downloading it first or use @doc2md/core.",
+    );
+  });
+
+  it("shows auth-gated URL import responses inline", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 403,
+        headers: new Headers(),
+        blob: vi.fn(),
+      }),
+    );
+
+    render(<App />);
+
+    fireEvent.change(screen.getByLabelText("Document URL"), {
+      target: { value: "https://example.com/private.docx" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Import URL" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "We couldn't download that document because the URL requires sign-in or additional access.",
+    );
+  });
+
+  it("shows URL import timeouts inline", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.stubGlobal("fetch", vi.fn((_input, init?: RequestInit) => {
+        return new Promise((_, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            reject(new DOMException("Aborted", "AbortError"));
+          });
+        });
+      }));
+
+      render(<App />);
+
+      fireEvent.change(screen.getByLabelText("Document URL"), {
+        target: { value: "https://example.com/slow.docx" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Import URL" }));
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(30_000);
+      });
+
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Downloading that document URL timed out. Try again or download it locally first.",
+      );
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("toggles between day and night mode", () => {

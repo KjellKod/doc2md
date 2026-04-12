@@ -74,11 +74,15 @@ npm install -g ./doc2md-core-<derived-version>.tgz
 import { convertDocuments } from "@doc2md/core";
 
 const result = await convertDocuments(
-  ["/absolute/path/resume.pdf"],
+  [
+    "/absolute/path/resume.pdf",
+    "https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md"
+  ],
   {
     outputDir: "/absolute/path/out",
     maxDocuments: 10,
-    concurrency: 4
+    concurrency: 4,
+    remoteTimeoutMs: 30000
   }
 );
 
@@ -91,9 +95,12 @@ Single-document conversion:
 ```ts
 import { convertDocument } from "@doc2md/core";
 
-const result = await convertDocument("/absolute/path/resume.pdf", {
-  outputDir: "/absolute/path/out"
-});
+const result = await convertDocument(
+  "https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md",
+  {
+    outputDir: "/absolute/path/out"
+  }
+);
 
 console.log(result.status);
 console.log(result.outputPath);
@@ -104,19 +111,19 @@ console.log(result.outputPath);
 If `@doc2md/core` is installed in your project, run the CLI with `npx` or `npm exec`:
 
 ```bash
-npx doc2md /absolute/path/resume.pdf -o /absolute/path/out --max 10 --concurrency 4
+npx doc2md /absolute/path/resume.pdf https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md -o /absolute/path/out --max 10 --concurrency 4 --remote-timeout-ms 30000
 ```
 
 Equivalent `npm exec` form:
 
 ```bash
-npm exec doc2md -- /absolute/path/resume.pdf -o /absolute/path/out --max 10 --concurrency 4
+npm exec doc2md -- /absolute/path/resume.pdf https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md -o /absolute/path/out --max 10 --concurrency 4 --remote-timeout-ms 30000
 ```
 
 If you installed the package globally, including from a local tarball, this also works:
 
 ```bash
-doc2md /absolute/path/resume.pdf -o /absolute/path/out --max 10 --concurrency 4
+doc2md /absolute/path/resume.pdf https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md -o /absolute/path/out --max 10 --concurrency 4 --remote-timeout-ms 30000
 ```
 
 Prefer `npx doc2md ...` for repo-specific use. Use plain `doc2md ...` after a global install, including `npm install -g /absolute/path/to/doc2md-core-<derived-version>.tgz`.
@@ -135,6 +142,15 @@ npx doc2md /absolute/path/a.pdf /absolute/path/b.docx -o /absolute/path/out
 - Supported but unreadable inputs return `status: "error"` for that document.
 - Exceeding `maxDocuments` throws `BatchLimitExceededError`.
 - Duplicate basenames use numeric suffixes such as `resume.md`, `resume-1.md`, and `resume-2.md`.
+- Remote URLs are fetched directly from the machine running Node; there is no doc2md proxy or backend download service.
+- Remote URL downloads time out after 30 seconds by default. Override that with `remoteTimeoutMs` in the API or `--remote-timeout-ms` in the CLI.
+- Browser-only size limits do not apply here. `@doc2md/core` does not add a byte-size cap for remote URLs.
+
+## Remote URL Inputs
+
+`@doc2md/core` and the CLI accept local file paths and direct remote document URLs in the same input list.
+
+Remote URLs are fetched exactly as provided. doc2md does not normalize provider-specific page URLs into download URLs, so if a host exposes a separate raw/download URL, pass that direct URL explicitly.
 
 ## Supported Formats
 

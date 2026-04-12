@@ -48,10 +48,16 @@ Single file with a project-local install:
 npx doc2md /absolute/path/resume.pdf -o ./out
 ```
 
+Single remote URL:
+
+```bash
+npx doc2md https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md -o ./out
+```
+
 Multiple files in one run:
 
 ```bash
-npx doc2md /absolute/path/a.pdf /absolute/path/b.docx -o ./out
+npx doc2md /absolute/path/a.pdf /absolute/path/b.docx https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md -o ./out
 ```
 
 Global tarball install flow:
@@ -81,12 +87,14 @@ const result = await convertDocuments(
   [
     "/absolute/path/resume.pdf",
     "/absolute/path/notes.docx",
-    "/absolute/path/sheet.xlsx"
+    "/absolute/path/sheet.xlsx",
+    "https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md"
   ],
   {
     outputDir: "/absolute/path/out",
     maxDocuments: 25,
-    concurrency: 4
+    concurrency: 4,
+    remoteTimeoutMs: 30000
   }
 );
 
@@ -99,9 +107,12 @@ console.log(result.results);
 ```ts
 import { convertDocument } from "@doc2md/core";
 
-const result = await convertDocument("/absolute/path/resume.pdf", {
-  outputDir: "/absolute/path/out"
-});
+const result = await convertDocument(
+  "https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md",
+  {
+    outputDir: "/absolute/path/out"
+  }
+);
 
 console.log(result);
 ```
@@ -130,19 +141,19 @@ void main();
 If `@doc2md/core` is installed in your project from a local tarball, run the CLI with `npx` or `npm exec`:
 
 ```bash
-npx doc2md /absolute/path/resume.pdf -o /absolute/path/out --max 10 --concurrency 4
+npx doc2md /absolute/path/resume.pdf https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md -o /absolute/path/out --max 10 --concurrency 4 --remote-timeout-ms 30000
 ```
 
 Equivalent `npm exec` form:
 
 ```bash
-npm exec doc2md -- /absolute/path/resume.pdf -o /absolute/path/out --max 10 --concurrency 4
+npm exec doc2md -- /absolute/path/resume.pdf https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md -o /absolute/path/out --max 10 --concurrency 4 --remote-timeout-ms 30000
 ```
 
 If you installed the package globally, including from a local tarball, this also works:
 
 ```bash
-doc2md /absolute/path/resume.pdf -o /absolute/path/out --max 10 --concurrency 4
+doc2md /absolute/path/resume.pdf https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md -o /absolute/path/out --max 10 --concurrency 4 --remote-timeout-ms 30000
 ```
 
 Prefer `npx doc2md ...` for repo-specific use. Use plain `doc2md ...` after a global install, including `npm install -g /absolute/path/to/doc2md-core-<derived-version>.tgz`.
@@ -175,8 +186,27 @@ Batch output also includes a `summary` with totals for succeeded, warned, skippe
 
 - Unsupported files are skipped and do not fail the batch
 - Supported but unreadable or missing inputs return `status: "error"` for that document
+- Remote URL download failures, blocked access, auth-gated responses, and timeout failures return `status: "error"` for that document
 - Exceeding `maxDocuments` throws `BatchLimitExceededError`
 - Duplicate basenames are written with numeric suffixes like `resume.md`, `resume-1.md`, `resume-2.md`
+
+## Remote URL Contract
+
+`@doc2md/core` accepts remote document URLs anywhere a local path is accepted.
+
+Direct-fetch rules:
+
+- Remote documents are fetched directly by the machine running Node. There is no doc2md proxy, queue, or backend service.
+- The remote host sees the caller's IP and request metadata.
+- Auth-gated or sign-in-only URLs can fail if the current process cannot fetch them directly.
+- Remote downloads time out after 30 seconds by default. Use `remoteTimeoutMs` in the API or `--remote-timeout-ms` in the CLI to override that.
+- Browser-only size guards do not apply here. The package does not impose a byte-size limit on remote URLs.
+
+Remote URL handling:
+
+- doc2md fetches remote URLs exactly as provided.
+- doc2md does not normalize provider-specific view URLs into download URLs.
+- If a site exposes both a page URL and a direct-download/raw URL, provide the direct-download/raw URL.
 
 ## Supported Formats
 
