@@ -481,6 +481,30 @@ doc2md's product principles explicitly state: "Honest over magical — explicit 
 
 This is a design philosophy difference, not a technical limitation — but it's a genuine user experience advantage for the cases where ML isn't needed.
 
+### 7.8 Performance (Latency)
+
+We did not run Docling-Studio's stack to benchmark it, but the codebase's own timeout defaults and architectural choices reveal significant performance concerns with ML-powered conversion:
+
+**Default timeout cascade** (`document-parser/infra/settings.py`):
+- `document_timeout`: **120 seconds** per document (Docling-level)
+- `lock_timeout`: **300 seconds** (5 min to acquire the converter lock)
+- `conversion_timeout`: **900 seconds** (15 min overall job ceiling)
+- Docling Serve HTTP timeout: **600 seconds** (10 min for remote mode)
+
+That's a **15-minute budget** for a single PDF. You don't set a 15-minute timeout if your conversions take seconds.
+
+**Single-threaded bottleneck:** The local converter uses a global `threading.Lock()` (`local_converter.py:51`) because Docling's converter is not thread-safe. Despite the service allowing 3 concurrent analyses via `asyncio.Semaphore`, only one can actually use the ML converter at a time. The others queue behind the lock with a 5-minute acquisition timeout.
+
+**Batching as a workaround:** The `_run_batched_conversion()` method in `analysis_service.py:163-221` converts large PDFs in page-range chunks with per-batch progress tracking. This exists specifically because processing an entire large PDF in one pass risks hitting the timeout ceiling. v0.3.1's changelog highlights "segmented progress bar, ring indicator, per-batch visual feedback" — you don't build progress UX for fast operations.
+
+**Likely improvements Docling-Studio could make:**
+- **GPU acceleration.** The Docker image uses CPU-only PyTorch (`--index-url https://download.pytorch.org/whl/cpu` in the Dockerfile). A GPU-enabled variant would dramatically reduce inference time for OCR and table detection.
+- **Converter pooling.** Replace the single global lock with a pool of N converter instances, allowing true parallel processing. Memory-expensive but would remove the serialization bottleneck.
+- **Selective pipeline.** The pipeline has toggles for OCR, table structure, formula enrichment, code enrichment, and picture classification — but they're all-or-nothing per analysis. A "fast mode" that skips expensive enrichments (formulas, picture classification) for documents that don't need them would reduce latency significantly.
+- **Warm model caching.** First-run model download is ~400MB. Pre-baking models into the Docker image (instead of downloading at runtime) would eliminate cold-start latency.
+
+**doc2md's comparison:** 30-second timeout (`src/hooks/useFileConversion.ts`). PDF.js text extraction completes in seconds. The tradeoff is clear — Docling-Studio trades latency for extraction quality. For interactive single-document workflows, doc2md's instant response is a material advantage. For batch processing of scanned archives where quality matters more than speed, Docling-Studio's approach is justified.
+
 ---
 
 ## 8. Takeaway Learnings and Roadmap Possibilities
