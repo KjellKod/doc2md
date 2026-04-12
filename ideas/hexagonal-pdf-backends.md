@@ -242,7 +242,7 @@ export class PdfJsConverter implements PdfConverter {
 - Zero network calls — runs in-process
 - Fast — often fractions of a second per document
 - Privacy-first — file never leaves the machine
-- Limited — no OCR, no table structure, no formula recognition
+- Limited — no OCR, no formula recognition (LaTeX/math equations). Has table detection via column clustering and heuristics, but not ML-powered table structure recognition
 - Produces quality signals that drive the cascading adapter
 
 ## Adapter 2: Docling Serve (Remote ML)
@@ -430,8 +430,8 @@ doc2md scanned-report.pdf -o ./out \
 |--------|--------|---------------|-----------|
 | **Speed** | Milliseconds–seconds | Minutes | Seconds/page |
 | **Scanned PDFs** | Quality warning | Full OCR | Full OCR |
-| **Tables** | Text extraction only | Structure detection | Depends on model |
-| **Formulas** | No | Recognition | Depends on model |
+| **Tables** | Heuristic detection + column clustering | ML structure detection | Depends on model |
+| **Formulas** | No (LaTeX/math equations) | Recognition | Depends on model |
 | **Privacy** | Local only | Self-hosted server | External API |
 | **Cost** | Free | Infrastructure | Per-page API cost |
 | **Infrastructure** | None | Docker + Docling | API key |
@@ -447,7 +447,7 @@ These quality signals already exist in `src/converters/pdf.ts`. Today they produ
 | `quality: "review"` | Warning to user | Escalate (configurable) |
 | Images detected, low text ratio | Warning to user | Escalate to fallback |
 | Watermark detected | Strip + warn | No escalation (handled locally) |
-| Complex tables detected | Best-effort extraction | Escalate to fallback |
+| Complex tables detected | Heuristic column clustering | Escalate for ML structure detection |
 
 ## When to Build This
 
