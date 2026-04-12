@@ -33,8 +33,8 @@ export async function ensureOutputDirectory(outputDir: string) {
   await mkdir(outputDir, { recursive: true });
 }
 
-function getOutputPath(outputDir: string, inputPath: string, suffix: number) {
-  const extensionlessName = path.basename(inputPath, path.extname(inputPath));
+function getOutputPath(outputDir: string, inputName: string, suffix: number) {
+  const extensionlessName = path.basename(inputName, path.extname(inputName));
   const fileName =
     suffix === 0 ? `${extensionlessName}.md` : `${extensionlessName}-${suffix}.md`;
 
@@ -43,7 +43,7 @@ function getOutputPath(outputDir: string, inputPath: string, suffix: number) {
 
 export async function writeMarkdownOutput(
   outputDir: string,
-  inputPath: string,
+  inputName: string,
   markdown: string
 ) {
   await ensureOutputDirectory(outputDir);
@@ -51,7 +51,7 @@ export async function writeMarkdownOutput(
   let suffix = 0;
 
   while (true) {
-    const outputPath = getOutputPath(outputDir, inputPath, suffix);
+    const outputPath = getOutputPath(outputDir, inputName, suffix);
 
     try {
       await writeFile(outputPath, markdown, {

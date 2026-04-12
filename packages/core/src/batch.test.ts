@@ -1,6 +1,6 @@
 import path from "node:path";
 import { access } from "node:fs/promises";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { BatchLimitExceededError, convertDocuments } from "./index";
 import { createTempDir, fixturePath } from "./test-helpers";
 
@@ -14,6 +14,11 @@ async function pathExists(filePath: string) {
 }
 
 describe("convertDocuments", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
   it("throws BatchLimitExceededError before processing and writes no outputs", async () => {
     const outputDir = await createTempDir("doc2md-core-limit-");
     const inputs = Array.from({ length: 51 }, () => fixturePath("sample.txt"));
@@ -64,5 +69,103 @@ describe("convertDocuments", () => {
     expect(result.results[2].status).toBe("success");
     expect(result.summary.failed).toBe(1);
     expect(result.summary.succeeded).toBe(2);
+  });
+
+  it("converts mixed local paths and remote URLs in one batch", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        headers: new Headers({
+          "content-disposition": 'attachment; filename="remote-brief.txt"'
+        }),
+        blob: vi.fn().mockResolvedValue(new Blob(["remote brief"], { type: "text/plain" }))
+      })
+    );
+    const outputDir = await createTempDir("doc2md-core-batch-remote-");
+    const result = await convertDocuments(
+      [fixturePath("sample.txt"), "https://example.com/download?brief=1"],
+      {
+        outputDir
+      }
+    );
+
+    expect(result.results).toHaveLength(2);
+    expect(result.results[0].status).toBe("success");
+    expect(result.results[1].status).toBe("success");
+    expect(result.results[1].inputPath).toBe("https://example.com/download?brief=1");
+    expect(result.results[1].outputPath?.endsWith("remote-brief.md")).toBe(true);
+  });
+
+  it("supports both GitHub blob and raw URL shapes", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: new Headers(),
+      blob: vi.fn().mockResolvedValue(new Blob(["# doc2md"], { type: "text/markdown" }))
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const outputDir = await createTempDir("doc2md-core-batch-github-");
+
+    const result = await convertDocuments(
+      [
+        "https://github.com/KjellKod/doc2md/blob/main/README.md",
+        "https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md"
+      ],
+      {
+        outputDir
+      }
+    );
+
+    expect(result.results).toHaveLength(2);
+    expect(result.results[0].status).toBe("success");
+    expect(result.results[1].status).toBe("success");
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      "https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md",
+      expect.objectContaining({
+        signal: expect.any(AbortSignal)
+      })
+    );
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md",
+      expect.objectContaining({
+        signal: expect.any(AbortSignal)
+      })
+    );
+    expect(
+      result.results
+        .map((entry) => path.basename(entry.outputPath ?? ""))
+        .sort()
+    ).toEqual(["README-1.md", "README.md"]);
+  });
+
+  it("returns a per-document error for remote download timeouts without failing the batch", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("fetch", vi.fn((_input, init?: RequestInit) => {
+      return new Promise((_, reject) => {
+        init?.signal?.addEventListener("abort", () => {
+          reject(new DOMException("Aborted", "AbortError"));
+        });
+      });
+    }));
+    const outputDir = await createTempDir("doc2md-core-batch-timeout-");
+
+    const pending = convertDocuments(
+      [fixturePath("sample.txt"), "https://example.com/slow.docx"],
+      {
+        outputDir,
+        remoteTimeoutMs: 30_000
+      }
+    );
+
+    await vi.advanceTimersByTimeAsync(30_000);
+
+    const result = await pending;
+
+    expect(result.results[0].status).toBe("success");
+    expect(result.results[1].status).toBe("error");
+    expect(result.results[1].error).toContain("timed out");
+    expect(result.summary.failed).toBe(1);
   });
 });

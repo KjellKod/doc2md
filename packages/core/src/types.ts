@@ -2,6 +2,7 @@ export interface ConvertOptions {
   outputDir: string;
   maxDocuments?: number;
   concurrency?: number;
+  remoteTimeoutMs?: number;
 }
 
 export interface DocumentResultQuality {

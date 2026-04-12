@@ -1,6 +1,7 @@
 import { convertFile, getFileExtension, isSupportedFormat, UNSUPPORTED_FILE_MESSAGE } from "../../../src/converters";
 import type { ConversionResult } from "../../../src/converters/types";
 import { createInputFile, writeMarkdownOutput } from "./io";
+import { createInputFileFromUrl, isRemoteUrl } from "./remoteDocument";
 import type { BatchResult, ConvertOptions, DocumentResult } from "./types";
 import { BatchLimitExceededError } from "./types";
 
@@ -55,20 +56,43 @@ export async function convertOneDocument(
   options: ConvertOptions
 ): Promise<DocumentResult> {
   const startedAt = now();
-  const extension = getFileExtension(inputPath);
-
-  if (!isSupportedFormat(extension)) {
-    return {
-      inputPath,
-      outputPath: null,
-      status: "skipped",
-      warnings: [UNSUPPORTED_FILE_MESSAGE],
-      durationMs: now() - startedAt
-    };
-  }
+  const remoteInput = isRemoteUrl(inputPath);
 
   try {
-    const file = await createInputFile(inputPath);
+    let file: File;
+
+    if (remoteInput) {
+      file = await createInputFileFromUrl(inputPath, {
+        timeoutMs: options.remoteTimeoutMs
+      });
+    } else {
+      const extension = getFileExtension(inputPath);
+
+      if (!isSupportedFormat(extension)) {
+        return {
+          inputPath,
+          outputPath: null,
+          status: "skipped",
+          warnings: [UNSUPPORTED_FILE_MESSAGE],
+          durationMs: now() - startedAt
+        };
+      }
+
+      file = await createInputFile(inputPath);
+    }
+
+    const extension = getFileExtension(file.name);
+
+    if (!isSupportedFormat(extension)) {
+      return {
+        inputPath,
+        outputPath: null,
+        status: "skipped",
+        warnings: [UNSUPPORTED_FILE_MESSAGE],
+        durationMs: now() - startedAt
+      };
+    }
+
     const result = await convertFile(file);
 
     if (result.status === "error") {
@@ -77,7 +101,7 @@ export async function convertOneDocument(
 
     const outputPath = await writeMarkdownOutput(
       options.outputDir,
-      inputPath,
+      file.name,
       result.markdown
     );
 
