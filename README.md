@@ -12,7 +12,7 @@
 
 A browser-based tool that converts documents to Markdown. Drop in a file, convert it locally, review the result, download `.md`.
 
-Built for people entering AI-assisted workflows who need a frictionless way to turn existing documents into Markdown for tools like Claude Code, coding agents, or text-first editing.
+(_[Quest](https://github.com/KjellKod/quest/blob/main/README.md)_) Built for people entering AI-assisted workflows who need a frictionless way to turn existing documents into Markdown for tools like Claude Code, Codex, coding agents, or text-first editing.
 
 **Supported formats:** `.md` `.docx` `.xlsx` `.pdf` `.csv` `.tsv` `.pptx` `.html` `.txt` `.json`
 
@@ -50,6 +50,32 @@ const result = await convertDocuments(
 The package writes markdown files to disk and returns structured metadata about each document. If you want a copyable agent wrapper, use `.skills/doc-to-markdown/`, which delegates to the same package contract.
 
 See [INSTALL.md](INSTALL.md) for global and project-local tarball install steps, and [Using `@doc2md/core`](docs/using-doc2md-core.md) for API examples, CLI usage, output behavior, and skill setup.
+
+
+Single file with a project-local install:
+
+```bash
+npx doc2md /absolute/path/resume.pdf -o ./out
+```
+
+Multiple files in one run:
+
+```bash
+npx doc2md /absolute/path/a.pdf /absolute/path/b.docx -o ./out
+```
+
+Command line access:
+
+```bash
+doc2md /absolute/path/resume.pdf -o ./out
+```
+
+Agent instructions using skills:
+```claude
+/doc2md convert /absolute/path/resume.pdf and <some instruction>
+```
+
+
 
 ## Principles
 
