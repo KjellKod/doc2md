@@ -539,7 +539,7 @@ const result = await convertDocument("/path/scanned.pdf", {
 });
 ```
 
-**Effort:** Medium (2-3 weeks). Requires: HTTP client for Docling Serve API, response mapping to `ConversionResult`, configuration for the optional backend, tests with mocked Docling responses.
+**Effort:** Low-Medium (1-2 Quest runs). Requires: HTTP client for Docling Serve API, response mapping to `ConversionResult`, configuration for the optional backend, tests with mocked Docling responses. doc2md was built over a weekend — this is a focused addition to an existing package, not a greenfield project.
 
 **Value:** High. Eliminates doc2md's biggest limitation (scanned/image-based PDFs) for users who can run Docling Serve. Browser mode stays untouched. The privacy story becomes: "Browser-only by default; optionally route PDFs through your own Docling server."
 
@@ -553,7 +553,7 @@ const result = await convertDocument("/path/scanned.pdf", {
 - `@regression`: full matrix (all formats, edge cases, concurrent batches) → runs on release branches
 - `@critical`: 3-5 core user journeys → runs on `main`
 
-**Effort:** Medium (1-2 weeks for initial suite). Requires: Playwright setup, 5-10 feature tests, CI workflow updates, `data-testid` attributes on key UI elements.
+**Effort:** Low-Medium (1 Quest run). Requires: Playwright setup, 5-10 feature tests, CI workflow updates, `data-testid` attributes on key UI elements.
 
 **Value:** High. Closes the biggest testing gap. Catches UI regressions that unit tests miss.
 
@@ -577,7 +577,7 @@ class LocalConverter implements DocumentConverter { ... }
 class DoclingServeConverter implements DocumentConverter { ... }
 ```
 
-**Effort:** Medium-High (2-4 weeks). Requires: interface definitions, refactor of current converter dispatch, DI container or factory, tests for both adapters.
+**Effort:** Medium (1-2 Quest runs). Requires: interface definitions, refactor of current converter dispatch, DI container or factory, tests for both adapters.
 
 **Value:** Medium. Enables Possibility 1 cleanly and future converter backends (e.g., cloud-based OCR services). But may be over-architecture for the current scope.
 
@@ -588,7 +588,7 @@ class DoclingServeConverter implements DocumentConverter { ... }
 
 **How:** Users could revisit past conversions without re-uploading. Store the markdown output, warnings, and quality metadata. No server needed — stays in the browser.
 
-**Effort:** Low-Medium (1 week). Requires: IndexedDB wrapper, history UI component, cleanup/purge logic.
+**Effort:** Low (1 Quest run). Requires: IndexedDB wrapper, history UI component, cleanup/purge logic.
 
 **Value:** Medium. Addresses a common workflow friction (closing the tab loses output). Competitive feature parity with DS's history.
 
