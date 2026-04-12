@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   assertReleaseTagsAvailable,
   bumpPatch,
+  deriveDisplayVersionFromState,
   deriveReleaseVersionFromRefs
 } from "../scripts/release-version.mjs";
 
@@ -50,5 +51,17 @@ describe("release version derivation", () => {
 
   it("rejects invalid release versions", () => {
     expect(() => bumpPatch("0.5")).toThrow("Invalid release version");
+  });
+
+  it("bumps the displayed patch version when the worktree is dirty on a tagged commit", () => {
+    expect(
+      deriveDisplayVersionFromState("1.0.1", "abc123", "abc123", true)
+    ).toBe("1.0.2");
+  });
+
+  it("bumps the displayed patch version again when HEAD is already ahead and the worktree is dirty", () => {
+    expect(
+      deriveDisplayVersionFromState("1.0.1", "abc123", "def456", true)
+    ).toBe("1.0.3");
   });
 });

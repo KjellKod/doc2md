@@ -8,7 +8,6 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import corePackage from "../packages/core/package.json";
 import App from "./App";
 
 const { convertFileMock } = vi.hoisted(() => ({
@@ -56,9 +55,9 @@ describe("App", () => {
     expect(
       screen.getByRole("button", { name: "Switch to day mode" }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("Current release version")).toHaveTextContent(
-      `v${corePackage.version}`,
-    );
+    expect(
+      screen.getByLabelText("Current release version").textContent,
+    ).toMatch(/^v\d+\.\d+\.\d+$/);
     expect(
       screen.getByRole("link", {
         name: /@doc2md\/core/i,

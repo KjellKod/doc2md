@@ -40,6 +40,21 @@ export function deriveReleaseVersionFromRefs(latestTag, tagCommit, headCommit) {
   return bumpPatch(normalizedTag);
 }
 
+export function deriveDisplayVersionFromState(
+  latestTag,
+  tagCommit,
+  headCommit,
+  isWorktreeDirty,
+) {
+  const releaseVersion = deriveReleaseVersionFromRefs(
+    latestTag,
+    tagCommit,
+    headCommit,
+  );
+
+  return isWorktreeDirty ? bumpPatch(releaseVersion) : releaseVersion;
+}
+
 export function assertReleaseTagsAvailable(latestTag, env = process.env) {
   if (latestTag !== "0.0.0") {
     return;
@@ -80,5 +95,29 @@ export function getReleaseVersionInfo() {
     tagCommit,
     headCommit,
     isTaggedCommit: tagCommit.length > 0 && tagCommit === headCommit
+  };
+}
+
+export function isWorktreeDirty() {
+  try {
+    return runGit(["status", "--porcelain"]).length > 0;
+  } catch {
+    return false;
+  }
+}
+
+export function getDisplayVersionInfo() {
+  const release = getReleaseVersionInfo();
+  const dirty = isWorktreeDirty();
+
+  return {
+    ...release,
+    version: deriveDisplayVersionFromState(
+      release.latestTag,
+      release.tagCommit,
+      release.headCommit,
+      dirty,
+    ),
+    isWorktreeDirty: dirty,
   };
 }

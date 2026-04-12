@@ -1,6 +1,5 @@
 import type { CSSProperties, KeyboardEvent, MouseEvent, SVGProps } from "react";
 import { useEffect, useRef, useState } from "react";
-import corePackage from "../packages/core/package.json";
 import AboutSection from "./components/AboutSection";
 import DownloadButton from "./components/DownloadButton";
 import DropZone from "./components/DropZone";
@@ -19,11 +18,7 @@ const HARD_MAX_PAGE_MAX_WIDTH = 2400;
 const PAGE_WIDTH_FRAME_ALLOWANCE = 96;
 const PAGE_WIDTH_STEP = 48;
 type PageView = "convert" | "install";
-const FALLBACK_RELEASE_VERSION = `v${corePackage.version}`;
-
-interface TarballVersionManifest {
-  version: string;
-}
+const DISPLAY_VERSION = __DOC2MD_DISPLAY_VERSION__;
 
 function PanelRightOpenIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -125,7 +120,6 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isPageResizing, setIsPageResizing] = useState(false);
   const [pageMaxWidth, setPageMaxWidth] = useState(BASE_PAGE_MAX_WIDTH);
-  const [releaseVersion, setReleaseVersion] = useState(FALLBACK_RELEASE_VERSION);
   const convertTabRef = useRef<HTMLButtonElement>(null);
   const installTabRef = useRef<HTMLButtonElement>(null);
   const dragStartXRef = useRef(0);
@@ -171,36 +165,6 @@ export default function App() {
     " open",
   );
   const fileSummary = buildSummary("No files or drafts yet.", "");
-
-  useEffect(() => {
-    let isCancelled = false;
-
-    async function loadReleaseVersion() {
-      try {
-        const response = await fetch(`${import.meta.env.BASE_URL}latest-tarball.json`, {
-          cache: "no-store",
-        });
-
-        if (!response.ok) {
-          return;
-        }
-
-        const data = (await response.json()) as Partial<TarballVersionManifest>;
-
-        if (!isCancelled && typeof data.version === "string") {
-          setReleaseVersion(`v${data.version}`);
-        }
-      } catch {
-        // Local dev and unreleased builds fall back to the packaged version.
-      }
-    }
-
-    void loadReleaseVersion();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, []);
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") {
@@ -348,7 +312,7 @@ export default function App() {
         >
           <div className="page">
             <p className="page-version" aria-label="Current release version">
-              {releaseVersion}
+              {DISPLAY_VERSION}
             </p>
             <header className="hero">
               <div className="hero-top">
