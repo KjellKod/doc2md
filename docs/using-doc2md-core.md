@@ -51,13 +51,13 @@ npx doc2md /absolute/path/resume.pdf -o ./out
 Single remote URL:
 
 ```bash
-npx doc2md https://example.com/docs/guide.md -o ./out
+npx doc2md https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md -o ./out
 ```
 
 Multiple files in one run:
 
 ```bash
-npx doc2md /absolute/path/a.pdf /absolute/path/b.docx https://example.com/docs/guide.md -o ./out
+npx doc2md /absolute/path/a.pdf /absolute/path/b.docx https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md -o ./out
 ```
 
 Global tarball install flow:
@@ -88,7 +88,7 @@ const result = await convertDocuments(
     "/absolute/path/resume.pdf",
     "/absolute/path/notes.docx",
     "/absolute/path/sheet.xlsx",
-    "https://example.com/docs/guide.md"
+    "https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md"
   ],
   {
     outputDir: "/absolute/path/out",
@@ -108,7 +108,7 @@ console.log(result.results);
 import { convertDocument } from "@doc2md/core";
 
 const result = await convertDocument(
-  "https://example.com/docs/guide.md",
+  "https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md",
   {
     outputDir: "/absolute/path/out"
   }
@@ -141,19 +141,19 @@ void main();
 If `@doc2md/core` is installed in your project from a local tarball, run the CLI with `npx` or `npm exec`:
 
 ```bash
-npx doc2md /absolute/path/resume.pdf https://example.com/docs/guide.md -o /absolute/path/out --max 10 --concurrency 4 --remote-timeout-ms 30000
+npx doc2md /absolute/path/resume.pdf https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md -o /absolute/path/out --max 10 --concurrency 4 --remote-timeout-ms 30000
 ```
 
 Equivalent `npm exec` form:
 
 ```bash
-npm exec doc2md -- /absolute/path/resume.pdf https://example.com/docs/guide.md -o /absolute/path/out --max 10 --concurrency 4 --remote-timeout-ms 30000
+npm exec doc2md -- /absolute/path/resume.pdf https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md -o /absolute/path/out --max 10 --concurrency 4 --remote-timeout-ms 30000
 ```
 
 If you installed the package globally, including from a local tarball, this also works:
 
 ```bash
-doc2md /absolute/path/resume.pdf https://example.com/docs/guide.md -o /absolute/path/out --max 10 --concurrency 4 --remote-timeout-ms 30000
+doc2md /absolute/path/resume.pdf https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md -o /absolute/path/out --max 10 --concurrency 4 --remote-timeout-ms 30000
 ```
 
 Prefer `npx doc2md ...` for repo-specific use. Use plain `doc2md ...` after a global install, including `npm install -g /absolute/path/to/doc2md-core-<derived-version>.tgz`.
