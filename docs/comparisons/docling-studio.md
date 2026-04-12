@@ -5,7 +5,7 @@
 
 ## Executive Summary
 
-- **Fundamentally different architectures solving adjacent problems.** doc2md is a browser-only, privacy-first multi-format converter (10 formats, zero server). Docling-Studio is a client-server PDF analysis studio powered by ML (OCR, tables, formulas, bounding boxes). They overlap only on "document to markdown" — everything else diverges.
+- **Fundamentally different architectures solving adjacent problems.** doc2md is a privacy-first multi-format converter (10 formats, browser + Node.js CLI + API, no server required). Docling-Studio is a client-server PDF analysis studio powered by ML (OCR, tables, formulas, bounding boxes). They overlap only on "document to markdown" — everything else diverges.
 - **Docling-Studio has significantly more process maturity.** 12 audit templates, 19 documented processes, a 4-phase release gate with 10 automated checks, Karate e2e suites with tag-based gating, and structured deployment checklists. This is enterprise-grade governance.
 - **doc2md has a stronger distribution story.** Browser UI, npm CLI, programmatic API, and portable agent skill — four consumption modes from one codebase, with zero infrastructure requirements. Docling-Studio requires Docker.
 - **Neither project is "better" — they're optimized for different trust models.** doc2md: "your files never leave your browser." Docling-Studio: "upload your PDF and we'll run ML models on it." Both are valid; the choice depends on the user's context.
@@ -384,7 +384,7 @@ For the other 9 formats doc2md supports (docx, xlsx, csv, tsv, pptx, html, txt, 
 |-----------|--------|----------------|------|
 | Format breadth | 10 formats | PDF only | **doc2md** |
 | PDF extraction quality | Text extraction (PDF.js) | ML: OCR + tables + formulas + bbox | **DS** |
-| Privacy model | Zero-upload, browser-only | Requires server upload | **doc2md** |
+| Privacy model | Zero-upload, no server required | Requires server upload | **doc2md** |
 | Deployment complexity | `npm install` or browser bookmark | Docker Compose + optional Docling Serve | **doc2md** |
 | Time-to-value | Drop file → instant markdown | Docker pull → wait for ML models → upload → wait for analysis | **doc2md** |
 | Architecture formality | Functional registry, clean but informal | Hexagonal with ports/adapters, documented standards | **DS** |
@@ -592,7 +592,7 @@ class DoclingServeConverter implements DocumentConverter { ... }
 
 ### 8.3 What NOT to Copy
 
-**Don't add a backend just to have one.** Docling-Studio needs a server because ML inference requires it. doc2md's browser-only model is a feature, not a limitation. Only add a backend (Possibility 1) if the ML-powered PDF quality actually solves a user problem.
+**Don't add a backend just to have one.** Docling-Studio needs a server because ML inference requires it. doc2md's no-server model is a feature, not a limitation. Only add a backend (Possibility 1) if the ML-powered PDF quality actually solves a user problem.
 
 **Don't adopt the full audit framework.** 12 audit templates with weighted scoring is proportional to Docling-Studio's complexity and enterprise audience. For doc2md, it would be governance theater. A simple release checklist and the PR verdict pattern are enough.
 
