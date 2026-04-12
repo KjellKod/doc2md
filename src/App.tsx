@@ -119,13 +119,18 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isPageResizing, setIsPageResizing] = useState(false);
   const [pageMaxWidth, setPageMaxWidth] = useState(BASE_PAGE_MAX_WIDTH);
+  const [startupUrlImportError, setStartupUrlImportError] = useState<
+    string | null
+  >(null);
   const convertTabRef = useRef<HTMLButtonElement>(null);
   const installTabRef = useRef<HTMLButtonElement>(null);
   const dragStartXRef = useRef(0);
   const dragStartWidthRef = useRef(BASE_PAGE_MAX_WIDTH);
+  const startupImportUrlRef = useRef<string | null>(null);
   const {
     entries,
     addFiles,
+    addUrl,
     addScratchEntry,
     clearEntries,
     selectEntry,
@@ -228,6 +233,29 @@ export default function App() {
     };
   }, [isPageResizing]);
 
+  useEffect(() => {
+    const queryUrl =
+      typeof window === "undefined"
+        ? null
+        : new URLSearchParams(window.location.search).get("file")?.trim() ??
+          null;
+
+    if (!queryUrl || startupImportUrlRef.current === queryUrl) {
+      return;
+    }
+
+    startupImportUrlRef.current = queryUrl;
+    setStartupUrlImportError(null);
+
+    void addUrl(queryUrl).catch((error) => {
+      setStartupUrlImportError(
+        error instanceof Error
+          ? error.message
+          : "We couldn't import that document URL.",
+      );
+    });
+  }, [addUrl]);
+
   const handlePageResizeStart = (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     const normalizedWidth = clampPageWidth(pageMaxWidth);
@@ -297,6 +325,11 @@ export default function App() {
     focusPageTab(nextPage);
   };
 
+  async function handleUrlAdded(url: string) {
+    setStartupUrlImportError(null);
+    await addUrl(url);
+  }
+
   return (
     <ThemeProvider>
       <div className="app-shell">
@@ -312,13 +345,13 @@ export default function App() {
               </div>
               <h1>Edit or convert to Markdown, without leaving the browser.</h1>
               <p className="hero-copy">
-                Start with a blank draft, paste in existing content, or drop in a
-                file to convert locally before you review and download clean
-                Markdown.
+                Start with a blank draft, paste in existing content, or bring in
+                a local file or document URL to convert in your browser before
+                you review and download clean Markdown.
               </p>
               <div className="hero-meta" aria-label="Product highlights">
                 <span className="hero-pill">
-                  Private by design: your files never leave your browser
+                  Browser-side conversion with no doc2md upload backend
                 </span>
                 <span className="hero-pill">
                   Supports .md, .txt, .json, .csv, .tsv, .html, .docx, .xlsx,
@@ -417,7 +450,16 @@ export default function App() {
                       </button>
                     </div>
 
-                    <DropZone onFilesAdded={addFiles} />
+                    {startupUrlImportError ? (
+                      <p className="drop-zone-error" role="alert">
+                        {startupUrlImportError}
+                      </p>
+                    ) : null}
+
+                    <DropZone
+                      onFilesAdded={addFiles}
+                      onUrlAdded={handleUrlAdded}
+                    />
 
                     <div className="panel-heading panel-heading-tight">
                       <div>

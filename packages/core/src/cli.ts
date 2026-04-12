@@ -4,14 +4,15 @@ import process from "node:process";
 import { parseArgs } from "./cli-options";
 import { BatchLimitExceededError, convertDocuments } from "./index";
 
-const HELP_TEXT = `Usage: doc2md <input...> -o <output-dir> [--max <n>] [--concurrency <n>] [--help]
+const HELP_TEXT = `Usage: doc2md <input...> -o <output-dir> [--max <n>] [--concurrency <n>] [--remote-timeout-ms <n>] [--help]
 
-Convert one or more local documents to Markdown and write output files to disk.
+Convert one or more local document paths or direct remote document URLs to Markdown and write output files to disk.
 
 Flags:
   -o, --output <dir>   Directory where markdown files will be written
   --max <n>            Maximum number of input documents to process
   --concurrency <n>    Number of documents to process in parallel
+  --remote-timeout-ms <n>  Timeout for direct remote URL downloads in milliseconds
   -h, --help           Show this help message
 `;
 
@@ -27,7 +28,8 @@ async function main() {
     const result = await convertDocuments(options.inputs, {
       outputDir: options.outputDir,
       maxDocuments: options.maxDocuments,
-      concurrency: options.concurrency
+      concurrency: options.concurrency,
+      remoteTimeoutMs: options.remoteTimeoutMs
     });
 
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);

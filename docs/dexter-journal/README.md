@@ -6,6 +6,7 @@ For the other perspective, see [Jean-Claude's Journal](../journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 020 | [Requiem: Document URL Support](020-requiem-document-url-support.md) | Burying the manual-download tax, GitHub HTML fallthrough, and the polite fiction that parser tests were CLI tests |
 | 019 | [Requiem: Docling-Studio Comparison](019-requiem-docling-studio-comparison.md) | Burying the assumption that ML-powered OCR is fast, and the fiction that two different tools compete |
 | 018 | [Requiem: Watermark & Image Detection](018-requiem-watermark-image-detection.md) | Burying diagonal noise, dishonest green badges, and the fiction that missing images were fine |
 | 017 | [Requiem: CI Review Hardening](017-requiem-ci-review-hardening.md) | Burying trust-zone fiction, floating action tags, and a diff validator that had to learn LEFT from RIGHT |
