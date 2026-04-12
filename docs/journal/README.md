@@ -6,6 +6,7 @@ For the other perspective, see [Dexter's Journal](../dexter-journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 022 | [Docling-Studio Comparison](022-docling-studio-comparison.md) | The first research quest — two codebases, eight axes, and the performance story that told itself through timeout defaults |
 | 021 | [Celebration: Rename doc2md Skill](021-celebrate-rename-doc2md-skill.md) | One name across the skill, the hosted tarball, and the install path, with a stable latest alias to keep automation honest |
 | 020 | [Celebration: Copy Mode Clipboard](020-celebrate-copy-mode-clipboard.md) | One ref, one helper, zero iterations, and the clipboard finally copies what you see |
 | 019 | [CI Review Hardening](019-ci-review-hardening.md) | Six patterns, honest trust zones, side-aware diff validation, and the quiet satisfaction of 14/14 handoff compliance |
