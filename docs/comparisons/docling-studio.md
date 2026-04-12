@@ -257,6 +257,8 @@ export type Converter = (file: File) => Promise<ConversionResult>;
 
 **Linting:** ESLint + `tseslint.configs.recommended` + React hooks plugin. TypeScript strict mode with `noEmit`, `isolatedModules`, `forceConsistentCasingInFileNames`. No Prettier configured.
 
+**Coding standards** (`AGENTS.md`): Enforces KISS, DRY, YAGNI, and SRP as core principles. Change philosophy: prefer minimal focused changes, avoid broad refactors unless they fix real bugs, don't add "improvements" that weren't requested. Testing expectations: bug fixes require a reproducing test first, mock at boundaries not internals. Security hygiene: no secrets in code/logs, input validation at trust boundaries. These standards are enforced by the agentic CI pipeline — both Jean-Claude and Dexter personas apply them during plan review, code review, and implementation.
+
 **Monorepo structure:** Workspace root with browser app (`src/`) and `@doc2md/core` package (`packages/core/`). Core package has its own vitest config targeting Node environment.
 
 **Strengths:** The codebase is simple, readable, and appropriate for its scope. Converters are pure functions with clear input/output contracts. No over-engineering.
