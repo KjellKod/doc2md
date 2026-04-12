@@ -342,7 +342,7 @@ def mark_running(self) -> None:
 | DI | None needed | Constructor injection via bootstrap |
 | Type safety | TS strict + `ConversionResult` | TS strict + Pydantic + Protocol classes |
 | State management | React hooks (no library) | Pinia stores (one per feature) |
-| Coding standards doc | No | Yes (30-line fn limit, 300-line file limit) |
+| Coding standards doc | Yes (`AGENTS.md`: KISS, DRY, YAGNI, SRP, testing, security) | Yes (`docs/architecture/coding-standards.md`: 30-line fn limit, 300-line file limit) |
 | Architecture doc | Yes (`docs/architecture.md`) | Yes (`docs/architecture.md` + ADR guide) |
 
 **Verdict:** Docling-Studio's architecture is significantly more formal, but proportional to its complexity. doc2md's architecture is appropriate for a browser utility. The hexagonal pattern is the most transferable lesson — particularly for `@doc2md/core`.
