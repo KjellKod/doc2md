@@ -152,10 +152,10 @@ npx doc2md /absolute/path/a.pdf /absolute/path/b.docx -o /absolute/path/out
 
 Supported GitHub URL shapes:
 
-- `https://github.com/<owner>/<repo>/blob/<branch>/<path>` -> normalized to `https://raw.githubusercontent.com/<owner>/<repo>/refs/heads/<branch>/<path>`
+- `https://github.com/<owner>/<repo>/blob/<branch>/<path>` -> requested in GitHub raw mode (`?raw=1`)
 - `https://raw.githubusercontent.com/<owner>/<repo>/refs/heads/<branch>/<path>` -> fetched as-is
 
-GitHub normalization is intentionally branch-oriented and single-segment only. If you have a tag URL, commit SHA URL, or a branch name that itself contains `/`, use the raw URL form directly.
+GitHub blob URLs are requested in GitHub raw mode (`?raw=1`), and GitHub's redirect to the raw file response is used for conversion and filename inference. Raw GitHub URLs are fetched as-is.
 Malformed or unsupported GitHub blob URLs are rejected before fetch instead of falling back to a GitHub HTML page.
 
 ## Supported Formats

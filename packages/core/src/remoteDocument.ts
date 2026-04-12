@@ -97,8 +97,9 @@ export async function createInputFileFromUrl(
   }
 
   const blob = await response.blob();
+  const responseUrl = new URL(response.url || normalizedUrl.toString());
   const fileName = deriveRemoteDocumentFileName(
-    normalizedUrl,
+    responseUrl,
     response.headers,
     blob.type,
   );

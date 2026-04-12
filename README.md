@@ -12,7 +12,7 @@
 
 A browser-based tool that converts documents to Markdown. Drop in a file or import a document URL, convert it in the browser, review the result, download `.md`. The Node package and CLI also accept direct remote document URLs.
 
-The web app also accepts `?file=<document-url>` on load, for example `https://kjellkod.github.io/doc2md/?file=https://github.com/KjellKod/doc2md/blob/main/README.md`.
+The web app also accepts `?file=<document-url>` on load, for example `https://kjellkod.github.io/doc2md/?file=https://github.com/KjellKod/doc2md/blob/main/README.md`, and presents an explicit import action before any browser fetch starts.
 
 (_[Quest](https://github.com/KjellKod/quest/blob/main/README.md)_) Built for people entering AI-assisted workflows who need a frictionless way to turn existing documents into Markdown for tools like Claude Code, Codex, coding agents, or text-first editing.
 

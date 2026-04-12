@@ -97,10 +97,6 @@ function appendExtensionIfMissing(fileName: string, mimeType: string) {
   return `${fileName}.${extension}`;
 }
 
-function isSingleSegmentRef(ref: string) {
-  return ref.length > 0 && !ref.includes("/");
-}
-
 export function normalizeMimeType(mimeType: string | null | undefined) {
   return mimeType?.split(";")[0]?.trim().toLowerCase() ?? "";
 }
@@ -125,27 +121,27 @@ export function normalizeGitHubDocumentUrl(url: URL) {
     return new URL(url.toString());
   }
 
-  const [owner, repo, marker, ref, ...filePathSegments] = segments;
+  const [owner, repo, marker, ...restSegments] = segments;
+  const filePathSegments = restSegments.slice(1);
 
   if (
     !owner ||
     !repo ||
     marker !== "blob" ||
-    !isSingleSegmentRef(ref) ||
     filePathSegments.length === 0
   ) {
     return new URL(url.toString());
   }
 
-  return new URL(
-    `https://raw.githubusercontent.com/${owner}/${repo}/refs/heads/${ref}/${filePathSegments.join("/")}`,
-  );
+  const normalizedUrl = new URL(url.toString());
+  normalizedUrl.searchParams.set("raw", "1");
+  return normalizedUrl;
 }
 
 export function shouldRejectGitHubBlobUrl(url: URL, normalizedUrl: URL) {
   return (
     isGitHubBlobUrl(url) &&
-    normalizedUrl.hostname !== "raw.githubusercontent.com"
+    normalizedUrl.searchParams.get("raw") !== "1"
   );
 }
 

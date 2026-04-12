@@ -206,8 +206,7 @@ GitHub URL normalization:
 
 - Supported blob shape: `https://github.com/<owner>/<repo>/blob/<branch>/<path>`
 - Supported raw shape: `https://raw.githubusercontent.com/<owner>/<repo>/refs/heads/<branch>/<path>`
-- Blob URLs are normalized to the raw `refs/heads` URL before conversion.
-- This normalization is intentionally branch-oriented and single-segment only. If you have a tag URL, commit SHA URL, or a branch name containing `/`, use the raw GitHub URL directly.
+- Blob URLs are requested in GitHub raw mode (`?raw=1`), and GitHub's redirect to the raw file response is used for conversion and filename inference.
 - Malformed or unsupported GitHub blob URLs are rejected before fetch instead of falling back to a GitHub HTML page.
 
 ## Supported Formats

@@ -154,6 +154,7 @@ describe("remoteDocument", () => {
   it("normalizes GitHub blob URLs before fetching", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
+      url: "https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md",
       headers: new Headers(),
       blob: vi.fn().mockResolvedValue(new Blob(["# docs"], { type: "text/markdown" })),
     });
@@ -164,7 +165,7 @@ describe("remoteDocument", () => {
     );
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md",
+      "https://github.com/KjellKod/doc2md/blob/main/README.md?raw=1",
       expect.objectContaining({
         signal: expect.any(AbortSignal),
       }),
@@ -175,6 +176,7 @@ describe("remoteDocument", () => {
   it("passes through GitHub raw URLs unchanged", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
+      url: "https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md",
       headers: new Headers(),
       blob: vi.fn().mockResolvedValue(new Blob(["# docs"], { type: "text/markdown" })),
     });

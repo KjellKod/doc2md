@@ -100,6 +100,7 @@ describe("convertDocuments", () => {
   it("supports both GitHub blob and raw URL shapes", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
+      url: "https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md",
       headers: new Headers(),
       blob: vi.fn().mockResolvedValue(new Blob(["# doc2md"], { type: "text/markdown" }))
     });
@@ -121,7 +122,7 @@ describe("convertDocuments", () => {
     expect(result.results[1].status).toBe("success");
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
-      "https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md",
+      "https://github.com/KjellKod/doc2md/blob/main/README.md?raw=1",
       expect.objectContaining({
         signal: expect.any(AbortSignal)
       })

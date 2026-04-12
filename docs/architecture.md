@@ -111,8 +111,8 @@ interface ConversionResult {
 **Data flow:**
 
 1. User drops one or more local files into the React UI, or supplies a direct document URL
-2. The web UI can also boot from `?file=<document-url>` and routes that value through the same remote URL import path used by the visible URL field
-3. For remote URLs, the browser fetches the document directly and wraps it in a `File`
+2. The web UI can also boot from `?file=<document-url>` and presents an explicit import action that routes through the same remote URL import path used by the visible URL field
+3. For remote URLs, the browser fetches the document directly after user confirmation and wraps the document in a `File`
 4. The browser selects the matching converter via `convertFile()` in `/src/converters/index.ts`
 5. The converter returns a `ConversionResult` with Markdown, warnings, and status
 6. The user reviews the result locally and downloads `.md` files
@@ -225,7 +225,7 @@ The web UI uses these client-side libraries for in-browser document processing:
 - **Simple trust model:** no server-side storage, queue, or backend worker pipeline.
 - **Honest scope:** the web surface is a static frontend utility, not a document-processing platform.
 - **Browser URL limits:** direct browser URL fetches use a 30-second download timeout and the existing 50 MiB in-browser size cap before conversion continues.
-- **Shared browser URL contract:** manual URL import and `?file=<document-url>` use the same browser-only fetch path, so the same CORS, timeout, size, and privacy boundaries apply.
+- **Shared browser URL contract:** manual URL import and `?file=<document-url>` use the same browser-only fetch path after explicit user confirmation, so the same CORS, timeout, size, and privacy boundaries apply.
 
 The npm package follows the same principle at the Node level: conversion runs locally, no data leaves the machine.
 
@@ -235,7 +235,7 @@ The npm package follows the same principle at the Node level: conversion runs lo
 - PPTX support is experimental and intentionally conservative.
 - Remote URL imports depend on direct browser access. Private endpoints, auth-gated downloads, or origins without suitable cross-origin access may fail before conversion starts.
 - `@doc2md/core` and the CLI also fetch remote URLs directly, from the local Node process, with a 30-second default timeout and no extra byte-size cap.
-- Supported GitHub normalization is intentionally narrow: browser and package paths normalize `github.com/.../blob/<branch>/<path>` to `raw.githubusercontent.com/.../refs/heads/<branch>/<path>`. Raw GitHub branch URLs are accepted as-is.
+- Supported GitHub normalization is intentionally bounded: raw GitHub URLs are accepted as-is, and GitHub blob URLs are requested in GitHub raw mode (`?raw=1`) so GitHub resolves them to the raw file response before conversion.
 - Malformed or unsupported GitHub blob URLs are rejected before fetch so doc2md does not accidentally ingest a GitHub HTML page as a document.
 - The web UI has no backend API, server-side worker, queue, Redis, auth, telemetry, or server deployment path.
 - A browser-side PDF.js worker is used for PDF parsing, but it runs locally in the user's browser and is not a separate service boundary.

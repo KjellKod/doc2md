@@ -19,13 +19,13 @@ describe("core remoteDocument", () => {
     expect(isRemoteUrl("not-a-url")).toBe(false);
   });
 
-  it("normalizes a GitHub blob URL to the raw branch URL", () => {
+  it("normalizes a GitHub blob URL to GitHub raw mode", () => {
     expect(
       normalizeGitHubDocumentUrl(
         new URL("https://github.com/KjellKod/doc2md/blob/main/README.md"),
       ).toString(),
     ).toBe(
-      "https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md",
+      "https://github.com/KjellKod/doc2md/blob/main/README.md?raw=1",
     );
   });
 
@@ -77,6 +77,7 @@ describe("core remoteDocument", () => {
   it("normalizes GitHub blob URLs before fetching", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
+      url: "https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md",
       headers: new Headers(),
       blob: vi.fn().mockResolvedValue(new Blob(["# docs"], { type: "text/markdown" })),
     });
@@ -87,7 +88,7 @@ describe("core remoteDocument", () => {
     );
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md",
+      "https://github.com/KjellKod/doc2md/blob/main/README.md?raw=1",
       expect.objectContaining({
         signal: expect.any(AbortSignal),
       }),

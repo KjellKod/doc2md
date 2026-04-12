@@ -123,8 +123,9 @@ export async function downloadRemoteDocument(
   if (blob.size > MAX_BROWSER_FILE_SIZE_BYTES) {
     throw new Error(OVERSIZED_FILE_MESSAGE);
   }
+  const responseUrl = new URL(response.url || normalizedUrl.toString());
   const fileName = deriveRemoteDocumentFileName(
-    normalizedUrl,
+    responseUrl,
     response.headers,
     blob.type,
   );

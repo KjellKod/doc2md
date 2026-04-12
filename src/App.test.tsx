@@ -289,7 +289,7 @@ describe("App", () => {
     });
   });
 
-  it("auto-imports a query-param document URL on load", async () => {
+  it("requires explicit confirmation before importing a query-param document URL", async () => {
     window.history.replaceState(
       {},
       "",
@@ -307,6 +307,13 @@ describe("App", () => {
 
     render(<App />);
 
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("button", { name: "Import linked URL" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Import linked URL" }));
+
     expect(
       await screen.findByRole("button", { name: /README\.md/i }),
     ).toBeInTheDocument();
@@ -318,14 +325,14 @@ describe("App", () => {
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md",
+      "https://github.com/KjellKod/doc2md/blob/main/README.md?raw=1",
       expect.objectContaining({
         signal: expect.any(AbortSignal),
       }),
     );
   });
 
-  it("shows auto-import query-param failures inline", async () => {
+  it("shows query-param import failures inline after confirmation", async () => {
     window.history.replaceState(
       {},
       "",
@@ -337,6 +344,8 @@ describe("App", () => {
     );
 
     render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Import linked URL" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "We couldn't download that document in the browser. The site may block direct access or require sign-in.",
