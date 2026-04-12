@@ -4,8 +4,7 @@
 - Completed: 2026-04-12
 - Mode: workflow
 - Quality: Platinum
-- Outcome: ```text
-Extend doc2md so document URLs work across both product surfaces, with full testing.
+- Outcome: Extend doc2md so document URLs work across both product surfaces, with full testing.
 
 ## What Shipped
 
@@ -37,8 +36,7 @@ Extend doc2md so document URLs work across both product surfaces, with full test
 
 ## This is where it all began...
 
-> ```text
-Extend doc2md so document URLs work across both product surfaces, with full testing.
+> Extend doc2md so document URLs work across both product surfaces, with full testing.
 
 ## Celebration Data
 

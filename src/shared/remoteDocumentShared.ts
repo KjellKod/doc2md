@@ -139,9 +139,13 @@ export function normalizeGitHubDocumentUrl(url: URL) {
 }
 
 export function shouldRejectGitHubBlobUrl(url: URL, normalizedUrl: URL) {
+  const segments = url.pathname.split("/").filter(Boolean);
+
   return (
     isGitHubBlobUrl(url) &&
+    (segments.length < 5 ||
     normalizedUrl.searchParams.get("raw") !== "1"
+    )
   );
 }
 

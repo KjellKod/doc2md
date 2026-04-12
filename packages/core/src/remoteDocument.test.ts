@@ -148,6 +148,17 @@ describe("core remoteDocument", () => {
     ).rejects.toThrow(UNSUPPORTED_GITHUB_BLOB_URL_MESSAGE);
   });
 
+  it("rejects malformed GitHub blob URLs even when raw mode is already present", async () => {
+    await expect(
+      createInputFileFromUrl(
+        "https://github.com/KjellKod/doc2md/blob/main?raw=1",
+        {
+          fetchImpl: vi.fn(),
+        },
+      ),
+    ).rejects.toThrow(UNSUPPORTED_GITHUB_BLOB_URL_MESSAGE);
+  });
+
   it("maps aborted fetches to a timeout error", async () => {
     vi.useFakeTimers();
     try {
