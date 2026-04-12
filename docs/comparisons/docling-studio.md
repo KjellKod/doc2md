@@ -507,7 +507,7 @@ That's a **15-minute budget** for a single PDF. You don't set a 15-minute timeou
 - **Selective pipeline.** The pipeline has toggles for OCR, table structure, formula enrichment, code enrichment, and picture classification — but they're all-or-nothing per analysis. A "fast mode" that skips expensive enrichments (formulas, picture classification) for documents that don't need them would reduce latency significantly.
 - **Warm model caching.** First-run model download is ~400MB. Pre-baking models into the Docker image (instead of downloading at runtime) would eliminate cold-start latency.
 
-**doc2md's comparison:** 30-second timeout (`src/hooks/useFileConversion.ts`). PDF.js text extraction completes in seconds. The tradeoff is clear — Docling-Studio trades latency for extraction quality. For interactive single-document workflows, doc2md's instant response is a material advantage. For batch processing of scanned archives where quality matters more than speed, Docling-Studio's approach is justified.
+**doc2md's comparison:** 30-second timeout (`src/hooks/useFileConversion.ts`). PDF.js text extraction completes in seconds. The tradeoff is clear — Docling-Studio trades latency for extraction quality. For interactive single-document workflows, doc2md's instant response is a material advantage. For batch processing of scanned archives, complex PDF structures, and embedded images where quality matters more than speed, Docling-Studio's approach is justified.
 
 ---
 
