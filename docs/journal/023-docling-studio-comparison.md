@@ -1,4 +1,4 @@
-# 022 — Docling-Studio Comparison
+# 023 — Docling-Studio Comparison
 <!-- quest-id: docling-studio-comparison_2026-04-11__2157 -->
 <!-- style: memoir -->
 <!-- date: 2026-04-12 -->
