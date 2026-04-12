@@ -1,5 +1,6 @@
 import type { CSSProperties, KeyboardEvent, MouseEvent, SVGProps } from "react";
 import { useEffect, useRef, useState } from "react";
+import corePackage from "../packages/core/package.json";
 import AboutSection from "./components/AboutSection";
 import DownloadButton from "./components/DownloadButton";
 import DropZone from "./components/DropZone";
@@ -18,6 +19,7 @@ const HARD_MAX_PAGE_MAX_WIDTH = 2400;
 const PAGE_WIDTH_FRAME_ALLOWANCE = 96;
 const PAGE_WIDTH_STEP = 48;
 type PageView = "convert" | "install";
+const RELEASE_VERSION = `v${corePackage.version}`;
 
 function PanelRightOpenIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -313,7 +315,12 @@ export default function App() {
             <header className="hero">
               <div className="hero-top">
                 <p className="eyebrow">Private markdown workspace</p>
-                <ThemeToggle />
+                <div className="hero-actions">
+                  <p className="hero-version" aria-label="Current release version">
+                    {RELEASE_VERSION}
+                  </p>
+                  <ThemeToggle />
+                </div>
               </div>
               <h1>Edit or convert to Markdown, without leaving the browser.</h1>
               <p className="hero-copy">
