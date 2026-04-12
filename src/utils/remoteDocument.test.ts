@@ -233,23 +233,56 @@ describe("remoteDocument", () => {
 
   it("maps aborted fetches to a timeout message", async () => {
     vi.useFakeTimers();
-    const fetchMock = vi.fn((_input, init?: RequestInit) => {
-      return new Promise((_, reject) => {
-        init?.signal?.addEventListener("abort", () => {
-          reject(new DOMException("Aborted", "AbortError"));
+    try {
+      const fetchMock = vi.fn((_input, init?: RequestInit) => {
+        return new Promise((_, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            reject(new DOMException("Aborted", "AbortError"));
+          });
         });
+      }) as unknown as typeof fetch;
+
+      const pending = downloadRemoteDocument("https://example.com/report.pdf", {
+        fetchImpl: fetchMock,
+        timeoutMs: REMOTE_DOCUMENT_DOWNLOAD_TIMEOUT_MS,
       });
-    }) as unknown as typeof fetch;
+      const expectation = expect(pending).rejects.toThrow(REMOTE_DOCUMENT_TIMEOUT_MESSAGE);
 
-    const pending = downloadRemoteDocument("https://example.com/report.pdf", {
-      fetchImpl: fetchMock,
-      timeoutMs: REMOTE_DOCUMENT_DOWNLOAD_TIMEOUT_MS,
-    });
-    const expectation = expect(pending).rejects.toThrow(REMOTE_DOCUMENT_TIMEOUT_MESSAGE);
+      await vi.advanceTimersByTimeAsync(REMOTE_DOCUMENT_DOWNLOAD_TIMEOUT_MS);
 
-    await vi.advanceTimersByTimeAsync(REMOTE_DOCUMENT_DOWNLOAD_TIMEOUT_MS);
+      await expectation;
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 
-    await expectation;
-    vi.useRealTimers();
+  it("maps aborted body reads to a timeout message", async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchMock = vi.fn((_input, init?: RequestInit) =>
+        Promise.resolve({
+          ok: true,
+          headers: new Headers(),
+          blob: () =>
+            new Promise((_, reject) => {
+              init?.signal?.addEventListener("abort", () => {
+                reject(new DOMException("Aborted", "AbortError"));
+              });
+            }),
+        }),
+      );
+
+      const pending = downloadRemoteDocument("https://example.com/report.pdf", {
+        fetchImpl: fetchMock as unknown as typeof fetch,
+        timeoutMs: REMOTE_DOCUMENT_DOWNLOAD_TIMEOUT_MS,
+      });
+      const expectation = expect(pending).rejects.toThrow(REMOTE_DOCUMENT_TIMEOUT_MESSAGE);
+
+      await vi.advanceTimersByTimeAsync(REMOTE_DOCUMENT_DOWNLOAD_TIMEOUT_MS);
+
+      await expectation;
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

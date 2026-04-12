@@ -395,29 +395,32 @@ describe("App", () => {
 
   it("shows URL import timeouts inline", async () => {
     vi.useFakeTimers();
-    vi.stubGlobal("fetch", vi.fn((_input, init?: RequestInit) => {
-      return new Promise((_, reject) => {
-        init?.signal?.addEventListener("abort", () => {
-          reject(new DOMException("Aborted", "AbortError"));
+    try {
+      vi.stubGlobal("fetch", vi.fn((_input, init?: RequestInit) => {
+        return new Promise((_, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            reject(new DOMException("Aborted", "AbortError"));
+          });
         });
+      }));
+
+      render(<App />);
+
+      fireEvent.change(screen.getByLabelText("Document URL"), {
+        target: { value: "https://example.com/slow.docx" },
       });
-    }));
+      fireEvent.click(screen.getByRole("button", { name: "Import URL" }));
 
-    render(<App />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(30_000);
+      });
 
-    fireEvent.change(screen.getByLabelText("Document URL"), {
-      target: { value: "https://example.com/slow.docx" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Import URL" }));
-
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(30_000);
-    });
-
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "Downloading that document URL timed out. Try again or download it locally first.",
-    );
-    vi.useRealTimers();
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Downloading that document URL timed out. Try again or download it locally first.",
+      );
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("toggles between day and night mode", () => {

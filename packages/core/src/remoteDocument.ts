@@ -76,33 +76,46 @@ export async function createInputFileFromUrl(
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-  let response: Response;
-
   try {
-    response = await fetchImpl(normalizedUrl.toString(), {
-      signal: controller.signal,
-    });
-  } catch (error) {
-    if (isAbortError(error)) {
-      throw new Error(REMOTE_DOCUMENT_TIMEOUT_MESSAGE);
+    let response: Response;
+
+    try {
+      response = await fetchImpl(normalizedUrl.toString(), {
+        signal: controller.signal,
+      });
+    } catch (error) {
+      if (isAbortError(error)) {
+        throw new Error(REMOTE_DOCUMENT_TIMEOUT_MESSAGE);
+      }
+
+      throw new Error(REMOTE_DOCUMENT_ACCESS_FAILED_MESSAGE);
     }
 
-    throw new Error(REMOTE_DOCUMENT_ACCESS_FAILED_MESSAGE);
+    if (!response.ok) {
+      throw new Error(getRemoteDocumentResponseMessage(response.status));
+    }
+
+    let blob: Blob;
+
+    try {
+      blob = await response.blob();
+    } catch (error) {
+      if (isAbortError(error)) {
+        throw new Error(REMOTE_DOCUMENT_TIMEOUT_MESSAGE);
+      }
+
+      throw new Error(REMOTE_DOCUMENT_ACCESS_FAILED_MESSAGE);
+    }
+
+    const responseUrl = new URL(response.url || normalizedUrl.toString());
+    const fileName = deriveRemoteDocumentFileName(
+      responseUrl,
+      response.headers,
+      blob.type,
+    );
+
+    return new File([blob], fileName, { type: blob.type });
   } finally {
     clearTimeout(timeoutId);
   }
-
-  if (!response.ok) {
-    throw new Error(getRemoteDocumentResponseMessage(response.status));
-  }
-
-  const blob = await response.blob();
-  const responseUrl = new URL(response.url || normalizedUrl.toString());
-  const fileName = deriveRemoteDocumentFileName(
-    responseUrl,
-    response.headers,
-    blob.type,
-  );
-
-  return new File([blob], fileName, { type: blob.type });
 }

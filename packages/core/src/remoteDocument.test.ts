@@ -150,23 +150,56 @@ describe("core remoteDocument", () => {
 
   it("maps aborted fetches to a timeout error", async () => {
     vi.useFakeTimers();
-    const fetchMock = vi.fn((_input, init?: RequestInit) => {
-      return new Promise((_, reject) => {
-        init?.signal?.addEventListener("abort", () => {
-          reject(new DOMException("Aborted", "AbortError"));
+    try {
+      const fetchMock = vi.fn((_input, init?: RequestInit) => {
+        return new Promise((_, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            reject(new DOMException("Aborted", "AbortError"));
+          });
         });
       });
-    });
 
-    const pending = createInputFileFromUrl("https://example.com/slow.docx", {
-      fetchImpl: fetchMock,
-      timeoutMs: DEFAULT_REMOTE_DOCUMENT_TIMEOUT_MS,
-    });
-    const expectation = expect(pending).rejects.toThrow(REMOTE_DOCUMENT_TIMEOUT_MESSAGE);
+      const pending = createInputFileFromUrl("https://example.com/slow.docx", {
+        fetchImpl: fetchMock,
+        timeoutMs: DEFAULT_REMOTE_DOCUMENT_TIMEOUT_MS,
+      });
+      const expectation = expect(pending).rejects.toThrow(REMOTE_DOCUMENT_TIMEOUT_MESSAGE);
 
-    await vi.advanceTimersByTimeAsync(DEFAULT_REMOTE_DOCUMENT_TIMEOUT_MS);
+      await vi.advanceTimersByTimeAsync(DEFAULT_REMOTE_DOCUMENT_TIMEOUT_MS);
 
-    await expectation;
-    vi.useRealTimers();
+      await expectation;
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("maps aborted body reads to a timeout error", async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchMock = vi.fn((_input, init?: RequestInit) =>
+        Promise.resolve({
+          ok: true,
+          headers: new Headers(),
+          blob: () =>
+            new Promise((_, reject) => {
+              init?.signal?.addEventListener("abort", () => {
+                reject(new DOMException("Aborted", "AbortError"));
+              });
+            }),
+        }),
+      );
+
+      const pending = createInputFileFromUrl("https://example.com/slow.docx", {
+        fetchImpl: fetchMock as unknown as typeof fetch,
+        timeoutMs: DEFAULT_REMOTE_DOCUMENT_TIMEOUT_MS,
+      });
+      const expectation = expect(pending).rejects.toThrow(REMOTE_DOCUMENT_TIMEOUT_MESSAGE);
+
+      await vi.advanceTimersByTimeAsync(DEFAULT_REMOTE_DOCUMENT_TIMEOUT_MS);
+
+      await expectation;
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

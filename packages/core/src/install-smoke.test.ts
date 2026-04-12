@@ -109,7 +109,13 @@ async function startRemoteFixtureServer() {
 
     const handleStdout = (chunk: string) => {
       stdoutBuffer += chunk;
-      const line = stdoutBuffer.split("\n")[0]?.trim();
+      const newlineIndex = stdoutBuffer.indexOf("\n");
+
+      if (newlineIndex === -1) {
+        return;
+      }
+
+      const line = stdoutBuffer.slice(0, newlineIndex).trim();
 
       if (!line) {
         return;

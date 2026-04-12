@@ -90,45 +90,58 @@ export async function downloadRemoteDocument(
   }
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-  let response: Response;
-
   try {
-    response = await fetchImpl(normalizedUrl.toString(), {
-      signal: controller.signal,
-    });
-  } catch (error) {
-    if (isAbortError(error)) {
-      throw new Error(REMOTE_DOCUMENT_TIMEOUT_MESSAGE);
+    let response: Response;
+
+    try {
+      response = await fetchImpl(normalizedUrl.toString(), {
+        signal: controller.signal,
+      });
+    } catch (error) {
+      if (isAbortError(error)) {
+        throw new Error(REMOTE_DOCUMENT_TIMEOUT_MESSAGE);
+      }
+
+      throw new Error(REMOTE_DOCUMENT_BROWSER_ACCESS_MESSAGE);
     }
 
-    throw new Error(REMOTE_DOCUMENT_BROWSER_ACCESS_MESSAGE);
+    if (!response.ok) {
+      throw new Error(getRemoteDocumentResponseMessage(response.status));
+    }
+
+    const contentLength = parseContentLength(response.headers);
+
+    if (
+      contentLength !== null &&
+      contentLength > MAX_BROWSER_FILE_SIZE_BYTES
+    ) {
+      throw new Error(OVERSIZED_FILE_MESSAGE);
+    }
+
+    let blob: Blob;
+
+    try {
+      blob = await response.blob();
+    } catch (error) {
+      if (isAbortError(error)) {
+        throw new Error(REMOTE_DOCUMENT_TIMEOUT_MESSAGE);
+      }
+
+      throw new Error(REMOTE_DOCUMENT_BROWSER_ACCESS_MESSAGE);
+    }
+
+    if (blob.size > MAX_BROWSER_FILE_SIZE_BYTES) {
+      throw new Error(OVERSIZED_FILE_MESSAGE);
+    }
+    const responseUrl = new URL(response.url || normalizedUrl.toString());
+    const fileName = deriveRemoteDocumentFileName(
+      responseUrl,
+      response.headers,
+      blob.type,
+    );
+
+    return new File([blob], fileName, { type: blob.type });
   } finally {
     clearTimeout(timeoutId);
   }
-
-  if (!response.ok) {
-    throw new Error(getRemoteDocumentResponseMessage(response.status));
-  }
-
-  const contentLength = parseContentLength(response.headers);
-
-  if (
-    contentLength !== null &&
-    contentLength > MAX_BROWSER_FILE_SIZE_BYTES
-  ) {
-    throw new Error(OVERSIZED_FILE_MESSAGE);
-  }
-
-  const blob = await response.blob();
-  if (blob.size > MAX_BROWSER_FILE_SIZE_BYTES) {
-    throw new Error(OVERSIZED_FILE_MESSAGE);
-  }
-  const responseUrl = new URL(response.url || normalizedUrl.toString());
-  const fileName = deriveRemoteDocumentFileName(
-    responseUrl,
-    response.headers,
-    blob.type,
-  );
-
-  return new File([blob], fileName, { type: blob.type });
 }
