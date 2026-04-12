@@ -370,7 +370,7 @@ def mark_running(self) -> None:
 4. **Analysis history** — Persist and revisit past analyses. Target: teams doing repeated document processing.
 5. **Remote processing proxy** — Lightweight Docker image delegates to a Docling Serve cluster. Target: enterprises with existing Docling infrastructure.
 
-All interaction is through the web UI — there is no CLI, no npm package, and no documented API for scripting. The REST API exists (`/api/documents`, `/api/analyses`) but is internal to the frontend, not a published consumption surface.
+All interaction is through the web UI — there is no CLI and no npm package. A REST API exists (`/api/documents`, `/api/analyses`, `/api/health`) and FastAPI likely auto-generates Swagger docs at `/docs`, but the API is not documented as a user-facing consumption surface — no curl examples in the README, no API reference, no published OpenAPI spec. It's internal plumbing for the Vue frontend that a determined user could script against.
 
 **Key characteristic:** Deep PDF analysis with visual verification, requiring infrastructure and a browser.
 
