@@ -17,7 +17,7 @@ But the performance story told itself through timeout defaults. A 15-minute conv
 
 The most useful finding: these projects don't compete. doc2md is a pocket knife — 10 formats, zero infrastructure, instant results, four consumption surfaces. Docling-Studio is a surgical suite — PDF-only, ML-powered, visually verified, Docker-required. The "Why doc2md?" answer writes itself: trust model, format breadth, zero friction.
 
-## What's Worth Stealing
+## What's Worth Adopting
 
 The e2e test conventions document (`e2e/CONVENTIONS.md`) is a model. The tag-based CI gating pattern (`@smoke` on PRs, `@regression` on releases). The release gate with PR verdict comments. The hexagonal architecture — not for the browser app, but maybe for `@doc2md/core` if we ever add a Docling Serve backend.
 
