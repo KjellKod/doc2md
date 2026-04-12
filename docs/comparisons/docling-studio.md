@@ -515,7 +515,7 @@ That's a **15-minute budget** for a single PDF. You don't set a 15-minute timeou
 
 ### 8.1 Patterns Worth Adopting
 
-**E2E test conventions.** Docling-Studio's `e2e/CONVENTIONS.md` is a template worth stealing wholesale. The "no sleep, use retry/waitFor" rule, `data-e2e` attribute requirement, and "setup via API / verify via UI / cleanup via API" pattern would make e2e tests reliable from day one if doc2md ever adds them. The tag-based gating (`@smoke` for PRs, `@regression` for releases) is a smart CI optimization.
+**E2E test conventions.** Docling-Studio's `e2e/CONVENTIONS.md` is genuinely inspirational — a good mindset that doc2md could benefit from. The "no sleep, use retry/waitFor" rule, `data-e2e` attribute requirement, and "setup via API / verify via UI / cleanup via API" pattern would make e2e tests reliable from day one if doc2md ever adds them. The tag-based gating (`@smoke` for PRs, `@regression` for releases) is a smart CI optimization.
 
 **Release gate with PR verdicts.** The `release-gate.yml` pattern of running a multi-phase validation and posting a GO/NO-GO comment to the PR is a lightweight but powerful quality gate. doc2md could adopt this without the full 12-audit framework.
 
