@@ -72,7 +72,7 @@ doc2md's strategy is stated plainly in `docs/product-spec.md`: a **browser-based
 
 The product principles (`docs/product-spec.md:25-32`) are disciplined: "Simple over clever," "Honest over magical," "Markdown quality over styling fidelity." This is a tool that knows what it is.
 
-**Growth vector:** npm ecosystem + agent skill portability. The `@doc2md/core` package (`packages/core/package.json`) provides `convertDocuments()` and `convertDocument()` APIs with batch processing, concurrency control, and a CLI. The `.skills/doc-to-markdown/` wrapper makes doc2md callable from any agent workflow.
+**Growth vector:** npm ecosystem + agent skill portability. The `@doc2md/core` package (`packages/core/package.json`) provides `convertDocuments()` and `convertDocument()` APIs with batch processing, concurrency control, and a CLI. The `.skills/doc2md/` wrapper makes doc2md callable from any agent workflow.
 
 ### Docling-Studio: Visual PDF Analysis Platform
 
@@ -358,7 +358,7 @@ def mark_running(self) -> None:
 1. **One-off document conversion** — Drag a file into the browser, get markdown. No install, no account, no upload. Target: anyone entering an AI-assisted workflow.
 2. **Batch CLI conversion** — `doc2md *.pdf *.docx -o ./out` (global install) or `npx doc2md *.pdf *.docx -o ./out` (no install) for converting document collections. Use `npx` for one-off runs without installing; use `doc2md` directly after `npm install -g` for frequent use. Target: developers, technical writers.
 3. **Programmatic API** — `import { convertDocuments } from "@doc2md/core"` for integrating into Node.js pipelines. Target: toolchain builders.
-4. **Agent skill** — Portable `.skills/doc-to-markdown/` wrapper for coding agents. In Claude Code: `/doc2md convert the quarterly reports in ./docs/finance to markdown for the AI review pipeline`. Target: agentic workflows.
+4. **Agent skill** — Portable `.skills/doc2md/` wrapper for coding agents. In Claude Code: `/doc2md convert the quarterly reports in ./docs/finance to markdown for the AI review pipeline`. Target: agentic workflows.
 
 **Key characteristic:** Four consumption surfaces from one codebase, zero infrastructure for any of them.
 
@@ -450,7 +450,7 @@ SQLite-backed storage of documents and analyses with history navigation. Users c
 **Evidence:** `docs/architecture.md:14-19` explicitly documents the trust model: "No backend, server-side worker, queue, Redis, auth, or telemetry."
 
 ### 7.3 Deployment Simplicity
-doc2md is a static site. Visit a URL, use it. Or `npm install -g @doc2md/core` for the CLI. Or copy `.skills/doc-to-markdown/` into a repo.
+doc2md is a static site. Visit a URL, use it. Or `npm install -g @doc2md/core` for the CLI. Or copy `.skills/doc2md/` into a repo.
 
 Docling-Studio requires `docker compose up`, port mapping, volume mounts, and in local mode, a 1.9GB image with a ~400MB ML model download on first run.
 
