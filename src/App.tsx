@@ -19,7 +19,11 @@ const HARD_MAX_PAGE_MAX_WIDTH = 2400;
 const PAGE_WIDTH_FRAME_ALLOWANCE = 96;
 const PAGE_WIDTH_STEP = 48;
 type PageView = "convert" | "install";
-const RELEASE_VERSION = `v${corePackage.version}`;
+const FALLBACK_RELEASE_VERSION = `v${corePackage.version}`;
+
+interface TarballVersionManifest {
+  version: string;
+}
 
 function PanelRightOpenIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -121,6 +125,7 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isPageResizing, setIsPageResizing] = useState(false);
   const [pageMaxWidth, setPageMaxWidth] = useState(BASE_PAGE_MAX_WIDTH);
+  const [releaseVersion, setReleaseVersion] = useState(FALLBACK_RELEASE_VERSION);
   const convertTabRef = useRef<HTMLButtonElement>(null);
   const installTabRef = useRef<HTMLButtonElement>(null);
   const dragStartXRef = useRef(0);
@@ -166,6 +171,36 @@ export default function App() {
     " open",
   );
   const fileSummary = buildSummary("No files or drafts yet.", "");
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadReleaseVersion() {
+      try {
+        const response = await fetch(`${import.meta.env.BASE_URL}latest-tarball.json`, {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const data = (await response.json()) as Partial<TarballVersionManifest>;
+
+        if (!isCancelled && typeof data.version === "string") {
+          setReleaseVersion(`v${data.version}`);
+        }
+      } catch {
+        // Local dev and unreleased builds fall back to the packaged version.
+      }
+    }
+
+    void loadReleaseVersion();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") {
@@ -315,12 +350,7 @@ export default function App() {
             <header className="hero">
               <div className="hero-top">
                 <p className="eyebrow">Private markdown workspace</p>
-                <div className="hero-actions">
-                  <p className="hero-version" aria-label="Current release version">
-                    {RELEASE_VERSION}
-                  </p>
-                  <ThemeToggle />
-                </div>
+                <ThemeToggle />
               </div>
               <h1>Edit or convert to Markdown, without leaving the browser.</h1>
               <p className="hero-copy">
@@ -342,6 +372,9 @@ export default function App() {
                     : "CLI, Node, and portable skill setup from one place"}
                 </span>
               </div>
+              <p className="hero-version" aria-label="Current release version">
+                {releaseVersion}
+              </p>
             </header>
 
             <div className="view-switcher" role="tablist" aria-label="doc2md views">
