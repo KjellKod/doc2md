@@ -154,7 +154,11 @@ export class AutoPdfConverter implements PdfConverter {
 ```typescript
 const converter = new AutoPdfConverter({
   primary: new PdfJsConverter(),
-  fallback: new DoclingServeConverter({ baseUrl: "http://localhost:5001" }),
+  fallback: new LlmOcrConverter({
+    provider: "anthropic",
+    model: "claude-sonnet-4-5-20241022",
+    apiKey: process.env.ANTHROPIC_API_KEY,
+  }),
   escalateAt: "review",  // escalate on "review" or "poor"
 });
 
@@ -186,7 +190,7 @@ doc2md scanned.pdf -o ./out \
 **User sees:**
 ```
 ✓ report.pdf → report.md (success, PDF.js, 0.3s)
-⚠ scanned.pdf → scanned.md (success, escalated to Docling Serve — "poor: image-based PDF, no selectable text", 47s)
+⚠ scanned.pdf → scanned.md (success, escalated to LLM vision — "poor: image-based PDF, no selectable text", 12s)
 ✓ notes.pdf → notes.md (success, PDF.js, 0.2s)
 ```
 
@@ -248,45 +252,9 @@ export class PdfJsConverter implements PdfConverter {
 - Limited — no OCR, no formula recognition (LaTeX/math equations). Has table detection via column clustering and heuristics, but not ML-powered table structure recognition
 - Produces quality signals that drive the auto adapter
 
-## Adapter 2: Docling Serve (Remote ML)
+## Adapter 2: LLM Vision / OCR (Recommended First)
 
-HTTP client that delegates to a [Docling Serve](https://github.com/DS4SD/docling-serve) instance for ML-powered extraction.
-
-```typescript
-// adapters/docling-serve-converter.ts
-
-import type { PdfConverter, PdfConvertResult, PdfConvertOptions } from "../ports/pdf-converter.js";
-
-export interface DoclingServeConfig {
-  baseUrl: string;
-  apiKey?: string;
-  timeoutMs?: number;  // default: 600_000 (10 min — ML is slow)
-}
-
-export class DoclingServeConverter implements PdfConverter {
-  private config: DoclingServeConfig;
-
-  constructor(config: DoclingServeConfig) {
-    this.config = config;
-  }
-
-  async convert(input: Buffer, options?: PdfConvertOptions): Promise<PdfConvertResult> {
-    // POST multipart/form-data to Docling Serve
-    // Map Docling response (markdown, html, document_json) to PdfConvertResult
-    // Handle timeouts, errors, retries
-  }
-}
-```
-
-**Characteristics:**
-- Requires a running Docling Serve instance (Docker)
-- Slow — minutes per document (OCR + table detection + formula recognition)
-- Powerful — handles scanned PDFs, complex tables, embedded formulas
-- Privacy trade-off — file sent to the Docling server (self-hosted)
-
-## Adapter 3: LLM Vision / OCR (Future)
-
-Use an LLM with vision capabilities (Claude, GPT-4o) or a dedicated OCR service to extract content from PDFs page-by-page.
+Use an LLM with vision capabilities (Claude, GPT-4o) or a dedicated OCR service to extract content from PDFs page-by-page. **This is the recommended first backend to build** — zero infrastructure (just an API key), native to doc2md's AI-workflow audience, and fast to validate the hexagonal pattern.
 
 ```typescript
 // adapters/llm-ocr-converter.ts
@@ -319,12 +287,55 @@ export class LlmOcrConverter implements PdfConverter {
 ```
 
 **Characteristics:**
-- Requires API key and network access
+- Requires API key and network access — no Docker, no infrastructure
 - Cost per page — LLM API pricing applies
-- Quality varies by model and prompt engineering
+- Quality varies by model and prompt engineering — Claude and GPT-4o are strong at tables, headings, and structure
 - Handles scanned PDFs, handwriting, complex layouts
 - Latency: seconds per page (parallel), minutes per document
 - Privacy consideration — pages sent to external API
+
+**Why build this first:**
+- doc2md users are already in AI-assisted workflows — they have API keys, not Docker stacks
+- You can validate the entire hexagonal pattern (port, adapter, auto mode, factory) with one `npm install` and an API key
+- The feedback loop is short: try it, see the output, tune the prompt
+- If quality is good enough, Docling Serve may never be needed
+
+## Adapter 3: Docling Serve (Remote ML)
+
+HTTP client that delegates to a [Docling Serve](https://github.com/DS4SD/docling-serve) instance for ML-powered extraction. Best for enterprises with existing Docling infrastructure or batch processing where per-page API costs add up.
+
+```typescript
+// adapters/docling-serve-converter.ts
+
+import type { PdfConverter, PdfConvertResult, PdfConvertOptions } from "../ports/pdf-converter.js";
+
+export interface DoclingServeConfig {
+  baseUrl: string;
+  apiKey?: string;
+  timeoutMs?: number;  // default: 600_000 (10 min — ML is slow)
+}
+
+export class DoclingServeConverter implements PdfConverter {
+  private config: DoclingServeConfig;
+
+  constructor(config: DoclingServeConfig) {
+    this.config = config;
+  }
+
+  async convert(input: Buffer, options?: PdfConvertOptions): Promise<PdfConvertResult> {
+    // POST multipart/form-data to Docling Serve
+    // Map Docling response (markdown, html, document_json) to PdfConvertResult
+    // Handle timeouts, errors, retries
+  }
+}
+```
+
+**Characteristics:**
+- Requires a running Docling Serve instance (Docker, 1.9GB image + ML models)
+- Slow — minutes per document (OCR + table detection + formula recognition)
+- Powerful — handles scanned PDFs, complex tables, embedded formulas
+- No per-page API cost — infrastructure cost only
+- Privacy trade-off — file sent to the Docling server (self-hosted)
 
 ## Wiring: Adapter Selection at Startup
 
@@ -338,9 +349,9 @@ import { PdfJsConverter } from "../adapters/pdfjs-converter.js";
 
 export interface PdfBackendConfig {
   /** Explicit backend — skips fast path, uses this directly */
-  backend?: "pdfjs" | "docling-serve" | "llm-ocr";
-  /** Auto mode — uses PDF.js first, escalates on quality signals */
-  auto?: "docling-serve" | "llm-ocr";
+  backend?: "pdfjs" | "llm-ocr" | "docling-serve";
+  /** Auto mode — uses PDF.js first, escalates on quality signals. Default: "llm-ocr" */
+  auto?: "llm-ocr" | "docling-serve";
   /** When to escalate. Default: "review" */
   escalateAt?: "review" | "poor";
   doclingServe?: {
@@ -386,25 +397,25 @@ const result = await convertDocument("/path/report.pdf", {
   outputDir: "./out",
 });
 
-// Auto mode — PDF.js first, Docling Serve if quality is poor
+// Auto mode — PDF.js first, LLM vision if quality is poor
 const result = await convertDocument("/path/scanned-report.pdf", {
   outputDir: "./out",
   pdfAuto: {
-    auto: "docling-serve",
-    doclingServe: { baseUrl: "http://localhost:5001" },
-  },
-});
-
-// Force a specific backend — skip fast path entirely
-const result = await convertDocument("/path/scanned-report.pdf", {
-  outputDir: "./out",
-  pdfBackend: {
-    backend: "llm-ocr",
+    auto: "llm-ocr",
     llmOcr: {
       provider: "anthropic",
       model: "claude-sonnet-4-5-20241022",
       apiKey: process.env.ANTHROPIC_API_KEY,
     },
+  },
+});
+
+// Force Docling Serve — skip fast path entirely (enterprise/batch use)
+const result = await convertDocument("/path/scanned-report.pdf", {
+  outputDir: "./out",
+  pdfBackend: {
+    backend: "docling-serve",
+    doclingServe: { baseUrl: "http://localhost:5001" },
   },
 });
 ```
@@ -415,33 +426,39 @@ CLI equivalent:
 # Default (PDF.js only)
 doc2md report.pdf -o ./out
 
-# Auto mode — PDF.js first, escalates if quality is poor
+# Auto mode — PDF.js first, LLM vision if quality is poor
 doc2md report.pdf -o ./out --pdf-auto
 
-# Auto with specific fallback target
+# Auto with explicit LLM config
+doc2md scanned-report.pdf -o ./out \
+  --pdf-auto llm-ocr \
+  --llm-provider anthropic \
+  --llm-model claude-sonnet-4-5-20241022
+
+# Auto with Docling Serve as fallback (enterprise/batch)
 doc2md scanned-report.pdf -o ./out \
   --pdf-auto docling-serve \
   --docling-url http://localhost:5001
 
-# Force backend (skip fast path)
+# Force backend (skip fast path entirely)
 doc2md scanned-report.pdf -o ./out \
-  --pdf-backend llm-ocr \
-  --llm-provider anthropic \
-  --llm-model claude-sonnet-4-5-20241022
+  --pdf-backend docling-serve \
+  --docling-url http://localhost:5001
 ```
 
 ## Comparison of Backends
 
-| Aspect | PDF.js | Docling Serve | LLM / OCR |
-|--------|--------|---------------|-----------|
-| **Speed** | Milliseconds–seconds | Minutes | Seconds/page |
+| Aspect | PDF.js | LLM / OCR | Docling Serve |
+|--------|--------|-----------|---------------|
+| **Speed** | Milliseconds–seconds | Seconds/page | Minutes |
 | **Scanned PDFs** | Quality warning | Full OCR | Full OCR |
-| **Tables** | Heuristic detection + column clustering | ML structure detection | Depends on model |
-| **Formulas** | No (LaTeX/math equations) | Recognition | Depends on model |
-| **Privacy** | Local only | Self-hosted server | External API |
-| **Cost** | Free | Infrastructure | Per-page API cost |
-| **Infrastructure** | None | Docker + Docling | API key |
-| **Best for** | Text PDFs, quick conversion | Scanned archives, complex structures | Mixed content, handwriting |
+| **Tables** | Heuristic detection + column clustering | Strong (Claude, GPT-4o) | ML structure detection |
+| **Formulas** | No (LaTeX/math equations) | Depends on model | Recognition |
+| **Privacy** | Local only | External API | Self-hosted server |
+| **Cost** | Free | Per-page API cost | Infrastructure |
+| **Infrastructure** | None | API key | Docker + Docling (1.9GB) |
+| **Best for** | Text PDFs, quick conversion | Mixed content, handwriting, most escalations | Batch archives, enterprise Docling users |
+| **Build priority** | Already built | **First** — validates the pattern | Later — if needed |
 
 ## Escalation Signals (Already Built)
 
@@ -462,10 +479,11 @@ These quality signals already exist in `src/converters/pdf.ts`. Today they produ
 We have one PDF backend. Adding an interface around a single implementation is YAGNI — it's an abstraction with no second data point to inform the contract.
 
 **Build it when:**
-- A concrete second backend is confirmed (Docling Serve integration or LLM/OCR)
-- At that point, the refactor is small: extract the interface from the existing PDF.js converter, write the new adapter, add the cascading wrapper, add the factory
+- A concrete second backend is confirmed — and **LLM vision is the most likely first candidate** (API key only, no Docker, native to the audience)
+- At that point, the refactor is small: extract the interface from the existing PDF.js converter, write the LLM adapter, add the auto wrapper, add the factory
 - Two real implementations tell you what the interface *actually needs* — one implementation only tells you what you *guess* it needs
+- Docling Serve becomes Adapter 3 if/when enterprise or batch use cases demand it
 
-**The auto pattern is the key insight.** It means the common case (text PDFs) stays instant, and the user never needs to know which backend handled their file. Quality signals we already produce become the routing logic. The abstraction pays for itself only when there's a real fallback to cascade to.
+**The auto pattern is the key insight.** It means the common case (text PDFs) stays instant, and the user never needs to know which backend handled their file. Quality signals we already produce become the routing logic. The abstraction pays for itself only when there's a real fallback to auto-escalate to.
 
 As the `AGENTS.md` says: YAGNI — You Aren't Gonna Need It. Until you do.
