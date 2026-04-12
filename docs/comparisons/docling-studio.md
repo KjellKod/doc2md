@@ -519,7 +519,7 @@ That's a **15-minute budget** for a single PDF. You don't set a 15-minute timeou
 
 **Release gate with PR verdicts.** The `release-gate.yml` pattern of running a multi-phase validation and posting a GO/NO-GO comment to the PR is a lightweight but powerful quality gate. doc2md could adopt this without the full 12-audit framework.
 
-**Coding standards document.** The 30-line function limit, 300-line file limit, and explicit layer dependency rules in `docs/architecture/coding-standards.md` are worth codifying for doc2md. Not as enforcement, but as documented expectations.
+**Explicit size limits.** Docling-Studio's 30-line function limit and 300-line file limit (`docs/architecture/coding-standards.md`) are concrete thresholds that complement doc2md's existing principles in `AGENTS.md`. doc2md already codifies KISS, DRY, YAGNI, and SRP — adding explicit size guardrails could be a lightweight addition to reinforce them.
 
 **State machine on domain models.** The `AnalysisJob.mark_running()` pattern with guard clauses is clean and testable. If doc2md ever adds stateful processing (e.g., conversion history, queue management), this is the pattern to use.
 
