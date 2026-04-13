@@ -57,7 +57,7 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByLabelText("Current release version").textContent,
-    ).toMatch(/^v\d+\.\d+\.\d+$/);
+    ).toMatch(/^\d+\.\d+\.\d+(?:-dev)?$/);
     expect(
       screen.getByRole("link", {
         name: /@doc2md\/core/i,

@@ -46,13 +46,20 @@ export function deriveDisplayVersionFromState(
   headCommit,
   isWorktreeDirty,
 ) {
-  const releaseVersion = deriveReleaseVersionFromRefs(
-    latestTag,
-    tagCommit,
-    headCommit,
-  );
+  const normalizedTag = latestTag.replace(/^v/, "");
 
-  return isWorktreeDirty ? bumpPatch(releaseVersion) : releaseVersion;
+  if (!/^\d+\.\d+\.\d+$/.test(normalizedTag)) {
+    throw new Error(`Unsupported release tag format: ${latestTag}`);
+  }
+
+  const isAheadOfTag =
+    tagCommit.length === 0 || tagCommit !== headCommit;
+
+  if (isAheadOfTag || isWorktreeDirty) {
+    return `${normalizedTag}-dev`;
+  }
+
+  return normalizedTag;
 }
 
 export function assertReleaseTagsAvailable(latestTag, env = process.env) {

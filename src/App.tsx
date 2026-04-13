@@ -311,9 +311,6 @@ export default function App() {
           style={pageFrameStyle}
         >
           <div className="page">
-            <p className="page-version" aria-label="Current release version">
-              {DISPLAY_VERSION}
-            </p>
             <header className="hero">
               <div className="hero-top">
                 <p className="eyebrow">Private markdown workspace</p>
@@ -339,6 +336,9 @@ export default function App() {
                     : "CLI, Node, and portable skill setup from one place"}
                 </span>
               </div>
+              <p className="hero-version" aria-label="Current release version">
+                {DISPLAY_VERSION}
+              </p>
             </header>
 
             <div className="view-switcher" role="tablist" aria-label="doc2md views">

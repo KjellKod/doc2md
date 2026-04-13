@@ -31,7 +31,7 @@ export default defineConfig({
   plugins: [react()],
   base: "/doc2md/",
   define: {
-    __DOC2MD_DISPLAY_VERSION__: JSON.stringify(`v${displayVersion}`),
+    __DOC2MD_DISPLAY_VERSION__: JSON.stringify(displayVersion),
   },
   test: {
     environment: "jsdom",

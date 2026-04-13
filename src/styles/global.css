@@ -135,22 +135,7 @@ a {
 }
 
 .page {
-  position: relative;
   min-width: 0;
-}
-
-.page-version {
-  position: absolute;
-  bottom: 0.45rem;
-  right: 0.65rem;
-  z-index: 2;
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  line-height: 1;
-  pointer-events: none;
 }
 
 .hero h1,
@@ -163,7 +148,21 @@ a {
 }
 
 .hero {
+  position: relative;
   padding: 32px 8px 34px;
+}
+
+.hero-version {
+  position: absolute;
+  bottom: 0.45rem;
+  right: 0.65rem;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  pointer-events: none;
 }
 
 .hero-top {

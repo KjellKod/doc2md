@@ -53,15 +53,33 @@ describe("release version derivation", () => {
     expect(() => bumpPatch("0.5")).toThrow("Invalid release version");
   });
 
-  it("bumps the displayed patch version when the worktree is dirty on a tagged commit", () => {
+  it("returns the tag as-is when HEAD is at the tag and the worktree is clean", () => {
     expect(
-      deriveDisplayVersionFromState("1.0.1", "abc123", "abc123", true)
-    ).toBe("1.0.2");
+      deriveDisplayVersionFromState("1.0.1", "abc123", "abc123", false)
+    ).toBe("1.0.1");
   });
 
-  it("bumps the displayed patch version again when HEAD is already ahead and the worktree is dirty", () => {
+  it("marks the displayed version as -dev when the worktree is dirty on a tagged commit", () => {
+    expect(
+      deriveDisplayVersionFromState("1.0.1", "abc123", "abc123", true)
+    ).toBe("1.0.1-dev");
+  });
+
+  it("marks the displayed version as -dev when HEAD is ahead of the latest release tag", () => {
+    expect(
+      deriveDisplayVersionFromState("1.0.1", "abc123", "def456", false)
+    ).toBe("1.0.1-dev");
+  });
+
+  it("marks the displayed version as -dev when HEAD is ahead and the worktree is dirty", () => {
     expect(
       deriveDisplayVersionFromState("1.0.1", "abc123", "def456", true)
-    ).toBe("1.0.3");
+    ).toBe("1.0.1-dev");
+  });
+
+  it("marks the displayed version as -dev when no release tag exists yet", () => {
+    expect(
+      deriveDisplayVersionFromState("0.0.0", "", "def456", false)
+    ).toBe("0.0.0-dev");
   });
 });
