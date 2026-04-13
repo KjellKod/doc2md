@@ -2,7 +2,7 @@
 
 <div align="center">
 
-### ✦ [**Use doc2md live →**](https://kjellkod.github.io/doc2md/) ✦
+## ✦ [**Use doc2md live →**](https://kjellkod.github.io/doc2md/) ✦
 
 *Client-side conversion, no doc2md upload backend. Local files stay in your browser.*
 
