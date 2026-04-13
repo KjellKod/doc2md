@@ -1,8 +1,31 @@
 import { defineConfig } from "vitest/config";
+import { readFileSync } from "node:fs";
 import react from "@vitejs/plugin-react";
 import { getDisplayVersionInfo } from "./packages/core/scripts/release-version.mjs";
 
-const displayVersion = getDisplayVersionInfo().version;
+function readCorePackageVersion() {
+  try {
+    const packageJson = JSON.parse(
+      readFileSync(new URL("./packages/core/package.json", import.meta.url), "utf8"),
+    ) as { version?: string };
+
+    if (typeof packageJson.version === "string" && packageJson.version.length > 0) {
+      return packageJson.version;
+    }
+  } catch {
+    // Fall through to the final static fallback below.
+  }
+
+  return "0.0.0";
+}
+
+const displayVersion = (() => {
+  try {
+    return getDisplayVersionInfo().version;
+  } catch {
+    return readCorePackageVersion();
+  }
+})();
 
 export default defineConfig({
   plugins: [react()],
