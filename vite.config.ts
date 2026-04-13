@@ -21,9 +21,15 @@ function readCorePackageVersion() {
 
 const displayVersion = (() => {
   try {
-    return getDisplayVersionInfo().version;
+    const info = getDisplayVersionInfo();
+
+    if (info.latestTag === "0.0.0") {
+      return `${readCorePackageVersion()}-dev`;
+    }
+
+    return info.version;
   } catch {
-    return readCorePackageVersion();
+    return `${readCorePackageVersion()}-dev`;
   }
 })();
 
