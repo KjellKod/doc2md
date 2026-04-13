@@ -56,6 +56,9 @@ describe("App", () => {
       screen.getByRole("button", { name: "Switch to day mode" }),
     ).toBeInTheDocument();
     expect(
+      screen.getByLabelText("Current release version").textContent,
+    ).toMatch(/^\d+\.\d+\.\d+(?:-dev)?$/);
+    expect(
       screen.getByRole("link", {
         name: /@doc2md\/core/i,
       }),

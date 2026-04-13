@@ -18,6 +18,7 @@ const HARD_MAX_PAGE_MAX_WIDTH = 2400;
 const PAGE_WIDTH_FRAME_ALLOWANCE = 96;
 const PAGE_WIDTH_STEP = 48;
 type PageView = "convert" | "install";
+const DISPLAY_VERSION = __DOC2MD_DISPLAY_VERSION__;
 
 function PanelRightOpenIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -310,6 +311,9 @@ export default function App() {
           style={pageFrameStyle}
         >
           <div className="page">
+            <p className="page-version" aria-label="Current release version">
+              {DISPLAY_VERSION}
+            </p>
             <header className="hero">
               <div className="hero-top">
                 <p className="eyebrow">Private markdown workspace</p>
