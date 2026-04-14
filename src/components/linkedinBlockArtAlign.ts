@@ -6,6 +6,7 @@ const LINKEDIN_FONT_SIZE = 14;
 
 const FIGURE_SPACE = "\u2007";
 const EM_SPACE = "\u2003";
+const IDEOGRAPHIC_SPACE = "\u3000";
 const FULL_BLOCK = "\u2588";
 
 // Normalize all non-14px box-drawing characters to █ (14.00px).
@@ -227,8 +228,19 @@ export function compensateForLinkedIn(text: string): string {
   //
   // The complex per-column approach is preserved below but bypassed
   // in favor of this empirically simpler solution.
+  // Pick the space character closest to █ width (14.00px).
+  // Em space = 13.85px, ideographic space = often exactly 14px.
+  const blockWidth = measureString(FULL_BLOCK) ?? 14;
+  const emWidth = measureString(EM_SPACE) ?? 13.85;
+  const ideoWidth = measureString(IDEOGRAPHIC_SPACE) ?? 14;
+
+  const bestSpace =
+    Math.abs(ideoWidth - blockWidth) < Math.abs(emWidth - blockWidth)
+      ? IDEOGRAPHIC_SPACE
+      : EM_SPACE;
+
   return stripMarkers(text)
-    .replaceAll(FIGURE_SPACE, EM_SPACE)
+    .replaceAll(FIGURE_SPACE, bestSpace)
     .replace(NORMALIZE_CHARS, FULL_BLOCK);
 }
 
