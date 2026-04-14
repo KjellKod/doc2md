@@ -228,19 +228,10 @@ export function compensateForLinkedIn(text: string): string {
   //
   // The complex per-column approach is preserved below but bypassed
   // in favor of this empirically simpler solution.
-  // Pick the space character closest to █ width (14.00px).
-  // Em space = 13.85px, ideographic space = often exactly 14px.
-  const blockWidth = getCharWidth(FULL_BLOCK) ?? 14;
-  const emWidth = getCharWidth(EM_SPACE) ?? 13.85;
-  const ideoWidth = getCharWidth(IDEOGRAPHIC_SPACE) ?? 14;
-
-  const bestSpace =
-    Math.abs(ideoWidth - blockWidth) < Math.abs(emWidth - blockWidth)
-      ? IDEOGRAPHIC_SPACE
-      : EM_SPACE;
-
+  // Em space (U+2003, 13.85px) is the proven choice for LinkedIn.
+  // Ideographic space (U+3000) gets collapsed by LinkedIn for single-space gaps.
   return stripMarkers(text)
-    .replaceAll(FIGURE_SPACE, bestSpace)
+    .replaceAll(FIGURE_SPACE, EM_SPACE)
     .replace(NORMALIZE_CHARS, FULL_BLOCK);
 }
 
