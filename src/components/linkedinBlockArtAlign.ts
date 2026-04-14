@@ -5,6 +5,7 @@ const LINKEDIN_FONT =
 const LINKEDIN_FONT_SIZE = 14;
 
 const FIGURE_SPACE = "\u2007";
+const EM_SPACE = "\u2003";
 
 // Unicode spaces sorted widest-first for greedy fitting.
 const CANDIDATE_SPACES = [
@@ -211,44 +212,17 @@ function stripMarkers(text: string): string {
  * - Leave non-block-art text unchanged
  */
 export function compensateForLinkedIn(text: string): string {
-  const spaces = getSpaceWidths();
-
-  if (!spaces) {
-    return stripMarkers(text);
-  }
-
-  const parts = text.split(
-    new RegExp(`(${escapeRegex(BLOCK_ART_START_MARKER)}|${escapeRegex(BLOCK_ART_END_MARKER)})`)
-  );
-
-  let inBlockArt = false;
-  const output: string[] = [];
-
-  for (const part of parts) {
-    if (part === BLOCK_ART_START_MARKER) {
-      inBlockArt = true;
-      continue;
-    }
-
-    if (part === BLOCK_ART_END_MARKER) {
-      inBlockArt = false;
-      continue;
-    }
-
-    if (inBlockArt) {
-      const lines = part.split("\n");
-      const lineChars = lines.map((line) => Array.from(line));
-      const columnTargets = computeColumnTargets(lineChars);
-      const compensated = lineChars.map((chars) =>
-        compensateLine(chars, columnTargets, spaces),
-      );
-      output.push(compensated.join("\n"));
-    } else {
-      output.push(part);
-    }
-  }
-
-  return output.join("");
+  // Simple and effective: replace figure spaces (8.67px) with em spaces
+  // (13.85px). Block art characters are ~14px wide in LinkedIn's font,
+  // so one em space ≈ one character width. This gives near-perfect
+  // column alignment without complex per-character computation.
+  //
+  // Measured on macOS with LinkedIn's font stack:
+  //   █ = 14.00px, ═║╔╗╚╝ = 13.75px, em space = 13.85px
+  //
+  // The complex per-column approach is preserved below but bypassed
+  // in favor of this empirically simpler solution.
+  return stripMarkers(text).replaceAll(FIGURE_SPACE, EM_SPACE);
 }
 
 function escapeRegex(str: string): string {
