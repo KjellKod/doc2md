@@ -7,8 +7,6 @@ const LINKEDIN_FONT_SIZE = 14;
 const FIGURE_SPACE = "\u2007";
 
 // Unicode spaces sorted widest-first for greedy fitting.
-// LinkedIn may strip some of these — we include all and let testing determine
-// which survive. The greedy fitter picks the fewest characters possible.
 const CANDIDATE_SPACES = [
   "\u2003", // em space
   "\u2002", // en space
@@ -96,7 +94,7 @@ function getSpaceWidths(): MeasuredSpaces[] | null {
 
 /**
  * Build a string of Unicode spaces whose total width is as close
- * to `targetWidth` as possible without exceeding it by more than 0.5px.
+ * to `targetWidth` as possible.
  */
 function fitSpaces(targetWidth: number, spaces: MeasuredSpaces[]): string {
   if (targetWidth <= 0.5) {
@@ -113,7 +111,6 @@ function fitSpaces(targetWidth: number, spaces: MeasuredSpaces[]): string {
     }
   }
 
-  // If we couldn't fit anything (targetWidth < smallest space), use a hair space
   if (result.length === 0 && targetWidth > 0.5) {
     result = "\u200A";
   }
@@ -122,29 +119,61 @@ function fitSpaces(targetWidth: number, spaces: MeasuredSpaces[]): string {
 }
 
 /**
- * Compensate one line of block art so that column positions match
- * what they would be in a monospace font.
+ * Compute per-column target widths for a block of lines.
  *
- * Strategy: walk the line character by character, tracking both the
- * "monospace target" x-position and the "proportional actual" x-position.
- * At every space, emit Unicode spaces whose total width bridges the gap
- * so the next non-space character starts at the correct column.
+ * For each column index, find the MAX character width across all lines.
+ * This ensures that every line, after compensation, aligns at every column.
+ */
+function computeColumnTargets(lineChars: string[][]): number[] {
+  const maxCols = Math.max(...lineChars.map((chars) => chars.length));
+  const targets: number[] = [];
+
+  for (let col = 0; col < maxCols; col++) {
+    let maxWidth = 0;
+
+    for (const chars of lineChars) {
+      if (col < chars.length) {
+        const char = chars[col];
+        const width = getCharWidth(char) ?? 8;
+
+        if (width > maxWidth) {
+          maxWidth = width;
+        }
+      }
+    }
+
+    targets.push(maxWidth);
+  }
+
+  return targets;
+}
+
+/**
+ * Compensate one line using per-column targets.
+ *
+ * Walk the line character by character. Track "target X" (cumulative
+ * column targets) vs "actual X" (measured widths). At each space,
+ * emit Unicode spaces to close the gap so the next character starts
+ * at the correct column position.
  */
 function compensateLine(
-  line: string,
-  monoWidth: number,
+  chars: string[],
+  columnTargets: number[],
   spaces: MeasuredSpaces[],
 ): string {
-  const chars = Array.from(line);
   let result = "";
   let targetX = 0;
   let actualX = 0;
 
-  for (const char of chars) {
+  for (let i = 0; i < chars.length; i++) {
+    const char = chars[i];
     const isSpace = char === " " || char === FIGURE_SPACE;
+    const colTarget = i < columnTargets.length ? columnTargets[i] : (getCharWidth(char) ?? 8);
 
     if (isSpace) {
-      targetX += monoWidth;
+      // Advance target by this column's target width
+      targetX += colTarget;
+      // Emit spaces to bridge from actualX to targetX
       const needed = targetX - actualX;
       const spaceFill = fitSpaces(needed, spaces);
 
@@ -157,8 +186,8 @@ function compensateLine(
       actualX += emittedWidth;
       result += spaceFill;
     } else {
-      const charWidth = getCharWidth(char) ?? monoWidth;
-      targetX += monoWidth;
+      const charWidth = getCharWidth(char) ?? 8;
+      targetX += colTarget;
       actualX += charWidth;
       result += char;
     }
@@ -167,32 +196,26 @@ function compensateLine(
   return result;
 }
 
-/**
- * Process the full formatted LinkedIn text:
- * - Find block art sections (between start/end markers)
- * - Compensate their spacing for LinkedIn's proportional font
- * - Strip markers
- * - Leave non-block-art text unchanged
- */
-/**
- * Strip block art markers from text (fallback when canvas is unavailable).
- */
 function stripMarkers(text: string): string {
   return text
     .replaceAll(BLOCK_ART_START_MARKER, "")
     .replaceAll(BLOCK_ART_END_MARKER, "");
 }
 
+/**
+ * Process the full formatted LinkedIn text:
+ * - Find block art sections (between start/end markers)
+ * - Compute per-column alignment targets across all lines in each block
+ * - Compensate spacing for LinkedIn's proportional font
+ * - Strip markers
+ * - Leave non-block-art text unchanged
+ */
 export function compensateForLinkedIn(text: string): string {
   const spaces = getSpaceWidths();
 
-  // If canvas measurement is unavailable (e.g. jsdom in tests),
-  // fall back to stripping markers and keeping figure spaces as-is.
   if (!spaces) {
     return stripMarkers(text);
   }
-
-  const monoWidth = getCharWidth("\u2588") ?? getCharWidth("0") ?? 8;
 
   const parts = text.split(
     new RegExp(`(${escapeRegex(BLOCK_ART_START_MARKER)}|${escapeRegex(BLOCK_ART_END_MARKER)})`)
@@ -214,8 +237,10 @@ export function compensateForLinkedIn(text: string): string {
 
     if (inBlockArt) {
       const lines = part.split("\n");
-      const compensated = lines.map((line) =>
-        compensateLine(line, monoWidth, spaces),
+      const lineChars = lines.map((line) => Array.from(line));
+      const columnTargets = computeColumnTargets(lineChars);
+      const compensated = lineChars.map((chars) =>
+        compensateLine(chars, columnTargets, spaces),
       );
       output.push(compensated.join("\n"));
     } else {
