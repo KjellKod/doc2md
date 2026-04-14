@@ -8,9 +8,11 @@ const FIGURE_SPACE = "\u2007";
 const EM_SPACE = "\u2003";
 const FULL_BLOCK = "\u2588";
 
-// Box-drawing and block element characters that are 13.75px in LinkedIn's font.
-// Normalize to █ (14.00px) for uniform column width in the copy text.
-const NARROW_BLOCK_CHARS = /[\u2550\u2551\u2554\u2557\u255A\u255D\u2560\u2563\u2566\u2569\u256C\u2502\u250C\u2510\u2514\u2518\u251C\u2524\u252C\u2534\u253C\u2580\u2584\u2591\u2592\u2593\u2554\u2555\u2556\u2557\u2558\u2559\u255A\u255B\u255C\u255D\u255E\u255F\u2560\u2561\u2562\u2563\u2564\u2565\u2566\u2567\u2568\u2569\u256A\u256B\u256C]/gu;
+// Only normalize ═ (double horizontal, U+2550) which appears in long runs
+// and causes the most cumulative drift (13.75px vs █ at 14.00px).
+// Single corner/edge characters (╗╚╝╔║ etc.) barely affect alignment
+// and provide visual shape to the letters.
+const LONG_RUN_NARROW_CHARS = /\u2550/gu;
 
 // Unicode spaces sorted widest-first for greedy fitting.
 const CANDIDATE_SPACES = [
@@ -229,7 +231,7 @@ export function compensateForLinkedIn(text: string): string {
   // in favor of this empirically simpler solution.
   return stripMarkers(text)
     .replaceAll(FIGURE_SPACE, EM_SPACE)
-    .replace(NARROW_BLOCK_CHARS, FULL_BLOCK);
+    .replace(LONG_RUN_NARROW_CHARS, FULL_BLOCK);
 }
 
 function escapeRegex(str: string): string {
