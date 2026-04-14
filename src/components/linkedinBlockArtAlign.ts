@@ -151,16 +151,10 @@ function computeColumnTargets(lineChars: string[][]): number[] {
 /**
  * Compensate one line using per-column targets.
  *
- * Walk the line character by character. After EVERY character (not just
- * spaces), check if the actual width is narrower than the column target
- * and insert micro-correction spaces to pad to the target. This prevents
- * drift from accumulating across long non-space runs.
- *
- * For space characters: replace with Unicode spaces sized to match
- * the column target width plus any accumulated drift correction.
- *
- * For non-space characters: emit the character, then if it's narrower
- * than the column target, insert padding spaces to make up the difference.
+ * At each space position, compute the cumulative target position
+ * (sum of column target widths) vs the cumulative actual position
+ * (sum of measured character widths). Emit Unicode spaces to bridge
+ * the gap. Non-space characters pass through unchanged.
  */
 function compensateLine(
   chars: string[],
@@ -194,23 +188,6 @@ function compensateLine(
       const charWidth = getCharWidth(char) ?? 8;
       actualX += charWidth;
       result += char;
-
-      // Micro-correct: if this character is narrower than the column
-      // target, insert tiny padding spaces to prevent drift accumulation.
-      const drift = targetX - actualX;
-
-      if (drift > 0.5) {
-        const padding = fitSpaces(drift, spaces);
-
-        let paddingWidth = 0;
-
-        for (const c of Array.from(padding)) {
-          paddingWidth += getCharWidth(c) ?? 0;
-        }
-
-        actualX += paddingWidth;
-        result += padding;
-      }
     }
   }
 
@@ -281,4 +258,45 @@ export function resetMeasurementCache(): void {
   cachedCtx = null;
   cachedCharWidths = null;
   cachedSpaceWidths = null;
+}
+
+/** Debug: dump character width measurements to console. */
+export function debugCharWidths(): void {
+  const testChars = [
+    "█", "▓", "▒", "░", "═", "║", "╔", "╗", "╚", "╝",
+    "╠", "╣", "╦", "╩", "╬", "─", "│", "╮", "╰", "╯",
+    "╭", "┌", "┐", "└", "┘", "├", "┤", "┬", "┴", "┼",
+    "▄", "▀", "╗", "╝", "╚", "╔", "╕", "╛",
+    " ", "\u2007", "\u2003", "\u2002", "\u2009", "\u200A",
+    "0", "A", "a",
+  ];
+
+  const ctx = getContext();
+
+  if (!ctx) {
+    console.log("[blockArtAlign] Canvas not available");
+    return;
+  }
+
+  console.log(`[blockArtAlign] Font: ${LINKEDIN_FONT_SIZE}px ${LINKEDIN_FONT}`);
+  console.log("[blockArtAlign] Character widths:");
+
+  for (const char of testChars) {
+    const width = ctx.measureText(char).width;
+    const name = char.codePointAt(0)?.toString(16).padStart(4, "0");
+    console.log(`  U+${name} ${JSON.stringify(char)} → ${width.toFixed(2)}px`);
+  }
+
+  // Also measure some full strings for kerning check
+  const testStrings = ["██████╗", "╚═════╝", "██╔══██╗"];
+
+  for (const str of testStrings) {
+    const measured = ctx.measureText(str).width;
+    const summed = Array.from(str).reduce(
+      (sum, c) => sum + ctx.measureText(c).width, 0
+    );
+    console.log(
+      `  "${str}" measured=${measured.toFixed(2)}px summed=${summed.toFixed(2)}px delta=${(measured - summed).toFixed(2)}px`
+    );
+  }
 }
