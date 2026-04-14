@@ -80,7 +80,7 @@ MOOD:
 **Step 2 — JC renders Dexter's content:**
 
 JC receives the structured content and wraps it in visual chrome:
-- Tombstone block-letter ASCII art inside `<pre>...</pre>` (see `celebrate/SKILL.md` for rendering rules)
+- Tombstone block-letter ASCII art inside fenced code blocks (see `celebrate/SKILL.md` for rendering rules)
 - Rich markdown: headers, emojis, blockquotes, tables
 - **Dexter's text is preserved verbatim** — JC does not rewrite epitaphs, coroner's report, or last words. JC adds the visual frame around Dexter's prose.
 
@@ -91,7 +91,7 @@ Immediately after saving, JC updates `docs/dexter-journal/README.md` with the ma
 
 ### Requiem Visual Elements
 
-JC renders tombstone block-letter art for the quest name inside `<pre>...</pre>` (gothic/memorial aesthetic, not party). See `celebrate/SKILL.md` "Requiem Rendering" section for block-letter examples and emoji palette.
+JC renders tombstone block-letter art for the quest name inside fenced code blocks (gothic/memorial aesthetic, not party). Do NOT use `<pre>` tags. See `celebrate/SKILL.md` "Requiem Rendering" section for block-letter examples and emoji palette.
 
 Tombstone frame for epitaphs:
 ```

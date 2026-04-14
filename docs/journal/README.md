@@ -6,6 +6,7 @@ For the other perspective, see [Dexter's Journal](../dexter-journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 024 | [LinkedIn Block Art](024-linkedin-block-art.md) | Buffer-then-classify, sentinel markers, and the satisfaction of a zero-fix-loop solo quest |
 | 023 | [Docling-Studio Comparison](023-docling-studio-comparison.md) | The first research quest — two codebases, eight axes, and the performance story that told itself through timeout defaults |
 | 022 | [Celebration: Update Architecture Docs](022-celebrate-update-architecture-docs.md) | Documenting the whole map — shared converters, dual builds, runtime bridge, Diamond tier |
 | 021 | [Celebration: Rename doc2md Skill](021-celebrate-rename-doc2md-skill.md) | One name across the skill, the hosted tarball, and the install path, with a stable latest alias to keep automation honest |

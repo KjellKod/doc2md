@@ -13,6 +13,14 @@ const METADATA_LINE =
   /^(?:\*\*)?([A-Za-z][A-Za-z0-9/&()' -]{1,42})(?::)(?:\*\*)?\s+(.+)$/;
 const URL_OR_EMAIL = /(?:https?:\/\/\S+|www\.\S+|\b\S+@\S+\b)/;
 const MARKDOWN_AUTOLINK = /<(?:https?:\/\/|www\.)[^>\s]+>/g;
+const PRE_OPEN = /^\s*<pre>\s*$/i;
+const PRE_CLOSE = /^\s*<\/pre>\s*$/i;
+const BLOCK_ART_CHARS = /[█▓▒░#_|/\\▄▀═║╔╗╚╝╠╣╦╩╬─│┌┐└┘├┤┬┴┼]/gu;
+const FIGURE_SPACE = "\u2007";
+const BLOCK_ART_START = "\u0000BLOCK_ART_START\u0000";
+const BLOCK_ART_END = "\u0000BLOCK_ART_END\u0000";
+const MIN_ALIGNED_LINE_LENGTH = 10;
+const NON_ALNUM_DENSITY_THRESHOLD = 0.6;
 
 type InlineStyle = "bold" | "italic" | "boldItalic" | "underline" | "strike";
 
@@ -68,12 +76,13 @@ function collectDetectionLines(markdown: string) {
   const lines = markdown.split(/\r?\n/);
   const cleaned: string[] = [];
   let fenceChar: string | null = null;
+  let inPre = false;
 
   for (const line of lines) {
     const trimmed = line.trim();
     const fenceMatch = trimmed.match(FENCE_LINE);
 
-    if (fenceMatch) {
+    if (!inPre && fenceMatch) {
       const char = fenceMatch[1][0];
 
       if (fenceChar === null) {
@@ -89,6 +98,20 @@ function collectDetectionLines(markdown: string) {
     }
 
     if (fenceChar !== null) {
+      continue;
+    }
+
+    if (PRE_OPEN.test(trimmed)) {
+      inPre = true;
+      continue;
+    }
+
+    if (inPre && PRE_CLOSE.test(trimmed)) {
+      inPre = false;
+      continue;
+    }
+
+    if (inPre) {
       continue;
     }
 
@@ -135,6 +158,57 @@ export function detectUnsupportedConstructs(markdown: string) {
   }
 
   return null;
+}
+
+function hasFenceLanguageHint(trimmed: string) {
+  const fenceMatch = trimmed.match(FENCE_LINE);
+
+  if (!fenceMatch) {
+    return false;
+  }
+
+  return trimmed.slice(fenceMatch[0].length).trim().length > 0;
+}
+
+export function isBlockArt(
+  lines: string[],
+  options: { hasLanguageHint?: boolean } = {},
+) {
+  if (options.hasLanguageHint) {
+    return false;
+  }
+
+  const nonEmptyLines = lines.filter((line) => line.trim().length > 0);
+
+  if (nonEmptyLines.length < 2) {
+    return false;
+  }
+
+  const hasRepeatedArtCharacters = nonEmptyLines.some((line) => {
+    const matches = line.match(BLOCK_ART_CHARS);
+    return (matches?.length ?? 0) >= 3;
+  });
+
+  const nonWhitespaceCharacters = Array.from(nonEmptyLines.join(""))
+    .filter((char) => !/\s/.test(char));
+  const nonAlphanumericCharacters = nonWhitespaceCharacters.filter(
+    (char) => !/[A-Za-z0-9]/.test(char),
+  );
+  const hasHighNonAlphanumericDensity =
+    nonWhitespaceCharacters.length > 0 &&
+    nonAlphanumericCharacters.length / nonWhitespaceCharacters.length >
+      NON_ALNUM_DENSITY_THRESHOLD;
+
+  const lineLengths = nonEmptyLines.map((line) => Array.from(line).length);
+  const hasVisuallyAlignedText =
+    lineLengths.every((length) => length >= MIN_ALIGNED_LINE_LENGTH) &&
+    Math.max(...lineLengths) - Math.min(...lineLengths) <= 2;
+
+  return (
+    hasRepeatedArtCharacters ||
+    hasHighNonAlphanumericDensity ||
+    hasVisuallyAlignedText
+  );
 }
 
 function mapMathematicalLetter(
@@ -305,8 +379,26 @@ function flushParagraph(buffer: string[], output: string[]) {
 function collapseBlankLines(lines: string[]) {
   const collapsed: string[] = [];
   let lastBlank = false;
+  let inBlockArt = false;
 
   for (const line of lines) {
+    if (line === BLOCK_ART_START) {
+      inBlockArt = true;
+      lastBlank = false;
+      continue;
+    }
+
+    if (line === BLOCK_ART_END) {
+      inBlockArt = false;
+      lastBlank = false;
+      continue;
+    }
+
+    if (inBlockArt) {
+      collapsed.push(line);
+      continue;
+    }
+
     const isBlank = line.trim().length === 0;
 
     if (isBlank) {
@@ -331,34 +423,85 @@ function collapseBlankLines(lines: string[]) {
   return collapsed.join("\n");
 }
 
+function flushBufferedBlock(
+  output: string[],
+  blockLines: string[],
+  options: { hasLanguageHint?: boolean } = {},
+) {
+  const blockArt = isBlockArt(blockLines, options);
+
+  if (blockArt) {
+    output.push(BLOCK_ART_START);
+    for (const blockLine of blockLines) {
+      output.push(blockLine.replace(/ /g, FIGURE_SPACE));
+    }
+    output.push(BLOCK_ART_END);
+    return;
+  }
+
+  for (const blockLine of blockLines) {
+    output.push(`  ${blockLine}`);
+  }
+}
+
 export function formatLinkedInUnicode(markdown: string) {
   const lines = markdown.split(/\r?\n/);
   const output: string[] = [];
   const paragraph: string[] = [];
   let fenceChar: string | null = null;
+  let inPre = false;
+  let blockLines: string[] = [];
+  let blockHasLanguageHint = false;
 
   for (const line of lines) {
     const trimmed = line.trim();
     const fenceMatch = trimmed.match(FENCE_LINE);
 
-    if (fenceMatch) {
-      const char = fenceMatch[1][0];
+    if (fenceChar !== null) {
+      if (fenceMatch) {
+        const char = fenceMatch[1][0];
 
-      if (fenceChar === null) {
-        flushParagraph(paragraph, output);
-        fenceChar = char;
-        continue;
+        if (char === fenceChar && isClosingFence(trimmed)) {
+          flushBufferedBlock(output, blockLines, {
+            hasLanguageHint: blockHasLanguageHint,
+          });
+          fenceChar = null;
+          blockLines = [];
+          blockHasLanguageHint = false;
+          continue;
+        }
       }
 
-      if (char === fenceChar && isClosingFence(trimmed)) {
-        fenceChar = null;
-      }
-
+      blockLines.push(line);
       continue;
     }
 
-    if (fenceChar !== null) {
-      output.push(`  ${line}`);
+    if (inPre) {
+      if (PRE_CLOSE.test(trimmed)) {
+        flushBufferedBlock(output, blockLines);
+        inPre = false;
+        blockLines = [];
+        continue;
+      }
+
+      blockLines.push(line);
+      continue;
+    }
+
+    if (fenceMatch) {
+      const char = fenceMatch[1][0];
+
+      flushParagraph(paragraph, output);
+      fenceChar = char;
+      blockHasLanguageHint = hasFenceLanguageHint(trimmed);
+      blockLines = [];
+      continue;
+    }
+
+    if (PRE_OPEN.test(trimmed)) {
+      flushParagraph(paragraph, output);
+      inPre = true;
+      blockLines = [];
       continue;
     }
 
@@ -425,6 +568,16 @@ export function formatLinkedInUnicode(markdown: string) {
   }
 
   flushParagraph(paragraph, output);
+
+  if (fenceChar !== null) {
+    flushBufferedBlock(output, blockLines, {
+      hasLanguageHint: blockHasLanguageHint,
+    });
+  }
+
+  if (inPre) {
+    flushBufferedBlock(output, blockLines);
+  }
 
   return collapseBlankLines(output);
 }

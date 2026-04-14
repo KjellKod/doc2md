@@ -2,6 +2,7 @@
 
 | Date | Quest | Outcome |
 |------|-------|---------|
+| 2026-04-13 | [linkedin-block-art](linkedin-block-art_2026-04-13.md) | Block art detection + figure-space transformation in LinkedIn view, zero fix loops. |
 | 2026-04-12 | [document-url-support](document-url-support_2026-04-12.md) | Extend doc2md so document URLs work across both product surfaces, with full testing. |
 | 2026-04-11 | [update-architecture-docs](update-architecture-docs_2026-04-11.md) | Rewrote architecture doc to cover full system: shared converters, dual Vite builds, npm package, runtime bridge. |
 | 2026-04-08 | [ci-review-hardening](ci-review-hardening_2026-04-08.md) | 6 CI hardening patterns: trust zone docs, untrusted content delimiters, SHA pinning, diff-range validation, partial coverage surfacing. |

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   detectUnsupportedConstructs,
   formatLinkedInUnicode,
+  isBlockArt,
 } from "./linkedinFormatting";
 
 describe("detectUnsupportedConstructs", () => {
@@ -35,6 +36,76 @@ describe("detectUnsupportedConstructs", () => {
 
   it("allows markdown autolinks instead of treating them as html", () => {
     expect(detectUnsupportedConstructs("See <https://example.com>")).toBeNull();
+  });
+
+  it("allows standalone pre tags", () => {
+    const markdown = ["<pre>", "██╗  ██╗", "╚═╝  ╚═╝", "</pre>"].join("\n");
+
+    expect(detectUnsupportedConstructs(markdown)).toBeNull();
+  });
+
+  it("rejects pre tags with attributes", () => {
+    expect(detectUnsupportedConstructs('<pre class="banner">text</pre>')).toBe(
+      "LinkedIn view is unavailable for Markdown that includes HTML tags.",
+    );
+  });
+
+  it("still rejects other html alongside pre tags", () => {
+    const markdown = ["<pre>", "██╗  ██╗", "</pre>", "<div>Wrapped</div>"].join(
+      "\n",
+    );
+
+    expect(detectUnsupportedConstructs(markdown)).toBe(
+      "LinkedIn view is unavailable for Markdown that includes HTML tags.",
+    );
+  });
+});
+
+describe("isBlockArt", () => {
+  it("returns true for box-drawing art", () => {
+    expect(isBlockArt(["██╗  ██╗", "██║  ██║", "╚═╝  ╚═╝"])).toBe(true);
+  });
+
+  it("returns true for high non-alphanumeric density art", () => {
+    expect(isBlockArt(["/\\/\\/\\/\\\\", "|_|_|_|_|_"])).toBe(true);
+  });
+
+  it("returns true for visually aligned long text", () => {
+    expect(
+      isBlockArt([
+        "HELLO      HELLO",
+        "WORLD      WORLD",
+      ]),
+    ).toBe(true);
+  });
+
+  it("returns false for normal code", () => {
+    expect(
+      isBlockArt(["const build = 1;", "const testSuite = 2;"]),
+    ).toBe(false);
+  });
+
+  it("returns false for visually aligned short lines", () => {
+    expect(isBlockArt(["npm i", "npm t"])).toBe(false);
+  });
+
+  it("returns false when a language hint is present", () => {
+    expect(
+      isBlockArt(["██╗  ██╗", "╚═╝  ╚═╝"], { hasLanguageHint: true }),
+    ).toBe(false);
+  });
+
+  it("returns false for blocks with fewer than two non-empty lines", () => {
+    expect(isBlockArt(["", "██████████", ""])).toBe(false);
+  });
+
+  it("returns false for near-miss variable length code", () => {
+    expect(
+      isBlockArt([
+        "const short = 1;",
+        "const muchLongerVariableName = 2;",
+      ]),
+    ).toBe(false);
   });
 });
 
@@ -114,6 +185,64 @@ describe("formatLinkedInUnicode", () => {
 
     expect(formatLinkedInUnicode(markdown)).toBe(
       ["  npm run build", "  npm run test"].join("\n"),
+    );
+  });
+
+  it("replaces spaces with figure spaces for block art in fences", () => {
+    const markdown = ["```", "██╗  ██╗", "╚═╝  ╚═╝", "```"].join("\n");
+
+    expect(formatLinkedInUnicode(markdown)).toBe(
+      ["██╗\u2007\u2007██╗", "╚═╝\u2007\u2007╚═╝"].join("\n"),
+    );
+  });
+
+  it("skips block art detection for fenced blocks with language hints", () => {
+    const markdown = ["```bash", "██╗  ██╗", "╚═╝  ╚═╝", "```"].join("\n");
+
+    expect(formatLinkedInUnicode(markdown)).toBe(
+      ["  ██╗  ██╗", "  ╚═╝  ╚═╝"].join("\n"),
+    );
+  });
+
+  it("handles pre blocks with block art", () => {
+    const markdown = ["<pre>", "██╗  ██╗", "╚═╝  ╚═╝", "</pre>"].join("\n");
+
+    expect(formatLinkedInUnicode(markdown)).toBe(
+      ["██╗\u2007\u2007██╗", "╚═╝\u2007\u2007╚═╝"].join("\n"),
+    );
+  });
+
+  it("handles interleaved block art and normal code blocks independently", () => {
+    const markdown = [
+      "```",
+      "██╗  ██╗",
+      "╚═╝  ╚═╝",
+      "```",
+      "",
+      "```bash",
+      "npm run build",
+      "npm run test",
+      "```",
+    ].join("\n");
+
+    expect(formatLinkedInUnicode(markdown)).toBe(
+      [
+        "██╗\u2007\u2007██╗",
+        "╚═╝\u2007\u2007╚═╝",
+        "",
+        "  npm run build",
+        "  npm run test",
+      ].join("\n"),
+    );
+  });
+
+  it("preserves intentional blank lines inside block art", () => {
+    const markdown = ["```", "██╗  ██╗", "", "  ", "╚═╝  ╚═╝", "```"].join("\n");
+
+    expect(formatLinkedInUnicode(markdown)).toBe(
+      ["██╗\u2007\u2007██╗", "", "\u2007\u2007", "╚═╝\u2007\u2007╚═╝"].join(
+        "\n",
+      ),
     );
   });
 
