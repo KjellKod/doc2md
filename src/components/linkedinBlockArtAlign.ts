@@ -151,10 +151,16 @@ function computeColumnTargets(lineChars: string[][]): number[] {
 /**
  * Compensate one line using per-column targets.
  *
- * Walk the line character by character. Track "target X" (cumulative
- * column targets) vs "actual X" (measured widths). At each space,
- * emit Unicode spaces to close the gap so the next character starts
- * at the correct column position.
+ * Walk the line character by character. After EVERY character (not just
+ * spaces), check if the actual width is narrower than the column target
+ * and insert micro-correction spaces to pad to the target. This prevents
+ * drift from accumulating across long non-space runs.
+ *
+ * For space characters: replace with Unicode spaces sized to match
+ * the column target width plus any accumulated drift correction.
+ *
+ * For non-space characters: emit the character, then if it's narrower
+ * than the column target, insert padding spaces to make up the difference.
  */
 function compensateLine(
   chars: string[],
@@ -170,10 +176,9 @@ function compensateLine(
     const isSpace = char === " " || char === FIGURE_SPACE;
     const colTarget = i < columnTargets.length ? columnTargets[i] : (getCharWidth(char) ?? 8);
 
+    targetX += colTarget;
+
     if (isSpace) {
-      // Advance target by this column's target width
-      targetX += colTarget;
-      // Emit spaces to bridge from actualX to targetX
       const needed = targetX - actualX;
       const spaceFill = fitSpaces(needed, spaces);
 
@@ -187,9 +192,25 @@ function compensateLine(
       result += spaceFill;
     } else {
       const charWidth = getCharWidth(char) ?? 8;
-      targetX += colTarget;
       actualX += charWidth;
       result += char;
+
+      // Micro-correct: if this character is narrower than the column
+      // target, insert tiny padding spaces to prevent drift accumulation.
+      const drift = targetX - actualX;
+
+      if (drift > 0.5) {
+        const padding = fitSpaces(drift, spaces);
+
+        let paddingWidth = 0;
+
+        for (const c of Array.from(padding)) {
+          paddingWidth += getCharWidth(c) ?? 0;
+        }
+
+        actualX += paddingWidth;
+        result += padding;
+      }
     }
   }
 
