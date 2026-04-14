@@ -230,9 +230,9 @@ export function compensateForLinkedIn(text: string): string {
   // in favor of this empirically simpler solution.
   // Pick the space character closest to █ width (14.00px).
   // Em space = 13.85px, ideographic space = often exactly 14px.
-  const blockWidth = measureString(FULL_BLOCK) ?? 14;
-  const emWidth = measureString(EM_SPACE) ?? 13.85;
-  const ideoWidth = measureString(IDEOGRAPHIC_SPACE) ?? 14;
+  const blockWidth = getCharWidth(FULL_BLOCK) ?? 14;
+  const emWidth = getCharWidth(EM_SPACE) ?? 13.85;
+  const ideoWidth = getCharWidth(IDEOGRAPHIC_SPACE) ?? 14;
 
   const bestSpace =
     Math.abs(ideoWidth - blockWidth) < Math.abs(emWidth - blockWidth)
