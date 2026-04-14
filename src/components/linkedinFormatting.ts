@@ -17,8 +17,10 @@ const PRE_OPEN = /^\s*<pre>\s*$/i;
 const PRE_CLOSE = /^\s*<\/pre>\s*$/i;
 const BLOCK_ART_CHARS = /[█▓▒░#_|/\\▄▀═║╔╗╚╝╠╣╦╩╬─│┌┐└┘├┤┬┴┼]/gu;
 const FIGURE_SPACE = "\u2007";
-const BLOCK_ART_START = "\u0000BLOCK_ART_START\u0000";
-const BLOCK_ART_END = "\u0000BLOCK_ART_END\u0000";
+const BLOCK_ART_START_SENTINEL = "\u0000BLOCK_ART_START\u0000";
+const BLOCK_ART_END_SENTINEL = "\u0000BLOCK_ART_END\u0000";
+export const BLOCK_ART_START_MARKER = "\u200B";
+export const BLOCK_ART_END_MARKER = "\u200C";
 const MIN_ALIGNED_LINE_LENGTH = 10;
 const NON_ALNUM_DENSITY_THRESHOLD = 0.6;
 
@@ -382,15 +384,17 @@ function collapseBlankLines(lines: string[]) {
   let inBlockArt = false;
 
   for (const line of lines) {
-    if (line === BLOCK_ART_START) {
+    if (line === BLOCK_ART_START_SENTINEL) {
       inBlockArt = true;
       lastBlank = false;
+      collapsed.push(BLOCK_ART_START_MARKER);
       continue;
     }
 
-    if (line === BLOCK_ART_END) {
+    if (line === BLOCK_ART_END_SENTINEL) {
       inBlockArt = false;
       lastBlank = false;
+      collapsed.push(BLOCK_ART_END_MARKER);
       continue;
     }
 
@@ -431,11 +435,11 @@ function flushBufferedBlock(
   const blockArt = isBlockArt(blockLines, options);
 
   if (blockArt) {
-    output.push(BLOCK_ART_START);
+    output.push(BLOCK_ART_START_SENTINEL);
     for (const blockLine of blockLines) {
       output.push(blockLine.replace(/ /g, FIGURE_SPACE));
     }
-    output.push(BLOCK_ART_END);
+    output.push(BLOCK_ART_END_SENTINEL);
     return;
   }
 

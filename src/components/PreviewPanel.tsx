@@ -5,6 +5,8 @@ import type { FileEntry } from "../types";
 import { entryDisplayName } from "../utils/displayName";
 import ErrorMessage from "./ErrorMessage";
 import {
+  BLOCK_ART_END_MARKER,
+  BLOCK_ART_START_MARKER,
   detectUnsupportedConstructs,
   formatLinkedInUnicode,
 } from "./linkedinFormatting";
@@ -16,7 +18,8 @@ type LinkedInPreviewTone =
   | "italic"
   | "bold-italic"
   | "underline"
-  | "strike";
+  | "strike"
+  | "block-art";
 
 interface LinkedInPreviewSegment {
   text: string;
@@ -74,9 +77,22 @@ function segmentLinkedInPreview(text: string) {
   }
 
   const segments: LinkedInPreviewSegment[] = [];
+  let inBlockArt = false;
 
   for (const cluster of clusters) {
-    const tone = toneForLinkedInCluster(cluster);
+    if (cluster === BLOCK_ART_START_MARKER) {
+      inBlockArt = true;
+      continue;
+    }
+
+    if (cluster === BLOCK_ART_END_MARKER) {
+      inBlockArt = false;
+      continue;
+    }
+
+    const tone: LinkedInPreviewTone | null = inBlockArt
+      ? "block-art"
+      : toneForLinkedInCluster(cluster);
     const previous = segments[segments.length - 1];
 
     if (previous && previous.tone === tone) {
@@ -214,6 +230,8 @@ export default function PreviewPanel({
       ? linkedinRefusal
         ? null
         : linkedinPreview
+          ?.replaceAll(BLOCK_ART_START_MARKER, "")
+          .replaceAll(BLOCK_ART_END_MARKER, "")
       : effectiveMarkdown;
   const showCopyButton = showToggle && typeof copyText === "string";
 

@@ -1305,6 +1305,12 @@ body.is-page-resizing * {
   color: color-mix(in srgb, var(--text-primary) 70%, var(--text-secondary) 30%);
 }
 
+.linkedin-emphasis-block-art {
+  font-family: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", "Courier New", monospace;
+  line-height: 1.3;
+  letter-spacing: 0;
+}
+
 .markdown-surface > * {
   max-width: 100%;
   margin-left: 0;

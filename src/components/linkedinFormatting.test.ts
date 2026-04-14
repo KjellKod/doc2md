@@ -1,9 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  BLOCK_ART_END_MARKER,
+  BLOCK_ART_START_MARKER,
   detectUnsupportedConstructs,
   formatLinkedInUnicode,
   isBlockArt,
 } from "./linkedinFormatting";
+
+const BA_START = BLOCK_ART_START_MARKER;
+const BA_END = BLOCK_ART_END_MARKER;
 
 describe("detectUnsupportedConstructs", () => {
   it("detects markdown tables", () => {
@@ -192,7 +197,7 @@ describe("formatLinkedInUnicode", () => {
     const markdown = ["```", "██╗  ██╗", "╚═╝  ╚═╝", "```"].join("\n");
 
     expect(formatLinkedInUnicode(markdown)).toBe(
-      ["██╗\u2007\u2007██╗", "╚═╝\u2007\u2007╚═╝"].join("\n"),
+      [BA_START, "██╗\u2007\u2007██╗", "╚═╝\u2007\u2007╚═╝", BA_END].join("\n"),
     );
   });
 
@@ -208,7 +213,7 @@ describe("formatLinkedInUnicode", () => {
     const markdown = ["<pre>", "██╗  ██╗", "╚═╝  ╚═╝", "</pre>"].join("\n");
 
     expect(formatLinkedInUnicode(markdown)).toBe(
-      ["██╗\u2007\u2007██╗", "╚═╝\u2007\u2007╚═╝"].join("\n"),
+      [BA_START, "██╗\u2007\u2007██╗", "╚═╝\u2007\u2007╚═╝", BA_END].join("\n"),
     );
   });
 
@@ -227,8 +232,10 @@ describe("formatLinkedInUnicode", () => {
 
     expect(formatLinkedInUnicode(markdown)).toBe(
       [
+        BA_START,
         "██╗\u2007\u2007██╗",
         "╚═╝\u2007\u2007╚═╝",
+        BA_END,
         "",
         "  npm run build",
         "  npm run test",
@@ -240,7 +247,7 @@ describe("formatLinkedInUnicode", () => {
     const markdown = ["```", "██╗  ██╗", "", "  ", "╚═╝  ╚═╝", "```"].join("\n");
 
     expect(formatLinkedInUnicode(markdown)).toBe(
-      ["██╗\u2007\u2007██╗", "", "\u2007\u2007", "╚═╝\u2007\u2007╚═╝"].join(
+      [BA_START, "██╗\u2007\u2007██╗", "", "\u2007\u2007", "╚═╝\u2007\u2007╚═╝", BA_END].join(
         "\n",
       ),
     );
