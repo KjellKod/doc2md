@@ -4,6 +4,7 @@ import remarkGfm from "remark-gfm";
 import type { FileEntry } from "../types";
 import { entryDisplayName } from "../utils/displayName";
 import ErrorMessage from "./ErrorMessage";
+import { compensateForLinkedIn } from "./linkedinBlockArtAlign";
 import {
   BLOCK_ART_END_MARKER,
   BLOCK_ART_START_MARKER,
@@ -230,8 +231,8 @@ export default function PreviewPanel({
       ? linkedinRefusal
         ? null
         : linkedinPreview
-          ?.replaceAll(BLOCK_ART_START_MARKER, "")
-          .replaceAll(BLOCK_ART_END_MARKER, "")
+          ? compensateForLinkedIn(linkedinPreview)
+          : null
       : effectiveMarkdown;
   const showCopyButton = showToggle && typeof copyText === "string";
 
