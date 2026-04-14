@@ -8,10 +8,9 @@ const FIGURE_SPACE = "\u2007";
 const EM_SPACE = "\u2003";
 const FULL_BLOCK = "\u2588";
 
-// Normalize characters that cause drift and are visually indistinct
-// from █ on LinkedIn: double-horizontal (═) and all corners/junctions
-// (╔╗╚╝╠╣╦╩╬). Keep ║ (vertical bars) for letter shape detail.
-const NORMALIZE_CHARS = /[\u2550\u2554\u2557\u255A\u255D\u2560\u2563\u2566\u2569\u256C]/gu;
+// Normalize all non-14px box-drawing characters to █ (14.00px).
+// Letter shapes come from gap patterns, not internal detail.
+const NORMALIZE_CHARS = /[\u2550\u2551\u2554\u2557\u255A\u255D\u2560\u2563\u2566\u2569\u256C\u2502\u250C\u2510\u2514\u2518\u251C\u2524\u252C\u2534\u253C\u2580\u2584\u2591\u2592\u2593]/gu;
 
 // Unicode spaces sorted widest-first for greedy fitting.
 const CANDIDATE_SPACES = [
