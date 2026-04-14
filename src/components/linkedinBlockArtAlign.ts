@@ -22,12 +22,8 @@ interface MeasuredSpaces {
   width: number;
 }
 
-interface Segment {
-  text: string;
-  isSpace: boolean;
-}
-
 let cachedCtx: CanvasRenderingContext2D | null = null;
+let cachedCharWidths: Map<string, number> | null = null;
 let cachedSpaceWidths: MeasuredSpaces[] | null = null;
 
 function getContext(): CanvasRenderingContext2D | null {
@@ -51,14 +47,30 @@ function getContext(): CanvasRenderingContext2D | null {
   }
 }
 
-function measureString(str: string): number | null {
+function measureChar(ctx: CanvasRenderingContext2D, char: string): number {
+  return ctx.measureText(char).width;
+}
+
+function getCharWidth(char: string): number | null {
+  if (!cachedCharWidths) {
+    cachedCharWidths = new Map();
+  }
+
+  const cached = cachedCharWidths.get(char);
+
+  if (cached !== undefined) {
+    return cached;
+  }
+
   const ctx = getContext();
 
   if (!ctx) {
     return null;
   }
 
-  return ctx.measureText(str).width;
+  const width = measureChar(ctx, char);
+  cachedCharWidths.set(char, width);
+  return width;
 }
 
 function getSpaceWidths(): MeasuredSpaces[] | null {
@@ -74,7 +86,7 @@ function getSpaceWidths(): MeasuredSpaces[] | null {
 
   cachedSpaceWidths = CANDIDATE_SPACES.map((char) => ({
     char,
-    width: ctx.measureText(char).width,
+    width: measureChar(ctx, char),
   })).sort((a, b) => b.width - a.width);
 
   return cachedSpaceWidths;
@@ -107,126 +119,81 @@ function fitSpaces(targetWidth: number, spaces: MeasuredSpaces[]): string {
 }
 
 /**
- * Split a line into alternating segments of non-space text and spaces.
- * E.g., "██╗  ██║" → [{text:"██╗", isSpace:false}, {text:"  ", isSpace:true}, {text:"██║", isSpace:false}]
+ * Compute per-column target widths for a block of lines.
+ *
+ * For each column index, find the MAX character width across all lines.
+ * This ensures that every line, after compensation, aligns at every column.
  */
-function splitSegments(line: string): Segment[] {
-  const segments: Segment[] = [];
-  const chars = Array.from(line);
-  let current = "";
-  let currentIsSpace = false;
+function computeColumnTargets(lineChars: string[][]): number[] {
+  const maxCols = Math.max(...lineChars.map((chars) => chars.length));
+  const targets: number[] = [];
 
-  for (const char of chars) {
-    const isSpace = char === " " || char === FIGURE_SPACE;
+  for (let col = 0; col < maxCols; col++) {
+    let maxWidth = 0;
 
-    if (current.length === 0) {
-      current = char;
-      currentIsSpace = isSpace;
-      continue;
+    for (const chars of lineChars) {
+      if (col < chars.length) {
+        const char = chars[col];
+        const width = getCharWidth(char) ?? 8;
+
+        if (width > maxWidth) {
+          maxWidth = width;
+        }
+      }
     }
 
-    if (isSpace === currentIsSpace) {
-      current += char;
-    } else {
-      segments.push({ text: current, isSpace: currentIsSpace });
-      current = char;
-      currentIsSpace = isSpace;
-    }
+    targets.push(maxWidth);
   }
 
-  if (current.length > 0) {
-    segments.push({ text: current, isSpace: currentIsSpace });
-  }
-
-  return segments;
+  return targets;
 }
 
 /**
- * Segment-based compensation.
+ * Compensate one line using per-column targets.
  *
- * Instead of measuring individual characters, measure entire text segments
- * as whole strings (accounting for rendering quirks, kerning, etc.).
- *
- * For each segment position across all lines, find the MAX text segment width.
- * Then at each space gap, emit Unicode spaces to align the next text segment
- * to its target start position.
- *
- * This approach:
- * - Measures "██████╗" as one string, not 7 individual characters
- * - Aligns at natural word/gap boundaries, where alignment matters most
- * - Avoids cumulative rounding errors from per-character measurement
+ * Walk the line character by character. Track "target X" (cumulative
+ * column targets) vs "actual X" (measured widths). At each space,
+ * emit Unicode spaces to close the gap so the next character starts
+ * at the correct column position.
  */
-function compensateBlock(
-  lines: string[],
+function compensateLine(
+  chars: string[],
+  columnTargets: number[],
   spaces: MeasuredSpaces[],
-): string[] {
-  // Parse all lines into segments
-  const allSegments = lines.map(splitSegments);
+): string {
+  let result = "";
+  let targetX = 0;
+  let actualX = 0;
 
-  // Find the maximum number of segments across all lines
-  const maxSegments = Math.max(...allSegments.map((s) => s.length));
+  for (let i = 0; i < chars.length; i++) {
+    const char = chars[i];
+    const isSpace = char === " " || char === FIGURE_SPACE;
+    const colTarget = i < columnTargets.length ? columnTargets[i] : (getCharWidth(char) ?? 8);
 
-  // For each segment index, compute the target width.
-  // Text segments: max width across all lines at that index.
-  // Space segments: max width (in monospace equivalent) across all lines.
-  // We need the target START position for each text segment to be consistent.
+    if (isSpace) {
+      // Advance target by this column's target width
+      targetX += colTarget;
+      // Emit spaces to bridge from actualX to targetX
+      const needed = targetX - actualX;
+      const spaceFill = fitSpaces(needed, spaces);
 
-  // Compute target start position for each segment index.
-  // Walk through segment positions and accumulate max widths.
-  const segmentTargetWidths: number[] = [];
+      let emittedWidth = 0;
 
-  for (let si = 0; si < maxSegments; si++) {
-    let maxWidth = 0;
-
-    for (const segments of allSegments) {
-      if (si >= segments.length) {
-        continue;
+      for (const c of Array.from(spaceFill)) {
+        emittedWidth += getCharWidth(c) ?? 0;
       }
 
-      const seg = segments[si];
-      const width = seg.isSpace
-        ? (measureString(seg.text) ?? seg.text.length * 4)
-        : (measureString(seg.text) ?? seg.text.length * 8);
-
-      if (width > maxWidth) {
-        maxWidth = width;
-      }
+      actualX += emittedWidth;
+      result += spaceFill;
+    } else {
+      const charWidth = getCharWidth(char) ?? 8;
+      targetX += colTarget;
+      actualX += charWidth;
+      result += char;
     }
-
-    segmentTargetWidths.push(maxWidth);
   }
 
-  // Now compensate each line
-  return lines.map((line, li) => {
-    const segments = allSegments[li];
-    let result = "";
-    let targetX = 0;
-    let actualX = 0;
-
-    for (let si = 0; si < segments.length; si++) {
-      const seg = segments[si];
-      const targetWidth = si < segmentTargetWidths.length ? segmentTargetWidths[si] : 0;
-
-      if (seg.isSpace) {
-        // Advance target by the target width for this space segment
-        targetX += targetWidth;
-        // Emit spaces to bridge from actualX to targetX
-        const needed = targetX - actualX;
-        const spaceFill = fitSpaces(needed, spaces);
-        const fillWidth = measureString(spaceFill) ?? 0;
-        actualX += fillWidth;
-        result += spaceFill;
-      } else {
-        // Text segment: emit as-is, measure actual width
-        const textWidth = measureString(seg.text) ?? seg.text.length * 8;
-        targetX += targetWidth;
-        actualX += textWidth;
-        result += seg.text;
-      }
-    }
-
-    return result;
-  });
+  return result;
 }
 
 function stripMarkers(text: string): string {
@@ -238,7 +205,8 @@ function stripMarkers(text: string): string {
 /**
  * Process the full formatted LinkedIn text:
  * - Find block art sections (between start/end markers)
- * - Compensate spacing using segment-based alignment
+ * - Compute per-column alignment targets across all lines in each block
+ * - Compensate spacing for LinkedIn's proportional font
  * - Strip markers
  * - Leave non-block-art text unchanged
  */
@@ -269,7 +237,11 @@ export function compensateForLinkedIn(text: string): string {
 
     if (inBlockArt) {
       const lines = part.split("\n");
-      const compensated = compensateBlock(lines, spaces);
+      const lineChars = lines.map((line) => Array.from(line));
+      const columnTargets = computeColumnTargets(lineChars);
+      const compensated = lineChars.map((chars) =>
+        compensateLine(chars, columnTargets, spaces),
+      );
       output.push(compensated.join("\n"));
     } else {
       output.push(part);
@@ -286,51 +258,6 @@ function escapeRegex(str: string): string {
 /** Reset caches (useful for testing). */
 export function resetMeasurementCache(): void {
   cachedCtx = null;
+  cachedCharWidths = null;
   cachedSpaceWidths = null;
-}
-
-/** Debug: dump character width measurements to console. */
-export function debugCharWidths(): void {
-  const ctx = getContext();
-
-  if (!ctx) {
-    console.log("[blockArtAlign] Canvas not available");
-    return;
-  }
-
-  console.log(`[blockArtAlign] Font: ${LINKEDIN_FONT_SIZE}px ${LINKEDIN_FONT}`);
-
-  // Measure block art characters
-  const testChars = ["█", "═", "║", "╔", "╗", "╚", "╝", "╠", "╣", "─", "│", "╰", "╯", "▄", "▀"];
-
-  console.log("[blockArtAlign] Character widths:");
-
-  for (const char of testChars) {
-    const width = ctx.measureText(char).width;
-    console.log(`  ${char} (U+${char.codePointAt(0)?.toString(16).padStart(4, "0")}) → ${width.toFixed(2)}px`);
-  }
-
-  // Measure spaces
-  console.log("[blockArtAlign] Space widths:");
-  const spaceChars = [
-    { char: " ", name: "regular" },
-    { char: "\u2007", name: "figure" },
-    { char: "\u2003", name: "em" },
-    { char: "\u2002", name: "en" },
-    { char: "\u2009", name: "thin" },
-    { char: "\u200A", name: "hair" },
-  ];
-
-  for (const { char, name } of spaceChars) {
-    console.log(`  ${name}: ${ctx.measureText(char).width.toFixed(2)}px`);
-  }
-
-  // Measure full segments from RIP
-  console.log("[blockArtAlign] RIP segment widths:");
-  const segments = ["██████╗", "██╔══██╗", "██████╔╝", "██║", "╚═╝", "██╗", "██████╗"];
-
-  for (const seg of segments) {
-    const measured = ctx.measureText(seg).width;
-    console.log(`  "${seg}" → ${measured.toFixed(2)}px`);
-  }
 }

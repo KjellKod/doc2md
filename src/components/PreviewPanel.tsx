@@ -4,7 +4,7 @@ import remarkGfm from "remark-gfm";
 import type { FileEntry } from "../types";
 import { entryDisplayName } from "../utils/displayName";
 import ErrorMessage from "./ErrorMessage";
-import { compensateForLinkedIn, debugCharWidths } from "./linkedinBlockArtAlign";
+import { compensateForLinkedIn } from "./linkedinBlockArtAlign";
 import {
   BLOCK_ART_END_MARKER,
   BLOCK_ART_START_MARKER,
@@ -231,14 +231,9 @@ export default function PreviewPanel({
       ? linkedinRefusal
         ? null
         : linkedinPreview
-          ? compensateForLinkedIn(linkedinPreview)
-          : null
+          ?.replaceAll(BLOCK_ART_START_MARKER, "")
+          .replaceAll(BLOCK_ART_END_MARKER, "")
       : effectiveMarkdown;
-
-  // Debug: dump character widths on first LinkedIn render with block art
-  if (mode === "linkedin" && linkedinPreview?.includes(BLOCK_ART_START_MARKER)) {
-    debugCharWidths();
-  }
   const showCopyButton = showToggle && typeof copyText === "string";
 
   async function copyRenderedContent() {
@@ -290,16 +285,23 @@ export default function PreviewPanel({
       return;
     }
 
+    // For LinkedIn mode with block art, run compensation at copy time
+    // (not during render) to avoid canvas side effects in the render path.
+    const textToCopy =
+      mode === "linkedin" && linkedinPreview?.includes(BLOCK_ART_START_MARKER)
+        ? compensateForLinkedIn(linkedinPreview)
+        : copyText;
+
     try {
       if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(copyText);
+        await navigator.clipboard.writeText(textToCopy);
       } else {
-        fallbackCopyText(copyText);
+        fallbackCopyText(textToCopy);
       }
 
       setCopyState("copied");
     } catch {
-      fallbackCopyText(copyText);
+      fallbackCopyText(textToCopy);
       setCopyState("copied");
     }
   }
