@@ -13,6 +13,7 @@ examples/output/*
 .ws/
 *.local
 dist
+.build/
 node_modules
 __pycache__/
 *.py[cod]
