@@ -1,4 +1,5 @@
 .claude/projects
+apps/macos/doc2md.xcodeproj/project.xcworkspace/
 .DS_Store
 output/
 */output
