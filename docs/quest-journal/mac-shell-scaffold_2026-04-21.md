@@ -11,7 +11,7 @@ Added the Phase 1 Mac-only shell for `doc2md.app`: a minimal SwiftUI + `WKWebVie
 ## Files Changed
 
 - `.gitignore` - ignore generated Mac web resources while keeping `.gitkeep`
-- `.quest-manifest` - list existing Claude memory files as user-customized entries
+- `scripts/validate-manifest.sh` - keep workspace-local Claude memory files out of manifest checks
 - `package.json` - add `build:desktop`
 - `vite.config.ts` - use `base: "./"` only for desktop mode
 - `apps/macos/README.md` - document local Debug, desktop bundle, and Release-style workflows
@@ -45,13 +45,13 @@ Added the Phase 1 Mac-only shell for `doc2md.app`: a minimal SwiftUI + `WKWebVie
 - Release-style builds run `npm run build:desktop` before Copy Bundle Resources.
 - Generated `Resources/Web` output is ignored; the Xcode script preserves `.gitkeep`.
 - Xcode validation uses `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` when the active `xcode-select` path is Command Line Tools.
-- Existing `.claude/projects/.../memory/*.md` files are listed as `[user-customized]` manifest entries.
+- Workspace-local `.claude/projects/.../memory/*.md` files stay out of `.quest-manifest`; validation uses shell globs so top-level `.claude/*.md` does not match nested memory files.
 
 ## Review Findings
 
 - Initial code review found no scaffold implementation blockers.
 - Both reviewers flagged the manifest validation failure for three existing Claude memory files.
-- Fix iteration 1 added those files to `.quest-manifest`; re-review passed cleanly.
+- Fix iteration 1 initially added those files to `.quest-manifest`; PR review later identified that as machine-specific, so the validator now avoids matching those local files.
 
 ## Validation
 
