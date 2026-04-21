@@ -22,7 +22,7 @@ Out of scope for this scaffold: open/save/save-as, native file persistence, Java
 
 4. Select the `doc2md` scheme and run the Debug configuration.
 
-The Debug app loads `http://localhost:5173` in `WKWebView`. If the Vite dev server is not running, the app shows a visible local-development error instead of a blank window.
+The Debug app loads `http://localhost:5173` in `WKWebView`. Vite uses `strictPort`, so `npm run dev` fails clearly if that port is already occupied. If the Vite dev server is not running, the app shows a visible local-development error instead of a blank window.
 
 ## Desktop Web Bundle
 

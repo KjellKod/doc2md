@@ -123,7 +123,12 @@ private struct WebView: NSViewRepresentable {
 
         private func recordFailure(_ error: Error, webView: WKWebView) {
             #if DEBUG
-            let failingURL = (error as NSError).userInfo[NSURLErrorFailingURLErrorKey] as? URL
+            let nsError = error as NSError
+            guard nsError.domain != NSURLErrorDomain || nsError.code != NSURLErrorCancelled else {
+                return
+            }
+
+            let failingURL = nsError.userInfo[NSURLErrorFailingURLErrorKey] as? URL
             setLoadError(ShellLoadError(
                 title: "Vite dev server is unavailable",
                 url: failingURL?.absoluteString ?? webView.url?.absoluteString ?? "http://localhost:5173",
