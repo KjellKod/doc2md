@@ -57,14 +57,14 @@ EXPECTED_PATTERNS=(
   "scripts/validate-quest-config.sh"
 )
 
-# Find all files matching our patterns
+# Find all files matching our patterns. Use bash globs so "*" stays within one
+# path segment; find -path lets it cross directory boundaries.
 FOUND_FILES=""
 for pattern in "${EXPECTED_PATTERNS[@]}"; do
-  # Use find with -path to handle glob patterns
-  matches=$(find . -path "./$pattern" -type f 2>/dev/null | sed 's|^\./||' || true)
-  if [ -n "$matches" ]; then
-    FOUND_FILES="$FOUND_FILES"$'\n'"$matches"
-  fi
+  while IFS= read -r match; do
+    [ -f "$match" ] || continue
+    FOUND_FILES="$FOUND_FILES"$'\n'"$match"
+  done < <(compgen -G "$pattern" || true)
 done
 
 # Clean up and sort

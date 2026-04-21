@@ -1,3 +1,4 @@
+.claude/projects
 .DS_Store
 output/
 */output
@@ -16,3 +17,5 @@ __pycache__/
 *.py[cod]
 packages/core/doc2md-core-*.tgz
 .skills/doc2md/package-lock.json
+apps/macos/doc2md/Resources/Web/*
+!apps/macos/doc2md/Resources/Web/.gitkeep

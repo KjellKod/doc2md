@@ -33,9 +33,12 @@ const displayVersion = (() => {
   }
 })();
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react()],
-  base: "/doc2md/",
+  base: mode === "desktop" ? "./" : "/doc2md/",
+  server: {
+    strictPort: true,
+  },
   define: {
     __DOC2MD_DISPLAY_VERSION__: JSON.stringify(displayVersion),
   },
@@ -48,7 +51,7 @@ export default defineConfig({
       ".ws/**",
       "node_modules/**",
       "dist/**",
-      "packages/**"
-    ]
-  }
-});
+      "packages/**",
+    ],
+  },
+}));
