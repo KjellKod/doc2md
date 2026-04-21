@@ -1,0 +1,66 @@
+# doc2md Mac Shell
+
+This is the Phase 1 Mac-only shell for `doc2md.app`. It is a minimal Swift + SwiftUI + `WKWebView` app that displays the existing React UI.
+
+Out of scope for this scaffold: open/save/save-as, native file persistence, JavaScript bridge commands, Sparkle, signing, notarization, recent files, autosave, and asset persistence.
+
+## Debug Development
+
+1. Install web dependencies from the repo root:
+
+   ```bash
+   npm install
+   ```
+
+2. Start the Vite dev server:
+
+   ```bash
+   npm run dev
+   ```
+
+3. Open `apps/macos/doc2md.xcodeproj` in Xcode.
+
+4. Select the `doc2md` scheme and run the Debug configuration.
+
+The Debug app loads `http://localhost:5173` in `WKWebView`. If the Vite dev server is not running, the app shows a visible local-development error instead of a blank window.
+
+## Desktop Web Bundle
+
+Build the desktop web bundle from the repo root:
+
+```bash
+npm run build:desktop
+```
+
+This uses Vite desktop mode and emits relative asset paths so the bundle can be loaded from app resources.
+
+## Release-Style Local Build
+
+Build the Release configuration with Xcode:
+
+```bash
+xcodebuild -project apps/macos/doc2md.xcodeproj -scheme doc2md -configuration Release build
+```
+
+Release-style builds run the Xcode `Build Desktop Web Bundle` phase before Copy Bundle Resources. That phase runs `npm run build:desktop` and copies `dist/` into `apps/macos/doc2md/Resources/Web/`, which is bundled as `Web/index.html` inside the app.
+
+If Xcode cannot find `npm` from its GUI environment, set `NPM_BIN` to an absolute npm executable path for the build.
+
+Example:
+
+```bash
+NPM_BIN="$(command -v npm)" xcodebuild -project apps/macos/doc2md.xcodeproj -scheme doc2md -configuration Release build
+```
+
+## Manual Validation
+
+Use these checks for this scaffold phase:
+
+1. `npm test -- --run` passes.
+2. `npm run build` succeeds and keeps hosted browser asset behavior.
+3. `npm run build:desktop` succeeds and `dist/index.html` uses relative asset paths.
+4. Debug app launches with `npm run dev` running and displays the React app.
+5. Debug app shows the missing-dev-server error when `npm run dev` is stopped.
+6. Release build launches without the Vite dev server and displays bundled `Web/index.html`.
+
+If full Xcode is not available, record that the Mac app build and launch checks were not run. The command line tools package alone is not enough; `xcodebuild` must point at a full Xcode developer directory.

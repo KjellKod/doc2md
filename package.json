@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:desktop": "vite build --mode desktop",
     "build:core": "npm run build --workspace=@doc2md/core",
     "lint": "eslint .",
     "test": "vitest",

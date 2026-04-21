@@ -2,6 +2,7 @@
 
 | Date | Quest | Outcome |
 |------|-------|---------|
+| 2026-04-21 | [mac-shell-scaffold](mac-shell-scaffold_2026-04-21.md) | Added the Phase 1 Mac shell scaffold with desktop Vite mode, Swift WKWebView wrapper, Release bundled assets, and clean re-review. |
 | 2026-04-14 | [linkedin-block-art](linkedin-block-art_2026-04-14.md) | Abandoned. LinkedIn's proportional font makes pixel-perfect block art alignment impossible with Unicode spacing. |
 | 2026-04-12 | [document-url-support](document-url-support_2026-04-12.md) | Extend doc2md so document URLs work across both product surfaces, with full testing. |
 | 2026-04-11 | [update-architecture-docs](update-architecture-docs_2026-04-11.md) | Rewrote architecture doc to cover full system: shared converters, dual Vite builds, npm package, runtime bridge. |

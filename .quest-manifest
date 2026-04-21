@@ -90,6 +90,9 @@ scripts/validate-quest-state.sh
 [user-customized]
 .ai/allowlist.json
 .claude/CLAUDE.md
+.claude/projects/-Users-kjell-ws-extra-doc2md/memory/MEMORY.md
+.claude/projects/-Users-kjell-ws-extra-doc2md/memory/feedback_always_pr.md
+.claude/projects/-Users-kjell-ws-extra-doc2md/memory/feedback_no_pre_tags.md
 
 [merge-carefully]
 .claude/settings.json
