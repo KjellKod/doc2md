@@ -20,10 +20,11 @@ Build a Mac-native DMG app using Swift + `WKWebView` + Sparkle. The existing hos
 |---|---|---|---|---|
 | 0. Design and Roadmap | active | Current docs | Freeze product direction and PR sequence. | Phase 1 |
 | 1. Mac Shell Scaffold | done | PR #77 | Add `apps/macos/`, Xcode shell, desktop web bundle path, Debug/Release loading. | Phase 2 |
-| 2. Bridge and React Desktop Mode | active | `mac-phase2-bridge_2026-04-21__0712` | Add bridge types, mock shell, native menu events, desktop save-state plumbing. | Phase 3 |
+| 2. Bridge and React Desktop Mode | active | PR #78 (`mac-phase2-bridge_2026-04-21__0712`) | Add bridge types, mock shell, native menu events, desktop save-state plumbing. | Phase 3 |
+| 2.5. Developer Mac Build Helper | planned | TBD | One-command local `.app` build with a fixed output path and a README pointer so manual testing is predictable. | Smooths Phase 3+ manual smoke |
 | 3. Markdown File Persistence | planned | TBD | Implement open/save/save-as for Markdown with atomic replace, mtime conflicts, line endings, Finder reveal. | Phase 4 |
 | 4. Converted Document and Asset Persistence | planned | TBD | Save converted output with `name.assets/` folder semantics and session-owned asset rewrites. | Phase 5 |
-| 5. Distribution and Updates | planned | TBD | Add Sparkle, DMG install, ZIP updates, signing/notarization docs and release workflow. | MVP ship |
+| 5. Distribution and Updates | planned | TBD | Add Sparkle, DMG install, ZIP updates, signing/notarization docs, macOS CI build + sign + notarize workflow, and release scripts. | MVP ship |
 
 ## Phase 0: Design And Roadmap
 
@@ -95,6 +96,42 @@ Validation:
 - Launch shell and verify menu events reach the webview.
 - Verify hosted browser behavior has no visible desktop-only controls unless capability-gated.
 
+## Phase 2.5: Developer Mac Build Helper
+
+Goal:
+
+Make local `.app` builds predictable and discoverable for manual smoke testing, without blocking on Phase 5 release infrastructure.
+
+Expected changes:
+
+- Add `scripts/build-mac-app.sh` that:
+  - Detects a usable `DEVELOPER_DIR` (prefers `/Applications/Xcode.app/Contents/Developer` when `xcode-select -p` points at Command Line Tools).
+  - Runs `npm run build:desktop`.
+  - Runs `xcodebuild -project apps/macos/doc2md.xcodeproj -scheme doc2md -configuration <cfg> -derivedDataPath .build/mac build`.
+  - Prints a single final line like `Built: .build/mac/Build/Products/<Configuration>/doc2md.app`.
+- Add an `npm run build:mac` alias that calls the script.
+- Add `.build/` to `.gitignore`.
+- Update `apps/macos/README.md` with:
+  - The one-command workflow.
+  - The resolved `.app` path and how to open it (`open .build/mac/Build/Products/Release/doc2md.app`).
+  - A note that this produces an unsigned local build; signed/notarized artifacts come from Phase 5 CI.
+- No signing, notarization, packaging, or CI integration in this phase.
+
+Acceptance criteria:
+
+- `npm run build:mac` produces `.build/mac/Build/Products/Release/doc2md.app` on a host with Xcode installed.
+- The script fails clearly on hosts with only Command Line Tools and no `Xcode.app`.
+- The README points new contributors to the exact command and output path.
+
+Out of scope (deferred to Phase 5):
+
+- Signing, notarization, DMG, Sparkle, appcast, CI macOS job.
+
+Validation:
+
+- Run `npm run build:mac` locally. Confirm the `.app` exists at the printed path and launches.
+- Confirm no changes to the hosted browser build or the existing `build:desktop` output.
+
 ## Phase 3: Markdown File Persistence
 
 Goal:
@@ -158,7 +195,7 @@ Validation:
 
 Goal:
 
-Make the Mac app installable and updateable outside the App Store.
+Make the Mac app installable and updateable outside the App Store, with a secure CI release pipeline that does not leak Apple or Sparkle secrets.
 
 Expected changes:
 
@@ -169,12 +206,56 @@ Expected changes:
 - Document and script release steps for Developer ID signing, hardened runtime, notarization, stapling, Sparkle signing, and appcast generation.
 - Keep Apple notarization credentials separate from Sparkle EdDSA keys.
 
+### CI Release Workflow (macos-latest)
+
+Add a new workflow (for example `.github/workflows/release-mac.yml`) that builds, signs, notarizes, and packages the Mac app. It does NOT run on every PR and does NOT run on forks.
+
+- Triggers: `push` on a semver release tag (for example `v*`) plus `workflow_dispatch` with required reviewers. Never trigger signing from `pull_request` or `pull_request_target`. Forked-PR events do not receive secrets; CI still runs the no-secrets build checks on PRs (see below).
+- Jobs, each minimal and isolated:
+  1. `build`: `macos-latest`, no secrets, runs `npm run build:desktop` + `xcodebuild -configuration Release` + `swiftc -parse` + the forbidden-API grep. Uploads the unsigned `.app` as a job artifact.
+  2. `sign-and-notarize`: `macos-latest`, consumes the `build` artifact, targets a protected GitHub Environment (for example `mac-release`) with required reviewers. This is the only job that touches secrets.
+  3. `package`: builds the DMG and the Sparkle update ZIP from the signed artifact, signs the ZIP with the EdDSA key in a separate step, and updates the appcast.
+  4. `publish`: publishes the DMG and appcast to the release target (GitHub Release assets or the appcast host). Read-only `GITHUB_TOKEN` permissions by default; widen only for the specific publish step.
+- Also add a macOS PR check (separate workflow, no secrets, `pull_request` trigger) that runs `npm run build:desktop`, `xcodebuild build` in an unsigned Release config, `swiftc -parse`, and the forbidden-API grep. This closes the CI gap for Mac-only code without ever exposing signing credentials.
+
+### Secrets Handling Rules (binding)
+
+- All Apple and Sparkle secrets live only in GitHub Encrypted Secrets scoped to the `mac-release` protected Environment. Never in the repo, never in Actions variables, never in logs.
+- Minimum secret set and intended use:
+  - `APPLE_DEVELOPER_ID_CERT_P12` (Base64 of the `.p12` Developer ID Application cert). `APPLE_DEVELOPER_ID_CERT_PASSWORD` (password for the `.p12`).
+  - `APPLE_NOTARY_API_KEY_ID`, `APPLE_NOTARY_API_ISSUER_ID`, `APPLE_NOTARY_API_KEY_P8` (Base64 of the App Store Connect API key) — used by `xcrun notarytool`.
+  - `SPARKLE_EDDSA_PRIVATE_KEY` (Base64 of the EdDSA private key) — used only by `sign_update`.
+  - `SPARKLE_EDDSA_PUBLIC_KEY` — committed as `SUPublicEDKey` in `Info.plist`, NOT stored as a secret.
+- Keychain handling in CI:
+  - Create a per-job temporary keychain with `security create-keychain`; never touch the runner default keychain.
+  - Import the cert with `-T /usr/bin/codesign -T /usr/bin/security`, set a short timeout, and delete the keychain on job exit even on failure.
+- Process hygiene:
+  - Never pass secrets on command lines where they can land in logs. Prefer `--password-env` style flags or stdin.
+  - `actions/runner` already masks known secrets, but also `set +x` in any custom bash that could accidentally echo.
+  - Pin every third-party action by full SHA (repo convention from the CI trustworthiness work). No `@v1` or `@main` tags.
+  - Limit `permissions:` per job. Only the `publish` job writes to Releases.
+- Protection layers on top of the Environment:
+  - Required reviewers on the `mac-release` Environment so a human approves each signed build.
+  - Required branch / tag patterns so signing cannot run off an arbitrary branch.
+  - Never run signing on `pull_request_target` and never check out PR code into a signing job.
+- Rotation and key custody:
+  - Document a yearly rotation for the Developer ID cert and the App Store Connect API key.
+  - Document EdDSA key rotation steps (generate new key, ship appcast transition with both public keys temporarily accepted, retire old key).
+  - Keep Apple credentials and Sparkle EdDSA keys in separate secret entries and separate jobs so a compromise of one does not imply a compromise of the other.
+- Threat model notes to keep in the release runbook:
+  - Fork PRs cannot reach secrets by design; still, do not execute PR-provided code in any workflow with secrets scope.
+  - A malicious dependency bumping a signing job's script path must be blocked by pinned SHAs, vendored scripts, and `permissions: write-none` defaults.
+  - Verify signatures on Sparkle updates (EdDSA) and the DMG (notarization staple) during local and release dry runs.
+
 Acceptance criteria:
 
 - App installs from a DMG and launches on macOS 13+.
-- Signed/notarized/stapled app passes local validation.
+- Signed/notarized/stapled app passes local validation (`spctl --assess --type exec`).
 - Sparkle can detect a newer signed update from a test appcast.
 - Offline launch does not block on update checks.
+- Release CI workflow runs on tag push only, requires Environment approval, and never exposes secrets to PR or forked workflows.
+- Mac PR check workflow catches broken Swift or broken desktop bundles without signing.
+- No secret has ever appeared in repo history, workflow YAML, or logs.
 
 Validation:
 
@@ -182,6 +263,8 @@ Validation:
 - Manual offline launch.
 - Manual Sparkle update check against test appcast.
 - Release dry run using local or test credentials where possible.
+- CI dry run: push a release tag on a throwaway branch pattern; confirm Environment approval gate blocks unapproved signing and that the published artifacts verify with `codesign --verify` and Sparkle `sign_update --verify`.
+- Secret audit: grep the repo history for known key fragments and confirm only public values (like `SUPublicEDKey`) are committed.
 
 ## MVP Ship Criteria
 
@@ -193,6 +276,7 @@ MVP is ready when:
 - Converted document Save As works for supported source formats.
 - Asset folder semantics are implemented or explicitly deferred from the shipped converter behavior.
 - App can be signed, notarized, packaged as DMG, and updated through Sparkle ZIP updates.
+- The release CI workflow builds, signs, notarizes, and publishes without exposing Apple or Sparkle secrets to PRs, forks, or logs.
 
 ## Cross-Phase Rules
 

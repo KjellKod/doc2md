@@ -1,4 +1,9 @@
-# 025 — Mac Phase 2 Bridge
+# 025 — Celebration: Mac Phase 2 Bridge
+<!-- quest-id: mac-phase2-bridge_2026-04-21__0712 -->
+<!-- pr: #78 -->
+<!-- style: celebration -->
+<!-- quality-tier: Gold -->
+<!-- date: 2026-04-21 -->
 
 The fun part of Phase 2 was admitting the contract is the product.
 
