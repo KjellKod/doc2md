@@ -1,8 +1,16 @@
 # doc2md Mac Shell
 
-This is the Phase 1 Mac-only shell for `doc2md.app`. It is a minimal Swift + SwiftUI + `WKWebView` app that displays the existing React UI.
+This is the Phase 2 Mac-only shell for `doc2md.app`. It is a minimal Swift + SwiftUI + `WKWebView` app that displays the existing React UI and registers the first JavaScript bridge stubs.
 
-Out of scope for this scaffold: open/save/save-as, native file persistence, JavaScript bridge commands, Sparkle, signing, notarization, recent files, autosave, and asset persistence.
+Out of scope for this phase: real open/save/save-as persistence, Sparkle, signing, notarization, recent files, autosave, and asset persistence.
+
+## Phase 2 Capabilities
+
+- `window.doc2mdShell.version === 1` is injected into the `WKWebView` at document start.
+- The bridge exposes `openFile`, `saveFile`, `saveFileAs`, and `revealInFinder`.
+- Every bridge method currently resolves to `{ ok: false, code: "error", message: "Not implemented in Phase 2" }`.
+- File menu commands dispatch `doc2md:native-new`, `doc2md:native-open`, `doc2md:native-save`, `doc2md:native-save-as`, and `doc2md:native-close-window` into the webview.
+- Standard Edit actions remain on the AppKit and `WKWebView` responder chain.
 
 ## Debug Development
 

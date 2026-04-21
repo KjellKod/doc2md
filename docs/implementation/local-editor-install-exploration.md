@@ -57,6 +57,8 @@ The webview owns conversion and editor state. The shell owns every operation tha
 
 Expose one deliberately small bridge at `window.doc2mdShell`. Transport can use base64 or chunked binary internally, but the public contract should stay stable and JSON-shaped.
 
+The shell sets `window.doc2mdShell.version === 1` as the handshake marker. React ignores shells that do not expose version `1`.
+
 Base64 is acceptable for small Markdown and metadata payloads. Binary payloads above 4 MB should use chunked transfer or a `WKURLSchemeHandler`-backed handoff instead of sending one large base64 string through `postMessage`.
 
 ```ts
@@ -87,6 +89,11 @@ interface ShellOk {
   mtimeMs: number;
 }
 
+interface ShellRevealOk {
+  ok: true;
+  path: string;
+}
+
 interface ShellCancel {
   ok: false;
   code: "cancelled";
@@ -105,10 +112,24 @@ interface ShellError {
   message: string;
 }
 
-type ShellResult<T> = T | ShellCancel | ShellConflict | ShellError;
+interface ShellPermissionNeeded {
+  ok: false;
+  code: "permission-needed";
+  path?: string;
+  message: string;
+}
+
+type ShellResult<T> =
+  | T
+  | ShellCancel
+  | ShellConflict
+  | ShellPermissionNeeded
+  | ShellError;
 ```
 
 Every successful bridge result includes `ok: true`; every failure includes `ok: false` plus a `code`. `ShellError.message` is user-facing English for MVP. It must not include stack traces, internal implementation details, or file paths outside a user-selected location.
+
+Bridge promises resolve with result objects for all user-visible outcomes. Rejections are reserved for transport or programming faults such as malformed responses or script-message failures.
 
 | Call | Direction | MVP | Signature |
 |---|---|---:|---|
@@ -116,9 +137,11 @@ Every successful bridge result includes `ok: true`; every failure includes `ok: 
 | `openFolder()` | Webview to shell | No | `Promise<ShellResult<ShellFolder>>`; reserved for future folder workspaces or asset-folder permission fallback. |
 | `saveFile({ path, bytesBase64, expectedMtimeMs, assets?, makeBackup? })` | Webview to shell | Yes | `Promise<ShellResult<ShellOk>>`; writes an existing target if mtime matches. |
 | `saveFileAs({ suggestedName, bytesBase64, assets?, makeBackup? })` | Webview to shell | Yes | `Promise<ShellResult<ShellOk>>`; shows `NSSavePanel`, then writes Markdown and optional asset folder. |
-| `revealInFinder({ path })` | Webview to shell | Yes | `Promise<ShellResult<{ ok: true }>>`; opens Finder with the saved Markdown file selected. |
+| `revealInFinder({ path })` | Webview to shell | Yes | `Promise<ShellResult<ShellRevealOk>>`; opens Finder with the saved Markdown file selected. Success is `{ ok: true, path: string }`, where `path` echoes the requested file for React-side logging. |
 | `watchFile({ path })` | Webview to shell | No | `Promise<ShellResult<{ ok: true }>>`; future file-change watcher; out of MVP. |
 | `checkForUpdates()` | Menu to shell | Yes | Native Sparkle action; does not need webview state. |
+
+Phase 2 exposes only `openFile`, `saveFile`, `saveFileAs`, and `revealInFinder` on `window.doc2mdShell`; `openFolder`, `watchFile`, and `checkForUpdates` are reserved outside the Phase 2 web bridge.
 
 Native menu commands flow the other direction as DOM events:
 

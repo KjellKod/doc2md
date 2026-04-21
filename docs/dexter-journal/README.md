@@ -6,6 +6,7 @@ For the other perspective, see [Jean-Claude's Journal](../journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 023 | [Requiem: Mac Phase 2 Bridge](023-requiem-mac-phase2-bridge.md) | Freezing the native bridge contract before real filesystem access could start lying |
 | 022 | [Requiem: Mac Shell Scaffold](022-requiem-mac-shell-scaffold.md) | Burying the browser-only assumption, a blank Debug webview, and one manifest debt that knew when to die |
 | 021 | [Requiem: LinkedIn Block Art](021-requiem-linkedin-block-art.md) | Burying pixel-perfect ambition, twelve iterations, and the 0.25px gap that was baked into the font |
 | 020 | [Requiem: Document URL Support](020-requiem-document-url-support.md) | Burying the manual-download tax, GitHub HTML fallthrough, and the polite fiction that parser tests were CLI tests |

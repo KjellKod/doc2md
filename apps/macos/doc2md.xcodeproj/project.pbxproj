@@ -10,6 +10,8 @@
 		9A0200000000000000000000 /* doc2mdApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000000 /* doc2mdApp.swift */; };
 		9A0200000000000000000001 /* WebShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000001 /* WebShellView.swift */; };
 		9A0200000000000000000002 /* Web in Resources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000002 /* Web */; };
+		9A0200000000000000000003 /* ShellBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000004 /* ShellBridge.swift */; };
+		9A0200000000000000000004 /* MenuController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000005 /* MenuController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -17,6 +19,8 @@
 		9A0100000000000000000001 /* WebShellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebShellView.swift; sourceTree = "<group>"; };
 		9A0100000000000000000002 /* Web */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Web; sourceTree = "<group>"; };
 		9A0100000000000000000003 /* doc2md.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = doc2md.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9A0100000000000000000004 /* ShellBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellBridge.swift; sourceTree = "<group>"; };
+		9A0100000000000000000005 /* MenuController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -33,6 +37,8 @@
 			children = (
 				9A0100000000000000000000 /* doc2mdApp.swift */,
 				9A0100000000000000000001 /* WebShellView.swift */,
+				9A0100000000000000000004 /* ShellBridge.swift */,
+				9A0100000000000000000005 /* MenuController.swift */,
 				9A0000000000000000000003 /* Resources */,
 			);
 			path = doc2md;
@@ -147,6 +153,8 @@
 			files = (
 				9A0200000000000000000000 /* doc2mdApp.swift in Sources */,
 				9A0200000000000000000001 /* WebShellView.swift in Sources */,
+				9A0200000000000000000003 /* ShellBridge.swift in Sources */,
+				9A0200000000000000000004 /* MenuController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

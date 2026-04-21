@@ -1,12 +1,23 @@
 import SwiftUI
 import WebKit
 
+final class ShellHost: ObservableObject {
+    let shellBridge = ShellBridge()
+    let menuController = MenuController()
+
+    func attach(webView: WKWebView) {
+        shellBridge.webView = webView
+        menuController.webView = webView
+    }
+}
+
 struct WebShellView: View {
+    @ObservedObject var shellHost: ShellHost
     @State private var loadError: ShellLoadError?
 
     var body: some View {
         ZStack {
-            WebView(loadError: $loadError)
+            WebView(shellHost: shellHost, loadError: $loadError)
 
             if let loadError = loadError {
                 ShellLoadErrorView(error: loadError)
@@ -57,6 +68,7 @@ private struct ShellLoadErrorView: View {
 }
 
 private struct WebView: NSViewRepresentable {
+    let shellHost: ShellHost
     @Binding var loadError: ShellLoadError?
 
     func makeCoordinator() -> Coordinator {
@@ -64,9 +76,15 @@ private struct WebView: NSViewRepresentable {
     }
 
     func makeNSView(context: Context) -> WKWebView {
+        let userContentController = WKUserContentController()
+        shellHost.shellBridge.install(on: userContentController)
+
         let configuration = WKWebViewConfiguration()
+        configuration.userContentController = userContentController
+
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
+        shellHost.attach(webView: webView)
 
         #if DEBUG
         let devServerURL = URL(string: "http://localhost:5173")!

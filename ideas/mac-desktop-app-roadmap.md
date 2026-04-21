@@ -19,8 +19,8 @@ Build a Mac-native DMG app using Swift + `WKWebView` + Sparkle. The existing hos
 | Phase | Status | Quest / PR | Goal | Blocks |
 |---|---|---|---|---|
 | 0. Design and Roadmap | active | Current docs | Freeze product direction and PR sequence. | Phase 1 |
-| 1. Mac Shell Scaffold | planned | TBD | Add `apps/macos/`, Xcode shell, desktop web bundle path, Debug/Release loading. | Phase 2 |
-| 2. Bridge and React Desktop Mode | planned | TBD | Add bridge types, mock shell, native menu events, desktop save-state plumbing. | Phase 3 |
+| 1. Mac Shell Scaffold | done | PR #77 | Add `apps/macos/`, Xcode shell, desktop web bundle path, Debug/Release loading. | Phase 2 |
+| 2. Bridge and React Desktop Mode | active | `mac-phase2-bridge_2026-04-21__0712` | Add bridge types, mock shell, native menu events, desktop save-state plumbing. | Phase 3 |
 | 3. Markdown File Persistence | planned | TBD | Implement open/save/save-as for Markdown with atomic replace, mtime conflicts, line endings, Finder reveal. | Phase 4 |
 | 4. Converted Document and Asset Persistence | planned | TBD | Save converted output with `name.assets/` folder semantics and session-owned asset rewrites. | Phase 5 |
 | 5. Distribution and Updates | planned | TBD | Add Sparkle, DMG install, ZIP updates, signing/notarization docs and release workflow. | MVP ship |
