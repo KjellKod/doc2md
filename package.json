@@ -12,6 +12,7 @@
     "build": "vite build",
     "build:desktop": "vite build --mode desktop",
     "build:core": "npm run build --workspace=@doc2md/core",
+    "build:mac": "bash scripts/build-mac-app.sh",
     "lint": "eslint .",
     "test": "vitest",
     "test:core": "npm run test --workspace=@doc2md/core",

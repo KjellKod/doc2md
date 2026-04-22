@@ -1,0 +1,144 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+WAIT_SECONDS="3"
+
+usage() {
+  printf 'Usage: %s [--wait-seconds N]\n' "$(basename "$0")"
+}
+
+fail() {
+  printf 'Error: %s\n' "$*" >&2
+  exit 1
+}
+
+validate_wait_seconds() {
+  local value="$1"
+
+  case "$value" in
+    ''|*[!0-9]*)
+      fail "--wait-seconds must be an integer from 0 to 60"
+      ;;
+  esac
+
+  if ((10#$value > 60)); then
+    fail "--wait-seconds must be between 0 and 60"
+  fi
+
+  WAIT_SECONDS="$((10#$value))"
+}
+
+quit_with_osascript() {
+  osascript -e 'tell application "doc2md" to quit' >/dev/null 2>&1 &
+  local osascript_pid=$!
+  local waited=0
+
+  while kill -0 "$osascript_pid" >/dev/null 2>&1; do
+    if ((waited >= 3)); then
+      kill "$osascript_pid" >/dev/null 2>&1 || true
+      wait "$osascript_pid" >/dev/null 2>&1 || true
+      return
+    fi
+
+    sleep 1
+    waited=$((waited + 1))
+  done
+
+  wait "$osascript_pid" >/dev/null 2>&1 || true
+}
+
+cleanup() {
+  local rc=$?
+  trap - EXIT INT TERM
+
+  quit_with_osascript
+  sleep 1
+
+  if pgrep -f 'doc2md.app/Contents/MacOS/doc2md' >/dev/null 2>&1; then
+    # Graceful quit can hang when AppleScript/Accessibility permissions are missing; this cleans up the launched binary as a last resort.
+    pkill -f 'doc2md.app/Contents/MacOS/doc2md' >/dev/null 2>&1 || true
+  fi
+
+  exit "$rc"
+}
+
+while (($#)); do
+  case "$1" in
+    --wait-seconds)
+      [[ $# -ge 2 ]] || fail "--wait-seconds requires a value"
+      validate_wait_seconds "$2"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      fail "unknown argument: $1"
+      ;;
+  esac
+done
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && /bin/pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && /bin/pwd)"
+BUILD_HELPER="$REPO_ROOT/scripts/build-mac-app.sh"
+
+trap cleanup EXIT INT TERM
+
+if ! BUILD_OUTPUT="$("$BUILD_HELPER")"; then
+  printf '%s\n' "$BUILD_OUTPUT" >&2
+  fail "Mac app build failed"
+fi
+
+printf '%s\n' "$BUILD_OUTPUT"
+
+BUILT_LINE="$(printf '%s\n' "$BUILD_OUTPUT" | awk '/^Built: / { line = $0 } END { print line }')"
+if [[ -z "$BUILT_LINE" ]]; then
+  fail "build helper did not print a final Built: line"
+fi
+
+APP_PATH="${BUILT_LINE#Built: }"
+if [[ ! -d "$APP_PATH" ]]; then
+  fail "build helper returned a missing app path: $APP_PATH"
+fi
+
+open -na "$APP_PATH"
+sleep "$WAIT_SECONDS"
+
+if ! TITLE="$(
+  osascript \
+    -e 'tell application "System Events"' \
+    -e 'if not (exists process "doc2md") then error "doc2md process is not running"' \
+    -e 'tell process "doc2md"' \
+    -e 'if (count of windows) is 0 then error "doc2md has no windows"' \
+    -e 'set t to title of front window' \
+    -e 'end tell' \
+    -e 'end tell' \
+    -e 'return t' 2>&1
+)"; then
+  case "$TITLE" in
+    *"doc2md process is not running"*)
+      fail "doc2md process is not running after launch. osascript output: $TITLE"
+      ;;
+    *"doc2md has no windows"*)
+      fail "doc2md launched, but no window exists after ${WAIT_SECONDS}s. osascript output: $TITLE"
+      ;;
+    *"not authorized"*|*"not allowed"*|*"System Events got an error"*)
+      fail "System Events could not read the doc2md window title. This can be a TCC/Accessibility permissions failure. osascript output: $TITLE"
+      ;;
+    *)
+      fail "failed to read the doc2md window title via System Events. osascript output: $TITLE"
+      ;;
+  esac
+fi
+
+case "$TITLE" in
+  "doc2md [ERR]"*)
+    fail "doc2md window title indicates a launch failure: $TITLE"
+    ;;
+  "")
+    fail "doc2md window title is empty after launch"
+    ;;
+esac
+
+printf 'Launch OK: %s\n' "$TITLE"

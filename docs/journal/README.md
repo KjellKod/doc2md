@@ -6,6 +6,7 @@ For the other perspective, see [Dexter's Journal](../dexter-journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 026 | [Mac Build Helper and Release-Launch Smoke](026-mac-build-smoke.md) | Minimum-viable smoke that watches the title bar for doc2md [ERR], a discoverable local .app build, and the forbidden-API tripwire running on every build |
 | 025 | [Mac Phase 2 Bridge](025-celebrate-mac-phase2-bridge.md) | Frozen TypeScript contract, Swift stubs with a forbidden-API list, and permission-needed round-tripping on all four methods |
 | 024 | [LinkedIn Block Art (Abandoned)](024-linkedin-block-art.md) | Twelve iterations, 0.25px per character, and the honest distance between "this should work" and "this cannot work" |
 | 023 | [Docling-Studio Comparison](023-docling-studio-comparison.md) | The first research quest — two codebases, eight axes, and the performance story that told itself through timeout defaults |

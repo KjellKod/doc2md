@@ -60,6 +60,60 @@ Example:
 NPM_BIN="$(command -v npm)" xcodebuild -project apps/macos/doc2md.xcodeproj -scheme doc2md -configuration Release build
 ```
 
+## One-Command Release Build
+
+Build the Release `.app` from the repo root:
+
+```bash
+npm run build:mac
+```
+
+Equivalent:
+
+```bash
+bash scripts/build-mac-app.sh --configuration Release
+```
+
+The script runs `npm run build:desktop`, invokes `xcodebuild` with `-derivedDataPath .build/mac`, and runs a forbidden-API grep against `apps/macos/doc2md/ShellBridge.swift`. It writes the app to:
+
+```text
+.build/mac/Build/Products/Release/doc2md.app
+```
+
+The final output line is:
+
+```text
+Built: <absolute path to .build/mac/Build/Products/Release/doc2md.app>
+```
+
+This is an unsigned local build. Signing, notarization, DMG packaging, and Sparkle updates are Phase 5.
+
+If `xcode-select -p` points at `/Library/Developer/CommandLineTools`, the helper tries `/Applications/Xcode.app/Contents/Developer` and fails with a full-Xcode error if that developer directory is unavailable. Install full Xcode and select it:
+
+```bash
+sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+```
+
+## Launch Smoke
+
+Build and sanity-check that the Release app renders:
+
+```bash
+./scripts/verify-mac-release-launch.sh
+```
+
+Use a longer or shorter launch wait when needed:
+
+```bash
+./scripts/verify-mac-release-launch.sh --wait-seconds 5
+```
+
+The smoke runs the build helper, launches the resolved `.app` with `open -na`, waits three seconds by default, then uses `osascript` and System Events to read the front window title for `doc2md`. It exits non-zero if the `doc2md` process is not running, if no window exists, or if the title starts with `doc2md [ERR]`. The `[ERR]` title prefix is written by the desktop bundle when a JavaScript load or runtime error occurs.
+
+AppleScript/TCC failures are reported separately from app launch failures. If the process is not running, the helper reports that directly. If System Events cannot inspect the window because Accessibility or automation permission is missing, the helper reports the permission failure and includes the raw `osascript` output.
+
+The smoke quits the launched `doc2md` app before exit and falls back to killing the app binary if graceful quit cannot complete. This is a local developer tool and does not run in CI.
+
 ## Manual Validation
 
 Use these checks for this scaffold phase:
