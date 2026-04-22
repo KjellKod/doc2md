@@ -105,6 +105,11 @@ private struct WebView: NSViewRepresentable {
     private func loadBundledWebApp(in webView: WKWebView) {
         guard
             Bundle.main.url(forResource: "Web", withExtension: nil) != nil,
+            Bundle.main.url(
+                forResource: "index",
+                withExtension: "html",
+                subdirectory: "Web"
+            ) != nil,
             let indexURL = AppSchemeHandler.indexURL()
         else {
             loadError = ShellLoadError(

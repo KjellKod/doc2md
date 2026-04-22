@@ -189,8 +189,7 @@ function DesktopMenuEventBridge({
   const handleOpen = useCallback(() => {
     void (async () => {
       try {
-        const result = await shell.openFile();
-        console.info("doc2md desktop openFile result", result);
+        await shell.openFile();
       } catch (error) {
         console.error("doc2md desktop openFile transport failure", error);
       }

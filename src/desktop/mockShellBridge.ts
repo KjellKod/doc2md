@@ -45,10 +45,14 @@ export function createMockShell(
 
 export function installMockShell(overrides?: MockShellOverrides) {
   const previousShell = window.doc2mdShell;
-
-  window.doc2mdShell = createMockShell(overrides);
+  const installedShell = createMockShell(overrides);
+  window.doc2mdShell = installedShell;
 
   return () => {
+    if (window.doc2mdShell !== installedShell) {
+      return;
+    }
+
     if (previousShell) {
       window.doc2mdShell = previousShell;
       return;
