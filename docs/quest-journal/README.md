@@ -2,6 +2,7 @@
 
 | Date | Quest | Outcome |
 |------|-------|---------|
+| 2026-04-21 | [mac-phase2-bridge](mac-phase2-bridge_2026-04-21.md) | Phase 2 Mac desktop: froze the window.doc2mdShell TypeScript contract, added React capability/save-state/native-menu plumbing, and stubbed Swift ShellBridge + MenuController with no filesystem writes. |
 | 2026-04-21 | [mac-shell-scaffold](mac-shell-scaffold_2026-04-21.md) | Added the Phase 1 Mac shell scaffold with desktop Vite mode, Swift WKWebView wrapper, Release bundled assets, and clean re-review. |
 | 2026-04-14 | [linkedin-block-art](linkedin-block-art_2026-04-14.md) | Abandoned. LinkedIn's proportional font makes pixel-perfect block art alignment impossible with Unicode spacing. |
 | 2026-04-12 | [document-url-support](document-url-support_2026-04-12.md) | Extend doc2md so document URLs work across both product surfaces, with full testing. |

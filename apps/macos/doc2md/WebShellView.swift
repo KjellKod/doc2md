@@ -1,12 +1,23 @@
 import SwiftUI
 import WebKit
 
+final class ShellHost: ObservableObject {
+    let shellBridge = ShellBridge()
+    let menuController = MenuController()
+
+    func attach(webView: WKWebView) {
+        shellBridge.webView = webView
+        menuController.webView = webView
+    }
+}
+
 struct WebShellView: View {
+    @ObservedObject var shellHost: ShellHost
     @State private var loadError: ShellLoadError?
 
     var body: some View {
         ZStack {
-            WebView(loadError: $loadError)
+            WebView(shellHost: shellHost, loadError: $loadError)
 
             if let loadError = loadError {
                 ShellLoadErrorView(error: loadError)
@@ -57,6 +68,7 @@ private struct ShellLoadErrorView: View {
 }
 
 private struct WebView: NSViewRepresentable {
+    let shellHost: ShellHost
     @Binding var loadError: ShellLoadError?
 
     func makeCoordinator() -> Coordinator {
@@ -64,9 +76,19 @@ private struct WebView: NSViewRepresentable {
     }
 
     func makeNSView(context: Context) -> WKWebView {
+        let userContentController = WKUserContentController()
+        shellHost.shellBridge.install(on: userContentController)
+
         let configuration = WKWebViewConfiguration()
+        configuration.userContentController = userContentController
+        configuration.setURLSchemeHandler(context.coordinator.appSchemeHandler, forURLScheme: AppSchemeHandler.scheme)
+
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
+        if #available(macOS 13.3, *) {
+            webView.isInspectable = true
+        }
+        shellHost.attach(webView: webView)
 
         #if DEBUG
         let devServerURL = URL(string: "http://localhost:5173")!
@@ -81,11 +103,15 @@ private struct WebView: NSViewRepresentable {
     func updateNSView(_ webView: WKWebView, context: Context) {}
 
     private func loadBundledWebApp(in webView: WKWebView) {
-        guard let indexURL = Bundle.main.url(
-            forResource: "index",
-            withExtension: "html",
-            subdirectory: "Web"
-        ) else {
+        guard
+            Bundle.main.url(forResource: "Web", withExtension: nil) != nil,
+            Bundle.main.url(
+                forResource: "index",
+                withExtension: "html",
+                subdirectory: "Web"
+            ) != nil,
+            let indexURL = AppSchemeHandler.indexURL()
+        else {
             loadError = ShellLoadError(
                 title: "Bundled web app was not found",
                 url: "Resources/Web/index.html",
@@ -95,11 +121,12 @@ private struct WebView: NSViewRepresentable {
             return
         }
 
-        webView.loadFileURL(indexURL, allowingReadAccessTo: indexURL.deletingLastPathComponent())
+        webView.load(URLRequest(url: indexURL))
     }
 
     final class Coordinator: NSObject, WKNavigationDelegate {
         private let setLoadError: (ShellLoadError?) -> Void
+        let appSchemeHandler = AppSchemeHandler()
 
         init(loadError: Binding<ShellLoadError?>) {
             setLoadError = { loadError.wrappedValue = $0 }

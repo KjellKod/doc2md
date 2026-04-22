@@ -1,5 +1,5 @@
 import type { CSSProperties, KeyboardEvent, MouseEvent, SVGProps } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import AboutSection from "./components/AboutSection";
 import DownloadButton from "./components/DownloadButton";
 import DropZone from "./components/DropZone";
@@ -8,7 +8,12 @@ import InstallPage from "./components/InstallPage";
 import PreviewPanel from "./components/PreviewPanel";
 import ThemeProvider from "./components/ThemeProvider";
 import ThemeToggle from "./components/ThemeToggle";
+import { useDesktopCapability } from "./desktop/useDesktopCapability";
+import { useDesktopSaveState } from "./desktop/useDesktopSaveState";
+import { useNativeMenuEvents } from "./desktop/useNativeMenuEvents";
 import { useFileConversion } from "./hooks/useFileConversion";
+import type { FileEntry } from "./types";
+import type { Doc2mdShell, ShellOk, ShellResult } from "./types/doc2mdShell";
 import { entryDisplayName } from "./utils/displayName";
 import { downloadAllEntries, isDownloadableEntry } from "./utils/download";
 
@@ -95,6 +100,150 @@ function pluralize(count: number, singular: string, plural = `${singular}s`) {
 }
 
 const PAGES: PageView[] = ["convert", "install"];
+
+function markdownForEntry(entry: FileEntry | null) {
+  return entry?.editedMarkdown ?? entry?.markdown ?? "";
+}
+
+function suggestedNameForEntry(entry: FileEntry | null) {
+  return entry?.name || "Untitled.md";
+}
+
+function encodeBase64Utf8(text: string) {
+  const bytes = new TextEncoder().encode(text);
+  let binary = "";
+
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+
+  return btoa(binary);
+}
+
+function applySaveResult(
+  result: ShellResult<ShellOk>,
+  actions: {
+    markSaved: () => void;
+    markCancelled: () => void;
+    markConflict: () => void;
+    markError: () => void;
+    markPermissionNeeded: () => void;
+  },
+) {
+  if (result.ok) {
+    actions.markSaved();
+    return;
+  }
+
+  if (result.code === "conflict") {
+    actions.markConflict();
+    return;
+  }
+
+  if (result.code === "cancelled") {
+    actions.markCancelled();
+    return;
+  }
+
+  if (result.code === "permission-needed") {
+    actions.markPermissionNeeded();
+    return;
+  }
+
+  actions.markError();
+}
+
+function DesktopMenuBridge({
+  addScratchEntry,
+  selectedEntry,
+}: {
+  addScratchEntry: () => void;
+  selectedEntry: FileEntry | null;
+}) {
+  const { isDesktop, shell } = useDesktopCapability();
+
+  if (!isDesktop || !shell) {
+    return null;
+  }
+
+  return (
+    <DesktopMenuEventBridge
+      addScratchEntry={addScratchEntry}
+      selectedEntry={selectedEntry}
+      shell={shell}
+    />
+  );
+}
+
+function DesktopMenuEventBridge({
+  addScratchEntry,
+  selectedEntry,
+  shell,
+}: {
+  addScratchEntry: () => void;
+  selectedEntry: FileEntry | null;
+  shell: Doc2mdShell;
+}) {
+  const saveState = useDesktopSaveState(true);
+
+  const handleOpen = useCallback(() => {
+    void (async () => {
+      try {
+        await shell.openFile();
+      } catch (error) {
+        console.error("doc2md desktop openFile transport failure", error);
+      }
+    })();
+  }, [shell]);
+
+  const handleSave = useCallback(() => {
+    saveState.markSaving();
+
+    void (async () => {
+      try {
+        const result = await shell.saveFile({
+          path: suggestedNameForEntry(selectedEntry),
+          bytesBase64: encodeBase64Utf8(markdownForEntry(selectedEntry)),
+          expectedMtimeMs: 0,
+        });
+        applySaveResult(result, saveState);
+      } catch (error) {
+        saveState.markError();
+        console.error("doc2md desktop saveFile transport failure", error);
+      }
+    })();
+  }, [saveState, selectedEntry, shell]);
+
+  const handleSaveAs = useCallback(() => {
+    saveState.markSaving();
+
+    void (async () => {
+      try {
+        const result = await shell.saveFileAs({
+          suggestedName: suggestedNameForEntry(selectedEntry),
+          bytesBase64: encodeBase64Utf8(markdownForEntry(selectedEntry)),
+        });
+        applySaveResult(result, saveState);
+      } catch (error) {
+        saveState.markError();
+        console.error("doc2md desktop saveFileAs transport failure", error);
+      }
+    })();
+  }, [saveState, selectedEntry, shell]);
+
+  useNativeMenuEvents({
+    onNew: () => {
+      addScratchEntry();
+      saveState.markEdited();
+    },
+    onOpen: handleOpen,
+    onSave: handleSave,
+    onSaveAs: handleSaveAs,
+    onCloseWindow: saveState.reset,
+  });
+
+  return <span data-testid="desktop-menu-bridge" hidden />;
+}
 
 function clampPageWidth(width: number) {
   if (typeof window === "undefined") {
@@ -306,6 +455,10 @@ export default function App() {
   return (
     <ThemeProvider>
       <div className="app-shell">
+        <DesktopMenuBridge
+          addScratchEntry={addScratchEntry}
+          selectedEntry={selectedEntry}
+        />
         <main
           className={`page-frame${isPageResizing ? " is-page-resizing" : ""}`}
           style={pageFrameStyle}
