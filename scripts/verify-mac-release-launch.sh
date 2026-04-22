@@ -51,12 +51,17 @@ cleanup() {
   local rc=$?
   trap - EXIT INT TERM
 
-  quit_with_osascript
-  sleep 1
+  # Only tear down the instance this script launched. If doc2md was already
+  # running before we started, the preflight check would have refused to run,
+  # so reaching cleanup implies we own the process.
+  if [[ "${WE_LAUNCHED_DOC2MD:-0}" -eq 1 ]]; then
+    quit_with_osascript
+    sleep 1
 
-  if pgrep -f 'doc2md.app/Contents/MacOS/doc2md' >/dev/null 2>&1; then
-    # Graceful quit can hang when AppleScript/Accessibility permissions are missing; this cleans up the launched binary as a last resort.
-    pkill -f 'doc2md.app/Contents/MacOS/doc2md' >/dev/null 2>&1 || true
+    if pgrep -f 'doc2md.app/Contents/MacOS/doc2md' >/dev/null 2>&1; then
+      # Graceful quit can hang when AppleScript/Accessibility permissions are missing; this cleans up the launched binary as a last resort.
+      pkill -f 'doc2md.app/Contents/MacOS/doc2md' >/dev/null 2>&1 || true
+    fi
   fi
 
   exit "$rc"
@@ -85,6 +90,15 @@ BUILD_HELPER="$REPO_ROOT/scripts/build-mac-app.sh"
 
 trap cleanup EXIT INT TERM
 
+# Refuse to run when a doc2md instance is already live. The cleanup path quits
+# and (as last resort) pkills the app, which would close an unrelated session
+# and drop unsaved work. Make the user quit it first, then rerun.
+if pgrep -f 'doc2md.app/Contents/MacOS/doc2md' >/dev/null 2>&1; then
+  fail "doc2md is already running. Quit it (including any other copies of the app) and rerun this script. It refuses to proceed because cleanup would terminate a doc2md session it did not launch, potentially losing unsaved work."
+fi
+
+WE_LAUNCHED_DOC2MD=0
+
 if ! BUILD_OUTPUT="$("$BUILD_HELPER")"; then
   printf '%s\n' "$BUILD_OUTPUT" >&2
   fail "Mac app build failed"
@@ -103,6 +117,7 @@ if [[ ! -d "$APP_PATH" ]]; then
 fi
 
 open -na "$APP_PATH"
+WE_LAUNCHED_DOC2MD=1
 sleep "$WAIT_SECONDS"
 
 if ! TITLE="$(

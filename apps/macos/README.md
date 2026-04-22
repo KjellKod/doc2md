@@ -110,9 +110,11 @@ Use a longer or shorter launch wait when needed:
 
 The smoke runs the build helper, launches the resolved `.app` with `open -na`, waits three seconds by default, then uses `osascript` and System Events to read the front window title for `doc2md`. It exits non-zero if the `doc2md` process is not running, if no window exists, or if the title starts with `doc2md [ERR]`. The `[ERR]` title prefix is written by the desktop bundle when a JavaScript load or runtime error occurs.
 
+The smoke refuses to run if a `doc2md` process is already running. Its cleanup path quits the app on exit, and killing a pre-existing session could lose unsaved work. Quit any running `doc2md` (including older builds) before invoking the smoke.
+
 AppleScript/TCC failures are reported separately from app launch failures. If the process is not running, the helper reports that directly. If System Events cannot inspect the window because Accessibility or automation permission is missing, the helper reports the permission failure and includes the raw `osascript` output.
 
-The smoke quits the launched `doc2md` app before exit and falls back to killing the app binary if graceful quit cannot complete. This is a local developer tool and does not run in CI.
+The smoke quits the `doc2md` app it launched before exit and falls back to killing that binary if graceful quit cannot complete. Cleanup only runs for the instance this script started. This is a local developer tool and does not run in CI.
 
 ## Manual Validation
 
