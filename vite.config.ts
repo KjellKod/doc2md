@@ -37,15 +37,19 @@ const displayVersion = (() => {
 // `crossorigin` attribute on the module script and stylesheet link triggers a CORS
 // check that file:// cannot satisfy, producing a blank window. This plugin strips
 // the attribute only for the desktop build; hosted browser output is unchanged.
-const stripCrossoriginForDesktop = () => ({
-  name: "doc2md-strip-crossorigin",
+// It also injects a small inline error reporter that routes JS load/runtime errors
+// into the window title so desktop failures surface even without Web Inspector.
+const desktopShellAdjustments = () => ({
+  name: "doc2md-desktop-shell-adjustments",
   transformIndexHtml(html: string) {
-    return html.replace(/\s+crossorigin(?:="[^"]*")?/g, "");
+    const stripped = html.replace(/\s+crossorigin(?:="[^"]*")?/g, "");
+    const errorReporter = `<script>(()=>{const set=(m)=>{try{document.title="doc2md [ERR] "+m}catch(e){}};window.addEventListener("error",(e)=>{set((e.filename||"")+":"+(e.lineno||"")+" "+(e.message||e.error))});window.addEventListener("unhandledrejection",(e)=>{set("promise: "+(e.reason&&(e.reason.stack||e.reason.message)||e.reason))});})();</script>`;
+    return stripped.replace("</head>", `  ${errorReporter}\n  </head>`);
   },
 });
 
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), ...(mode === "desktop" ? [stripCrossoriginForDesktop()] : [])],
+  plugins: [react(), ...(mode === "desktop" ? [desktopShellAdjustments()] : [])],
   base: mode === "desktop" ? "./" : "/doc2md/",
   server: {
     strictPort: true,

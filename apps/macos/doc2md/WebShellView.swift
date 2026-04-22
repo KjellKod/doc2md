@@ -81,9 +81,13 @@ private struct WebView: NSViewRepresentable {
 
         let configuration = WKWebViewConfiguration()
         configuration.userContentController = userContentController
+        configuration.setURLSchemeHandler(context.coordinator.appSchemeHandler, forURLScheme: AppSchemeHandler.scheme)
 
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
+        if #available(macOS 13.3, *) {
+            webView.isInspectable = true
+        }
         shellHost.attach(webView: webView)
 
         #if DEBUG
@@ -99,11 +103,10 @@ private struct WebView: NSViewRepresentable {
     func updateNSView(_ webView: WKWebView, context: Context) {}
 
     private func loadBundledWebApp(in webView: WKWebView) {
-        guard let indexURL = Bundle.main.url(
-            forResource: "index",
-            withExtension: "html",
-            subdirectory: "Web"
-        ) else {
+        guard
+            Bundle.main.url(forResource: "Web", withExtension: nil) != nil,
+            let indexURL = AppSchemeHandler.indexURL()
+        else {
             loadError = ShellLoadError(
                 title: "Bundled web app was not found",
                 url: "Resources/Web/index.html",
@@ -113,11 +116,12 @@ private struct WebView: NSViewRepresentable {
             return
         }
 
-        webView.loadFileURL(indexURL, allowingReadAccessTo: indexURL.deletingLastPathComponent())
+        webView.load(URLRequest(url: indexURL))
     }
 
     final class Coordinator: NSObject, WKNavigationDelegate {
         private let setLoadError: (ShellLoadError?) -> Void
+        let appSchemeHandler = AppSchemeHandler()
 
         init(loadError: Binding<ShellLoadError?>) {
             setLoadError = { loadError.wrappedValue = $0 }
