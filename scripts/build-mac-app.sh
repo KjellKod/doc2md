@@ -2,7 +2,11 @@
 set -euo pipefail
 
 CONFIGURATION="Release"
-FORBIDDEN_PATTERN='\b(FileManager|NSOpenPanel|NSSavePanel|FileHandle|replaceItem|replacingItem|startAccessingSecurityScopedResource|stopAccessingSecurityScopedResource|securityScopedResource)\b|\.write\(to:'
+# Two separate checks so both are portable on BSD grep (macOS default):
+# - FORBIDDEN_SYMBOLS is matched with `-w` for whole-word boundaries (no \b, which is a non-POSIX GNU extension).
+# - FORBIDDEN_CALL_PATTERN catches Data/String `.write(to:)` via literal punctuation, which does not need word-boundary support.
+FORBIDDEN_SYMBOLS='(FileManager|NSOpenPanel|NSSavePanel|FileHandle|replaceItem|replacingItem|startAccessingSecurityScopedResource|stopAccessingSecurityScopedResource|securityScopedResource)'
+FORBIDDEN_CALL_PATTERN='\.write\(to:'
 SHELL_BRIDGE_PATH="apps/macos/doc2md/ShellBridge.swift"
 
 usage() {
@@ -96,8 +100,12 @@ fi
 
 cd "$REPO_ROOT"
 
-if grep -nE "$FORBIDDEN_PATTERN" "$SHELL_BRIDGE_PATH"; then
-  fail "forbidden API found in $SHELL_BRIDGE_PATH; ShellBridge must remain I/O-free until Phase 3"
+if grep -nEw "$FORBIDDEN_SYMBOLS" "$SHELL_BRIDGE_PATH"; then
+  fail "forbidden API symbol found in $SHELL_BRIDGE_PATH; ShellBridge must remain I/O-free until Phase 3"
+fi
+
+if grep -nE "$FORBIDDEN_CALL_PATTERN" "$SHELL_BRIDGE_PATH"; then
+  fail "forbidden .write(to:) call found in $SHELL_BRIDGE_PATH; ShellBridge must remain I/O-free until Phase 3"
 fi
 
 npm run build:desktop
