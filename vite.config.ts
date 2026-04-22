@@ -33,8 +33,19 @@ const displayVersion = (() => {
   }
 })();
 
+// WKWebView loads the desktop build from a file:// URL, so the default Vite-emitted
+// `crossorigin` attribute on the module script and stylesheet link triggers a CORS
+// check that file:// cannot satisfy, producing a blank window. This plugin strips
+// the attribute only for the desktop build; hosted browser output is unchanged.
+const stripCrossoriginForDesktop = () => ({
+  name: "doc2md-strip-crossorigin",
+  transformIndexHtml(html: string) {
+    return html.replace(/\s+crossorigin(?:="[^"]*")?/g, "");
+  },
+});
+
 export default defineConfig(({ mode }) => ({
-  plugins: [react()],
+  plugins: [react(), ...(mode === "desktop" ? [stripCrossoriginForDesktop()] : [])],
   base: mode === "desktop" ? "./" : "/doc2md/",
   server: {
     strictPort: true,
