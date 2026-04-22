@@ -100,13 +100,33 @@ fi
 
 cd "$REPO_ROOT"
 
-if grep -nEw "$FORBIDDEN_SYMBOLS" "$SHELL_BRIDGE_PATH"; then
-  fail "forbidden API symbol found in $SHELL_BRIDGE_PATH; ShellBridge must remain I/O-free until Phase 3"
+# The forbidden-API check is a policy tripwire, so a missing or unreadable
+# target must be a loud failure — not a silent pass. Verify the file exists
+# first, then treat grep status 2 as a tripwire failure (only 0 = match
+# and 1 = clean are valid "no-error" outcomes).
+if [[ ! -r "$SHELL_BRIDGE_PATH" ]]; then
+  fail "forbidden-API tripwire target is missing or unreadable: $SHELL_BRIDGE_PATH"
 fi
 
-if grep -nE "$FORBIDDEN_CALL_PATTERN" "$SHELL_BRIDGE_PATH"; then
-  fail "forbidden .write(to:) call found in $SHELL_BRIDGE_PATH; ShellBridge must remain I/O-free until Phase 3"
-fi
+set +e
+grep -nEw "$FORBIDDEN_SYMBOLS" "$SHELL_BRIDGE_PATH"
+symbol_rc=$?
+set -e
+case "$symbol_rc" in
+  0) fail "forbidden API symbol found in $SHELL_BRIDGE_PATH; ShellBridge must remain I/O-free until Phase 3" ;;
+  1) : ;;
+  *) fail "forbidden-API symbol scan failed with grep status $symbol_rc on $SHELL_BRIDGE_PATH" ;;
+esac
+
+set +e
+grep -nE "$FORBIDDEN_CALL_PATTERN" "$SHELL_BRIDGE_PATH"
+call_rc=$?
+set -e
+case "$call_rc" in
+  0) fail "forbidden .write(to:) call found in $SHELL_BRIDGE_PATH; ShellBridge must remain I/O-free until Phase 3" ;;
+  1) : ;;
+  *) fail "forbidden-API call scan failed with grep status $call_rc on $SHELL_BRIDGE_PATH" ;;
+esac
 
 npm run build:desktop
 
