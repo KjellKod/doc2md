@@ -1,0 +1,38 @@
+scripts/verify-mac-release-launch.sh
+  c6b35857119c760d 54-57,132-137,147-158
+apps/macos/README.md
+  c6b35857119c760d 111-117
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "da18ab424d56a7fddb5d0648e50fc2ff060187f1",
+  "prompts": {
+    "3eb508901964cd48": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e8836e30-8cd9-4748-9012-4524b19c7da7",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    },
+    "c6b35857119c760d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "403679ff-edcb-47f0-abf7-be26448e70a2",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 29,
+      "total_deletions": 684,
+      "accepted_lines": 29,
+      "overriden_lines": 0
+    }
+  }
+}
