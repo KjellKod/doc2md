@@ -5,13 +5,15 @@ import { transition, type DesktopSaveEvent } from "../saveState";
 
 const saveFileArgs = {
   path: "/mock/Untitled.md",
-  bytesBase64: "IyBUZXN0Cg==",
+  content: "# Test\n",
   expectedMtimeMs: 1,
+  lineEnding: "lf" as const,
 };
 
 const saveFileAsArgs = {
   suggestedName: "Untitled.md",
-  bytesBase64: "IyBUZXN0Cg==",
+  content: "# Test\n",
+  lineEnding: "lf" as const,
 };
 
 const revealArgs = {
@@ -35,8 +37,9 @@ describe("bridge flows", () => {
     await expect(shell.openFile()).resolves.toMatchObject({
       ok: true,
       path: "/mock/Untitled.md",
-      name: "Untitled.md",
+      content: "# Mock document\n",
       mtimeMs: 1,
+      lineEnding: "lf",
     });
     await expect(shell.saveFile(saveFileArgs)).resolves.toEqual({
       ok: true,
@@ -114,7 +117,7 @@ describe("bridge flows", () => {
           ok: false as const,
           code: "conflict" as const,
           path: "/mock/Untitled.md",
-          currentMtimeMs: 3,
+          actualMtimeMs: 3,
         })),
       }),
       call: (shell: Doc2mdShell) => shell.openFile(),
@@ -126,7 +129,7 @@ describe("bridge flows", () => {
           ok: false as const,
           code: "conflict" as const,
           path: "/mock/Untitled.md",
-          currentMtimeMs: 3,
+          actualMtimeMs: 3,
         })),
       }),
       call: (shell: Doc2mdShell) => shell.saveFile(saveFileArgs),
@@ -138,7 +141,7 @@ describe("bridge flows", () => {
           ok: false as const,
           code: "conflict" as const,
           path: "/mock/Untitled.md",
-          currentMtimeMs: 3,
+          actualMtimeMs: 3,
         })),
       }),
       call: (shell: Doc2mdShell) => shell.saveFileAs(saveFileAsArgs),
@@ -150,7 +153,7 @@ describe("bridge flows", () => {
           ok: false as const,
           code: "conflict" as const,
           path: "/mock/Untitled.md",
-          currentMtimeMs: 3,
+          actualMtimeMs: 3,
         })),
       }),
       call: (shell: Doc2mdShell) => shell.revealInFinder(revealArgs),
@@ -162,7 +165,7 @@ describe("bridge flows", () => {
       ok: false,
       code: "conflict",
       path: "/mock/Untitled.md",
-      currentMtimeMs: 3,
+      actualMtimeMs: 3,
     });
     expect(transition("saving", eventForResult(result))).toBe("conflict");
   });
@@ -264,16 +267,16 @@ describe("bridge flows", () => {
         saveFileAs: vi.fn(async () => ({
           ok: false as const,
           code: "permission-needed" as const,
-          path: "/mock/Untitled.assets",
-          message: "Select the asset folder again.",
+          path: "/mock/Untitled.md",
+          message: "Select the document again.",
         })),
       }),
       call: (shell: Doc2mdShell) => shell.saveFileAs(saveFileAsArgs),
       expected: {
         ok: false,
         code: "permission-needed",
-        path: "/mock/Untitled.assets",
-        message: "Select the asset folder again.",
+        path: "/mock/Untitled.md",
+        message: "Select the document again.",
       },
     },
     {

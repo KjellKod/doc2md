@@ -8,14 +8,15 @@ describe("mockShellBridge", () => {
     await expect(shell.openFile()).resolves.toMatchObject({
       ok: true,
       path: "/mock/Untitled.md",
-      name: "Untitled.md",
+      content: "# Mock document\n",
       lineEnding: "lf",
     });
     await expect(
       shell.saveFile({
         path: "/mock/Untitled.md",
-        bytesBase64: "IyBUZXN0Cg==",
+        content: "# Test\n",
         expectedMtimeMs: 1,
+        lineEnding: "lf",
       }),
     ).resolves.toEqual({
       ok: true,
@@ -25,7 +26,8 @@ describe("mockShellBridge", () => {
     await expect(
       shell.saveFileAs({
         suggestedName: "Untitled.md",
-        bytesBase64: "IyBUZXN0Cg==",
+        content: "# Test\n",
+        lineEnding: "lf",
       }),
     ).resolves.toEqual({
       ok: true,

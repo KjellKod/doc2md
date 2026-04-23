@@ -1,4 +1,5 @@
 import type { ConversionQuality } from "../converters/types";
+import type { ShellLineEnding } from "./doc2mdShell";
 
 export const SUPPORTED_FORMATS = [
   "md",
@@ -34,4 +35,9 @@ export interface FileEntry {
   quality?: ConversionQuality;
   selected: boolean;
   isScratch?: boolean;
+  desktopFile?: {
+    path: string;
+    mtimeMs: number;
+    lineEnding: ShellLineEnding;
+  };
 }

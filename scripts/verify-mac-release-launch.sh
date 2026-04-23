@@ -145,21 +145,31 @@ case "$LOG_OUTPUT" in
   *"load failed"*|*"bundle missing"*)
     fail "doc2md web content failed to load. Log output: $LOG_OUTPUT"
     ;;
-  *"load succeeded"*)
-    printf 'Launch OK: web content loaded\n'
-    ;;
-  *)
-    # No success or failure token appeared. Do not silently pass. Common causes:
-    # log delivery slower than the wait window, missing log access permission,
-    # subsystem string drift, or the app crashed before logging. Surface what
-    # we know and fail so the developer can diagnose.
-    printf 'INCONCLUSIVE: no load signal from subsystem com.kjellkod.doc2md within %ss of launch.\n' "$WAIT_SECONDS" >&2
-    if ((LOG_STATUS != 0)); then
-      printf 'log show exit status: %s\n' "$LOG_STATUS" >&2
-    fi
-    if [[ -n "$LOG_STDERR" ]]; then
-      printf 'log show stderr:\n%s\n' "$LOG_STDERR" >&2
-    fi
-    fail "launch smoke could not verify web content rendered. Rerun with a larger --wait-seconds if log delivery was slow, or check log access permissions."
+  *"app ready: false"*)
+    fail "doc2md React app failed the rendered readiness probe. Log output: $LOG_OUTPUT"
     ;;
 esac
+
+if [[ "$LOG_OUTPUT" != *"load succeeded"* ]]; then
+  printf 'INCONCLUSIVE: no load signal from subsystem com.kjellkod.doc2md within %ss of launch.\n' "$WAIT_SECONDS" >&2
+  if ((LOG_STATUS != 0)); then
+    printf 'log show exit status: %s\n' "$LOG_STATUS" >&2
+  fi
+  if [[ -n "$LOG_STDERR" ]]; then
+    printf 'log show stderr:\n%s\n' "$LOG_STDERR" >&2
+  fi
+  fail "launch smoke could not verify web content loaded. Rerun with a larger --wait-seconds if log delivery was slow, or check log access permissions."
+fi
+
+if [[ "$LOG_OUTPUT" == *"app ready: true"* ]]; then
+  printf 'Launch OK: web content loaded and React app rendered\n'
+else
+  printf 'INCONCLUSIVE: load succeeded, but no app ready signal appeared within %ss of launch.\n' "$WAIT_SECONDS" >&2
+  if ((LOG_STATUS != 0)); then
+    printf 'log show exit status: %s\n' "$LOG_STATUS" >&2
+  fi
+  if [[ -n "$LOG_STDERR" ]]; then
+    printf 'log show stderr:\n%s\n' "$LOG_STDERR" >&2
+  fi
+  fail "launch smoke requires app ready: true. Rerun with a larger --wait-seconds if log delivery was slow, or inspect the rendered React shell."
+fi

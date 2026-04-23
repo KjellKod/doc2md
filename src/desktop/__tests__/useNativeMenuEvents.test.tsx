@@ -23,6 +23,7 @@ describe("useNativeMenuEvents", () => {
       onOpen: vi.fn(),
       onSave: vi.fn(),
       onSaveAs: vi.fn(),
+      onRevealInFinder: vi.fn(),
       onCloseWindow: vi.fn(),
     };
 
@@ -32,12 +33,14 @@ describe("useNativeMenuEvents", () => {
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.save));
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.saveAs));
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.revealInFinder));
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.closeWindow));
 
     expect(handlers.onNew).toHaveBeenCalledTimes(1);
     expect(handlers.onOpen).toHaveBeenCalledTimes(1);
     expect(handlers.onSave).toHaveBeenCalledTimes(1);
     expect(handlers.onSaveAs).toHaveBeenCalledTimes(1);
+    expect(handlers.onRevealInFinder).toHaveBeenCalledTimes(1);
     expect(handlers.onCloseWindow).toHaveBeenCalledTimes(1);
   });
 

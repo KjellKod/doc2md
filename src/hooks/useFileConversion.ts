@@ -6,14 +6,17 @@ import {
   OVERSIZED_FILE_MESSAGE,
 } from "../converters/messages";
 import type { FileEntry } from "../types";
+import type { ShellLineEnding, ShellOpenOk } from "../types/doc2mdShell";
 import { downloadRemoteDocument } from "../utils/remoteDocument";
 import {
   applyConversionResult,
+  createDesktopMarkdownEntry,
   createScratchEntry,
   createPendingEntries,
   getConversionFailureWarning,
   markEntryConverting,
   markEntryError,
+  replaceEntryWithDesktopMarkdown,
 } from "./useFileConversion.helpers";
 
 export function useFileConversion() {
@@ -119,6 +122,47 @@ export function useFileConversion() {
     ]);
   }
 
+  function addOpenedFileEntry(openedFile: ShellOpenOk) {
+    setEntries((currentEntries) => [
+      ...currentEntries.map((entry) => ({
+        ...entry,
+        selected: false,
+      })),
+      createDesktopMarkdownEntry(openedFile),
+    ]);
+  }
+
+  function replaceEntryWithOpenedFile(entryId: string, openedFile: ShellOpenOk) {
+    setEntries((currentEntries) =>
+      currentEntries.map((entry) =>
+        entry.id === entryId
+          ? replaceEntryWithDesktopMarkdown(entry, openedFile)
+          : entry,
+      ),
+    );
+  }
+
+  function updateEntryDesktopFile(
+    entryId: string,
+    metadata: {
+      path: string;
+      mtimeMs: number;
+      lineEnding: ShellLineEnding;
+    },
+  ) {
+    setEntries((currentEntries) =>
+      currentEntries.map((entry) =>
+        entry.id === entryId
+          ? {
+              ...entry,
+              isScratch: false,
+              desktopFile: metadata,
+            }
+          : entry,
+      ),
+    );
+  }
+
   function selectEntry(id: string) {
     setEntries((currentEntries) =>
       currentEntries.map((entry) => ({
@@ -143,9 +187,12 @@ export function useFileConversion() {
     addFiles,
     addUrl,
     addScratchEntry,
+    addOpenedFileEntry,
     clearEntries,
+    replaceEntryWithOpenedFile,
     selectEntry,
     selectedEntry,
+    updateEntryDesktopFile,
     updateMarkdown,
   };
 }

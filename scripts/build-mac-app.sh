@@ -2,12 +2,21 @@
 set -euo pipefail
 
 CONFIGURATION="Release"
-# Two separate checks so both are portable on BSD grep (macOS default):
-# - FORBIDDEN_SYMBOLS is matched with `-w` for whole-word boundaries (no \b, which is a non-POSIX GNU extension).
-# - FORBIDDEN_CALL_PATTERN catches Data/String `.write(to:)` via literal punctuation, which does not need word-boundary support.
-FORBIDDEN_SYMBOLS='(FileManager|NSOpenPanel|NSSavePanel|FileHandle|replaceItem|replacingItem|startAccessingSecurityScopedResource|stopAccessingSecurityScopedResource|securityScopedResource)'
-FORBIDDEN_CALL_PATTERN='\.write\(to:'
-SHELL_BRIDGE_PATH="apps/macos/doc2md/ShellBridge.swift"
+PERSISTENCE_SWIFT_SOURCE_GLOB="apps/macos/doc2md/*.swift"
+NATIVE_API_ALLOWLIST=(
+  "FileManager :: stat/read/temp-file creation/atomic replacement staging for user-selected Markdown files"
+  "NSOpenPanel :: user-selected Markdown/text open panel"
+  "NSSavePanel :: user-selected Save As target panel"
+  "NSWorkspace :: Reveal in Finder for a saved user-selected file"
+  "replaceItemAt :: atomic final replacement from a sibling temp file"
+  "startAccessingSecurityScopedResource :: current-session scoped file access around selected URLs"
+  "stopAccessingSecurityScopedResource :: balanced release of scoped file access"
+  "createFile :: sibling temp-file staging and placeholder creation before replaceItemAt"
+  "removeItem :: cleanup for failed temp-file or placeholder writes"
+)
+WATCHED_NATIVE_API_PATTERN='FileManager|NSOpenPanel|NSSavePanel|NSWorkspace|FileHandle|replaceItemAt|replaceItem\(|replacingItem|startAccessingSecurityScopedResource|stopAccessingSecurityScopedResource|createFile|removeItem|moveItem|copyItem|\.write\(to:'
+ALLOWED_NATIVE_API_PATTERN='FileManager|NSOpenPanel|NSSavePanel|NSWorkspace|replaceItemAt|startAccessingSecurityScopedResource|stopAccessingSecurityScopedResource|createFile|removeItem'
+FORBIDDEN_NATIVE_API_PATTERN='FileHandle|replaceItem\(|replacingItem|(^|[^A-Za-z0-9_])moveItem[[:space:]]*\(|(^|[^A-Za-z0-9_])copyItem[[:space:]]*\(|\.write\(to:'
 
 usage() {
   printf 'Usage: %s [--configuration Debug|Release]\n' "$(basename "$0")"
@@ -100,33 +109,31 @@ fi
 
 cd "$REPO_ROOT"
 
-# The forbidden-API check is a policy tripwire, so a missing or unreadable
-# target must be a loud failure — not a silent pass. Verify the file exists
-# first, then treat grep status 2 as a tripwire failure (only 0 = match
-# and 1 = clean are valid "no-error" outcomes).
-if [[ ! -r "$SHELL_BRIDGE_PATH" ]]; then
-  fail "forbidden-API tripwire target is missing or unreadable: $SHELL_BRIDGE_PATH"
+shopt -s nullglob
+persistence_swift_sources=($PERSISTENCE_SWIFT_SOURCE_GLOB)
+shopt -u nullglob
+
+if ((${#persistence_swift_sources[@]} == 0)); then
+  fail "native API allowlist scan found no Swift sources for scope: $PERSISTENCE_SWIFT_SOURCE_GLOB"
 fi
 
-set +e
-grep -nEw "$FORBIDDEN_SYMBOLS" "$SHELL_BRIDGE_PATH"
-symbol_rc=$?
-set -e
-case "$symbol_rc" in
-  0) fail "forbidden API symbol found in $SHELL_BRIDGE_PATH; ShellBridge must remain I/O-free until Phase 3" ;;
-  1) : ;;
-  *) fail "forbidden-API symbol scan failed with grep status $symbol_rc on $SHELL_BRIDGE_PATH" ;;
-esac
+printf 'Native file API allowlist:\n'
+for entry in "${NATIVE_API_ALLOWLIST[@]}"; do
+  printf '  - %s\n' "$entry"
+done
 
-set +e
-grep -nE "$FORBIDDEN_CALL_PATTERN" "$SHELL_BRIDGE_PATH"
-call_rc=$?
-set -e
-case "$call_rc" in
-  0) fail "forbidden .write(to:) call found in $SHELL_BRIDGE_PATH; ShellBridge must remain I/O-free until Phase 3" ;;
-  1) : ;;
-  *) fail "forbidden-API call scan failed with grep status $call_rc on $SHELL_BRIDGE_PATH" ;;
-esac
+while IFS= read -r match; do
+  [[ -n "$match" ]] || continue
+  fail "unexpected native file API outside allowlist: $match"
+done < <(grep -nE "$FORBIDDEN_NATIVE_API_PATTERN" "${persistence_swift_sources[@]}" || true)
+
+while IFS= read -r match; do
+  [[ -n "$match" ]] || continue
+
+  if ! printf '%s\n' "$match" | grep -Eq "$ALLOWED_NATIVE_API_PATTERN"; then
+    fail "unexpected native file API outside allowlist: $match"
+  fi
+done < <(grep -nE "$WATCHED_NATIVE_API_PATTERN" "${persistence_swift_sources[@]}" || true)
 
 npm run build:desktop
 

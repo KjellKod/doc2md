@@ -172,6 +172,37 @@ private struct WebView: NSViewRepresentable {
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             logger.notice("load succeeded: \(webView.url?.absoluteString ?? "unknown", privacy: .public)")
+            probeAppReady(in: webView, attempt: 1)
+        }
+
+        private func probeAppReady(in webView: WKWebView, attempt: Int) {
+            webView.evaluateJavaScript("document.querySelector('[data-app-ready]') != null") { result, error in
+                if let error {
+                    guard attempt < 3 else {
+                        logger.error("app ready: false: \(error.localizedDescription, privacy: .public)")
+                        return
+                    }
+
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        self.probeAppReady(in: webView, attempt: attempt + 1)
+                    }
+                    return
+                }
+
+                if let ready = result as? Bool, ready {
+                    logger.notice("app ready: true")
+                    return
+                }
+
+                guard attempt < 3 else {
+                    logger.error("app ready: false: timeout after 3 attempts")
+                    return
+                }
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    self.probeAppReady(in: webView, attempt: attempt + 1)
+                }
+            }
         }
     }
 }

@@ -20,6 +20,10 @@ final class MenuController: NSObject {
         dispatchNativeEvent("doc2md:native-save-as")
     }
 
+    func revealInFinder() {
+        dispatchNativeEvent("doc2md:native-reveal-in-finder")
+    }
+
     func closeWindow() {
         dispatchNativeEvent("doc2md:native-close-window") {
             NSApp.keyWindow?.performClose(nil)

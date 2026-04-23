@@ -5,6 +5,7 @@ export const NATIVE_MENU_EVENTS = {
   open: "doc2md:native-open",
   save: "doc2md:native-save",
   saveAs: "doc2md:native-save-as",
+  revealInFinder: "doc2md:native-reveal-in-finder",
   closeWindow: "doc2md:native-close-window",
 } as const;
 
@@ -13,6 +14,7 @@ export interface NativeMenuHandlers {
   onOpen?: () => void;
   onSave?: () => void;
   onSaveAs?: () => void;
+  onRevealInFinder?: () => void;
   onCloseWindow?: () => void;
 }
 
@@ -26,6 +28,10 @@ export function useNativeMenuEvents(handlers: NativeMenuHandlers) {
       [NATIVE_MENU_EVENTS.open, () => handlersRef.current.onOpen?.()],
       [NATIVE_MENU_EVENTS.save, () => handlersRef.current.onSave?.()],
       [NATIVE_MENU_EVENTS.saveAs, () => handlersRef.current.onSaveAs?.()],
+      [
+        NATIVE_MENU_EVENTS.revealInFinder,
+        () => handlersRef.current.onRevealInFinder?.(),
+      ],
       [
         NATIVE_MENU_EVENTS.closeWindow,
         () => handlersRef.current.onCloseWindow?.(),
