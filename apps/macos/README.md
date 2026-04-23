@@ -108,7 +108,7 @@ Use a longer or shorter launch wait when needed:
 ./scripts/verify-mac-release-launch.sh --wait-seconds 5
 ```
 
-The smoke runs the build helper, launches the resolved `.app` with `open -na`, waits three seconds by default, then queries the macOS unified log for a `load succeeded` entry from the `com.kjellkod.doc2md` subsystem. It exits non-zero if:
+The smoke runs the build helper, captures a launch timestamp, launches the resolved `.app` with `open -na`, waits three seconds by default, then queries the macOS unified log (anchored to that launch timestamp, not a rolling window) for a `load succeeded` entry from the `com.kjellkod.doc2md` subsystem. Anchoring the query prevents a prior run's log entries from being mistaken for the current launch's. It exits non-zero if:
 
 - the process is not running after the wait,
 - a `load failed` or `bundle missing` entry appears in the log, or

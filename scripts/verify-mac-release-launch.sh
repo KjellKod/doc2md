@@ -120,6 +120,12 @@ if [[ ! -d "$APP_PATH" ]]; then
   fail "build helper returned a missing app path: $APP_PATH"
 fi
 
+# Anchor the log query to this invocation. Without a start timestamp, `log show
+# --last Ns` reads the rolling window and can pick up a previous launch's
+# `load succeeded` entry, masking a currently broken launch. Capture local
+# time just before `open -na`; `log show --start` parses this format and
+# interprets it in the host's timezone.
+LAUNCH_START="$(date '+%Y-%m-%d %H:%M:%S')"
 open -na "$APP_PATH"
 WE_LAUNCHED_DOC2MD=1
 sleep "$WAIT_SECONDS"
@@ -128,10 +134,9 @@ if ! pgrep -f 'doc2md.app/Contents/MacOS/doc2md' >/dev/null 2>&1; then
   fail "doc2md process is not running after ${WAIT_SECONDS}s"
 fi
 
-LOG_WINDOW="$((WAIT_SECONDS + 2))"
 LOG_STDERR_FILE="$(mktemp)"
 LOG_STATUS=0
-LOG_OUTPUT="$(log show --predicate 'subsystem == "com.kjellkod.doc2md"' --last "${LOG_WINDOW}s" --style compact 2>"$LOG_STDERR_FILE")" || LOG_STATUS=$?
+LOG_OUTPUT="$(log show --start "$LAUNCH_START" --predicate 'subsystem == "com.kjellkod.doc2md"' --style compact 2>"$LOG_STDERR_FILE")" || LOG_STATUS=$?
 LOG_STDERR="$(cat "$LOG_STDERR_FILE" 2>/dev/null || true)"
 rm -f "$LOG_STDERR_FILE"
 unset LOG_STDERR_FILE
@@ -148,7 +153,7 @@ case "$LOG_OUTPUT" in
     # log delivery slower than the wait window, missing log access permission,
     # subsystem string drift, or the app crashed before logging. Surface what
     # we know and fail so the developer can diagnose.
-    printf 'INCONCLUSIVE: no load signal from subsystem com.kjellkod.doc2md within %ss.\n' "$LOG_WINDOW" >&2
+    printf 'INCONCLUSIVE: no load signal from subsystem com.kjellkod.doc2md within %ss of launch.\n' "$WAIT_SECONDS" >&2
     if ((LOG_STATUS != 0)); then
       printf 'log show exit status: %s\n' "$LOG_STATUS" >&2
     fi
