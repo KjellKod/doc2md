@@ -108,7 +108,13 @@ Use a longer or shorter launch wait when needed:
 ./scripts/verify-mac-release-launch.sh --wait-seconds 5
 ```
 
-The smoke runs the build helper, launches the resolved `.app` with `open -na`, waits three seconds by default, then queries the macOS unified log for a `load succeeded` entry from the `com.kjellkod.doc2md` subsystem. It exits non-zero if the process is not running after the wait, or if a `load failed` or `bundle missing` entry appears in the log. No Accessibility or Automation permission is required.
+The smoke runs the build helper, launches the resolved `.app` with `open -na`, waits three seconds by default, then queries the macOS unified log for a `load succeeded` entry from the `com.kjellkod.doc2md` subsystem. It exits non-zero if:
+
+- the process is not running after the wait,
+- a `load failed` or `bundle missing` entry appears in the log, or
+- no load-success or load-failure signal appears within the wait window (reported as `INCONCLUSIVE`, with the `log show` exit status and stderr included so log-access problems surface instead of silently passing).
+
+If the smoke reports `INCONCLUSIVE`, rerun with a larger `--wait-seconds` (log delivery can lag) or check whether `log show` can read the `com.kjellkod.doc2md` subsystem on this machine. No Accessibility or Automation permission is required.
 
 The smoke refuses to run if a `doc2md` process is already running. Its cleanup path quits the app on exit, and killing a pre-existing session could lose unsaved work. Quit any running `doc2md` (including older builds) before invoking the smoke.
 

@@ -51,6 +51,10 @@ cleanup() {
   local rc=$?
   trap - EXIT INT TERM
 
+  if [[ -n "${LOG_STDERR_FILE:-}" && -e "$LOG_STDERR_FILE" ]]; then
+    rm -f "$LOG_STDERR_FILE"
+  fi
+
   # Only tear down the instance this script launched. If doc2md was already
   # running before we started, the preflight check would have refused to run,
   # so reaching cleanup implies we own the process.
@@ -125,7 +129,12 @@ if ! pgrep -f 'doc2md.app/Contents/MacOS/doc2md' >/dev/null 2>&1; then
 fi
 
 LOG_WINDOW="$((WAIT_SECONDS + 2))"
-LOG_OUTPUT="$(log show --predicate 'subsystem == "com.kjellkod.doc2md"' --last "${LOG_WINDOW}s" --style compact 2>/dev/null || true)"
+LOG_STDERR_FILE="$(mktemp)"
+LOG_STATUS=0
+LOG_OUTPUT="$(log show --predicate 'subsystem == "com.kjellkod.doc2md"' --last "${LOG_WINDOW}s" --style compact 2>"$LOG_STDERR_FILE")" || LOG_STATUS=$?
+LOG_STDERR="$(cat "$LOG_STDERR_FILE" 2>/dev/null || true)"
+rm -f "$LOG_STDERR_FILE"
+unset LOG_STDERR_FILE
 
 case "$LOG_OUTPUT" in
   *"load failed"*|*"bundle missing"*)
@@ -135,6 +144,17 @@ case "$LOG_OUTPUT" in
     printf 'Launch OK: web content loaded\n'
     ;;
   *)
-    printf 'Launch OK: process running (no load signal seen in unified log within %ss)\n' "$WAIT_SECONDS"
+    # No success or failure token appeared. Do not silently pass. Common causes:
+    # log delivery slower than the wait window, missing log access permission,
+    # subsystem string drift, or the app crashed before logging. Surface what
+    # we know and fail so the developer can diagnose.
+    printf 'INCONCLUSIVE: no load signal from subsystem com.kjellkod.doc2md within %ss.\n' "$LOG_WINDOW" >&2
+    if ((LOG_STATUS != 0)); then
+      printf 'log show exit status: %s\n' "$LOG_STATUS" >&2
+    fi
+    if [[ -n "$LOG_STDERR" ]]; then
+      printf 'log show stderr:\n%s\n' "$LOG_STDERR" >&2
+    fi
+    fail "launch smoke could not verify web content rendered. Rerun with a larger --wait-seconds if log delivery was slow, or check log access permissions."
     ;;
 esac
