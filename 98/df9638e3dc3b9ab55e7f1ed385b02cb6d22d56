@@ -1,0 +1,25 @@
+apps/macos/doc2md/WebShellView.swift
+  3eb508901964cd48 1,5-6,118,128,161-162,172-174
+scripts/verify-mac-release-launch.sh
+  3eb508901964cd48 123-124,127-132,134-138
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "98df9638e3dc3b9ab55e7f1ed385b02cb6d22d56",
+  "prompts": {
+    "3eb508901964cd48": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e8836e30-8cd9-4748-9012-4524b19c7da7",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 27,
+      "total_deletions": 37,
+      "accepted_lines": 24,
+      "overriden_lines": 0
+    }
+  }
+}
