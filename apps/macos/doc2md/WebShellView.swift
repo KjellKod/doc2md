@@ -1,5 +1,8 @@
+import OSLog
 import SwiftUI
 import WebKit
+
+private let logger = Logger(subsystem: "com.kjellkod.doc2md", category: "webshell")
 
 final class ShellHost: ObservableObject {
     let shellBridge = ShellBridge()
@@ -112,6 +115,7 @@ private struct WebView: NSViewRepresentable {
             ) != nil,
             let indexURL = AppSchemeHandler.indexURL()
         else {
+            logger.error("bundle missing: Resources/Web/index.html not found in app bundle")
             loadError = ShellLoadError(
                 title: "Bundled web app was not found",
                 url: "Resources/Web/index.html",
@@ -121,6 +125,7 @@ private struct WebView: NSViewRepresentable {
             return
         }
 
+        logger.notice("load started: \(indexURL.absoluteString, privacy: .public)")
         webView.load(URLRequest(url: indexURL))
     }
 
@@ -149,12 +154,12 @@ private struct WebView: NSViewRepresentable {
         }
 
         private func recordFailure(_ error: Error, webView: WKWebView) {
-            #if DEBUG
             let nsError = error as NSError
             guard nsError.domain != NSURLErrorDomain || nsError.code != NSURLErrorCancelled else {
                 return
             }
-
+            logger.error("load failed: \(error.localizedDescription, privacy: .public)")
+            #if DEBUG
             let failingURL = nsError.userInfo[NSURLErrorFailingURLErrorKey] as? URL
             setLoadError(ShellLoadError(
                 title: "Vite dev server is unavailable",
@@ -163,6 +168,10 @@ private struct WebView: NSViewRepresentable {
                 recovery: "Start the web app with npm run dev, then relaunch the Debug app."
             ))
             #endif
+        }
+
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            logger.notice("load succeeded: \(webView.url?.absoluteString ?? "unknown", privacy: .public)")
         }
     }
 }

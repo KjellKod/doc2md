@@ -60,6 +60,66 @@ Example:
 NPM_BIN="$(command -v npm)" xcodebuild -project apps/macos/doc2md.xcodeproj -scheme doc2md -configuration Release build
 ```
 
+## One-Command Release Build
+
+Build the Release `.app` from the repo root:
+
+```bash
+npm run build:mac
+```
+
+Equivalent:
+
+```bash
+bash scripts/build-mac-app.sh --configuration Release
+```
+
+The script runs `npm run build:desktop`, invokes `xcodebuild` with `-derivedDataPath .build/mac`, and runs a forbidden-API grep against `apps/macos/doc2md/ShellBridge.swift`. It writes the app to:
+
+```text
+.build/mac/Build/Products/Release/doc2md.app
+```
+
+The final output line is:
+
+```text
+Built: <absolute path to .build/mac/Build/Products/Release/doc2md.app>
+```
+
+This is an unsigned local build. Signing, notarization, DMG packaging, and Sparkle updates are Phase 5.
+
+If `xcode-select -p` points at `/Library/Developer/CommandLineTools`, the helper tries `/Applications/Xcode.app/Contents/Developer` and fails with a full-Xcode error if that developer directory is unavailable. Install full Xcode and select it:
+
+```bash
+sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+```
+
+## Launch Smoke
+
+Build and sanity-check that the Release app renders:
+
+```bash
+./scripts/verify-mac-release-launch.sh
+```
+
+Use a longer or shorter launch wait when needed:
+
+```bash
+./scripts/verify-mac-release-launch.sh --wait-seconds 5
+```
+
+The smoke runs the build helper, captures a launch timestamp, launches the resolved `.app` with `open -na`, waits three seconds by default, then queries the macOS unified log (anchored to that launch timestamp, not a rolling window) for a `load succeeded` entry from the `com.kjellkod.doc2md` subsystem. Anchoring the query prevents a prior run's log entries from being mistaken for the current launch's. It exits non-zero if:
+
+- the process is not running after the wait,
+- a `load failed` or `bundle missing` entry appears in the log, or
+- no load-success or load-failure signal appears within the wait window (reported as `INCONCLUSIVE`, with the `log show` exit status and stderr included so log-access problems surface instead of silently passing).
+
+If the smoke reports `INCONCLUSIVE`, rerun with a larger `--wait-seconds` (log delivery can lag) or check whether `log show` can read the `com.kjellkod.doc2md` subsystem on this machine. No Accessibility or Automation permission is required.
+
+The smoke refuses to run if a `doc2md` process is already running. Its cleanup path quits the app on exit, and killing a pre-existing session could lose unsaved work. Quit any running `doc2md` (including older builds) before invoking the smoke.
+
+The smoke quits the `doc2md` app it launched before exit and falls back to killing that binary if graceful quit cannot complete. Cleanup only runs for the instance this script started. This is a local developer tool and does not run in CI.
+
 ## Manual Validation
 
 Use these checks for this scaffold phase:
