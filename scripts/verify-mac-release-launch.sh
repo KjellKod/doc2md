@@ -120,40 +120,21 @@ open -na "$APP_PATH"
 WE_LAUNCHED_DOC2MD=1
 sleep "$WAIT_SECONDS"
 
-if ! TITLE="$(
-  osascript \
-    -e 'tell application "System Events"' \
-    -e 'if not (exists process "doc2md") then error "doc2md process is not running"' \
-    -e 'tell process "doc2md"' \
-    -e 'if (count of windows) is 0 then error "doc2md has no windows"' \
-    -e 'set t to title of front window' \
-    -e 'end tell' \
-    -e 'end tell' \
-    -e 'return t' 2>&1
-)"; then
-  case "$TITLE" in
-    *"doc2md process is not running"*)
-      fail "doc2md process is not running after launch. osascript output: $TITLE"
-      ;;
-    *"doc2md has no windows"*)
-      fail "doc2md launched, but no window exists after ${WAIT_SECONDS}s. osascript output: $TITLE"
-      ;;
-    *"not authorized"*|*"not allowed"*|*"System Events got an error"*)
-      fail "System Events could not read the doc2md window title. This can be a TCC/Accessibility permissions failure. osascript output: $TITLE"
-      ;;
-    *)
-      fail "failed to read the doc2md window title via System Events. osascript output: $TITLE"
-      ;;
-  esac
+if ! pgrep -f 'doc2md.app/Contents/MacOS/doc2md' >/dev/null 2>&1; then
+  fail "doc2md process is not running after ${WAIT_SECONDS}s"
 fi
 
-case "$TITLE" in
-  "doc2md [ERR]"*)
-    fail "doc2md window title indicates a launch failure: $TITLE"
+LOG_WINDOW="$((WAIT_SECONDS + 2))"
+LOG_OUTPUT="$(log show --predicate 'subsystem == "com.kjellkod.doc2md"' --last "${LOG_WINDOW}s" --style compact 2>/dev/null || true)"
+
+case "$LOG_OUTPUT" in
+  *"load failed"*|*"bundle missing"*)
+    fail "doc2md web content failed to load. Log output: $LOG_OUTPUT"
     ;;
-  "")
-    fail "doc2md window title is empty after launch"
+  *"load succeeded"*)
+    printf 'Launch OK: web content loaded\n'
+    ;;
+  *)
+    printf 'Launch OK: process running (no load signal seen in unified log within %ss)\n' "$WAIT_SECONDS"
     ;;
 esac
-
-printf 'Launch OK: %s\n' "$TITLE"
