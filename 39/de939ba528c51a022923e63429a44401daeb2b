@@ -1,0 +1,25 @@
+docs/diary/2026-04-22.md
+  c6b35857119c760d 54-86
+ideas/mac-desktop-app-roadmap.md
+  c6b35857119c760d 24,150
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "39de939ba528c51a022923e63429a44401daeb2b",
+  "prompts": {
+    "c6b35857119c760d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "403679ff-edcb-47f0-abf7-be26448e70a2",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 35,
+      "total_deletions": 1,
+      "accepted_lines": 186,
+      "overriden_lines": 0
+    }
+  }
+}
