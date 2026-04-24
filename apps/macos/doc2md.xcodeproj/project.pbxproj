@@ -16,6 +16,9 @@
 		9A0200000000000000000006 /* FileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000007 /* FileStore.swift */; };
 		9A0200000000000000000007 /* FileStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000009 /* FileStoreTests.swift */; };
 		9A0200000000000000000008 /* FileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000007 /* FileStore.swift */; };
+		9A0200000000000000000009 /* SupportedFormats.generated.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A010000000000000000000A /* SupportedFormats.generated.swift */; };
+		9A0200000000000000000010 /* AppScheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000006 /* AppScheme.swift */; };
+		9A0200000000000000000011 /* AppSchemeImportRouteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A010000000000000000000B /* AppSchemeImportRouteTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -39,6 +42,8 @@
 		9A0100000000000000000007 /* FileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileStore.swift; sourceTree = "<group>"; };
 		9A0100000000000000000008 /* doc2mdTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = doc2mdTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9A0100000000000000000009 /* FileStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileStoreTests.swift; sourceTree = "<group>"; };
+		9A010000000000000000000A /* SupportedFormats.generated.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupportedFormats.generated.swift; sourceTree = "<group>"; };
+		9A010000000000000000000B /* AppSchemeImportRouteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSchemeImportRouteTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -70,6 +75,7 @@
 				9A0100000000000000000005 /* MenuController.swift */,
 				9A0100000000000000000006 /* AppScheme.swift */,
 				9A0100000000000000000007 /* FileStore.swift */,
+				9A010000000000000000000A /* SupportedFormats.generated.swift */,
 				9A0000000000000000000003 /* Resources */,
 			);
 			path = doc2md;
@@ -96,6 +102,7 @@
 			isa = PBXGroup;
 			children = (
 				9A0100000000000000000009 /* FileStoreTests.swift */,
+				9A010000000000000000000B /* AppSchemeImportRouteTests.swift */,
 			);
 			path = doc2mdTests;
 			sourceTree = "<group>";
@@ -219,6 +226,7 @@
 				9A0200000000000000000004 /* MenuController.swift in Sources */,
 				9A0200000000000000000005 /* AppScheme.swift in Sources */,
 				9A0200000000000000000006 /* FileStore.swift in Sources */,
+				9A0200000000000000000009 /* SupportedFormats.generated.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -228,6 +236,8 @@
 			files = (
 				9A0200000000000000000007 /* FileStoreTests.swift in Sources */,
 				9A0200000000000000000008 /* FileStore.swift in Sources */,
+				9A0200000000000000000010 /* AppScheme.swift in Sources */,
+				9A0200000000000000000011 /* AppSchemeImportRouteTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -1,19 +1,22 @@
 # doc2md Mac Shell
 
-This is the Phase 3 Mac-only shell for `doc2md.app`. It is a minimal Swift + SwiftUI + `WKWebView` app that displays the existing React UI and provides current-session Markdown file persistence through the JavaScript bridge.
+This is the Phase 4 Mac-only shell for `doc2md.app`. It is a minimal Swift + SwiftUI + `WKWebView` app that displays the existing React UI, edits `.md` files directly, and imports every other supported source format into Markdown through the shared web converters.
 
 Out of scope for this phase: persisted security-scoped bookmarks, Sparkle, signing, notarization, recent files, autosave, and asset persistence.
 
-## Phase 3 Capabilities
+## Phase 4 Capabilities
 
 - `window.doc2mdShell.version === 1` is injected into the `WKWebView` at document start.
 - The bridge exposes `openFile`, `saveFile`, `saveFileAs`, and `revealInFinder`.
-- Open reads `.md`, `.markdown`, and `.txt` files, preserving LF/CRLF metadata for later saves.
-- Save writes through a sibling temp file and `FileManager.replaceItemAt`, with mtime conflict detection.
+- Open reads `.md` and `.markdown` files directly, preserving LF/CRLF metadata for later saves.
+- Open imports every other supported format, including `.txt`, `.json`, `.csv`, `.tsv`, `.html`, `.docx`, `.xlsx`, `.pdf`, and `.pptx`, through a one-shot native handoff back into the existing web conversion pipeline.
+- First save for an imported document always goes through `Save As` to a chosen `.md` target. After that, Cmd+S updates the chosen Markdown file with the same mtime conflict detection used for directly opened `.md` files.
+- Save writes through a sibling temp file and `FileManager.replaceItemAt`, with mtime conflict detection. Save targets must use the `.md` extension.
 - Save As uses `NSSavePanel`; Reveal in Finder uses `NSWorkspace`.
 - Current-session security-scoped URLs are retained in memory only.
 - File menu commands dispatch `doc2md:native-new`, `doc2md:native-open`, `doc2md:native-save`, `doc2md:native-save-as`, `doc2md:native-reveal-in-finder`, and `doc2md:native-close-window` into the webview.
 - Standard Edit actions remain on the AppKit and `WKWebView` responder chain.
+- Embedded images and other source-document assets are dropped, matching the hosted web product.
 
 ## Debug Development
 
@@ -55,6 +58,8 @@ xcodebuild -project apps/macos/doc2md.xcodeproj -scheme doc2md -configuration Re
 
 Release-style builds run the Xcode `Build Desktop Web Bundle` phase before Copy Bundle Resources. That phase runs `npm run build:desktop` and copies `dist/` into `apps/macos/doc2md/Resources/Web/`, which is bundled as `Web/index.html` inside the app.
 
+`npm run build:desktop` runs `npm run generate:mac-supported-formats` first so the Swift open-panel extension list stays in sync with `SUPPORTED_FORMATS` from `src/types/index.ts`.
+
 If Xcode cannot find `npm` from its GUI environment, set `NPM_BIN` to an absolute npm executable path for the build.
 
 Example:
@@ -77,7 +82,7 @@ Equivalent:
 bash scripts/build-mac-app.sh --configuration Release
 ```
 
-The script runs `npm run build:desktop`, invokes `xcodebuild` with `-derivedDataPath .build/mac`, and runs a positive native file API allowlist scan across `apps/macos/doc2md/*.swift`. It writes the app to:
+The script first checks that `apps/macos/doc2md/SupportedFormats.generated.swift` is up to date, then runs `npm run build:desktop`, invokes `xcodebuild` with `-derivedDataPath .build/mac`, and runs a positive native file API allowlist scan across `apps/macos/doc2md/*.swift`. It writes the app to:
 
 ```text
 .build/mac/Build/Products/Release/doc2md.app
@@ -135,5 +140,6 @@ Use these checks for this phase:
 5. Debug app shows the missing-dev-server error when `npm run dev` is stopped.
 6. Release build launches without the Vite dev server and logs `app ready: true`.
 7. Open a Markdown file, edit it, save it, reveal it in Finder, and verify conflict and permission-needed UI paths.
+8. Open a supported non-Markdown source file, confirm it converts into Markdown, Save As to `.md`, and verify subsequent saves update only the chosen Markdown target.
 
 If full Xcode is not available, record that the Mac app build and launch checks were not run. The command line tools package alone is not enough; `xcodebuild` must point at a full Xcode developer directory.

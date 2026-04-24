@@ -7,6 +7,7 @@ describe("mockShellBridge", () => {
 
     await expect(shell.openFile()).resolves.toMatchObject({
       ok: true,
+      kind: "markdown",
       path: "/mock/Untitled.md",
       content: "# Mock document\n",
       lineEnding: "lf",

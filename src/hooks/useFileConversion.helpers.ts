@@ -59,6 +59,15 @@ function basename(path: string) {
   return path.split(/[\\/]/).filter(Boolean).pop() || "Untitled.md";
 }
 
+function suggestedMarkdownName(name: string) {
+  const basenameWithoutExtension = name.replace(/\.[^.]+$/u, "");
+  const safeBasename = basenameWithoutExtension || name || "Untitled";
+
+  return safeBasename.toLowerCase().endsWith(".md")
+    ? safeBasename
+    : `${safeBasename}.md`;
+}
+
 export function createDesktopMarkdownEntry(
   openedFile: ShellOpenOk,
 ): FileEntry {
@@ -80,6 +89,29 @@ export function createDesktopMarkdownEntry(
       mtimeMs: openedFile.mtimeMs,
       lineEnding: openedFile.lineEnding,
     },
+  };
+}
+
+export function createImportedEntry(
+  file: File,
+  sourceMeta: {
+    path: string;
+    format: string;
+    mtimeMs: number;
+  },
+): FileEntry {
+  const name = suggestedMarkdownName(file.name);
+
+  return {
+    id: createEntryId(file.name, 0),
+    file,
+    name,
+    format: "md",
+    status: "pending",
+    markdown: "",
+    warnings: [],
+    selected: true,
+    sourceMeta,
   };
 }
 

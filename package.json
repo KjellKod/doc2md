@@ -10,6 +10,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "generate:mac-supported-formats": "node scripts/generate-supported-formats.mjs",
+    "prebuild:desktop": "npm run generate:mac-supported-formats",
     "build:desktop": "vite build --mode desktop",
     "build:core": "npm run build --workspace=@doc2md/core",
     "build:mac": "bash scripts/build-mac-app.sh",

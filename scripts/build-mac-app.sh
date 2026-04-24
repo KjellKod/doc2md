@@ -5,8 +5,8 @@ CONFIGURATION="Release"
 PERSISTENCE_SWIFT_SOURCE_GLOB="apps/macos/doc2md/*.swift"
 NATIVE_API_ALLOWLIST=(
   "FileManager :: stat/read/temp-file creation/atomic replacement staging for user-selected Markdown files"
-  "NSOpenPanel :: user-selected Markdown/text open panel"
-  "NSSavePanel :: user-selected Save As target panel"
+  "NSOpenPanel :: user-selected supported-document open panel"
+  "NSSavePanel :: user-selected Markdown Save As target panel"
   "NSWorkspace :: Reveal in Finder for a saved user-selected file"
   "replaceItemAt :: atomic final replacement from a sibling temp file"
   "startAccessingSecurityScopedResource :: current-session scoped file access around selected URLs"
@@ -130,6 +130,8 @@ if [[ ! -x "$XCODEBUILD_BIN" ]]; then
 fi
 
 cd "$REPO_ROOT"
+
+node scripts/generate-supported-formats.mjs --check
 
 shopt -s nullglob
 persistence_swift_sources=($PERSISTENCE_SWIFT_SOURCE_GLOB)

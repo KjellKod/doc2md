@@ -143,6 +143,7 @@ private struct WebView: NSViewRepresentable {
         }
 
         func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+            appSchemeHandler.clearImportHandoff()
             setLoadError(nil)
         }
 

@@ -35,6 +35,11 @@ export interface FileEntry {
   quality?: ConversionQuality;
   selected: boolean;
   isScratch?: boolean;
+  sourceMeta?: {
+    path: string;
+    format: string;
+    mtimeMs: number;
+  };
   desktopFile?: {
     path: string;
     mtimeMs: number;

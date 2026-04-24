@@ -30,6 +30,8 @@ const PAGE_WIDTH_FRAME_ALLOWANCE = 96;
 const PAGE_WIDTH_STEP = 48;
 type PageView = "convert" | "install";
 const DISPLAY_VERSION = __DOC2MD_DISPLAY_VERSION__;
+const CONVERSION_FAILED_SAVE_MESSAGE =
+  "Cannot save: conversion failed. Please re-open the file or choose another.";
 
 function PanelRightOpenIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -134,6 +136,10 @@ type PendingConflict = ShellConflict & {
   lineEnding: ShellLineEnding;
 };
 
+const IMPORT_HANDOFF_EXPIRED_MESSAGE = "Import handoff expired. Open the file again.";
+const IMPORT_HANDOFF_FAILED_MESSAGE =
+  "Import failed before the app received the file bytes.";
+
 function noticeFromPermission(result: ShellPermissionNeeded): DesktopNotice {
   return {
     kind: "permission-needed",
@@ -147,6 +153,25 @@ function noticeFromError(result: ShellError): DesktopNotice {
     kind: "error",
     message: result.message,
   };
+}
+
+async function readImportFailureMessage(
+  importResponse: Response,
+): Promise<string> {
+  if (importResponse.status === 404) {
+    return IMPORT_HANDOFF_EXPIRED_MESSAGE;
+  }
+
+  if (importResponse.status !== 413) {
+    return IMPORT_HANDOFF_FAILED_MESSAGE;
+  }
+
+  try {
+    const message = (await importResponse.text()).trim();
+    return message || IMPORT_HANDOFF_FAILED_MESSAGE;
+  } catch {
+    return IMPORT_HANDOFF_FAILED_MESSAGE;
+  }
 }
 
 function DesktopMenuBridge({
@@ -207,6 +232,7 @@ export default function App() {
     addUrl,
     addScratchEntry,
     addOpenedFileEntry,
+    addImportedFileEntry,
     clearEntries,
     replaceEntryWithOpenedFile,
     selectEntry,
@@ -420,8 +446,46 @@ export default function App() {
     try {
       const result = await shell.openFile();
       if (result.ok) {
-        addOpenedFileEntry(result);
-        saveState.markSaved();
+        if (result.kind === "markdown") {
+          addOpenedFileEntry(result);
+          saveState.markSaved();
+          clearDesktopProblem();
+          return;
+        }
+
+        if (window.location.protocol !== "doc2md:") {
+          setDesktopNotice({
+            kind: "info",
+            message:
+              "Importing non-Markdown files requires the Release desktop bundle. Run `npm run build:mac` or open the file from the installed app.",
+          });
+          return;
+        }
+
+        const importResponse = await fetch(result.importUrl);
+        if (!importResponse.ok) {
+          const message = await readImportFailureMessage(importResponse);
+          saveState.markError();
+          setDesktopNotice({
+            kind: "error",
+            message,
+          });
+          return;
+        }
+
+        const blob = await importResponse.blob();
+        const file = new File([blob], result.name, {
+          type: result.mimeType || blob.type || "application/octet-stream",
+          lastModified: result.mtimeMs,
+        });
+
+        addImportedFileEntry({
+          file,
+          path: result.path,
+          mtimeMs: result.mtimeMs,
+          sourceFormat: result.format,
+        });
+        saveState.markEdited();
         clearDesktopProblem();
         return;
       }
@@ -448,7 +512,13 @@ export default function App() {
       });
       console.error("doc2md desktop openFile transport failure", error);
     }
-  }, [addOpenedFileEntry, clearDesktopProblem, saveState, shell]);
+  }, [
+    addImportedFileEntry,
+    addOpenedFileEntry,
+    clearDesktopProblem,
+    saveState,
+    shell,
+  ]);
 
   const restoreCancelledSaveState = useCallback(
     (previousState: DesktopSaveState) => {
@@ -542,6 +612,20 @@ export default function App() {
 
     const previousState = saveState.state;
     const entry = selectedEntry;
+    if (entry.status === "pending" || entry.status === "converting") {
+      setDesktopNotice({
+        kind: "info",
+        message: "Finishing conversion. Try saving again in a moment.",
+      });
+      return;
+    }
+    if (entry.status === "error") {
+      setDesktopNotice({
+        kind: "error",
+        message: CONVERSION_FAILED_SAVE_MESSAGE,
+      });
+      return;
+    }
     saveInFlightRef.current = true;
     saveState.markSaving();
 
@@ -614,7 +698,31 @@ export default function App() {
       return;
     }
 
+    if (
+      selectedEntry.status === "pending" ||
+      selectedEntry.status === "converting"
+    ) {
+      setDesktopNotice({
+        kind: "info",
+        message: "Finishing conversion. Try saving again in a moment.",
+      });
+      return;
+    }
+
+    if (selectedEntry.status === "error") {
+      setDesktopNotice({
+        kind: "error",
+        message: CONVERSION_FAILED_SAVE_MESSAGE,
+      });
+      return;
+    }
+
     if (!selectedEntry.desktopFile) {
+      void handleSaveAs();
+      return;
+    }
+
+    if (selectedEntry.desktopFile.path.toLowerCase().endsWith(".markdown")) {
       void handleSaveAs();
       return;
     }
@@ -686,6 +794,17 @@ export default function App() {
     try {
       const result = await shell.openFile({ path: pendingConflict.path });
       if (result.ok) {
+        if (result.kind !== "markdown") {
+          console.error("conflict-reload received non-markdown kind");
+          setPendingConflict(null);
+          saveState.markError();
+          setDesktopNotice({
+            kind: "error",
+            message: "Reload failed: file is no longer a Markdown target.",
+          });
+          return;
+        }
+
         replaceEntryWithOpenedFile(entry.id, result);
         saveState.markSaved();
         clearDesktopProblem();

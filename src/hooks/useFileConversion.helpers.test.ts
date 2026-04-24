@@ -6,6 +6,7 @@ import {
 import type { FileEntry } from "../types";
 import {
   applyConversionResult,
+  createImportedEntry,
   createEntryId,
   createPendingEntries,
   createPendingEntry,
@@ -75,6 +76,27 @@ describe("useFileConversion helpers", () => {
       warnings: [],
       selected: true,
       isScratch: true,
+    });
+  });
+
+  it("creates imported entries with a markdown save suggestion and source metadata", () => {
+    expect(
+      createImportedEntry(createFile("meeting-notes.txt"), {
+        path: "/Users/me/meeting-notes.txt",
+        format: "txt",
+        mtimeMs: 42,
+      }),
+    ).toMatchObject({
+      file: expect.objectContaining({ name: "meeting-notes.txt" }),
+      name: "meeting-notes.md",
+      format: "md",
+      status: "pending",
+      selected: true,
+      sourceMeta: {
+        path: "/Users/me/meeting-notes.txt",
+        format: "txt",
+        mtimeMs: 42,
+      },
     });
   });
 

@@ -22,8 +22,8 @@ Build a Mac-native DMG app using Swift + `WKWebView` + Sparkle. The existing hos
 | 1. Mac Shell Scaffold | done | PR #77 | Add `apps/macos/`, Xcode shell, desktop web bundle path, Debug/Release loading. | Phase 2 |
 | 2. Bridge and React Desktop Mode | done | PR #78 (`mac-phase2-bridge_2026-04-21__0712`) | Add bridge types, mock shell, native menu events, desktop save-state plumbing. | Phase 3 |
 | 2.5. Developer Mac Build Helper | done | PR #79 (`mac-build-smoke_2026-04-21__2246`) | One-command local `.app` build with a fixed output path and a README pointer so manual testing is predictable. | Smooths Phase 3+ manual smoke |
-| 3. Markdown File Persistence | planned | TBD | Implement open/save/save-as for Markdown with atomic replace, mtime conflicts, line endings, Finder reveal. | Phase 4 |
-| 4. Converted Document and Asset Persistence | planned | TBD | Save converted output with `name.assets/` folder semantics and session-owned asset rewrites. | Phase 5 |
+| 3. Markdown File Persistence | done | PR #80 (`mac-file-persistence_2026-04-22__2017`) | Implement open/save/save-as for Markdown with atomic replace, mtime conflicts, line endings, Finder reveal, and rendered-UI launch smoke. | Phase 4 |
+| 4. Converted Document Import and Markdown Persistence | done | This quest | Import any supported non-`.md` source document through the existing converters, first-save to `.md`, keep later saves anchored to the chosen Markdown file, and handle large native-open payloads robustly. | Phase 5 |
 | 5. Distribution and Updates | planned | TBD | Add Sparkle, DMG install, ZIP updates, signing/notarization docs, macOS CI build + sign + notarize workflow, and release scripts. | MVP ship |
 
 ## Phase 0: Design And Roadmap
@@ -138,16 +138,21 @@ Goal:
 
 Implement safe local persistence for Markdown files.
 
+Status note:
+
+- Completed in PR #80.
+- Phase 3 intentionally stopped at Markdown/text persistence. Recent files, persisted security-scoped bookmarks, autosave, converted-document asset persistence, and release/distribution work remain outside this phase.
+- Phase 4 reclassifies all supported non-`.md` formats, including `.txt`, as import-only source documents for a consistent user model.
+
 Expected changes:
 
-- Implement `openFile()` for `.md` files.
+- Implement `openFile()` for `.md`, `.markdown`, and `.txt` files.
 - Implement `saveFile()` and `saveFileAs()` for Markdown.
 - Use `FileManager.replaceItem(at:withItemAt:backupItemName:options:resultingItemURL:)` for final replacement.
 - Track `mtimeMs` and reject saves on conflict.
 - Preserve line endings by sampling the first 4 KB.
-- Add optional backup setting plumbing, default off.
 - Implement `revealInFinder()`.
-- Rendered-UI launch signal (tracks PR #79 review feedback): replace the Phase 2.5 smoke's reliance on `load succeeded` (fired from `WKWebView.didFinish`) with a stronger `app ready` signal. Add a `data-app-ready` marker on the React toolbar root after mount; after `didFinish`, the Swift side runs a bounded `evaluateJavaScript` probe (up to 3 attempts at 500 ms) and emits `logger.notice("app ready: true")` on success or `logger.error("app ready: false: <reason>")` on timeout. Update `scripts/verify-mac-release-launch.sh` to require `app ready: true`, downgrading `load succeeded` to a weaker precondition. No AppleScript / System Events, no new permissions. Closes the "React crashes after navigation finished" gap raised in the PR #79 top-level comment.
+- Rendered-UI launch signal (tracks PR #79 review feedback): replace the Phase 2.5 smoke's reliance on `load succeeded` (fired from `WKWebView.didFinish`) with a stronger `app ready` signal. Add a `data-app-ready` marker on the React toolbar root after mount; after `didFinish`, the Swift side runs a bounded `evaluateJavaScript` probe and emits `logger.notice("app ready: true")` on success or `logger.error("app ready: false: <reason>")` on timeout. Update `scripts/verify-mac-release-launch.sh` to require `app ready: true`, downgrading `load succeeded` to a weaker precondition. No AppleScript / System Events, no new permissions. Closes the "React crashes after navigation finished" gap raised in the PR #79 top-level comment.
 
 Acceptance criteria:
 
@@ -159,37 +164,42 @@ Acceptance criteria:
 
 Validation:
 
-- Swift unit tests for `FileStore`: atomic replace, mtime conflict, CRLF/LF detection, backup toggle, cancel/error mapping.
+- Swift unit tests for `FileStore`: atomic replace, mtime conflict, CRLF/LF detection, and cancel/error/permission mapping.
 - React tests for save-state transitions.
 - Manual open/edit/save, Save As, external conflict, and Finder reveal checks.
 
-## Phase 4: Converted Document And Asset Persistence
+## Phase 4: Converted Document Import And Markdown Persistence
 
 Goal:
 
-Persist converted document output, including asset folders when converters emit assets.
+Persist converted document output as Markdown while treating every supported non-`.md` format as an import-only source document.
+
+Status note:
+
+- Completed in this quest.
+- Phase 4 ships robust native-open transport for non-`.md` files, first-save-to-Markdown behavior for every supported import format including `.txt`, and the same embedded-asset dropping behavior as the hosted web app.
 
 Expected changes:
 
-- Route supported source documents through existing webview converters after native open.
-- Save converted output only via explicit Save As on first save.
-- Write `name.md` plus sibling `name.assets/` for asset-bearing conversions.
-- Track asset folders created in the current session.
-- Rewrite the entire owned asset folder on subsequent saves from the same session.
-- Return conflicts for pre-existing asset folders not owned by the session.
-- Use chunked bridge or `WKURLSchemeHandler` for payloads above 4 MB if needed.
+- Route every supported non-`.md` source document through the existing webview converters after native open.
+- Treat `.txt`, `.csv`, `.json`, `.tsv`, `.html`, `.docx`, `.xlsx`, `.pdf`, and `.pptx` the same from the user's perspective: they import into editable Markdown, but they are not saved back to their original source path.
+- Save converted output only via explicit Save As on first save, always targeting `.md`.
+- Limit direct in-place Save to existing `.md` files.
+- Use a robust native-to-web payload handoff for non-`.md` opens so large files do not rely on oversized bridge JSON payloads.
+- Keep embedded images and other assets consistent with the hosted web product: drop them rather than writing `name.assets/` folders.
 
 Acceptance criteria:
 
-- User opens a supported source document, reviews/edits Markdown, and saves via Save As.
-- Asset-bearing output uses relative links into `name.assets/`.
-- Re-saving an owned asset folder is deterministic.
-- Existing unowned asset folders are not silently merged or overwritten.
+- User opens any supported non-`.md` source document, reviews/edits the resulting Markdown, and saves via Save As to a `.md` target.
+- After that first Save As, further saves update the chosen `.md` file with the existing conflict detection behavior.
+- No supported non-`.md` source document is overwritten in place.
+- Large native-open source files do not fail because of bridge-payload size limits.
+- Embedded images and other source-document assets are dropped consistently with the hosted web behavior.
 
 Validation:
 
-- Unit tests for asset folder naming, conflict detection, owned-folder rewrite, and relative link generation.
-- Manual conversion/save for at least one text-only source and one asset-bearing fixture.
+- Unit tests for native-open import results, direct-save-vs-import-save-as behavior, and large-payload transport.
+- Manual conversion/save for at least one text-like source (`.txt`, `.csv`, or `.html`) and one binary source (`.docx`, `.pdf`, `.xlsx`, or `.pptx`).
 - Regression check that hosted browser download flow still works.
 
 ## Phase 5: Distribution And Updates
@@ -275,7 +285,8 @@ MVP is ready when:
 - Hosted browser behavior is unchanged.
 - `doc2md.app` can open, edit, save, Save As, reveal in Finder, and handle conflicts.
 - Converted document Save As works for supported source formats.
-- Asset folder semantics are implemented or explicitly deferred from the shipped converter behavior.
+- Non-`.md` source formats import into Markdown, first-save to `.md`, and are never overwritten in place.
+- Desktop conversion output matches hosted web behavior for embedded assets: they are dropped unless the shared converter behavior changes in a later phase.
 - App can be signed, notarized, packaged as DMG, and updated through Sparkle ZIP updates.
 - The release CI workflow builds, signs, notarizes, and publishes without exposing Apple or Sparkle secrets to PRs, forks, or logs.
 
