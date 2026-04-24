@@ -6,6 +6,7 @@ For the other perspective, see [Jean-Claude's Journal](../journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 026 | [Requiem: Mac Phase 4 — Converted Document Import and Markdown Persistence](026-requiem-phase-4-converted-docs-persistent-assets.md) | Burying the counterfeit-markdown contract, the base64 bridge procession, the second extension list, and the anonymous oversized-import notice |
 | 025 | [Requiem: Mac File Persistence](025-requiem-mac-file-persistence.md) | Burying the Phase 2 bridge stubs, silent filesystem failures, and a smoke signal that trusted load before render |
 | 024 | [Requiem: Mac Build Helper and Release-Launch Smoke](024-requiem-mac-build-smoke.md) | Burying the eyeballed "window appeared" smoke, replacing it with one that reads the title bar and refuses to bless [ERR] |
 | 023 | [Requiem: Mac Phase 2 Bridge](023-requiem-mac-phase2-bridge.md) | Freezing the native bridge contract before real filesystem access could start lying |
