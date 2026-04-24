@@ -1,0 +1,84 @@
+src/App.tsx
+  46821cde81744b4f 33-34,622-628,701-719,725
+  0926f45fb1250b29 139-142,158-176,235,449-471
+docs/implementation/local-editor-install-exploration.md
+  d6acb5a0be1369bf 137-140,145
+ideas/mac-desktop-app-roadmap.md
+  d6acb5a0be1369bf 26,141-146,149,155,167,171,175-180
+docs/quest-journal/README.md
+  1bf6a84a91834774 5
+docs/journal/027-phase-4-converted-docs-persistent-assets.md
+  1bf6a84a91834774 1-67
+src/__tests__/App.desktop.test.tsx
+  46821cde81744b4f 12-18,31-65,69,133,169-210,416-471
+  0926f45fb1250b29 255-291
+docs/journal/README.md
+  1bf6a84a91834774 9
+docs/quest-journal/phase-4-converted-docs-persistent-assets_2026-04-23.md
+  1bf6a84a91834774 1-107
+docs/diary/2026-04-23.md
+  1bf6a84a91834774 1-57
+apps/macos/doc2md/AppScheme.swift
+  46821cde81744b4f 106-175,182,186,189,191-192,200-203,205-206,208-211,215-226,234,240-241,243,248-276
+apps/macos/doc2mdTests/AppSchemeImportRouteTests.swift
+  46821cde81744b4f 41-217
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "9ab532370ef514d14f7074c1f1997cb812e05961",
+  "prompts": {
+    "0926f45fb1250b29": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019dbff5-6671-7a40-a2a5-1d51c26c8238",
+        "model": "gpt-5.4"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 62,
+      "total_deletions": 4,
+      "accepted_lines": 62,
+      "overriden_lines": 0
+    },
+    "1bf6a84a91834774": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "721c36fc-70e2-47ad-84bf-caccf6c6dae1",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 233,
+      "total_deletions": 0,
+      "accepted_lines": 233,
+      "overriden_lines": 0
+    },
+    "46821cde81744b4f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019dbfdc-2035-71f1-8210-c3e64af99e2b",
+        "model": "gpt-5.4"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 225,
+      "total_deletions": 7,
+      "accepted_lines": 221,
+      "overriden_lines": 0
+    },
+    "d6acb5a0be1369bf": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019dbe27-8670-7501-980f-d7036ee5ab69",
+        "model": "gpt-5.4"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 5,
+      "total_deletions": 5,
+      "accepted_lines": 5,
+      "overriden_lines": 0
+    }
+  }
+}
