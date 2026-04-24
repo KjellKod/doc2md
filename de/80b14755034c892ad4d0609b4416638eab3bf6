@@ -1,0 +1,37 @@
+src/desktop/__tests__/macBuildAllowlist.test.ts
+  a37a2a22bfbccb29 78-83
+apps/macos/doc2md/FileStore.swift
+  a37a2a22bfbccb29 71-72,140-147,150,155
+apps/macos/doc2mdTests/FileStoreTests.swift
+  a37a2a22bfbccb29 127-141,163-174
+src/hooks/useFileConversion.ts
+  a37a2a22bfbccb29 2,22-25,162-166
+apps/macos/doc2md/WebShellView.swift
+  a37a2a22bfbccb29 133-137,186-189,193,204-205,209
+apps/macos/doc2md/ShellBridge.swift
+  a37a2a22bfbccb29 134-145,149
+src/__tests__/App.desktop.test.tsx
+  a37a2a22bfbccb29 186-223
+scripts/build-mac-app.sh
+  a37a2a22bfbccb29 30-51,150,158
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "de80b14755034c892ad4d0609b4416638eab3bf6",
+  "prompts": {
+    "a37a2a22bfbccb29": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019db7d6-a868-7bf0-b09f-6acb5427c30f",
+        "model": "gpt-5.4"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 158,
+      "total_deletions": 22,
+      "accepted_lines": 430,
+      "overriden_lines": 0
+    }
+  }
+}
