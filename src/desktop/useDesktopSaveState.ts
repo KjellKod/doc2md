@@ -15,6 +15,7 @@ export function useDesktopSaveState(isDesktop: boolean): {
   markConflict: () => void;
   markError: () => void;
   markPermissionNeeded: () => void;
+  restore: (state: DesktopSaveState) => void;
   reset: () => void;
 } {
   const [state, setState] = useState<DesktopSaveState>(initialSaveState);
@@ -39,6 +40,13 @@ export function useDesktopSaveState(isDesktop: boolean): {
     markConflict: () => dispatch("conflict"),
     markError: () => dispatch("error"),
     markPermissionNeeded: () => dispatch("permission-needed"),
+    restore: (nextState) => {
+      if (!isDesktop) {
+        return;
+      }
+
+      setState(nextState);
+    },
     reset: () => dispatch("reset"),
   };
 }

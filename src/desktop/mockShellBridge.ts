@@ -2,7 +2,7 @@ import { vi } from "vitest";
 import type {
   Doc2mdShell,
   ShellFile,
-  ShellOk,
+  ShellSaveOk,
   ShellRevealOk,
 } from "../types/doc2mdShell";
 
@@ -13,13 +13,12 @@ export type MockShellOverrides = Partial<Omit<Doc2mdShell, "version">> & {
 const DEFAULT_FILE: ShellFile = {
   ok: true,
   path: "/mock/Untitled.md",
-  name: "Untitled.md",
-  bytesBase64: "IyBNb2NrIGRvY3VtZW50Cg==",
+  content: "# Mock document\n",
   mtimeMs: 1,
   lineEnding: "lf",
 };
 
-const DEFAULT_SAVE: ShellOk = {
+const DEFAULT_SAVE: ShellSaveOk = {
   ok: true,
   path: "/mock/Untitled.md",
   mtimeMs: 2,

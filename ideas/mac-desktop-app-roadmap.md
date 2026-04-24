@@ -21,7 +21,7 @@ Build a Mac-native DMG app using Swift + `WKWebView` + Sparkle. The existing hos
 | 0. Design and Roadmap | active | Current docs | Freeze product direction and PR sequence. | Phase 1 |
 | 1. Mac Shell Scaffold | done | PR #77 | Add `apps/macos/`, Xcode shell, desktop web bundle path, Debug/Release loading. | Phase 2 |
 | 2. Bridge and React Desktop Mode | done | PR #78 (`mac-phase2-bridge_2026-04-21__0712`) | Add bridge types, mock shell, native menu events, desktop save-state plumbing. | Phase 3 |
-| 2.5. Developer Mac Build Helper | active | `mac-build-smoke_2026-04-21__2246` | One-command local `.app` build with a fixed output path and a README pointer so manual testing is predictable. | Smooths Phase 3+ manual smoke |
+| 2.5. Developer Mac Build Helper | done | PR #79 (`mac-build-smoke_2026-04-21__2246`) | One-command local `.app` build with a fixed output path and a README pointer so manual testing is predictable. | Smooths Phase 3+ manual smoke |
 | 3. Markdown File Persistence | planned | TBD | Implement open/save/save-as for Markdown with atomic replace, mtime conflicts, line endings, Finder reveal. | Phase 4 |
 | 4. Converted Document and Asset Persistence | planned | TBD | Save converted output with `name.assets/` folder semantics and session-owned asset rewrites. | Phase 5 |
 | 5. Distribution and Updates | planned | TBD | Add Sparkle, DMG install, ZIP updates, signing/notarization docs, macOS CI build + sign + notarize workflow, and release scripts. | MVP ship |
@@ -147,6 +147,7 @@ Expected changes:
 - Preserve line endings by sampling the first 4 KB.
 - Add optional backup setting plumbing, default off.
 - Implement `revealInFinder()`.
+- Rendered-UI launch signal (tracks PR #79 review feedback): replace the Phase 2.5 smoke's reliance on `load succeeded` (fired from `WKWebView.didFinish`) with a stronger `app ready` signal. Add a `data-app-ready` marker on the React toolbar root after mount; after `didFinish`, the Swift side runs a bounded `evaluateJavaScript` probe (up to 3 attempts at 500 ms) and emits `logger.notice("app ready: true")` on success or `logger.error("app ready: false: <reason>")` on timeout. Update `scripts/verify-mac-release-launch.sh` to require `app ready: true`, downgrading `load succeeded` to a weaker precondition. No AppleScript / System Events, no new permissions. Closes the "React crashes after navigation finished" gap raised in the PR #79 top-level comment.
 
 Acceptance criteria:
 

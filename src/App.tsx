@@ -9,11 +9,17 @@ import PreviewPanel from "./components/PreviewPanel";
 import ThemeProvider from "./components/ThemeProvider";
 import ThemeToggle from "./components/ThemeToggle";
 import { useDesktopCapability } from "./desktop/useDesktopCapability";
+import type { DesktopSaveState } from "./desktop/saveState";
 import { useDesktopSaveState } from "./desktop/useDesktopSaveState";
 import { useNativeMenuEvents } from "./desktop/useNativeMenuEvents";
 import { useFileConversion } from "./hooks/useFileConversion";
 import type { FileEntry } from "./types";
-import type { Doc2mdShell, ShellOk, ShellResult } from "./types/doc2mdShell";
+import type {
+  ShellConflict,
+  ShellError,
+  ShellLineEnding,
+  ShellPermissionNeeded,
+} from "./types/doc2mdShell";
 import { entryDisplayName } from "./utils/displayName";
 import { downloadAllEntries, isDownloadableEntry } from "./utils/download";
 
@@ -109,138 +115,60 @@ function suggestedNameForEntry(entry: FileEntry | null) {
   return entry?.name || "Untitled.md";
 }
 
-function encodeBase64Utf8(text: string) {
-  const bytes = new TextEncoder().encode(text);
-  let binary = "";
-
-  for (const byte of bytes) {
-    binary += String.fromCharCode(byte);
-  }
-
-  return btoa(binary);
+function basenameForPath(path: string) {
+  return path.split(/[\\/]/).filter(Boolean).pop() || path || "Untitled.md";
 }
 
-function applySaveResult(
-  result: ShellResult<ShellOk>,
-  actions: {
-    markSaved: () => void;
-    markCancelled: () => void;
-    markConflict: () => void;
-    markError: () => void;
-    markPermissionNeeded: () => void;
-  },
-) {
-  if (result.ok) {
-    actions.markSaved();
-    return;
-  }
+function lineEndingForEntry(entry: FileEntry | null): ShellLineEnding {
+  return entry?.desktopFile?.lineEnding ?? "lf";
+}
 
-  if (result.code === "conflict") {
-    actions.markConflict();
-    return;
-  }
+type DesktopNotice =
+  | { kind: "none" }
+  | { kind: "info"; message: string }
+  | { kind: "permission-needed"; message: string; path?: string }
+  | { kind: "error"; message: string };
 
-  if (result.code === "cancelled") {
-    actions.markCancelled();
-    return;
-  }
+type PendingConflict = ShellConflict & {
+  entryId: string;
+  lineEnding: ShellLineEnding;
+};
 
-  if (result.code === "permission-needed") {
-    actions.markPermissionNeeded();
-    return;
-  }
+function noticeFromPermission(result: ShellPermissionNeeded): DesktopNotice {
+  return {
+    kind: "permission-needed",
+    path: result.path,
+    message: result.message,
+  };
+}
 
-  actions.markError();
+function noticeFromError(result: ShellError): DesktopNotice {
+  return {
+    kind: "error",
+    message: result.message,
+  };
 }
 
 function DesktopMenuBridge({
-  addScratchEntry,
-  selectedEntry,
+  isDesktop,
+  handlers,
 }: {
-  addScratchEntry: () => void;
-  selectedEntry: FileEntry | null;
+  isDesktop: boolean;
+  handlers: Parameters<typeof useNativeMenuEvents>[0];
 }) {
-  const { isDesktop, shell } = useDesktopCapability();
-
-  if (!isDesktop || !shell) {
+  if (!isDesktop) {
     return null;
   }
 
-  return (
-    <DesktopMenuEventBridge
-      addScratchEntry={addScratchEntry}
-      selectedEntry={selectedEntry}
-      shell={shell}
-    />
-  );
+  return <DesktopMenuEventBridge handlers={handlers} />;
 }
 
 function DesktopMenuEventBridge({
-  addScratchEntry,
-  selectedEntry,
-  shell,
+  handlers,
 }: {
-  addScratchEntry: () => void;
-  selectedEntry: FileEntry | null;
-  shell: Doc2mdShell;
+  handlers: Parameters<typeof useNativeMenuEvents>[0];
 }) {
-  const saveState = useDesktopSaveState(true);
-
-  const handleOpen = useCallback(() => {
-    void (async () => {
-      try {
-        await shell.openFile();
-      } catch (error) {
-        console.error("doc2md desktop openFile transport failure", error);
-      }
-    })();
-  }, [shell]);
-
-  const handleSave = useCallback(() => {
-    saveState.markSaving();
-
-    void (async () => {
-      try {
-        const result = await shell.saveFile({
-          path: suggestedNameForEntry(selectedEntry),
-          bytesBase64: encodeBase64Utf8(markdownForEntry(selectedEntry)),
-          expectedMtimeMs: 0,
-        });
-        applySaveResult(result, saveState);
-      } catch (error) {
-        saveState.markError();
-        console.error("doc2md desktop saveFile transport failure", error);
-      }
-    })();
-  }, [saveState, selectedEntry, shell]);
-
-  const handleSaveAs = useCallback(() => {
-    saveState.markSaving();
-
-    void (async () => {
-      try {
-        const result = await shell.saveFileAs({
-          suggestedName: suggestedNameForEntry(selectedEntry),
-          bytesBase64: encodeBase64Utf8(markdownForEntry(selectedEntry)),
-        });
-        applySaveResult(result, saveState);
-      } catch (error) {
-        saveState.markError();
-        console.error("doc2md desktop saveFileAs transport failure", error);
-      }
-    })();
-  }, [saveState, selectedEntry, shell]);
-
-  useNativeMenuEvents({
-    onNew: () => {
-      addScratchEntry();
-      saveState.markEdited();
-    },
-    onOpen: handleOpen,
-    onSave: handleSave,
-    onSaveAs: handleSaveAs,
-    onCloseWindow: saveState.reset,
-  });
+  useNativeMenuEvents(handlers);
 
   return <span data-testid="desktop-menu-bridge" hidden />;
 }
@@ -278,11 +206,23 @@ export default function App() {
     addFiles,
     addUrl,
     addScratchEntry,
+    addOpenedFileEntry,
     clearEntries,
+    replaceEntryWithOpenedFile,
     selectEntry,
     selectedEntry,
+    updateEntryDesktopFile,
     updateMarkdown,
   } = useFileConversion();
+  const { isDesktop, shell } = useDesktopCapability();
+  const saveState = useDesktopSaveState(isDesktop);
+  const saveInFlightRef = useRef(false);
+  const [desktopNotice, setDesktopNotice] = useState<DesktopNotice>({
+    kind: "none",
+  });
+  const [pendingConflict, setPendingConflict] = useState<PendingConflict | null>(
+    null,
+  );
   let convertedCount = 0;
   let draftCount = 0;
   let activeCount = 0;
@@ -452,12 +392,388 @@ export default function App() {
     await addUrl(url);
   }
 
+  const selectedPath = selectedEntry?.desktopFile?.path;
+  const desktopTitle = selectedPath
+    ? basenameForPath(selectedPath)
+    : suggestedNameForEntry(selectedEntry);
+  const saveStateLabels = {
+    saved: "Saved",
+    edited: "Edited",
+    saving: "Saving",
+    conflict: "Conflict",
+    error: "Error",
+    "permission-needed": "Permission needed",
+  } as const;
+  const saveStateLabel = saveStateLabels[saveState.state];
+  const appReady = isDesktop && Boolean(desktopTitle) && Boolean(saveStateLabel);
+
+  const clearDesktopProblem = useCallback(() => {
+    setPendingConflict(null);
+    setDesktopNotice({ kind: "none" });
+  }, []);
+
+  const handleOpenFile = useCallback(async () => {
+    if (!shell) {
+      return;
+    }
+
+    try {
+      const result = await shell.openFile();
+      if (result.ok) {
+        addOpenedFileEntry(result);
+        saveState.markSaved();
+        clearDesktopProblem();
+        return;
+      }
+
+      if (result.code === "cancelled") {
+        return;
+      }
+
+      if (result.code === "permission-needed") {
+        saveState.markPermissionNeeded();
+        setDesktopNotice(noticeFromPermission(result));
+        return;
+      }
+
+      if (result.code === "error") {
+        saveState.markError();
+        setDesktopNotice(noticeFromError(result));
+      }
+    } catch (error) {
+      saveState.markError();
+      setDesktopNotice({
+        kind: "error",
+        message: "Open failed before the app received a native result.",
+      });
+      console.error("doc2md desktop openFile transport failure", error);
+    }
+  }, [addOpenedFileEntry, clearDesktopProblem, saveState, shell]);
+
+  const restoreCancelledSaveState = useCallback(
+    (previousState: DesktopSaveState) => {
+      saveState.restore(previousState);
+    },
+    [saveState],
+  );
+
+  const saveEntryFile = useCallback(
+    async (entry: FileEntry, expectedMtimeMs?: number) => {
+      if (!shell || saveInFlightRef.current) {
+        return;
+      }
+
+      const desktopFile = entry.desktopFile;
+      if (!desktopFile) {
+        return;
+      }
+
+      const previousState = saveState.state;
+      saveInFlightRef.current = true;
+      saveState.markSaving();
+
+      try {
+        const result = await shell.saveFile({
+          path: desktopFile.path,
+          content: markdownForEntry(entry),
+          expectedMtimeMs: expectedMtimeMs ?? desktopFile.mtimeMs,
+          lineEnding: lineEndingForEntry(entry),
+        });
+
+        if (result.ok) {
+          updateEntryDesktopFile(entry.id, {
+            path: result.path,
+            mtimeMs: result.mtimeMs,
+            lineEnding: lineEndingForEntry(entry),
+          });
+          saveState.markSaved();
+          clearDesktopProblem();
+          return;
+        }
+
+        if (result.code === "conflict") {
+          setPendingConflict({
+            ...result,
+            entryId: entry.id,
+            lineEnding: lineEndingForEntry(entry),
+          });
+          saveState.markConflict();
+          setDesktopNotice({ kind: "none" });
+          return;
+        }
+
+        if (result.code === "cancelled") {
+          restoreCancelledSaveState(previousState);
+          return;
+        }
+
+        if (result.code === "permission-needed") {
+          saveState.markPermissionNeeded();
+          setDesktopNotice(noticeFromPermission(result));
+          return;
+        }
+
+        saveState.markError();
+        setDesktopNotice(noticeFromError(result));
+      } catch (error) {
+        saveState.markError();
+        setDesktopNotice({
+          kind: "error",
+          message: "Save failed before the app received a native result.",
+        });
+        console.error("doc2md desktop saveFile transport failure", error);
+      } finally {
+        saveInFlightRef.current = false;
+      }
+    },
+    [
+      clearDesktopProblem,
+      restoreCancelledSaveState,
+      saveState,
+      shell,
+      updateEntryDesktopFile,
+    ],
+  );
+
+  const handleSaveAs = useCallback(async () => {
+    if (!shell || !selectedEntry || saveInFlightRef.current) {
+      return;
+    }
+
+    const previousState = saveState.state;
+    const entry = selectedEntry;
+    saveInFlightRef.current = true;
+    saveState.markSaving();
+
+    try {
+      const result = await shell.saveFileAs({
+        suggestedName: suggestedNameForEntry(entry),
+        content: markdownForEntry(entry),
+        lineEnding: lineEndingForEntry(entry),
+      });
+
+      if (result.ok) {
+        updateEntryDesktopFile(entry.id, {
+          path: result.path,
+          mtimeMs: result.mtimeMs,
+          lineEnding: lineEndingForEntry(entry),
+        });
+        saveState.markSaved();
+        clearDesktopProblem();
+        return;
+      }
+
+      if (result.code === "cancelled") {
+        restoreCancelledSaveState(previousState);
+        return;
+      }
+
+      if (result.code === "conflict") {
+        setPendingConflict({
+          ...result,
+          entryId: entry.id,
+          lineEnding: lineEndingForEntry(entry),
+        });
+        saveState.markConflict();
+        return;
+      }
+
+      if (result.code === "permission-needed") {
+        saveState.markPermissionNeeded();
+        setDesktopNotice(noticeFromPermission(result));
+        return;
+      }
+
+      saveState.markError();
+      setDesktopNotice(noticeFromError(result));
+    } catch (error) {
+      saveState.markError();
+      setDesktopNotice({
+        kind: "error",
+        message: "Save As failed before the app received a native result.",
+      });
+      console.error("doc2md desktop saveFileAs transport failure", error);
+    } finally {
+      saveInFlightRef.current = false;
+    }
+  }, [
+    clearDesktopProblem,
+    restoreCancelledSaveState,
+    saveState,
+    selectedEntry,
+    shell,
+    updateEntryDesktopFile,
+  ]);
+
+  const handleSave = useCallback(() => {
+    if (!selectedEntry) {
+      setDesktopNotice({
+        kind: "info",
+        message: "Select a document before saving.",
+      });
+      return;
+    }
+
+    if (!selectedEntry.desktopFile) {
+      void handleSaveAs();
+      return;
+    }
+
+    void saveEntryFile(selectedEntry);
+  }, [handleSaveAs, saveEntryFile, selectedEntry]);
+
+  const handleRevealInFinder = useCallback(async () => {
+    if (!shell || !selectedPath) {
+      setDesktopNotice({
+        kind: "info",
+        message: "Save the document before revealing it in Finder.",
+      });
+      return;
+    }
+
+    try {
+      const result = await shell.revealInFinder({ path: selectedPath });
+      if (result.ok) {
+        setDesktopNotice({
+          kind: "info",
+          message: `Revealed ${basenameForPath(result.path)} in Finder.`,
+        });
+        return;
+      }
+
+      if (result.code === "cancelled") {
+        return;
+      }
+
+      if (result.code === "permission-needed") {
+        saveState.markPermissionNeeded();
+        setDesktopNotice(noticeFromPermission(result));
+        return;
+      }
+
+      if (result.code === "error") {
+        saveState.markError();
+        setDesktopNotice(noticeFromError(result));
+      }
+    } catch (error) {
+      saveState.markError();
+      setDesktopNotice({
+        kind: "error",
+        message: "Reveal failed before the app received a native result.",
+      });
+      console.error("doc2md desktop revealInFinder transport failure", error);
+    }
+  }, [saveState, selectedPath, shell]);
+
+  const handleReloadConflict = useCallback(async () => {
+    if (!shell || !pendingConflict) {
+      return;
+    }
+
+    const entry = entries.find((candidate) => candidate.id === pendingConflict.entryId);
+    if (!entry) {
+      saveState.markError();
+      setDesktopNotice({
+        kind: "error",
+        message: "The conflicted document is no longer available.",
+      });
+      setPendingConflict(null);
+      return;
+    }
+
+    selectEntry(entry.id);
+
+    try {
+      const result = await shell.openFile({ path: pendingConflict.path });
+      if (result.ok) {
+        replaceEntryWithOpenedFile(entry.id, result);
+        saveState.markSaved();
+        clearDesktopProblem();
+        return;
+      }
+
+      if (result.code === "cancelled") {
+        return;
+      }
+
+      if (result.code === "permission-needed") {
+        saveState.markPermissionNeeded();
+        setDesktopNotice(noticeFromPermission(result));
+        return;
+      }
+
+      if (result.code === "error") {
+        saveState.markError();
+        setDesktopNotice(noticeFromError(result));
+      }
+    } catch (error) {
+      saveState.markError();
+      setDesktopNotice({
+        kind: "error",
+        message: "Reload failed before the app received a native result.",
+      });
+      console.error("doc2md desktop reload transport failure", error);
+    }
+  }, [
+    clearDesktopProblem,
+    entries,
+    pendingConflict,
+    replaceEntryWithOpenedFile,
+    saveState,
+    selectEntry,
+    shell,
+  ]);
+
+  const handleOverwriteConflict = useCallback(() => {
+    if (!pendingConflict) {
+      return;
+    }
+
+    const entry = entries.find((candidate) => candidate.id === pendingConflict.entryId);
+    if (!entry) {
+      saveState.markError();
+      setDesktopNotice({
+        kind: "error",
+        message: "The conflicted document is no longer available.",
+      });
+      setPendingConflict(null);
+      return;
+    }
+
+    selectEntry(entry.id);
+    void saveEntryFile(entry, pendingConflict.actualMtimeMs);
+  }, [entries, pendingConflict, saveEntryFile, saveState, selectEntry]);
+
+  const handleCancelConflict = useCallback(() => {
+    setPendingConflict(null);
+    saveState.markCancelled();
+  }, [saveState]);
+
+  const nativeMenuHandlers = {
+    onNew: () => {
+      addScratchEntry();
+      saveState.markEdited();
+      clearDesktopProblem();
+    },
+    onOpen: () => {
+      void handleOpenFile();
+    },
+    onSave: handleSave,
+    onSaveAs: () => {
+      void handleSaveAs();
+    },
+    onRevealInFinder: () => {
+      void handleRevealInFinder();
+    },
+    onCloseWindow: saveState.reset,
+  };
+
   return (
     <ThemeProvider>
       <div className="app-shell">
         <DesktopMenuBridge
-          addScratchEntry={addScratchEntry}
-          selectedEntry={selectedEntry}
+          isDesktop={isDesktop}
+          handlers={nativeMenuHandlers}
         />
         <main
           className={`page-frame${isPageResizing ? " is-page-resizing" : ""}`}
@@ -532,6 +848,67 @@ export default function App() {
               aria-labelledby="view-tab-convert"
               hidden={activePage !== "convert"}
             >
+              {isDesktop ? (
+                <section
+                  className={`desktop-shell-bar desktop-shell-bar-${saveState.state}`}
+                  aria-label="Desktop file status"
+                  data-app-ready={appReady ? "true" : undefined}
+                >
+                  <div className="desktop-shell-main">
+                    <span className="desktop-shell-title" title={desktopTitle}>
+                      {desktopTitle}
+                    </span>
+                    <span className="desktop-save-pill">{saveStateLabel}</span>
+                    <button
+                      type="button"
+                      className="ghost-button desktop-reveal-button"
+                      onClick={() => void handleRevealInFinder()}
+                      disabled={!selectedPath}
+                      aria-label="Reveal in Finder"
+                      title="Reveal in Finder"
+                    >
+                      Reveal
+                    </button>
+                  </div>
+
+                  <div
+                    className="desktop-shell-status"
+                    role={
+                      saveState.state === "conflict" ||
+                      desktopNotice.kind === "permission-needed" ||
+                      desktopNotice.kind === "error"
+                        ? "alert"
+                        : "status"
+                    }
+                  >
+                    {pendingConflict ? (
+                      <div className="desktop-conflict-bar">
+                        <span>File changed on disk.</span>
+                        <button type="button" onClick={handleReloadConflict}>
+                          Reload
+                        </button>
+                        <button type="button" onClick={handleOverwriteConflict}>
+                          Overwrite
+                        </button>
+                        <button type="button" onClick={handleCancelConflict}>
+                          Cancel
+                        </button>
+                      </div>
+                    ) : desktopNotice.kind === "permission-needed" ? (
+                      <span>
+                        Permission needed: {desktopNotice.message}
+                      </span>
+                    ) : desktopNotice.kind === "error" ? (
+                      <span>{desktopNotice.message}</span>
+                    ) : desktopNotice.kind === "info" ? (
+                      <span>{desktopNotice.message}</span>
+                    ) : (
+                      <span>{selectedPath ?? "No saved path yet."}</span>
+                    )}
+                  </div>
+                </section>
+              ) : null}
+
               <section
                 className={`workspace${sidebarCollapsed ? " sidebar-collapsed" : ""}`}
               >
@@ -634,6 +1011,10 @@ export default function App() {
                     onMarkdownChange={(text) => {
                       if (selectedEntry) {
                         updateMarkdown(selectedEntry.id, text);
+                        if (isDesktop) {
+                          saveState.markEdited();
+                          setPendingConflict(null);
+                        }
                       }
                     }}
                   />

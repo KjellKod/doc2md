@@ -13,7 +13,20 @@
 		9A0200000000000000000003 /* ShellBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000004 /* ShellBridge.swift */; };
 		9A0200000000000000000004 /* MenuController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000005 /* MenuController.swift */; };
 		9A0200000000000000000005 /* AppScheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000006 /* AppScheme.swift */; };
+		9A0200000000000000000006 /* FileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000007 /* FileStore.swift */; };
+		9A0200000000000000000007 /* FileStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000009 /* FileStoreTests.swift */; };
+		9A0200000000000000000008 /* FileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000007 /* FileStore.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		9A0400000000000000000000 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9A9999999999999999999999 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9A1111111111111111111111;
+			remoteInfo = doc2md;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		9A0100000000000000000000 /* doc2mdApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = doc2mdApp.swift; sourceTree = "<group>"; };
@@ -23,13 +36,27 @@
 		9A0100000000000000000004 /* ShellBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellBridge.swift; sourceTree = "<group>"; };
 		9A0100000000000000000005 /* MenuController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuController.swift; sourceTree = "<group>"; };
 		9A0100000000000000000006 /* AppScheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppScheme.swift; sourceTree = "<group>"; };
+		9A0100000000000000000007 /* FileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileStore.swift; sourceTree = "<group>"; };
+		9A0100000000000000000008 /* doc2mdTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = doc2mdTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		9A0100000000000000000009 /* FileStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileStoreTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		9A0300000000000000000004 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		9A0000000000000000000000 = {
 			isa = PBXGroup;
 			children = (
 				9A0000000000000000000001 /* doc2md */,
+				9A0000000000000000000004 /* doc2mdTests */,
 				9A0000000000000000000002 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -42,6 +69,7 @@
 				9A0100000000000000000004 /* ShellBridge.swift */,
 				9A0100000000000000000005 /* MenuController.swift */,
 				9A0100000000000000000006 /* AppScheme.swift */,
+				9A0100000000000000000007 /* FileStore.swift */,
 				9A0000000000000000000003 /* Resources */,
 			);
 			path = doc2md;
@@ -51,6 +79,7 @@
 			isa = PBXGroup;
 			children = (
 				9A0100000000000000000003 /* doc2md.app */,
+				9A0100000000000000000008 /* doc2mdTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -61,6 +90,14 @@
 				9A0100000000000000000002 /* Web */,
 			);
 			path = Resources;
+			sourceTree = "<group>";
+		};
+		9A0000000000000000000004 /* doc2mdTests */ = {
+			isa = PBXGroup;
+			children = (
+				9A0100000000000000000009 /* FileStoreTests.swift */,
+			);
+			path = doc2mdTests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -83,6 +120,23 @@
 			productReference = 9A0100000000000000000003 /* doc2md.app */;
 			productType = "com.apple.product-type.application";
 		};
+		9A1111111111111111111112 /* doc2mdTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9A3000000000000000000007 /* Build configuration list for PBXNativeTarget "doc2mdTests" */;
+			buildPhases = (
+				9A0300000000000000000003 /* Sources */,
+				9A0300000000000000000004 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				9A0500000000000000000000 /* PBXTargetDependency */,
+			);
+			name = doc2mdTests;
+			productName = doc2mdTests;
+			productReference = 9A0100000000000000000008 /* doc2mdTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -95,6 +149,10 @@
 				TargetAttributes = {
 					9A1111111111111111111111 = {
 						CreatedOnToolsVersion = 16.0;
+					};
+					9A1111111111111111111112 = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = 9A1111111111111111111111;
 					};
 				};
 			};
@@ -112,6 +170,7 @@
 			projectRoot = "";
 			targets = (
 				9A1111111111111111111111 /* doc2md */,
+				9A1111111111111111111112 /* doc2mdTests */,
 			);
 		};
 /* End PBXProject section */
@@ -159,10 +218,28 @@
 				9A0200000000000000000003 /* ShellBridge.swift in Sources */,
 				9A0200000000000000000004 /* MenuController.swift in Sources */,
 				9A0200000000000000000005 /* AppScheme.swift in Sources */,
+				9A0200000000000000000006 /* FileStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9A0300000000000000000003 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9A0200000000000000000007 /* FileStoreTests.swift in Sources */,
+				9A0200000000000000000008 /* FileStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		9A0500000000000000000000 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 9A1111111111111111111111 /* doc2md */;
+			targetProxy = 9A0400000000000000000000 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		9A3000000000000000000003 /* Debug */ = {
@@ -333,6 +410,58 @@
 			};
 			name = Release;
 		};
+		9A3000000000000000000008 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_STYLE = Manual;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kjellkod.doc2mdTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/doc2md.app/Contents/MacOS/doc2md";
+			};
+			name = Debug;
+		};
+		9A3000000000000000000009 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "";
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_STYLE = Manual;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kjellkod.doc2mdTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/doc2md.app/Contents/MacOS/doc2md";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -350,6 +479,15 @@
 			buildConfigurations = (
 				9A3000000000000000000003 /* Debug */,
 				9A3000000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		9A3000000000000000000007 /* Build configuration list for PBXNativeTarget "doc2mdTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9A3000000000000000000008 /* Debug */,
+				9A3000000000000000000009 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

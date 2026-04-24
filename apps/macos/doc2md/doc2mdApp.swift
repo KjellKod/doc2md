@@ -43,6 +43,13 @@ struct Doc2mdApp: App {
                     shellHost.menuController.saveDocumentAs()
                 }
                 .keyboardShortcut("s", modifiers: [.command, .shift])
+
+                Divider()
+
+                Button("Reveal in Finder") {
+                    shellHost.menuController.revealInFinder()
+                }
+                .keyboardShortcut("r", modifiers: [.command, .shift])
             }
         }
     }

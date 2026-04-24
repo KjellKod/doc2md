@@ -2,6 +2,7 @@ import { getFileExtension } from "../converters";
 import { CORRUPT_FILE_MESSAGE, TIMEOUT_MESSAGE } from "../converters/messages";
 import type { ConversionResult } from "../converters/types";
 import type { FileEntry } from "../types";
+import type { ShellOpenOk } from "../types/doc2mdShell";
 
 export function createEntryId(
   fileName: string,
@@ -51,6 +52,60 @@ export function createScratchEntry(): FileEntry {
     warnings: [],
     selected: true,
     isScratch: true,
+  };
+}
+
+function basename(path: string) {
+  return path.split(/[\\/]/).filter(Boolean).pop() || "Untitled.md";
+}
+
+export function createDesktopMarkdownEntry(
+  openedFile: ShellOpenOk,
+): FileEntry {
+  const name = basename(openedFile.path);
+  const extension = getFileExtension(name) || "md";
+
+  return {
+    id: createEntryId(name, 0),
+    file: new File([openedFile.content], name, { type: "text/markdown" }),
+    name,
+    format: extension,
+    status: "success",
+    markdown: openedFile.content,
+    editedMarkdown: openedFile.content,
+    warnings: [],
+    selected: true,
+    desktopFile: {
+      path: openedFile.path,
+      mtimeMs: openedFile.mtimeMs,
+      lineEnding: openedFile.lineEnding,
+    },
+  };
+}
+
+export function replaceEntryWithDesktopMarkdown(
+  entry: FileEntry,
+  openedFile: ShellOpenOk,
+): FileEntry {
+  const name = basename(openedFile.path);
+  const extension = getFileExtension(name) || "md";
+
+  return {
+    ...entry,
+    file: new File([openedFile.content], name, { type: "text/markdown" }),
+    name,
+    format: extension,
+    status: "success",
+    markdown: openedFile.content,
+    editedMarkdown: openedFile.content,
+    warnings: [],
+    quality: undefined,
+    isScratch: false,
+    desktopFile: {
+      path: openedFile.path,
+      mtimeMs: openedFile.mtimeMs,
+      lineEnding: openedFile.lineEnding,
+    },
   };
 }
 

@@ -1,25 +1,16 @@
-export type Base64Bytes = string;
+export type ShellLineEnding = "lf" | "crlf";
 
-export interface ShellAsset {
-  relativePath: string;
-  bytesBase64: Base64Bytes;
-}
-
-export interface ShellFile {
+export interface ShellOpenOk {
   ok: true;
   path: string;
-  name: string;
-  bytesBase64: Base64Bytes;
   mtimeMs: number;
-  lineEnding: "lf" | "crlf" | "unknown";
+  content: string;
+  lineEnding: ShellLineEnding;
 }
 
-export interface ShellFolder {
-  ok: true;
-  path: string;
-}
+export type ShellFile = ShellOpenOk;
 
-export interface ShellOk {
+export interface ShellSaveOk {
   ok: true;
   path: string;
   mtimeMs: number;
@@ -39,7 +30,7 @@ export interface ShellConflict {
   ok: false;
   code: "conflict";
   path: string;
-  currentMtimeMs: number;
+  actualMtimeMs: number;
 }
 
 export interface ShellPermissionNeeded {
@@ -64,28 +55,30 @@ export type ShellResult<T> =
 
 export interface SaveFileArgs {
   path: string;
-  bytesBase64: Base64Bytes;
+  content: string;
   expectedMtimeMs: number;
-  assets?: ShellAsset[];
-  makeBackup?: boolean;
+  lineEnding: ShellLineEnding;
 }
 
 export interface SaveFileAsArgs {
   suggestedName: string;
-  bytesBase64: Base64Bytes;
-  assets?: ShellAsset[];
-  makeBackup?: boolean;
+  content: string;
+  lineEnding: ShellLineEnding;
 }
 
 export interface RevealInFinderArgs {
   path: string;
 }
 
+export interface OpenFileArgs {
+  path?: string;
+}
+
 export interface Doc2mdShell {
   readonly version: 1;
-  openFile(): Promise<ShellResult<ShellFile>>;
-  saveFile(args: SaveFileArgs): Promise<ShellResult<ShellOk>>;
-  saveFileAs(args: SaveFileAsArgs): Promise<ShellResult<ShellOk>>;
+  openFile(args?: OpenFileArgs): Promise<ShellResult<ShellOpenOk>>;
+  saveFile(args: SaveFileArgs): Promise<ShellResult<ShellSaveOk>>;
+  saveFileAs(args: SaveFileAsArgs): Promise<ShellResult<ShellSaveOk>>;
   revealInFinder(
     args: RevealInFinderArgs,
   ): Promise<ShellResult<ShellRevealOk>>;

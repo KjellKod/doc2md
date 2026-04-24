@@ -1,15 +1,18 @@
 # doc2md Mac Shell
 
-This is the Phase 2 Mac-only shell for `doc2md.app`. It is a minimal Swift + SwiftUI + `WKWebView` app that displays the existing React UI and registers the first JavaScript bridge stubs.
+This is the Phase 3 Mac-only shell for `doc2md.app`. It is a minimal Swift + SwiftUI + `WKWebView` app that displays the existing React UI and provides current-session Markdown file persistence through the JavaScript bridge.
 
-Out of scope for this phase: real open/save/save-as persistence, Sparkle, signing, notarization, recent files, autosave, and asset persistence.
+Out of scope for this phase: persisted security-scoped bookmarks, Sparkle, signing, notarization, recent files, autosave, and asset persistence.
 
-## Phase 2 Capabilities
+## Phase 3 Capabilities
 
 - `window.doc2mdShell.version === 1` is injected into the `WKWebView` at document start.
 - The bridge exposes `openFile`, `saveFile`, `saveFileAs`, and `revealInFinder`.
-- Every bridge method currently resolves to `{ ok: false, code: "error", message: "Not implemented in Phase 2" }`.
-- File menu commands dispatch `doc2md:native-new`, `doc2md:native-open`, `doc2md:native-save`, `doc2md:native-save-as`, and `doc2md:native-close-window` into the webview.
+- Open reads `.md`, `.markdown`, and `.txt` files, preserving LF/CRLF metadata for later saves.
+- Save writes through a sibling temp file and `FileManager.replaceItemAt`, with mtime conflict detection.
+- Save As uses `NSSavePanel`; Reveal in Finder uses `NSWorkspace`.
+- Current-session security-scoped URLs are retained in memory only.
+- File menu commands dispatch `doc2md:native-new`, `doc2md:native-open`, `doc2md:native-save`, `doc2md:native-save-as`, `doc2md:native-reveal-in-finder`, and `doc2md:native-close-window` into the webview.
 - Standard Edit actions remain on the AppKit and `WKWebView` responder chain.
 
 ## Debug Development
@@ -74,7 +77,7 @@ Equivalent:
 bash scripts/build-mac-app.sh --configuration Release
 ```
 
-The script runs `npm run build:desktop`, invokes `xcodebuild` with `-derivedDataPath .build/mac`, and runs a forbidden-API grep against `apps/macos/doc2md/ShellBridge.swift`. It writes the app to:
+The script runs `npm run build:desktop`, invokes `xcodebuild` with `-derivedDataPath .build/mac`, and runs a positive native file API allowlist scan across `apps/macos/doc2md/*.swift`. It writes the app to:
 
 ```text
 .build/mac/Build/Products/Release/doc2md.app
@@ -108,11 +111,12 @@ Use a longer or shorter launch wait when needed:
 ./scripts/verify-mac-release-launch.sh --wait-seconds 5
 ```
 
-The smoke runs the build helper, captures a launch timestamp, launches the resolved `.app` with `open -na`, waits three seconds by default, then queries the macOS unified log (anchored to that launch timestamp, not a rolling window) for a `load succeeded` entry from the `com.kjellkod.doc2md` subsystem. Anchoring the query prevents a prior run's log entries from being mistaken for the current launch's. It exits non-zero if:
+The smoke runs the build helper, captures a launch timestamp, launches the resolved `.app` with `open -na`, waits three seconds by default, then queries the macOS unified log (anchored to that launch timestamp, not a rolling window) for `load succeeded` and `app ready: true` entries from the `com.kjellkod.doc2md` subsystem. Anchoring the query prevents a prior run's log entries from being mistaken for the current launch's. It exits non-zero if:
 
 - the process is not running after the wait,
 - a `load failed` or `bundle missing` entry appears in the log, or
-- no load-success or load-failure signal appears within the wait window (reported as `INCONCLUSIVE`, with the `log show` exit status and stderr included so log-access problems surface instead of silently passing).
+- `app ready: false` appears in the log, or
+- `load succeeded` appears without `app ready: true` within the wait window (reported as `INCONCLUSIVE`, with the `log show` exit status and stderr included so log-access problems surface instead of silently passing).
 
 If the smoke reports `INCONCLUSIVE`, rerun with a larger `--wait-seconds` (log delivery can lag) or check whether `log show` can read the `com.kjellkod.doc2md` subsystem on this machine. No Accessibility or Automation permission is required.
 
@@ -122,13 +126,14 @@ The smoke quits the `doc2md` app it launched before exit and falls back to killi
 
 ## Manual Validation
 
-Use these checks for this scaffold phase:
+Use these checks for this phase:
 
 1. `npm test -- --run` passes.
 2. `npm run build` succeeds and keeps hosted browser asset behavior.
 3. `npm run build:desktop` succeeds and `dist/index.html` uses relative asset paths.
 4. Debug app launches with `npm run dev` running and displays the React app.
 5. Debug app shows the missing-dev-server error when `npm run dev` is stopped.
-6. Release build launches without the Vite dev server and displays bundled `Web/index.html`.
+6. Release build launches without the Vite dev server and logs `app ready: true`.
+7. Open a Markdown file, edit it, save it, reveal it in Finder, and verify conflict and permission-needed UI paths.
 
 If full Xcode is not available, record that the Mac app build and launch checks were not run. The command line tools package alone is not enough; `xcodebuild` must point at a full Xcode developer directory.

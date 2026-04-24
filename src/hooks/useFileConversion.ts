@@ -1,20 +1,27 @@
 import { useState } from "react";
-import { convertFile } from "../converters";
+import { convertFile, getFileExtension } from "../converters";
 import {
   CONVERSION_TIMEOUT_MS,
   MAX_BROWSER_FILE_SIZE_BYTES,
   OVERSIZED_FILE_MESSAGE,
 } from "../converters/messages";
 import type { FileEntry } from "../types";
+import type { ShellLineEnding, ShellOpenOk } from "../types/doc2mdShell";
 import { downloadRemoteDocument } from "../utils/remoteDocument";
 import {
   applyConversionResult,
+  createDesktopMarkdownEntry,
   createScratchEntry,
   createPendingEntries,
   getConversionFailureWarning,
   markEntryConverting,
   markEntryError,
+  replaceEntryWithDesktopMarkdown,
 } from "./useFileConversion.helpers";
+
+function basename(path: string) {
+  return path.split(/[\\/]/).filter(Boolean).pop() || "Untitled.md";
+}
 
 export function useFileConversion() {
   const [entries, setEntries] = useState<FileEntry[]>([]);
@@ -119,6 +126,52 @@ export function useFileConversion() {
     ]);
   }
 
+  function addOpenedFileEntry(openedFile: ShellOpenOk) {
+    setEntries((currentEntries) => [
+      ...currentEntries.map((entry) => ({
+        ...entry,
+        selected: false,
+      })),
+      createDesktopMarkdownEntry(openedFile),
+    ]);
+  }
+
+  function replaceEntryWithOpenedFile(entryId: string, openedFile: ShellOpenOk) {
+    setEntries((currentEntries) =>
+      currentEntries.map((entry) =>
+        entry.id === entryId
+          ? replaceEntryWithDesktopMarkdown(entry, openedFile)
+          : entry,
+      ),
+    );
+  }
+
+  function updateEntryDesktopFile(
+    entryId: string,
+    metadata: {
+      path: string;
+      mtimeMs: number;
+      lineEnding: ShellLineEnding;
+    },
+  ) {
+    setEntries((currentEntries) =>
+      currentEntries.map((entry) =>
+        entry.id === entryId
+          ? {
+              ...entry,
+              file: new File([entry.editedMarkdown ?? entry.markdown], basename(metadata.path), {
+                type: "text/markdown",
+              }),
+              name: basename(metadata.path),
+              format: getFileExtension(basename(metadata.path)) || entry.format,
+              isScratch: false,
+              desktopFile: metadata,
+            }
+          : entry,
+      ),
+    );
+  }
+
   function selectEntry(id: string) {
     setEntries((currentEntries) =>
       currentEntries.map((entry) => ({
@@ -143,9 +196,12 @@ export function useFileConversion() {
     addFiles,
     addUrl,
     addScratchEntry,
+    addOpenedFileEntry,
     clearEntries,
+    replaceEntryWithOpenedFile,
     selectEntry,
     selectedEntry,
+    updateEntryDesktopFile,
     updateMarkdown,
   };
 }
