@@ -75,6 +75,12 @@ describe("Mac native API allowlist", () => {
     expect(script).toContain("unexpected native file API outside allowlist");
   });
 
+  it("fails loudly if the grep scan itself errors", () => {
+    expect(script).toContain("grep_matches_or_fail()");
+    expect(script).toContain("native API allowlist scan failed with grep status");
+    expect(script).not.toContain('|| true)');
+  });
+
   it("fails mixed allowed and forbidden native API lines", () => {
     expect(
       scanFixture([

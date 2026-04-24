@@ -27,6 +27,28 @@ fail() {
   exit 1
 }
 
+grep_matches_or_fail() {
+  local pattern="$1"
+  shift
+
+  local output=""
+  local status=0
+
+  set +e
+  output=$(grep -nE "$pattern" "$@" 2>&1)
+  status=$?
+  set -e
+
+  case "$status" in
+    0|1) ;;
+    *)
+      fail "native API allowlist scan failed with grep status $status: $output"
+      ;;
+  esac
+
+  printf '%s\n' "$output"
+}
+
 absolute_path() {
   local path="$1"
 
@@ -125,7 +147,7 @@ done
 while IFS= read -r match; do
   [[ -n "$match" ]] || continue
   fail "unexpected native file API outside allowlist: $match"
-done < <(grep -nE "$FORBIDDEN_NATIVE_API_PATTERN" "${persistence_swift_sources[@]}" || true)
+done < <(grep_matches_or_fail "$FORBIDDEN_NATIVE_API_PATTERN" "${persistence_swift_sources[@]}")
 
 while IFS= read -r match; do
   [[ -n "$match" ]] || continue
@@ -133,7 +155,7 @@ while IFS= read -r match; do
   if ! printf '%s\n' "$match" | grep -Eq "$ALLOWED_NATIVE_API_PATTERN"; then
     fail "unexpected native file API outside allowlist: $match"
   fi
-done < <(grep -nE "$WATCHED_NATIVE_API_PATTERN" "${persistence_swift_sources[@]}" || true)
+done < <(grep_matches_or_fail "$WATCHED_NATIVE_API_PATTERN" "${persistence_swift_sources[@]}")
 
 npm run build:desktop
 

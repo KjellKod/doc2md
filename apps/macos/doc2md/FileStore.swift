@@ -68,9 +68,8 @@ final class FileStore {
         }
     }
 
-    func save(args: SaveFileArgs, knownURL: URL?) throws -> ShellSaveOk {
-        let url = knownURL ?? URL(fileURLWithPath: args.path)
-
+    func save(args: SaveFileArgs, knownURL: URL) throws -> ShellSaveOk {
+        let url = knownURL
         do {
             let actualMtimeMs = try modificationTimeMs(for: url)
             if actualMtimeMs != args.expectedMtimeMs {
@@ -138,14 +137,22 @@ final class FileStore {
         var createdPlaceholder = false
 
         do {
+            guard fileManager.fileExists(atPath: parent.path) else {
+                throw FileStoreError.error(message: "The destination folder no longer exists.")
+            }
+
+            guard fileManager.isWritableFile(atPath: parent.path) else {
+                throw Self.writePermissionError(path: destination.path)
+            }
+
             let bytes = Self.encode(content: content, lineEnding: lineEnding)
             guard fileManager.createFile(atPath: tempURL.path, contents: bytes) else {
-                throw Self.writePermissionError(path: destination.path)
+                throw FileStoreError.error(message: "Could not create a temporary file while saving.")
             }
 
             if !fileManager.fileExists(atPath: destination.path) {
                 guard fileManager.createFile(atPath: destination.path, contents: Data()) else {
-                    throw Self.writePermissionError(path: destination.path)
+                    throw FileStoreError.error(message: "Could not prepare the destination file for saving.")
                 }
                 createdPlaceholder = true
             }

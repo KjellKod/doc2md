@@ -131,13 +131,22 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
     private func handleSaveFile(_ message: BridgeMessage) {
         do {
             let args = try Self.decode(SaveFileArgs.self, from: message.args)
-            let knownURL = knownURLsByPath[Self.standardPath(args.path)]
-            let url = knownURL ?? URL(fileURLWithPath: args.path)
-            let result = try withSecurityScope(for: url) {
+            guard let knownURL = knownURLsByPath[Self.standardPath(args.path)] else {
+                resolve(
+                    id: message.id,
+                    result: .permissionNeeded(
+                        path: args.path,
+                        message: "Open the file again before saving it."
+                    )
+                )
+                return
+            }
+
+            let result = try withSecurityScope(for: knownURL) {
                 try fileStore.save(args: args, knownURL: knownURL)
             }
 
-            remember(url: knownURL ?? url)
+            remember(url: knownURL)
             resolve(id: message.id, result: .save(result))
         } catch {
             resolve(id: message.id, result: Self.response(for: error))

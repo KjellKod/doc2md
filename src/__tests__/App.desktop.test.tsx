@@ -183,6 +183,44 @@ describe("App desktop bridge", () => {
     cleanupShell();
   });
 
+  it("updates the entry name and next Save As suggestion after Save As succeeds", async () => {
+    const saveFileAs = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true as const,
+        path: "/Users/me/Renamed.md",
+        mtimeMs: 20,
+      })
+      .mockResolvedValueOnce({
+        ok: false as const,
+        code: "cancelled" as const,
+      });
+    const cleanupShell = installMockShell({ saveFileAs });
+
+    render(<App />);
+
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
+    await screen.findByRole("button", { name: /untitled\.md/i });
+
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.saveAs));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /renamed\.md/i })).toBeInTheDocument(),
+    );
+    expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
+      "Renamed.md",
+    );
+
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.saveAs));
+    await waitFor(() => expect(saveFileAs).toHaveBeenCalledTimes(2));
+    expect(saveFileAs).toHaveBeenLastCalledWith({
+      suggestedName: "Renamed.md",
+      content: "",
+      lineEnding: "lf",
+    });
+
+    cleanupShell();
+  });
+
   it("shows conflict actions and retries overwrite with actual mtime", async () => {
     const saveFile = vi
       .fn()

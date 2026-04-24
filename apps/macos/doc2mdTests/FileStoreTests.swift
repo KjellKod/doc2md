@@ -124,6 +124,21 @@ final class FileStoreTests: XCTestCase {
         }
     }
 
+    func testSaveAsTempFileCreationFailureSurfacesGenericError() throws {
+        let directory = try makeDirectory()
+        let fileURL = directory.appendingPathComponent("blocked.md")
+        let store = FileStore(fileManager: CreateFileFailureFileManager())
+
+        XCTAssertThrowsError(
+            try store.saveAs(url: fileURL, content: "blocked", lineEnding: .lf)
+        ) { error in
+            XCTAssertEqual(
+                error as? FileStoreError,
+                .error(message: "Could not create a temporary file while saving.")
+            )
+        }
+    }
+
     func testCancelMapsToCancelled() {
         XCTAssertThrowsError(try FileStore.selectedURL(from: nil)) { error in
             XCTAssertEqual(error as? FileStoreError, .cancelled)
@@ -143,5 +158,19 @@ final class FileStoreTests: XCTestCase {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         tempDirectories.append(directory)
         return directory
+    }
+}
+
+private final class CreateFileFailureFileManager: FileManager {
+    override func createFile(
+        atPath path: String,
+        contents data: Data?,
+        attributes attr: [FileAttributeKey : Any]? = nil
+    ) -> Bool {
+        false
+    }
+
+    override func isWritableFile(atPath path: String) -> Bool {
+        true
     }
 }

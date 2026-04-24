@@ -130,6 +130,11 @@ private struct WebView: NSViewRepresentable {
     }
 
     final class Coordinator: NSObject, WKNavigationDelegate {
+        private static let appReadyProbeIntervalSeconds: TimeInterval = 0.5
+        private static let appReadyProbeMaxAttempts = 5
+        private static let appReadyProbeTimeoutMs =
+            Int(Double(appReadyProbeMaxAttempts - 1) * appReadyProbeIntervalSeconds * 1000)
+
         private let setLoadError: (ShellLoadError?) -> Void
         let appSchemeHandler = AppSchemeHandler()
 
@@ -178,12 +183,14 @@ private struct WebView: NSViewRepresentable {
         private func probeAppReady(in webView: WKWebView, attempt: Int) {
             webView.evaluateJavaScript("document.querySelector('[data-app-ready]') != null") { result, error in
                 if let error {
-                    guard attempt < 3 else {
-                        logger.error("app ready: false: \(error.localizedDescription, privacy: .public)")
+                    guard attempt < Self.appReadyProbeMaxAttempts else {
+                        logger.error(
+                            "app ready: false: \(error.localizedDescription, privacy: .public) after \(Self.appReadyProbeTimeoutMs, privacy: .public) ms"
+                        )
                         return
                     }
 
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + Self.appReadyProbeIntervalSeconds) {
                         self.probeAppReady(in: webView, attempt: attempt + 1)
                     }
                     return
@@ -194,12 +201,12 @@ private struct WebView: NSViewRepresentable {
                     return
                 }
 
-                guard attempt < 3 else {
-                    logger.error("app ready: false: timeout after 3 attempts")
+                guard attempt < Self.appReadyProbeMaxAttempts else {
+                    logger.error("app ready: false: timeout after \(Self.appReadyProbeTimeoutMs, privacy: .public) ms")
                     return
                 }
 
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + Self.appReadyProbeIntervalSeconds) {
                     self.probeAppReady(in: webView, attempt: attempt + 1)
                 }
             }

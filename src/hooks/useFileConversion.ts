@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { convertFile } from "../converters";
+import { convertFile, getFileExtension } from "../converters";
 import {
   CONVERSION_TIMEOUT_MS,
   MAX_BROWSER_FILE_SIZE_BYTES,
@@ -18,6 +18,10 @@ import {
   markEntryError,
   replaceEntryWithDesktopMarkdown,
 } from "./useFileConversion.helpers";
+
+function basename(path: string) {
+  return path.split(/[\\/]/).filter(Boolean).pop() || "Untitled.md";
+}
 
 export function useFileConversion() {
   const [entries, setEntries] = useState<FileEntry[]>([]);
@@ -155,6 +159,11 @@ export function useFileConversion() {
         entry.id === entryId
           ? {
               ...entry,
+              file: new File([entry.editedMarkdown ?? entry.markdown], basename(metadata.path), {
+                type: "text/markdown",
+              }),
+              name: basename(metadata.path),
+              format: getFileExtension(basename(metadata.path)) || entry.format,
               isScratch: false,
               desktopFile: metadata,
             }
