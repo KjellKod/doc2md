@@ -23,8 +23,11 @@ Build a Mac-native DMG app using Swift + `WKWebView` + Sparkle. The existing hos
 | 2. Bridge and React Desktop Mode | done | PR #78 (`mac-phase2-bridge_2026-04-21__0712`) | Add bridge types, mock shell, native menu events, desktop save-state plumbing. | Phase 3 |
 | 2.5. Developer Mac Build Helper | done | PR #79 (`mac-build-smoke_2026-04-21__2246`) | One-command local `.app` build with a fixed output path and a README pointer so manual testing is predictable. | Smooths Phase 3+ manual smoke |
 | 3. Markdown File Persistence | done | PR #80 (`mac-file-persistence_2026-04-22__2017`) | Implement open/save/save-as for Markdown with atomic replace, mtime conflicts, line endings, Finder reveal, and rendered-UI launch smoke. | Phase 4 |
-| 4. Converted Document Import and Markdown Persistence | done | This quest | Import any supported non-`.md` source document through the existing converters, first-save to `.md`, keep later saves anchored to the chosen Markdown file, and handle large native-open payloads robustly. | Phase 5 |
-| 5. Distribution and Updates | planned | TBD | Add Sparkle, DMG install, ZIP updates, signing/notarization docs, macOS CI build + sign + notarize workflow, and release scripts. | MVP ship |
+| 4. Converted Document Import and Markdown Persistence | done | PR #81 (`phase-4-converted-docs-persistent-assets_2026-04-23__2328`) | Import any supported non-`.md` source document through the existing converters, first-save to `.md`, keep later saves anchored to the chosen Markdown file, and handle large native-open payloads robustly. | Phase 5 |
+| 5a. Mac PR CI Check | planned | TBD | Add a no-secrets GitHub Actions workflow that runs `npm run build:desktop` + unsigned `xcodebuild build` + `swiftc -parse` + forbidden-API grep on every PR so Mac-only regressions cannot land silently. | Phase 5b |
+| 5b. Sparkle Plumbing | planned | TBD | Add Sparkle 2 to the Xcode project, wire `SUFeedURL` / `SUPublicEDKey` in Info.plist, define the appcast XML schema, and verify offline + test-appcast update detection. No signing, no release automation. | Phase 5c |
+| 5c. Release CI, Signing, Notarization, DMG, Appcast Publish | planned | TBD | Tag-triggered macOS release workflow with a protected `mac-release` Environment: Developer ID signing, notarization, stapling, DMG, Sparkle ZIP + `sign_update`, appcast publish. The only phase that touches Apple or Sparkle secrets. | MVP ship |
+| 6. Editor and UI Refresh (cross-surface) | planned | TBD | Hosted-web + Mac editor polish: app icon, persistent mode switcher, explicit save control, find/replace, accessibility audit, keyboard-shortcut help. Runs in parallel with Phase 5b+ because it does not touch the Mac shell contract. | MVP polish |
 
 ## Phase 0: Design And Roadmap
 
@@ -202,19 +205,86 @@ Validation:
 - Manual conversion/save for at least one text-like source (`.txt`, `.csv`, or `.html`) and one binary source (`.docx`, `.pdf`, `.xlsx`, or `.pptx`).
 - Regression check that hosted browser download flow still works.
 
-## Phase 5: Distribution And Updates
+## Phase 5: Distribution And Updates (Split)
+
+Phase 5 as originally written bundled CI, Sparkle, and signing/notarization into one unit. Splitting into 5a/5b/5c so each quest is independently reviewable, lands in working state, and sequences risk from low (5a, no secrets) to high (5c, Apple + Sparkle keys).
+
+### Phase 5a: Mac PR CI Check
 
 Goal:
 
-Make the Mac app installable and updateable outside the App Store, with a secure CI release pipeline that does not leak Apple or Sparkle secrets.
+Close the "Mac-only code has zero CI" gap before we introduce release automation. Every PR should get an unsigned Mac build + Swift parse + forbidden-API grep on `macos-latest`, with no secrets scope.
 
 Expected changes:
 
-- Add Sparkle 2 integration.
-- Add `SUFeedURL`, `SUPublicEDKey`, production appcast, and beta appcast.
+- Add a new GitHub Actions workflow (for example `.github/workflows/mac-pr-check.yml`):
+  - Triggers: `pull_request` (never `pull_request_target`).
+  - Runner: `macos-latest`.
+  - Permissions: `contents: read` only. No secrets scope.
+  - Steps: checkout, Node setup, `npm ci`, `npm run build:desktop`, `bash scripts/build-mac-app.sh --configuration Release` (the helper already runs `swiftc`-equivalent checks and the forbidden-API grep via `xcodebuild` + the allowlist scan).
+  - Optional: upload the unsigned `.app` as a workflow artifact for reviewer smoke on macOS hosts.
+- Pin third-party actions by full SHA (repo CI-trustworthiness convention).
+
+Acceptance criteria:
+
+- PRs that break the desktop web bundle, the Xcode build, or the forbidden-API allowlist fail the new check.
+- The check runs on fork PRs because it needs no secrets.
+- No secrets are introduced in this phase.
+
+Out of scope (deferred to 5b/5c):
+
+- Sparkle, appcast, DMG, signing, notarization, release tagging.
+
+Validation:
+
+- Push a branch that intentionally breaks the Xcode build. Confirm the new check fails.
+- Push a branch that intentionally adds a forbidden native API. Confirm the allowlist scan fails.
+- Push a clean branch. Confirm the check passes.
+
+### Phase 5b: Sparkle Plumbing
+
+Goal:
+
+Add the Sparkle 2 update framework to the Mac app, wire the appcast contract, and verify update detection locally against a test appcast. No release automation and no signing yet.
+
+Expected changes:
+
+- Add Sparkle 2 as a Swift Package dependency in `apps/macos/doc2md.xcodeproj`.
+- Add `SUFeedURL` and `SUPublicEDKey` to `Info.plist`.
+- Generate a throwaway EdDSA key locally and commit only the public key.
+- Define the production and beta appcast XML schema, with at least one fixture appcast checked into `apps/macos/doc2md/test-fixtures/`.
+- Wire Sparkle's standard updater controller into the AppKit scene and expose a "Check for updates..." menu item.
+- Handle offline launch: update checks must not block the main window or fail the launch smoke.
+- Keep update checks behind a build-time flag in Debug so local development does not ping appcasts.
+
+Acceptance criteria:
+
+- The app launches with Sparkle initialised and the "Check for updates..." menu item visible.
+- Pointed at the fixture appcast, Sparkle correctly detects a newer version and shows the standard update sheet.
+- Offline launch succeeds without a Sparkle-related stall or error.
+- The release-launch smoke still passes.
+
+Out of scope (deferred to 5c):
+
+- Signing, notarization, DMG build, real `sign_update` signing, production appcast publish, release tagging.
+
+Validation:
+
+- Serve the fixture appcast locally (`python3 -m http.server`) with a bumped version and confirm Sparkle prompts.
+- Disconnect from the network, relaunch the app, confirm no blocking.
+- Re-run `scripts/verify-mac-release-launch.sh` to confirm the smoke path still succeeds.
+
+### Phase 5c: Release CI, Signing, Notarization, DMG, Appcast Publish
+
+Goal:
+
+Ship the Mac app signed, notarized, DMG-installable, and Sparkle-updateable through a tag-triggered CI workflow that isolates Apple and Sparkle secrets behind a protected Environment.
+
+Expected changes:
+
+- Document and script release steps for Developer ID signing, hardened runtime, notarization (`xcrun notarytool`), stapling, Sparkle `sign_update`, and appcast generation.
 - Use DMG for first install.
 - Use ZIP of the `.app` bundle for Sparkle updates.
-- Document and script release steps for Developer ID signing, hardened runtime, notarization, stapling, Sparkle signing, and appcast generation.
 - Keep Apple notarization credentials separate from Sparkle EdDSA keys.
 
 ### CI Release Workflow (macos-latest)
@@ -227,7 +297,7 @@ Add a new workflow (for example `.github/workflows/release-mac.yml`) that builds
   2. `sign-and-notarize`: `macos-latest`, consumes the `build` artifact, targets a protected GitHub Environment (for example `mac-release`) with required reviewers. This is the only job that touches secrets.
   3. `package`: builds the DMG and the Sparkle update ZIP from the signed artifact, signs the ZIP with the EdDSA key in a separate step, and updates the appcast.
   4. `publish`: publishes the DMG and appcast to the release target (GitHub Release assets or the appcast host). Read-only `GITHUB_TOKEN` permissions by default; widen only for the specific publish step.
-- Also add a macOS PR check (separate workflow, no secrets, `pull_request` trigger) that runs `npm run build:desktop`, `xcodebuild build` in an unsigned Release config, `swiftc -parse`, and the forbidden-API grep. This closes the CI gap for Mac-only code without ever exposing signing credentials.
+- The no-secrets PR check workflow is covered by Phase 5a and must already be in place before this workflow is introduced.
 
 ### Secrets Handling Rules (binding)
 
@@ -277,11 +347,68 @@ Validation:
 - CI dry run: push a release tag on a throwaway branch pattern; confirm Environment approval gate blocks unapproved signing and that the published artifacts verify with `codesign --verify` and Sparkle `sign_update --verify`.
 - Secret audit: grep the repo history for known key fragments and confirm only public values (like `SUPublicEDKey`) are committed.
 
+## Phase 6: Editor And UI Refresh (Cross-Surface)
+
+Goal:
+
+Clean up the editor/viewer UX across the hosted browser app and the Mac shell. These items are surface-level and do not touch the shell contract, so they can run in parallel with Phase 5b/5c without blocking release work. Each item should be its own quest or a tightly-scoped quest group — not one giant PR.
+
+### 6a. Mac App Icon
+
+- Design or commission an `.icns` icon set (multiple sizes: 16, 32, 64, 128, 256, 512, 1024, plus @2x variants).
+- Add as an Xcode asset catalog (`Assets.xcassets/AppIcon.appiconset`).
+- Update `apps/macos/README.md` to describe how to update the icon.
+- Acceptance: the built `.app` shows the new icon in Finder, Dock, and the "About" dialog.
+
+### 6b. Persistent Mode Switcher (Edit / Preview / LinkedIn)
+
+- Today the Edit / Preview / LinkedIn mode buttons live in a toolbar that scrolls away with the content. Users have to scroll up to switch modes.
+- Make the mode switcher stick to the top of the viewport (or dock into a compact floating control) so it is always reachable.
+- Handle edge cases carefully: mobile viewport, preview-pane collapse state, split-pane resizer, keyboard focus ring, scroll position after mode switch.
+- This is a UX-sensitive change and can regress familiar behavior — budget time for manual testing on desktop + mobile across all three modes.
+- Acceptance: user can switch modes at any scroll position without scrolling back to the top. No regression in preview pane collapse behavior or split-pane resizing.
+
+### 6c. Explicit Save Control (Mobile-Safe)
+
+- Add a visible Save button next to the mode switcher (or in a save-state pill) so mobile users without a physical Cmd+S have an explicit path.
+- Decide per-surface behavior: on the Mac app, the button triggers the native save path (same as Cmd+S); on the hosted browser, it triggers the existing download-based save flow.
+- Confirm existing keyboard shortcut (Cmd+S / Ctrl+S) still works; the button is additive, not a replacement.
+- Acceptance: user can save from mobile. Save state (`Saved`, `Edited`, `Saving`, `Conflict`, `Error`) is visible next to the button.
+
+### 6d. Find / Replace In Editor
+
+- Add keyboard shortcut (Cmd+F / Cmd+Option+F) and a visible entry point.
+- Case sensitivity and regex options. Highlight all matches; step through with Enter / Shift+Enter.
+- Acceptance: round-trip search-and-replace on a 100 KB document is responsive (no janky UI freeze).
+
+### 6e. Keyboard Shortcut Cheatsheet
+
+- A `?` overlay listing the editor and mode shortcuts. Reachable from a menu item (desktop and hosted).
+- Acceptance: every shortcut the app accepts is listed. No entry claims a shortcut the app does not support.
+
+### 6f. Accessibility Audit
+
+- ARIA labels on toolbar buttons, mode switcher, save state.
+- Keyboard-only navigation of all primary controls (tab order, visible focus ring).
+- Screen reader pass on the editor and preview (`role` attributes, `aria-live` for save-state changes).
+- Colour contrast check across themes.
+- Acceptance: Lighthouse accessibility score ≥ 95 on the hosted app; Mac shell exercised with VoiceOver without dead-end focus traps.
+
+### 6g. Open Slot: "??? — User Backlog"
+
+Reserved for items the maintainer adds on the fly. Candidates surfaced during scoping of this phase:
+
+- Optional: dark-mode / system-theme follow.
+- Optional: "Copy rendered Markdown" and "Copy LinkedIn text" buttons next to the mode switcher.
+- Optional: session-local scratch buffer so refresh / accidental navigation does not erase unsaved work in the hosted browser.
+- Optional: PWA install hint for mobile users of the hosted app.
+
 ## MVP Ship Criteria
 
 MVP is ready when:
 
-- Phases 1-5 are complete.
+- Phases 1, 2, 2.5, 3, 4, 5a, 5b, and 5c are complete.
+- Phase 6 items are tracked but NOT gating for MVP ship; they land opportunistically.
 - Hosted browser behavior is unchanged.
 - `doc2md.app` can open, edit, save, Save As, reveal in Finder, and handle conflicts.
 - Converted document Save As works for supported source formats.
