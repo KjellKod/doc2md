@@ -41,15 +41,15 @@ describe("Mac native API allowlist", () => {
     );
   });
 
-  it("documents the approved Phase 3 native APIs with named justifications", () => {
+  it("documents the approved Phase 4 native APIs with named justifications", () => {
     expect(script).toContain(
       "FileManager :: stat/read/temp-file creation/atomic replacement staging for user-selected Markdown files",
     );
     expect(script).toContain(
-      "NSOpenPanel :: user-selected Markdown/text open panel",
+      "NSOpenPanel :: user-selected supported-document open panel",
     );
     expect(script).toContain(
-      "NSSavePanel :: user-selected Save As target panel",
+      "NSSavePanel :: user-selected Markdown Save As target panel",
     );
     expect(script).toContain(
       "NSWorkspace :: Reveal in Finder for a saved user-selected file",

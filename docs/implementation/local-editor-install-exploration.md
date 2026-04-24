@@ -1,7 +1,7 @@
 # Mac Desktop App Design
 
 Date: 2026-04-21
-Status: Planned
+Status: Active
 
 ## 1. Product Statement
 
@@ -55,33 +55,34 @@ The webview owns conversion and editor state. The shell owns every operation tha
 
 ## 4. JS Bridge Contract
 
-Expose one deliberately small bridge at `window.doc2mdShell`. Transport can use base64 or chunked binary internally, but the public contract should stay stable and JSON-shaped.
+Expose one deliberately small bridge at `window.doc2mdShell`. The public contract should stay stable and JSON-shaped even when the internal transport for imported source documents uses a stronger native-to-web handoff.
 
 The shell sets `window.doc2mdShell.version === 1` as the handshake marker. React ignores shells that do not expose version `1`.
 
-Base64 is acceptable for small Markdown and metadata payloads. Binary payloads above 4 MB should use chunked transfer or a `WKURLSchemeHandler`-backed handoff instead of sending one large base64 string through `postMessage`.
+Opened Markdown can continue to cross the bridge as text plus metadata. Imported source documents should not be shoved through the bridge as one large base64 JSON payload. For robust non-`.md` opens, the shell should expose an opaque `importUrl` backed by `WKURLSchemeHandler` or an equivalent native-owned handoff so React can reconstruct a real `File` and reuse the existing converter pipeline.
 
 ```ts
-type Base64Bytes = string;
-
-interface ShellAsset {
-  relativePath: string;
-  bytesBase64: Base64Bytes;
+interface ShellOpenMarkdownOk {
+  ok: true;
+  kind: "markdown";
+  path: string;
+  content: string;
+  mtimeMs: number;
+  lineEnding: "lf" | "crlf";
 }
 
-interface ShellFile {
+interface ShellOpenImportOk {
   ok: true;
+  kind: "import-source";
   path: string;
   name: string;
-  bytesBase64: Base64Bytes;
+  format: string;
   mtimeMs: number;
-  lineEnding: "lf" | "crlf" | "unknown";
+  importUrl: string;
+  mimeType?: string;
 }
 
-interface ShellFolder {
-  ok: true;
-  path: string;
-}
+type ShellFile = ShellOpenMarkdownOk | ShellOpenImportOk;
 
 interface ShellOk {
   ok: true;
@@ -103,7 +104,7 @@ interface ShellConflict {
   ok: false;
   code: "conflict";
   path: string;
-  currentMtimeMs: number;
+  actualMtimeMs: number;
 }
 
 interface ShellError {
@@ -133,15 +134,15 @@ Bridge promises resolve with result objects for all user-visible outcomes. Rejec
 
 | Call | Direction | MVP | Signature |
 |---|---|---:|---|
-| `openFile()` | Webview to shell | Yes | `Promise<ShellResult<ShellFile>>`; shows `NSOpenPanel`; supports `.md` plus existing import formats. |
-| `openFolder()` | Webview to shell | No | `Promise<ShellResult<ShellFolder>>`; reserved for future folder workspaces or asset-folder permission fallback. |
-| `saveFile({ path, bytesBase64, expectedMtimeMs, assets?, makeBackup? })` | Webview to shell | Yes | `Promise<ShellResult<ShellOk>>`; writes an existing target if mtime matches. |
-| `saveFileAs({ suggestedName, bytesBase64, assets?, makeBackup? })` | Webview to shell | Yes | `Promise<ShellResult<ShellOk>>`; shows `NSSavePanel`, then writes Markdown and optional asset folder. |
+| `openFile()` | Webview to shell | Yes | `Promise<ShellResult<ShellFile>>`; shows `NSOpenPanel`; returns `{ kind: "markdown", ... }` for `.md` and `.markdown`, and `{ kind: "import-source", ... }` for every other supported format, including `.txt`. |
+| `openFolder()` | Webview to shell | No | Reserved for future folder workspaces only. |
+| `saveFile({ path, content, expectedMtimeMs, lineEnding })` | Webview to shell | Yes | `Promise<ShellResult<ShellOk>>`; writes an existing `.md` target if mtime matches. |
+| `saveFileAs({ suggestedName, content, lineEnding })` | Webview to shell | Yes | `Promise<ShellResult<ShellOk>>`; shows `NSSavePanel`, then writes Markdown to a chosen `.md` path. |
 | `revealInFinder({ path })` | Webview to shell | Yes | `Promise<ShellResult<ShellRevealOk>>`; opens Finder with the saved Markdown file selected. Success is `{ ok: true, path: string }`, where `path` echoes the requested file for React-side logging. |
 | `watchFile({ path })` | Webview to shell | No | `Promise<ShellResult<{ ok: true }>>`; future file-change watcher; out of MVP. |
 | `checkForUpdates()` | Menu to shell | Yes | Native Sparkle action; does not need webview state. |
 
-Phase 2 exposes only `openFile`, `saveFile`, `saveFileAs`, and `revealInFinder` on `window.doc2mdShell`; `openFolder`, `watchFile`, and `checkForUpdates` are reserved outside the Phase 2 web bridge.
+Phase 4 exposes only `openFile`, `saveFile`, `saveFileAs`, and `revealInFinder` on `window.doc2mdShell`; `openFolder`, `watchFile`, and `checkForUpdates` are still reserved outside the current web bridge.
 
 Native menu commands flow the other direction as DOM events:
 
@@ -157,23 +158,19 @@ React handles those events by invoking the same editor actions as toolbar button
 
 ## 5. File Semantics
 
-**Atomic writes**: Always write atomically. The shell writes to a temp file in the same directory, fsyncs where practical, then calls `FileManager.replaceItem(at:withItemAt:backupItemName:options:resultingItemURL:)` for the final replacement. Use this macOS primitive instead of a bare rename so replacement preserves metadata behavior better across permissions, extended attributes, quarantine flags, Spotlight metadata, and iCloud/Dropbox-coordinated folders. Asset-bearing saves stage assets in a temp folder before publishing the final asset folder.
+**Atomic writes**: Always write atomically. The shell writes to a temp file in the same directory, fsyncs where practical, then calls `FileManager.replaceItem(at:withItemAt:backupItemName:options:resultingItemURL:)` for the final replacement. Use this macOS primitive instead of a bare rename so replacement preserves metadata behavior better across permissions, extended attributes, quarantine flags, Spotlight metadata, and iCloud/Dropbox-coordinated folders.
 
 **Conflict detection**: Store `mtimeMs` when a file is opened or saved. `saveFile()` must compare `expectedMtimeMs` to the current file mtime before writing. If it drifted, return `conflict`; the UI prompts the user to reload or Save As. Three-way merge is later.
 
-**Overwrite policy**: Opening an existing Markdown file grants an unprompted Save back to that same file if mtime matches. Unknown-target documents, scratch drafts, and converted files use Save As first. The selected Save As target is remembered for the current session.
+**Overwrite policy**: Opening an existing `.md` file grants an unprompted Save back to that same file if mtime matches. Every other supported format, including `.txt`, is an import-only source document from the user's perspective: React converts it to editable Markdown, but the original source file is never overwritten. Unknown-target documents, scratch drafts, and imported documents use Save As first. The selected Save As target is remembered for the current session.
 
 **Backups**: Off by default. A single setting can enable `file.md.bak` before overwriting an existing target. Backups do not replace atomic writes or conflict checks.
 
-**Line endings**: Preserve the original line ending for opened Markdown. Detection rule: sample the first 4 KB; if any `\r\n` appears, treat the file as CRLF, otherwise LF. New scratch files and converted Markdown default to LF.
+**Line endings**: Preserve the original line ending for opened `.md` files. Detection rule: sample the first 4 KB; if any `\r\n` appears, treat the file as CRLF, otherwise LF. New scratch files and imported Markdown default to LF.
 
-**Assets**: Asset-bearing conversions save as a Markdown file plus a sibling asset folder. Example: saving `report.docx` as `report.md` writes images to `report.assets/` and uses relative Markdown links such as `report.assets/image-001.png`. If the user saves as `board-notes.md`, the asset folder becomes `board-notes.assets/`.
+**Imported assets**: Match the hosted web product. Embedded images and other source-document assets are dropped; the app does not write `name.assets/` folders in this version. If shared converter behavior changes later, update the converter contract, save semantics, and roadmap in the same phase.
 
-**Asset conflicts**: If the target asset folder already exists and was not created by the current session, the shell returns a conflict. The shell tracks asset folders it created in memory for the current session. Subsequent saves in that same session can rewrite the entire owned asset folder without prompting. Do not silently merge old and new assets.
-
-**Orphan asset folders**: If a user saves as `draft.md` and later Save As to `final.md`, `draft.assets/` is left on disk. Cleanup for renamed Save As targets is out of MVP; do not delete user-visible folders automatically.
-
-**Sandbox access**: The app should be sandboxed for distribution. User-selected file access comes through `NSOpenPanel` and `NSSavePanel`. If sandbox rules prevent creating the sibling asset folder from a file-level save grant, asset-bearing Save As must request a destination folder grant before writing. MVP UX: after the Markdown `NSSavePanel`, show a folder-selecting `NSOpenPanel` only when the app cannot create the sibling asset folder with the existing grant. Default the panel to the Markdown file's parent folder and explain that doc2md needs permission to create `name.assets/`.
+**Sandbox access**: The app should be sandboxed for distribution. User-selected file access comes through `NSOpenPanel` and `NSSavePanel`. Imported source documents require read access to the chosen source path and write access only to the eventual `.md` save target. No extra folder grant is required for sibling asset folders in this version because the app does not persist them.
 
 ## 6. Menus And Shortcuts
 
@@ -182,7 +179,7 @@ React handles those events by invoking the same editor actions as toolbar button
 | File > New | Cmd+N | Create an untitled Markdown draft. |
 | File > Open... | Cmd+O | Open a Markdown file or supported source document. |
 | File > Save | Cmd+S | Save to the current target, or route to Save As if none exists. |
-| File > Save As... | Cmd+Shift+S | Choose a Markdown target and optional asset folder target. |
+| File > Save As... | Cmd+Shift+S | Choose a Markdown target. |
 | File > Reveal in Finder | None | Reveal the saved Markdown file. Disabled without a saved path. |
 | File > Close Window | Cmd+W | Close the current window after dirty-state handling. |
 | App > Settings... | Cmd+, | Open settings for backups and update preferences. |
@@ -284,8 +281,9 @@ MVP acceptance criteria:
 
 - A user can open an existing `.md` file, edit it, and save back to the same file with Cmd+S.
 - A user can create a new draft and Save As to a chosen `.md` file.
-- A user can open a supported source document, convert it in the existing webview converter path, edit the Markdown, and Save As.
-- If a conversion emits assets, Save As writes `name.md` plus `name.assets/` with relative links.
+- A user can open any supported non-`.md` source document, including `.txt`, convert it in the existing webview converter path, edit the Markdown, and Save As to `.md`.
+- After first Save As, continued editing saves back to the chosen `.md` target with conflict detection.
+- Embedded images and other assets are dropped consistently with the hosted web behavior.
 - Save rejects when the target file changed externally after open or last save.
 - Save writes atomically and does not leave a partial Markdown file.
 - The app exposes native File menu commands for New, Open, Save, Save As, Close, Settings, and Check for Updates.
@@ -296,11 +294,11 @@ MVP acceptance criteria:
 
 Validation:
 
-- Unit-test Swift `FileStore` for atomic write, mtime conflict, backup toggle, asset folder creation, and asset-folder conflict.
+- Unit-test Swift open/save helpers for atomic write, mtime conflict, backup toggle, and imported-source open handling.
 - Unit-test `ShellBridge` JSON decoding/encoding for success, cancel, conflict, and error paths.
 - Add React tests for native menu event handling and desktop save-state transitions.
 - Inject a mock `window.doc2mdShell` in React tests so bridge success, cancel, conflict, and error paths can be tested without launching Xcode or `WKWebView`.
-- Manually test open/edit/save, Save As, conflict, asset save, reveal in Finder, offline launch, update check, DMG install, and notarized launch.
+- Manually test open/edit/save, Save As, imported-source conversion/save, conflict, reveal in Finder, offline launch, update check, DMG install, and notarized launch.
 
 ## 11. Out Of Scope
 
@@ -322,10 +320,10 @@ Validation:
 - OCR or improved conversion quality.
 - Native reimplementation of converters.
 
-## 12. Open Questions
+## 12. Product Decisions
 
 1. **Swift or Tauri?** Swift. Tauri is fallback only if cross-platform desktop becomes important.
-2. **Assets folder or inline base64?** Folder. Use `report.assets/` beside `report.md`.
+2. **Preserve embedded assets from source documents?** No. Match hosted web behavior and drop them in this version.
 3. **Where does the appcast live?** GitHub Pages at a stable URL under `https://kjellkod.github.io/doc2md/`.
 4. **Updater?** Sparkle 2 with EdDSA-signed update archives.
 5. **macOS minimum?** macOS 13 Ventura for MVP. It keeps the test matrix small while covering Sparkle 2 defaults, Swift 5.7-era concurrency, and current `WKWebView` behavior.
@@ -333,7 +331,7 @@ Validation:
 7. **Does the shell bundle Node?** No.
 8. **Do recent files ship in MVP?** No. Add security-scoped bookmarks only when recent files are in scope.
 9. **Does Save overwrite an opened Markdown file without prompting?** Yes, if mtime matches.
-10. **Does converted output default beside the source file?** No. Converted files require explicit Save As.
+10. **Does converted output default beside the source file?** No. Imported documents require explicit Save As to `.md`.
 
 ## 13. Alternatives Considered
 

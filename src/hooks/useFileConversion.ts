@@ -10,6 +10,7 @@ import type { ShellLineEnding, ShellOpenOk } from "../types/doc2mdShell";
 import { downloadRemoteDocument } from "../utils/remoteDocument";
 import {
   applyConversionResult,
+  createImportedEntry,
   createDesktopMarkdownEntry,
   createScratchEntry,
   createPendingEntries,
@@ -136,6 +137,29 @@ export function useFileConversion() {
     ]);
   }
 
+  function addImportedFileEntry(args: {
+    file: File;
+    path: string;
+    mtimeMs: number;
+    sourceFormat: string;
+  }) {
+    const importedEntry = createImportedEntry(args.file, {
+      path: args.path,
+      format: args.sourceFormat,
+      mtimeMs: args.mtimeMs,
+    });
+
+    setEntries((currentEntries) => [
+      ...currentEntries.map((entry) => ({
+        ...entry,
+        selected: false,
+      })),
+      importedEntry,
+    ]);
+
+    void processEntry(importedEntry);
+  }
+
   function replaceEntryWithOpenedFile(entryId: string, openedFile: ShellOpenOk) {
     setEntries((currentEntries) =>
       currentEntries.map((entry) =>
@@ -197,6 +221,7 @@ export function useFileConversion() {
     addUrl,
     addScratchEntry,
     addOpenedFileEntry,
+    addImportedFileEntry,
     clearEntries,
     replaceEntryWithOpenedFile,
     selectEntry,

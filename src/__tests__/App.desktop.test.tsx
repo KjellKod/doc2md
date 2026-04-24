@@ -8,7 +8,14 @@ import {
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "../App";
-import { installMockShell } from "../desktop/mockShellBridge";
+import {
+  MAX_BROWSER_FILE_SIZE_BYTES,
+  OVERSIZED_FILE_MESSAGE,
+} from "../converters/messages";
+import {
+  createMockImportShellFile,
+  installMockShell,
+} from "../desktop/mockShellBridge";
 import { NATIVE_MENU_EVENTS } from "../desktop/useNativeMenuEvents";
 
 const { convertFileMock } = vi.hoisted(() => ({
@@ -21,9 +28,45 @@ vi.mock("../converters", () => ({
     fileName.split(".").pop()?.toLowerCase() ?? "",
 }));
 
+function createSuccessResult(markdown: string) {
+  return {
+    markdown,
+    warnings: [],
+    status: "success" as const,
+  };
+}
+
+function mockDoc2mdProtocol() {
+  vi.stubGlobal("location", {
+    ...window.location,
+    protocol: "doc2md:",
+  });
+}
+
+function mockOversizedImportedFileSize() {
+  const NativeFile = File;
+
+  class OversizedFile extends NativeFile {
+    constructor(
+      fileBits: BlobPart[],
+      fileName: string,
+      options?: FilePropertyBag,
+    ) {
+      super(fileBits, fileName, options);
+      Object.defineProperty(this, "size", {
+        configurable: true,
+        value: MAX_BROWSER_FILE_SIZE_BYTES + 1,
+      });
+    }
+  }
+
+  vi.stubGlobal("File", OversizedFile);
+}
+
 describe("App desktop bridge", () => {
   afterEach(() => {
     vi.clearAllMocks();
+    vi.unstubAllGlobals();
     delete window.doc2mdShell;
     cleanup();
   });
@@ -87,6 +130,7 @@ describe("App desktop bridge", () => {
     const cleanupShell = installMockShell({
       openFile: vi.fn(async () => ({
         ok: true as const,
+        kind: "markdown" as const,
         path: "/Users/me/Notes.md",
         content: "one\r\ntwo\r\n",
         mtimeMs: 10,
@@ -118,6 +162,338 @@ describe("App desktop bridge", () => {
       lineEnding: "crlf",
     });
     expect(await screen.findByText("Saved")).toBeInTheDocument();
+
+    cleanupShell();
+  });
+
+  it("routes a directly-opened .markdown file through Save As on Cmd+S", async () => {
+    const saveFile = vi.fn(async () => ({
+      ok: true as const,
+      path: "/Users/me/Notes.MARKDOWN",
+      mtimeMs: 13,
+    }));
+    const saveFileAs = vi.fn(async () => ({
+      ok: true as const,
+      path: "/Users/me/Notes.md",
+      mtimeMs: 14,
+    }));
+    const cleanupShell = installMockShell({
+      openFile: vi.fn(async () => ({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Notes.MARKDOWN",
+        content: "one\ntwo\n",
+        mtimeMs: 12,
+        lineEnding: "lf" as const,
+      })),
+      saveFile,
+      saveFileAs,
+    });
+
+    render(<App />);
+
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+
+    await waitFor(() =>
+      expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
+        "Notes.MARKDOWN",
+      ),
+    );
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.save));
+
+    await waitFor(() => expect(saveFileAs).toHaveBeenCalledTimes(1));
+    expect(saveFileAs).toHaveBeenCalledWith({
+      suggestedName: "Notes.MARKDOWN",
+      content: "one\ntwo\n",
+      lineEnding: "lf",
+    });
+    expect(saveFile).not.toHaveBeenCalled();
+
+    cleanupShell();
+  });
+
+  it("reconstructs imported native files and sends them through convertFile", async () => {
+    mockDoc2mdProtocol();
+    convertFileMock.mockResolvedValue(createSuccessResult("# Imported"));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(new Blob(["hello world"], { type: "text/plain" }), {
+          status: 200,
+          headers: { "Content-Type": "text/plain" },
+        }),
+      ),
+    );
+    const cleanupShell = installMockShell({
+      openFile: vi.fn(async () =>
+        createMockImportShellFile({
+          path: "/Users/me/sample.txt",
+          name: "sample.txt",
+          mtimeMs: 10,
+        }),
+      ),
+    });
+
+    render(<App />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+
+    await waitFor(() =>
+      expect(convertFileMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: "sample.txt",
+          type: "text/plain",
+          lastModified: 10,
+        }),
+      ),
+    );
+    expect(await screen.findByRole("button", { name: /sample\.md/i })).toBeInTheDocument();
+    expect(screen.getByText("Edited")).toBeInTheDocument();
+
+    cleanupShell();
+  });
+
+  it("surfaces the 413 oversized-import reason from the native handoff", async () => {
+    mockDoc2mdProtocol();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response("This file is too large to import (limit: 128 MB).", {
+          status: 413,
+          headers: { "Content-Type": "text/plain" },
+        }),
+      ),
+    );
+    const cleanupShell = installMockShell({
+      openFile: vi.fn(async () =>
+        createMockImportShellFile({
+          path: "/Users/me/oversized.txt",
+          name: "oversized.txt",
+          mtimeMs: 10,
+        }),
+      ),
+    });
+
+    render(<App />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+
+    expect(
+      await screen.findByText(
+        "This file is too large to import (limit: 128 MB).",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Import failed before the app received the file bytes."),
+    ).not.toBeInTheDocument();
+    expect(convertFileMock).not.toHaveBeenCalled();
+
+    cleanupShell();
+  });
+
+  it("routes an imported document's first save to Save As and anchors later saves", async () => {
+    mockDoc2mdProtocol();
+    convertFileMock.mockResolvedValue(createSuccessResult("# Imported"));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(new Blob(["hello world"], { type: "text/plain" }), {
+          status: 200,
+          headers: { "Content-Type": "text/plain" },
+        }),
+      ),
+    );
+    const saveFile = vi.fn(async () => ({
+      ok: true as const,
+      path: "/Users/me/Imported.md",
+      mtimeMs: 22,
+    }));
+    const saveFileAs = vi.fn(async () => ({
+      ok: true as const,
+      path: "/Users/me/Imported.md",
+      mtimeMs: 21,
+    }));
+    const cleanupShell = installMockShell({
+      openFile: vi.fn(async () =>
+        createMockImportShellFile({
+          path: "/Users/me/imported.txt",
+          name: "imported.txt",
+          mtimeMs: 20,
+        }),
+      ),
+      saveFile,
+      saveFileAs,
+    });
+
+    render(<App />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /imported\.md/i })).toBeInTheDocument(),
+    );
+    await waitFor(() =>
+      expect(convertFileMock).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "imported.txt" }),
+      ),
+    );
+
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.save));
+
+    await waitFor(() => expect(saveFileAs).toHaveBeenCalledTimes(1));
+    expect(saveFileAs).toHaveBeenCalledWith({
+      suggestedName: "imported.md",
+      content: "# Imported",
+      lineEnding: "lf",
+    });
+    expect(saveFile).not.toHaveBeenCalled();
+
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.save));
+
+    await waitFor(() => expect(saveFile).toHaveBeenCalledTimes(1));
+    expect(saveFile).toHaveBeenCalledWith({
+      path: "/Users/me/Imported.md",
+      content: "# Imported",
+      expectedMtimeMs: 21,
+      lineEnding: "lf",
+    });
+
+    cleanupShell();
+  });
+
+  it("does not save imported output while conversion is still running", async () => {
+    mockDoc2mdProtocol();
+    let resolveConversion: ((value: ReturnType<typeof createSuccessResult>) => void) | undefined;
+    convertFileMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveConversion = resolve;
+        }),
+    );
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(new Blob(["hello world"], { type: "text/plain" }), {
+          status: 200,
+          headers: { "Content-Type": "text/plain" },
+        }),
+      ),
+    );
+    const saveFile = vi.fn(async () => ({
+      ok: true as const,
+      path: "/Users/me/Imported.md",
+      mtimeMs: 31,
+    }));
+    const saveFileAs = vi.fn(async () => ({
+      ok: true as const,
+      path: "/Users/me/Imported.md",
+      mtimeMs: 30,
+    }));
+    const cleanupShell = installMockShell({
+      openFile: vi.fn(async () =>
+        createMockImportShellFile({
+          path: "/Users/me/pending.txt",
+          name: "pending.txt",
+          mtimeMs: 29,
+        }),
+      ),
+      saveFile,
+      saveFileAs,
+    });
+
+    render(<App />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await screen.findByText("Converting locally.");
+
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.save));
+
+    expect(
+      await screen.findByText("Finishing conversion. Try saving again in a moment."),
+    ).toBeInTheDocument();
+    expect(saveFile).not.toHaveBeenCalled();
+    expect(saveFileAs).not.toHaveBeenCalled();
+
+    resolveConversion?.(createSuccessResult("# Pending"));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /pending\.md/i })).toBeInTheDocument(),
+    );
+
+    cleanupShell();
+  });
+
+  it("does not save an imported entry whose conversion failed", async () => {
+    mockDoc2mdProtocol();
+    mockOversizedImportedFileSize();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(new Blob(["small payload"], { type: "text/plain" }), {
+          status: 200,
+          headers: { "Content-Type": "text/plain" },
+        }),
+      ),
+    );
+    const saveFile = vi.fn(async () => ({
+      ok: true as const,
+      path: "/Users/me/Oversized.md",
+      mtimeMs: 45,
+    }));
+    const saveFileAs = vi.fn(async () => ({
+      ok: true as const,
+      path: "/Users/me/Oversized.md",
+      mtimeMs: 44,
+    }));
+    const cleanupShell = installMockShell({
+      openFile: vi.fn(async () =>
+        createMockImportShellFile({
+          path: "/Users/me/oversized.txt",
+          name: "oversized.txt",
+          mtimeMs: 43,
+        }),
+      ),
+      saveFile,
+      saveFileAs,
+    });
+
+    render(<App />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+
+    expect(
+      (await screen.findAllByText(OVERSIZED_FILE_MESSAGE)).length,
+    ).toBeGreaterThan(0);
+    expect(convertFileMock).not.toHaveBeenCalled();
+
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.save));
+
+    expect(
+      await screen.findByText(
+        "Cannot save: conversion failed. Please re-open the file or choose another.",
+      ),
+    ).toBeInTheDocument();
+    expect(saveFile).not.toHaveBeenCalled();
+    expect(saveFileAs).not.toHaveBeenCalled();
+
+    cleanupShell();
+  });
+
+  it("shows the release-bundle import notice outside the doc2md scheme", async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    const cleanupShell = installMockShell({
+      openFile: vi.fn(async () =>
+        createMockImportShellFile({
+          path: "/Users/me/dev-only.txt",
+          name: "dev-only.txt",
+        }),
+      ),
+    });
+
+    render(<App />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+
+    expect(
+      await screen.findByText(
+        "Importing non-Markdown files requires the Release desktop bundle. Run `npm run build:mac` or open the file from the installed app.",
+      ),
+    ).toBeInTheDocument();
+    expect(fetchSpy).not.toHaveBeenCalled();
 
     cleanupShell();
   });
@@ -154,6 +530,7 @@ describe("App desktop bridge", () => {
     const cleanupShell = installMockShell({
       openFile: vi.fn(async () => ({
         ok: true as const,
+        kind: "markdown" as const,
         path: "/Users/me/Clean.md",
         content: "clean",
         mtimeMs: 15,
@@ -238,6 +615,7 @@ describe("App desktop bridge", () => {
     const cleanupShell = installMockShell({
       openFile: vi.fn(async () => ({
         ok: true as const,
+        kind: "markdown" as const,
         path: "/Users/me/Conflict.md",
         content: "draft",
         mtimeMs: 20,
@@ -274,6 +652,7 @@ describe("App desktop bridge", () => {
       .fn()
       .mockResolvedValueOnce({
         ok: true as const,
+        kind: "markdown" as const,
         path: "/Users/me/Alpha.md",
         content: "alpha",
         mtimeMs: 100,
@@ -281,6 +660,7 @@ describe("App desktop bridge", () => {
       })
       .mockResolvedValueOnce({
         ok: true as const,
+        kind: "markdown" as const,
         path: "/Users/me/Beta.md",
         content: "beta",
         mtimeMs: 200,
@@ -343,6 +723,7 @@ describe("App desktop bridge", () => {
       .fn()
       .mockResolvedValueOnce({
         ok: true as const,
+        kind: "markdown" as const,
         path: "/Users/me/Reload.md",
         content: "local",
         mtimeMs: 40,
@@ -350,6 +731,7 @@ describe("App desktop bridge", () => {
       })
       .mockResolvedValueOnce({
         ok: true as const,
+        kind: "markdown" as const,
         path: "/Users/me/Reload.md",
         content: "disk",
         mtimeMs: 41,
@@ -384,6 +766,55 @@ describe("App desktop bridge", () => {
     cleanupShell();
   });
 
+  it("fails conflict reloads that return a non-markdown shell result", async () => {
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    const openFile = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Reload.md",
+        content: "local",
+        mtimeMs: 40,
+        lineEnding: "lf" as const,
+      })
+      .mockResolvedValueOnce(
+        createMockImportShellFile({
+          path: "/Users/me/Reload.md",
+          name: "Reload.txt",
+          format: "txt",
+        }),
+      );
+    const cleanupShell = installMockShell({
+      openFile,
+      saveFile: vi.fn(async () => ({
+        ok: false as const,
+        code: "conflict" as const,
+        path: "/Users/me/Reload.md",
+        actualMtimeMs: 41,
+      })),
+    });
+
+    render(<App />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await screen.findByRole("button", { name: /reload\.md/i });
+
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.save));
+    await screen.findByText("File changed on disk.");
+    fireEvent.click(screen.getByRole("button", { name: "Reload" }));
+
+    expect(
+      await screen.findByText("Reload failed: file is no longer a Markdown target."),
+    ).toBeInTheDocument();
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      "conflict-reload received non-markdown kind",
+    );
+
+    cleanupShell();
+  });
+
   it("guards repeated native save events while a save is pending", async () => {
     let resolveSave: (value: {
       ok: true;
@@ -399,6 +830,7 @@ describe("App desktop bridge", () => {
     const cleanupShell = installMockShell({
       openFile: vi.fn(async () => ({
         ok: true as const,
+        kind: "markdown" as const,
         path: "/Users/me/Pending.md",
         content: "pending",
         mtimeMs: 50,
@@ -433,6 +865,7 @@ describe("App desktop bridge", () => {
     const cleanupShell = installMockShell({
       openFile: vi.fn(async () => ({
         ok: true as const,
+        kind: "markdown" as const,
         path: "/Users/me/Reveal.md",
         content: "reveal",
         mtimeMs: 60,
@@ -469,6 +902,7 @@ describe("App desktop bridge", () => {
     const cleanupShell = installMockShell({
       openFile: vi.fn(async () => ({
         ok: true as const,
+        kind: "markdown" as const,
         path: "/Users/me/Denied.md",
         content: "denied",
         mtimeMs: 70,

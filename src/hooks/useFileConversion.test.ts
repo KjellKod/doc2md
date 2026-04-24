@@ -254,6 +254,40 @@ describe("useFileConversion", () => {
     expect(result.current.selectedEntry).toBeNull();
   });
 
+  it("adds imported files through the shared conversion pipeline and keeps source metadata", async () => {
+    convertFileMock.mockResolvedValue(createSuccessResult("# Imported"));
+
+    const { result } = renderHook(() => useFileConversion());
+    const file = new File(["hello"], "imported.txt", { type: "text/plain" });
+
+    act(() => {
+      result.current.addImportedFileEntry({
+        file,
+        path: "/Users/me/imported.txt",
+        mtimeMs: 99,
+        sourceFormat: "txt",
+      });
+    });
+
+    await waitFor(() => {
+      expect(result.current.entries[0]?.status).toBe("success");
+    });
+
+    expect(convertFileMock).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "imported.txt" }),
+    );
+    expect(result.current.entries[0]).toMatchObject({
+      name: "imported.md",
+      format: "md",
+      sourceMeta: {
+        path: "/Users/me/imported.txt",
+        format: "txt",
+        mtimeMs: 99,
+      },
+    });
+    expect(result.current.entries[0]?.desktopFile).toBeUndefined();
+  });
+
   it("converts re-added files after clearing entries", async () => {
     convertFileMock.mockResolvedValue(createSuccessResult("# Converted"));
 

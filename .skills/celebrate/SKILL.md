@@ -58,7 +58,7 @@ If no argument is provided:
 
 ### Step 3: Generate the Celebration as Rich Markdown
 
-**IMPORTANT: Write the celebration directly as your response text. Do NOT run a script. Do NOT wrap the entire celebration in a code block. The UI renders agent markdown beautifully, but ASCII/block-letter title art must be wrapped in `<pre>...</pre>` rather than emitted as markdown headers, list items, or fenced code blocks.**
+**IMPORTANT: Write the celebration directly as your response text. Do NOT run a script. Do NOT wrap the entire celebration in a code block. The UI renders agent markdown beautifully, but ASCII/block-letter title art must be wrapped in a triple-backtick fenced code block — `<pre>` tags render inconsistently in the agent terminal and drop the monospace grid.**
 
 You have all the data from the artifacts. Now **create your own celebration**. Be creative. Make it feel like an achievement, not a status report.
 
@@ -87,15 +87,15 @@ You have all the data from the artifacts. Now **create your own celebration**. B
 - Tables if they help present the data
 
 **ASCII/block-letter title rules:**
-- Wrap block-letter rows inside a literal HTML `<pre>` block.
+- Wrap block-letter rows inside a triple-backtick fenced code block (no language tag). The agent terminal renders `<pre>` inconsistently; fenced code blocks are reliable monospace.
 - Do **not** prefix block-letter rows with `#`, `-`, `>`, or any other markdown marker.
 - Keep the title art contiguous with no blank separator inserted inside the rows.
-- After the closing `</pre>`, leave one normal blank line before the rest of the celebration.
+- After the closing fence, leave one normal blank line before the rest of the celebration.
 
 **Do NOT:**
 - Put too many characters on one line of block letters — max ~5 letters per line, break long names across multiple lines (one word per block, like the HELLO/WORLD example)
-- Wrap the entire celebration in a code block (kills the rich rendering)
-- Use fenced code blocks for title art
+- Wrap the entire celebration in a code block (kills the rich rendering) — only wrap the title art itself
+- Use `<pre>` tags for title art — use fenced code blocks so the terminal renderer actually shows the monospace characters
 - Prefix ASCII title art with markdown header markers such as `#`
 - Use generic achievements like "Quest Complete" or "Battle Tested"
 - Use generic metrics like "Files Changed: 22" or "Agents Involved: 0"
@@ -106,7 +106,7 @@ You have all the data from the artifacts. Now **create your own celebration**. B
 
 ---
 
-<pre>
+```
 ██╗  ██╗███████╗██╗     ██╗      ██████╗
 ██║  ██║██╔════╝██║     ██║     ██╔═══██╗
 ███████║█████╗  ██║     ██║     ██║   ██║
@@ -120,7 +120,7 @@ You have all the data from the artifacts. Now **create your own celebration**. B
 ██║███╗██║██║   ██║██╔══██╗██║     ██║  ██║
 ╚███╔███╔╝╚██████╔╝██║  ██║███████╗██████╔╝
  ╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═════╝
-</pre>
+```
 
 Break the text across **multiple lines** — max ~5 letters per line. Each word gets its own block, like "HELLO" on one line and "WORLD" on the next. For longer words, hyphenate: "RESOL-" on one line and "UTION" on the next. This keeps it readable without horizontal overflow.
 
@@ -198,16 +198,16 @@ When the PR is odd, JC renders a requiem using content Dexter provided (see `.sk
 
 **Render with gothic/memorial aesthetic:**
 
-**Block-letter title art** — use the same Unicode block-letter technique as celebrations, but for tombstone words, wrapped in `<pre>...</pre>`. Max ~5 letters per line. Examples:
+**Block-letter title art** — use the same Unicode block-letter technique as celebrations, wrapped in a triple-backtick fenced code block (no language tag). Max ~5 letters per line. Examples:
 
-<pre>
+```
 ██████╗  ██╗██████╗
 ██╔══██╗ ██║██╔══██╗
 ██████╔╝ ██║██████╔╝
 ██╔══██╗ ██║██╔═══╝
 ██║  ██║ ██║██║
 ╚═╝  ╚═╝ ╚═╝╚═╝
-</pre>
+```
 
 For the quest name, render it in block letters below the R.I.P. — same rules as celebrations (max ~5 letters per line, break across lines).
 

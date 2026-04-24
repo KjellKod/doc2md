@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import UniformTypeIdentifiers
 import WebKit
 
 final class ShellBridge: NSObject, WKScriptMessageHandler {
@@ -109,7 +110,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
                 panel.canChooseFiles = true
                 panel.allowsMultipleSelection = false
                 panel.directoryURL = lastDirectoryURL
-                panel.allowedFileTypes = Self.markdownFileExtensions
+                panel.allowedContentTypes = Self.openContentTypes
 
                 guard panel.runModal() == .OK else {
                     throw FileStoreError.cancelled
@@ -118,11 +119,37 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
                 url = try FileStore.selectedURL(from: panel.url)
             }
 
-            let result = try withSecurityScope(for: url) {
-                try fileStore.open(url: url)
+            let standardizedURL = url.standardizedFileURL
+            let fileExtension = standardizedURL.pathExtension.lowercased()
+
+            if Self.markdownDirectExtensions.contains(fileExtension) {
+                let result = try withSecurityScope(for: standardizedURL) {
+                    try fileStore.open(url: standardizedURL)
+                }
+                remember(url: standardizedURL)
+                resolve(id: message.id, result: .openMarkdown(result))
+                return
             }
-            remember(url: url)
-            resolve(id: message.id, result: .open(result))
+
+            guard SupportedFormats.supportedNonMarkdownExtensions.contains(fileExtension) else {
+                throw FileStoreError.error(message: "The selected file type is not supported.")
+            }
+
+            let ticket = try ImportHandoff.shared.enqueue(url: standardizedURL)
+            rememberLastDirectory(from: standardizedURL)
+            // Import-source handoff URLs are intentionally not remembered as
+            // directly editable paths; only `.md` targets belong in knownURLsByPath.
+            let openImportResult = ShellOpenImportOk(
+                ok: true,
+                kind: "import-source",
+                path: ticket.path,
+                name: ticket.name,
+                format: ticket.format,
+                mtimeMs: ticket.mtimeMs,
+                importUrl: ImportHandoff.importURL(for: ticket.token),
+                mimeType: ticket.mimeType
+            )
+            resolve(id: message.id, result: .openImport(openImportResult))
         } catch {
             resolve(id: message.id, result: Self.response(for: error))
         }
@@ -142,6 +169,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
                 return
             }
 
+            try FileStore.validateMarkdownSaveTarget(url: knownURL)
             let result = try withSecurityScope(for: knownURL) {
                 try fileStore.save(args: args, knownURL: knownURL)
             }
@@ -159,7 +187,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
             let panel = NSSavePanel()
             panel.nameFieldStringValue = args.suggestedName
             panel.directoryURL = lastDirectoryURL
-            panel.allowedFileTypes = Self.markdownFileExtensions
+            panel.allowedContentTypes = Self.saveContentTypes
             panel.canCreateDirectories = true
 
             guard panel.runModal() == .OK else {
@@ -167,6 +195,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
             }
 
             let url = try FileStore.selectedURL(from: panel.url)
+            try FileStore.validateMarkdownSaveTarget(url: url)
             let result = try withSecurityScope(for: url) {
                 try fileStore.saveAs(
                     url: url,
@@ -210,6 +239,10 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
 
     private func remember(url: URL) {
         knownURLsByPath[url.standardizedFileURL.path] = url
+        rememberLastDirectory(from: url)
+    }
+
+    private func rememberLastDirectory(from url: URL) {
         lastDirectoryURL = url.deletingLastPathComponent()
     }
 
@@ -280,7 +313,25 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
         URL(fileURLWithPath: path).standardizedFileURL.path
     }
 
-    private static let markdownFileExtensions = ["md", "markdown", "txt"]
+    private static let markdownDirectExtensions = ["md", "markdown"]
+    private static let openContentTypes = contentTypes(forExtensions: SupportedFormats.allSupportedExtensions)
+    private static let saveContentTypes = contentTypes(forExtensions: [FileStore.markdownSaveExtension])
+
+    private static func contentTypes(forExtensions extensions: [String]) -> [UTType] {
+        var seenIdentifiers = Set<String>()
+
+        return extensions.compactMap { fileExtension in
+            guard let type = UTType(filenameExtension: fileExtension) else {
+                return nil
+            }
+
+            guard seenIdentifiers.insert(type.identifier).inserted else {
+                return nil
+            }
+
+            return type
+        }
+    }
 
     private static let scriptSource = #"""
 (() => {
@@ -336,21 +387,49 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
 
 private struct ShellCallResult: Encodable {
     let ok: Bool
+    let kind: String?
     let path: String?
+    let name: String?
+    let format: String?
     let mtimeMs: Int64?
     let content: String?
     let lineEnding: ShellLineEnding?
+    let importUrl: String?
+    let mimeType: String?
     let code: String?
     let actualMtimeMs: Int64?
     let message: String?
 
-    static func open(_ result: ShellOpenOk) -> ShellCallResult {
+    static func openMarkdown(_ result: ShellOpenMarkdownOk) -> ShellCallResult {
         ShellCallResult(
             ok: true,
+            kind: result.kind,
             path: result.path,
+            name: nil,
+            format: nil,
             mtimeMs: result.mtimeMs,
             content: result.content,
             lineEnding: result.lineEnding,
+            importUrl: nil,
+            mimeType: nil,
+            code: nil,
+            actualMtimeMs: nil,
+            message: nil
+        )
+    }
+
+    static func openImport(_ result: ShellOpenImportOk) -> ShellCallResult {
+        ShellCallResult(
+            ok: true,
+            kind: result.kind,
+            path: result.path,
+            name: result.name,
+            format: result.format,
+            mtimeMs: result.mtimeMs,
+            content: nil,
+            lineEnding: nil,
+            importUrl: result.importUrl,
+            mimeType: result.mimeType,
             code: nil,
             actualMtimeMs: nil,
             message: nil
@@ -360,10 +439,15 @@ private struct ShellCallResult: Encodable {
     static func save(_ result: ShellSaveOk) -> ShellCallResult {
         ShellCallResult(
             ok: true,
+            kind: nil,
             path: result.path,
+            name: nil,
+            format: nil,
             mtimeMs: result.mtimeMs,
             content: nil,
             lineEnding: nil,
+            importUrl: nil,
+            mimeType: nil,
             code: nil,
             actualMtimeMs: nil,
             message: nil
@@ -373,10 +457,15 @@ private struct ShellCallResult: Encodable {
     static func reveal(_ result: ShellRevealOk) -> ShellCallResult {
         ShellCallResult(
             ok: true,
+            kind: nil,
             path: result.path,
+            name: nil,
+            format: nil,
             mtimeMs: nil,
             content: nil,
             lineEnding: nil,
+            importUrl: nil,
+            mimeType: nil,
             code: nil,
             actualMtimeMs: nil,
             message: nil
@@ -386,10 +475,15 @@ private struct ShellCallResult: Encodable {
     static func cancelled() -> ShellCallResult {
         ShellCallResult(
             ok: false,
+            kind: nil,
             path: nil,
+            name: nil,
+            format: nil,
             mtimeMs: nil,
             content: nil,
             lineEnding: nil,
+            importUrl: nil,
+            mimeType: nil,
             code: "cancelled",
             actualMtimeMs: nil,
             message: nil
@@ -399,10 +493,15 @@ private struct ShellCallResult: Encodable {
     static func conflict(path: String, actualMtimeMs: Int64) -> ShellCallResult {
         ShellCallResult(
             ok: false,
+            kind: nil,
             path: path,
+            name: nil,
+            format: nil,
             mtimeMs: nil,
             content: nil,
             lineEnding: nil,
+            importUrl: nil,
+            mimeType: nil,
             code: "conflict",
             actualMtimeMs: actualMtimeMs,
             message: nil
@@ -412,10 +511,15 @@ private struct ShellCallResult: Encodable {
     static func permissionNeeded(path: String?, message: String) -> ShellCallResult {
         ShellCallResult(
             ok: false,
+            kind: nil,
             path: path,
+            name: nil,
+            format: nil,
             mtimeMs: nil,
             content: nil,
             lineEnding: nil,
+            importUrl: nil,
+            mimeType: nil,
             code: "permission-needed",
             actualMtimeMs: nil,
             message: message
@@ -425,10 +529,15 @@ private struct ShellCallResult: Encodable {
     static func error(message: String) -> ShellCallResult {
         ShellCallResult(
             ok: false,
+            kind: nil,
             path: nil,
+            name: nil,
+            format: nil,
             mtimeMs: nil,
             content: nil,
             lineEnding: nil,
+            importUrl: nil,
+            mimeType: nil,
             code: "error",
             actualMtimeMs: nil,
             message: message

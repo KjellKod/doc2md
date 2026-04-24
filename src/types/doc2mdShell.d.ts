@@ -1,14 +1,27 @@
 export type ShellLineEnding = "lf" | "crlf";
 
-export interface ShellOpenOk {
+export interface ShellOpenMarkdownOk {
   ok: true;
+  kind: "markdown";
   path: string;
   mtimeMs: number;
   content: string;
   lineEnding: ShellLineEnding;
 }
 
-export type ShellFile = ShellOpenOk;
+export interface ShellOpenImportOk {
+  ok: true;
+  kind: "import-source";
+  path: string;
+  name: string;
+  format: string;
+  mtimeMs: number;
+  importUrl: string;
+  mimeType?: string;
+}
+
+export type ShellFile = ShellOpenMarkdownOk | ShellOpenImportOk;
+export type ShellOpenOk = ShellOpenMarkdownOk;
 
 export interface ShellSaveOk {
   ok: true;
@@ -76,7 +89,7 @@ export interface OpenFileArgs {
 
 export interface Doc2mdShell {
   readonly version: 1;
-  openFile(args?: OpenFileArgs): Promise<ShellResult<ShellOpenOk>>;
+  openFile(args?: OpenFileArgs): Promise<ShellResult<ShellFile>>;
   saveFile(args: SaveFileArgs): Promise<ShellResult<ShellSaveOk>>;
   saveFileAs(args: SaveFileAsArgs): Promise<ShellResult<ShellSaveOk>>;
   revealInFinder(

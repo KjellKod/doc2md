@@ -7,12 +7,24 @@ enum ShellLineEnding: String, Codable {
     case crlf
 }
 
-struct ShellOpenOk: Codable {
+struct ShellOpenMarkdownOk: Codable {
     let ok: Bool
+    let kind: String
     let path: String
     let mtimeMs: Int64
     let content: String
     let lineEnding: ShellLineEnding
+}
+
+struct ShellOpenImportOk: Codable {
+    let ok: Bool
+    let kind: String
+    let path: String
+    let name: String
+    let format: String
+    let mtimeMs: Int64
+    let importUrl: String
+    let mimeType: String?
 }
 
 struct ShellSaveOk: Codable {
@@ -41,21 +53,24 @@ enum FileStoreError: Error, Equatable {
 }
 
 final class FileStore {
+    static let markdownSaveExtension = "md"
+
     private let fileManager: FileManager
 
     init(fileManager: FileManager = .default) {
         self.fileManager = fileManager
     }
 
-    func open(url: URL) throws -> ShellOpenOk {
+    func open(url: URL) throws -> ShellOpenMarkdownOk {
         do {
             let data = try Data(contentsOf: url)
             guard let content = String(data: data, encoding: .utf8) else {
                 throw FileStoreError.error(message: "The selected file is not valid UTF-8 text.")
             }
 
-            return ShellOpenOk(
+            return ShellOpenMarkdownOk(
                 ok: true,
+                kind: "markdown",
                 path: url.standardizedFileURL.path,
                 mtimeMs: try modificationTimeMs(for: url),
                 content: content,
@@ -71,6 +86,7 @@ final class FileStore {
     func save(args: SaveFileArgs, knownURL: URL) throws -> ShellSaveOk {
         let url = knownURL
         do {
+            try Self.validateMarkdownSaveTarget(url: url)
             let actualMtimeMs = try modificationTimeMs(for: url)
             if actualMtimeMs != args.expectedMtimeMs {
                 throw FileStoreError.conflict(path: url.standardizedFileURL.path, actualMtimeMs: actualMtimeMs)
@@ -92,6 +108,7 @@ final class FileStore {
 
     func saveAs(url: URL, content: String, lineEnding: ShellLineEnding) throws -> ShellSaveOk {
         do {
+            try Self.validateMarkdownSaveTarget(url: url)
             try writeAtomically(content: content, lineEnding: lineEnding, to: url)
 
             return ShellSaveOk(
@@ -205,6 +222,13 @@ final class FileStore {
 
     static func mtimeMs(from date: Date) -> Int64 {
         Int64((date.timeIntervalSince1970 * 1000).rounded())
+    }
+
+    static func validateMarkdownSaveTarget(url: URL) throws {
+        let normalizedURL = url.standardizedFileURL
+        guard normalizedURL.pathExtension.lowercased() == markdownSaveExtension else {
+            throw FileStoreError.error(message: "Save target must use the .md extension.")
+        }
     }
 
     static func map(error: Error, path: String?) -> FileStoreError {
