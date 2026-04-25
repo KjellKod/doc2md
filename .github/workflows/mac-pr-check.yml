@@ -1,6 +1,6 @@
 name: Mac PR check
 
-on:
+"on":
   pull_request:
     branches: [main]
 
@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: mac-pr-check-${{ github.event.pull_request.number || github.ref }}
+  group: mac-pr-check-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
