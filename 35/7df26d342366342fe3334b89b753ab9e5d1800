@@ -1,0 +1,25 @@
+scripts/security_ci_guard.py
+  ca41e8e7cea3363f 117-118,122,126,130
+tests/unit/test_security_ci_guard_release.py
+  ca41e8e7cea3363f 196-219
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "357df26d342366342fe3334b89b753ab9e5d1800",
+  "prompts": {
+    "ca41e8e7cea3363f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019dc341-47a0-79c3-9695-8be12ceb0e79",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 29,
+      "total_deletions": 4,
+      "accepted_lines": 29,
+      "overriden_lines": 0
+    }
+  }
+}
