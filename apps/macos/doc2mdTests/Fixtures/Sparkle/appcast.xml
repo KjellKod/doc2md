@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+  <channel>
+    <title>doc2md Test Appcast</title>
+    <link>http://127.0.0.1:47654/appcast.xml</link>
+    <description>Local-only Sparkle fixture for Phase 5b update detection.</description>
+    <language>en</language>
+    <item>
+      <title>doc2md 99.0 Test Update</title>
+      <sparkle:version>9900</sparkle:version>
+      <sparkle:shortVersionString>99.0</sparkle:shortVersionString>
+      <pubDate>Fri, 24 Apr 2026 12:00:00 -0600</pubDate>
+      <enclosure
+        url="http://127.0.0.1:47654/doc2md-99.0.zip"
+        sparkle:edSignature="/Swjb5/+l79xtpxdxObb5zYJAx+DxgdyZ0NRN5wo/a9wMC5IuJBYBE3dxhmnpX/duXQ7mSPsM2focLFbfGlcRQ=="
+        length="1"
+        type="application/octet-stream" />
+    </item>
+  </channel>
+</rss>

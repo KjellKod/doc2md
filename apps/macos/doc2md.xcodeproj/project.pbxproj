@@ -19,6 +19,8 @@
 		9A0200000000000000000009 /* SupportedFormats.generated.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A010000000000000000000A /* SupportedFormats.generated.swift */; };
 		9A0200000000000000000010 /* AppScheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000006 /* AppScheme.swift */; };
 		9A0200000000000000000011 /* AppSchemeImportRouteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A010000000000000000000B /* AppSchemeImportRouteTests.swift */; };
+		9A0200000000000000000012 /* SparkleController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A010000000000000000000C /* SparkleController.swift */; };
+		9A0200000000000000000013 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 9A5000000000000000000001 /* Sparkle */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -44,9 +46,19 @@
 		9A0100000000000000000009 /* FileStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileStoreTests.swift; sourceTree = "<group>"; };
 		9A010000000000000000000A /* SupportedFormats.generated.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupportedFormats.generated.swift; sourceTree = "<group>"; };
 		9A010000000000000000000B /* AppSchemeImportRouteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSchemeImportRouteTests.swift; sourceTree = "<group>"; };
+		9A010000000000000000000C /* SparkleController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparkleController.swift; sourceTree = "<group>"; };
+		9A010000000000000000000D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		9A0300000000000000000005 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9A0200000000000000000013 /* Sparkle in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		9A0300000000000000000004 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -73,10 +85,12 @@
 				9A0100000000000000000001 /* WebShellView.swift */,
 				9A0100000000000000000004 /* ShellBridge.swift */,
 				9A0100000000000000000005 /* MenuController.swift */,
+				9A010000000000000000000C /* SparkleController.swift */,
 				9A0100000000000000000006 /* AppScheme.swift */,
 				9A0100000000000000000007 /* FileStore.swift */,
 				9A010000000000000000000A /* SupportedFormats.generated.swift */,
 				9A0000000000000000000003 /* Resources */,
+				9A010000000000000000000D /* Info.plist */,
 			);
 			path = doc2md;
 			sourceTree = "<group>";
@@ -115,6 +129,7 @@
 			buildConfigurationList = 9A3000000000000000000002 /* Build configuration list for PBXNativeTarget "doc2md" */;
 			buildPhases = (
 				9A0300000000000000000000 /* Sources */,
+				9A0300000000000000000005 /* Frameworks */,
 				9A0300000000000000000001 /* Build Desktop Web Bundle */,
 				9A0300000000000000000002 /* Resources */,
 			);
@@ -123,6 +138,9 @@
 			dependencies = (
 			);
 			name = doc2md;
+			packageProductDependencies = (
+				9A5000000000000000000001 /* Sparkle */,
+			);
 			productName = doc2md;
 			productReference = 9A0100000000000000000003 /* doc2md.app */;
 			productType = "com.apple.product-type.application";
@@ -172,6 +190,9 @@
 				Base,
 			);
 			mainGroup = 9A0000000000000000000000;
+			packageReferences = (
+				9A5000000000000000000000 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
 			productRefGroup = 9A0000000000000000000002 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -227,6 +248,7 @@
 				9A0200000000000000000005 /* AppScheme.swift in Sources */,
 				9A0200000000000000000006 /* FileStore.swift in Sources */,
 				9A0200000000000000000009 /* SupportedFormats.generated.swift in Sources */,
+				9A0200000000000000000012 /* SparkleController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -261,17 +283,15 @@
 				CODE_SIGNING_REQUIRED = NO;
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = doc2md;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				INFOPLIST_KEY_NSApplicationSupportsAutomaticTermination = YES;
-				INFOPLIST_KEY_NSApplicationSupportsSecureRestorableState = YES;
-				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = doc2md/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kjellkod.doc2md;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
@@ -289,17 +309,15 @@
 				CODE_SIGNING_REQUIRED = NO;
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = doc2md;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				INFOPLIST_KEY_NSApplicationSupportsAutomaticTermination = YES;
-				INFOPLIST_KEY_NSApplicationSupportsSecureRestorableState = YES;
-				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = doc2md/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kjellkod.doc2md;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
@@ -503,6 +521,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		9A5000000000000000000000 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.9.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		9A5000000000000000000001 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9A5000000000000000000000 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 9A9999999999999999999999 /* Project object */;
 }

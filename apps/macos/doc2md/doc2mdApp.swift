@@ -3,6 +3,7 @@ import SwiftUI
 @main
 struct Doc2mdApp: App {
     @StateObject private var shellHost = ShellHost()
+    private let sparkleController = SparkleController()
 
     // Multi-window is explicitly out of scope for the MVP (see
     // ideas/mac-desktop-app-roadmap.md). Using `Window` instead of `WindowGroup`
@@ -50,6 +51,12 @@ struct Doc2mdApp: App {
                     shellHost.menuController.revealInFinder()
                 }
                 .keyboardShortcut("r", modifiers: [.command, .shift])
+            }
+
+            CommandGroup(after: .appInfo) {
+                Button("Check for Updates...") {
+                    sparkleController.checkForUpdates()
+                }
             }
         }
     }
