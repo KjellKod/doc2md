@@ -1,0 +1,53 @@
+scripts/release/generate_appcast.py
+  1cf5d91bb1075d66 1-91
+scripts/release/package_mac_dmg.sh
+  1cf5d91bb1075d66 1-36
+scripts/release/sign_mac_app.sh
+  1cf5d91bb1075d66 1-109
+scripts/release/sign_sparkle_zip.sh
+  1cf5d91bb1075d66 1-143
+scripts/security_ci_guard.py
+  1cf5d91bb1075d66 5,30-51,66-73,82-113,122-145,150-151,153,158-162,193-220,225
+  ca41e8e7cea3363f 114-120
+tests/unit/test_security_ci_guard_release.py
+  ca41e8e7cea3363f 143-168
+.github/workflows/release-mac.yml
+  ca41e8e7cea3363f 5-269
+scripts/release/notarize_mac_app.sh
+  1cf5d91bb1075d66 1-100
+scripts/release/package_sparkle_zip.sh
+  1cf5d91bb1075d66 1-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "d418107ceca2d8b10a76e23bbc5bae117109d571",
+  "prompts": {
+    "1cf5d91bb1075d66": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019dc35d-368a-74f3-8932-90208bbc69c0",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 624,
+      "total_deletions": 6,
+      "accepted_lines": 624,
+      "overriden_lines": 0
+    },
+    "ca41e8e7cea3363f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019dc341-47a0-79c3-9695-8be12ceb0e79",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 37,
+      "total_deletions": 3,
+      "accepted_lines": 35,
+      "overriden_lines": 0
+    }
+  }
+}
