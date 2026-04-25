@@ -166,6 +166,33 @@ class SecurityCiGuardReleaseTests(unittest.TestCase):
         self.assertEqual(len(failures), 1)
         self.assertIn("GitHub globs", failures[0])
 
+    def test_release_workflow_multiline_regex_tag_filter_fails_guard(self):
+        module = load_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "release-mac.yml"
+            path.write_text(
+                textwrap.dedent(
+                    """
+                    name: bad
+                    on:
+                      push:
+                        tags:
+                          - "v[0-9]+.[0-9]+.[0-9]+"
+                    jobs:
+                      build:
+                        runs-on: ubuntu-latest
+                        steps:
+                          - run: true
+                    """
+                ).lstrip(),
+                encoding="utf-8",
+            )
+
+            failures = module.scan_workflow(path)
+
+        self.assertEqual(len(failures), 1)
+        self.assertIn("GitHub globs", failures[0])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -3,7 +3,8 @@ set -euo pipefail
 
 ZIP_PATH="${ZIP_PATH:-}"
 OUTPUT_JSON="${OUTPUT_JSON:-sparkle-signature.json}"
-PUBLIC_KEY_PATH="${PUBLIC_KEY_PATH:-apps/macos/doc2mdTests/Fixtures/Sparkle/test-public-key.txt}"
+PUBLIC_KEY_PATH="${PUBLIC_KEY_PATH:-}"
+PUBLIC_KEY_PLIST_PATH="${PUBLIC_KEY_PLIST_PATH:-apps/macos/doc2md/Info.plist}"
 
 fail() {
   printf 'Error: %s\n' "$*" >&2
@@ -34,11 +35,19 @@ verify_with_committed_public_key() {
   local signature="$2"
   local public_key_path="$3"
 
-  [[ -f "$public_key_path" ]] || fail "committed Sparkle public key is missing: $public_key_path"
-
   local work_dir
   work_dir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/doc2md-sparkle-verify.XXXXXX")"
   local verifier="$work_dir/verify.swift"
+  local public_key_file="$work_dir/sparkle-public-key.txt"
+
+  if [[ -n "$public_key_path" ]]; then
+    [[ -f "$public_key_path" ]] || fail "Sparkle public key file is missing: $public_key_path"
+    cp "$public_key_path" "$public_key_file"
+  else
+    [[ -f "$PUBLIC_KEY_PLIST_PATH" ]] || fail "Info.plist is missing: $PUBLIC_KEY_PLIST_PATH"
+    /usr/libexec/PlistBuddy -c 'Print :SUPublicEDKey' "$PUBLIC_KEY_PLIST_PATH" >"$public_key_file"
+  fi
+
   cat >"$verifier" <<'SWIFT'
 import CryptoKit
 import Foundation
@@ -72,7 +81,7 @@ FileHandle.standardError.write(Data("Sparkle signature does not verify against c
 exit(1)
 SWIFT
 
-  swift "$verifier" "$zip_path" "$signature" "$public_key_path"
+  swift "$verifier" "$zip_path" "$signature" "$public_key_file"
   rm -rf "$work_dir"
 }
 

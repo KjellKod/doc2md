@@ -85,7 +85,7 @@ done
 
 trap cleanup_keychain EXIT
 
-P12_PATH="$(mktemp "${RUNNER_TEMP:-/tmp}/doc2md-dev-id.XXXXXX.p12")"
+P12_PATH="$(mktemp "${RUNNER_TEMP:-/tmp}/doc2md-dev-id.XXXXXX")"
 trap 'rm -f "$P12_PATH"; cleanup_keychain' EXIT
 decode_base64_secret "$APPLE_DEVELOPER_ID_APPLICATION_P12" "$P12_PATH"
 create_keychain "$P12_PATH"

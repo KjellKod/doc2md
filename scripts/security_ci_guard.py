@@ -109,12 +109,35 @@ def workflow_jobs(text: str) -> dict[str, str]:
     return jobs
 
 
+def has_regex_like_release_tag_filter(text: str) -> bool:
+    in_tags = False
+    tag_indent = 0
+
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+
+        indent = len(line) - len(line.lstrip())
+        if in_tags:
+            if indent <= tag_indent and not stripped.startswith("-"):
+                in_tags = False
+            elif "+" in line:
+                return True
+
+        if stripped.startswith("tags:"):
+            if "+" in line:
+                return True
+            in_tags = True
+            tag_indent = indent
+
+    return False
+
+
 def release_secret_failures(path: Path, text: str) -> list[str]:
     failures: list[str] = []
 
-    if path.name == "release-mac.yml" and any(
-        "tags:" in line and "+" in line for line in text.splitlines()
-    ):
+    if path.name == "release-mac.yml" and has_regex_like_release_tag_filter(text):
         failures.append(
             f"{path}: release tag filters are GitHub globs, not regular expressions; use v*.*.* plus shell validation."
         )

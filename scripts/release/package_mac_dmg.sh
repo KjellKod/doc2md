@@ -22,13 +22,15 @@ cleanup() {
 }
 trap cleanup EXIT
 
-cp -R "$APP_PATH" "$STAGING_DIR/doc2md.app"
+ditto -rsrc "$APP_PATH" "$STAGING_DIR/doc2md.app"
 hdiutil create -volname "doc2md ${VERSION}" -srcfolder "$STAGING_DIR" -ov -format UDZO "$DMG_PATH"
 
-if [[ "${RELEASE_DRY_RUN:-0}" == "1" || -z "${CODESIGN_IDENTITY:-}" ]]; then
+if [[ "${RELEASE_DRY_RUN:-0}" == "1" ]]; then
   printf 'Created unsigned dry-run DMG: %s\n' "$DMG_PATH"
   exit 0
 fi
+
+[[ -n "${CODESIGN_IDENTITY:-}" ]] || fail "CODESIGN_IDENTITY is required unless RELEASE_DRY_RUN=1"
 
 codesign --force --timestamp --sign "$CODESIGN_IDENTITY" "$DMG_PATH"
 codesign --verify --deep --strict --verbose=2 "$DMG_PATH"

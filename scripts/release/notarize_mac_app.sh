@@ -97,4 +97,8 @@ if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
   } >>"$GITHUB_STEP_SUMMARY"
 fi
 
+if ((SPCTL_STATUS != 0)); then
+  fail "spctl assessment failed"
+fi
+
 printf 'Notarized and stapled: %s\n' "$APP_PATH"
