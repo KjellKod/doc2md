@@ -1,8 +1,8 @@
 # doc2md Mac Shell
 
-This is the Phase 4 Mac-only shell for `doc2md.app`. It is a minimal Swift + SwiftUI + `WKWebView` app that displays the existing React UI, edits `.md` files directly, and imports every other supported source format into Markdown through the shared web converters.
+This is the Mac-only shell for `doc2md.app`. It is a minimal Swift + SwiftUI + `WKWebView` app that displays the existing React UI, edits `.md` files directly, imports every other supported source format into Markdown through the shared web converters, and includes local-only Sparkle update plumbing.
 
-Out of scope for this phase: persisted security-scoped bookmarks, Sparkle, signing, notarization, recent files, autosave, and asset persistence.
+Out of scope for this phase: persisted security-scoped bookmarks, signing, notarization, DMG packaging, release automation, production appcast publishing, recent files, autosave, and asset persistence.
 
 ## Phase 4 Capabilities
 
@@ -96,7 +96,7 @@ Built: <absolute path to .build/mac/Build/Products/Release/doc2md.app>
 
 Every pull request against `main` runs this unsigned Release build on `macos-latest` through [`.github/workflows/mac-pr-check.yml`](../../.github/workflows/mac-pr-check.yml), so Mac regressions surface before merge.
 
-This is an unsigned local build. Signing, notarization, DMG packaging, and Sparkle updates are Phase 5.
+This is an unsigned local build. Signing, notarization, DMG packaging, production Sparkle update signing, and appcast publishing are Phase 5c.
 
 If `xcode-select -p` points at `/Library/Developer/CommandLineTools`, the helper tries `/Applications/Xcode.app/Contents/Developer` and fails with a full-Xcode error if that developer directory is unavailable. Install full Xcode and select it:
 
@@ -131,6 +131,49 @@ The smoke refuses to run if a `doc2md` process is already running. Its cleanup p
 
 The smoke quits the `doc2md` app it launched before exit and falls back to killing that binary if graceful quit cannot complete. Cleanup only runs for the instance this script started. This is a local developer tool and does not run in CI.
 
+## Sparkle Plumbing
+
+The Mac app links Sparkle 2 through Swift Package Manager and starts `SPUStandardUpdaterController` at launch. Automatic checks and automatic updates are disabled in `Info.plist`, so normal Debug and local Release launches do not contact production infrastructure. The committed `SUFeedURL` is loopback-only:
+
+```text
+http://127.0.0.1:47654/appcast.xml
+```
+
+For local validation, the app supports a process environment override:
+
+```bash
+DOC2MD_SPARKLE_FEED_URL="http://127.0.0.1:47654/appcast.xml" \
+  .build/mac/Build/Products/Release/doc2md.app/Contents/MacOS/doc2md
+```
+
+Serve the fixture appcast from the fixture directory:
+
+```bash
+cd apps/macos/doc2mdTests/Fixtures/Sparkle
+python3 -m http.server 47654 --bind 127.0.0.1
+```
+
+Then launch the app with the environment override above and choose `doc2md > Check for Updates...`. The fixture advertises version `99.0` / build `9900`, which is newer than the local app version and should trigger Sparkle's standard update UI. The fixture uses a placeholder enclosure and signature for detection-only validation; Phase 5c will produce signed update archives and production appcasts.
+
+Offline launch validation: stop the fixture server, launch the app normally, and confirm the window appears without Sparkle errors. Because automatic checks are disabled, Sparkle should not block launch or show update UI unless the menu item is used.
+
+The committed test public key is:
+
+```text
+J7tl4vxYjEBbgB7HtuEteKnmv8rENwZnd7J1ThklvBs=
+```
+
+It was generated as a throwaway Ed25519 key for local/test plumbing with OpenSSL, extracting the raw 32-byte public key and base64-encoding it:
+
+```bash
+tmpdir="$(mktemp -d)"
+openssl genpkey -algorithm Ed25519 -out "$tmpdir/doc2md-sparkle-test-private.pem"
+openssl pkey -in "$tmpdir/doc2md-sparkle-test-private.pem" -pubout -outform DER | tail -c 32 | openssl base64 -A
+rm -rf "$tmpdir"
+```
+
+Only the public key is committed. Production key generation is different: use Sparkle's `generate_keys` tool once during Phase 5c, keep the private EdDSA key in the macOS Keychain or the release secret store, and commit only the resulting public key/appcast metadata needed by the signed release flow.
+
 ## Manual Validation
 
 Use these checks for this phase:
@@ -143,5 +186,7 @@ Use these checks for this phase:
 6. Release build launches without the Vite dev server and logs `app ready: true`.
 7. Open a Markdown file, edit it, save it, reveal it in Finder, and verify conflict and permission-needed UI paths.
 8. Open a supported non-Markdown source file, confirm it converts into Markdown, Save As to `.md`, and verify subsequent saves update only the chosen Markdown target.
+9. Serve `apps/macos/doc2mdTests/Fixtures/Sparkle/appcast.xml`, launch with `DOC2MD_SPARKLE_FEED_URL`, and confirm `Check for Updates...` detects the fixture update.
+10. Stop the fixture server, launch again, and confirm offline launch is not blocked by Sparkle.
 
 If full Xcode is not available, record that the Mac app build and launch checks were not run. The command line tools package alone is not enough; `xcodebuild` must point at a full Xcode developer directory.
