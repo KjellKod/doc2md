@@ -2,6 +2,7 @@
 
 | Date | Quest | Outcome |
 |------|-------|---------|
+| 2026-04-24 | [mac-pr-ci-check](mac-pr-ci-check_2026-04-24.md) | Phase 5a Mac CI: added a no-secret, SHA-pinned `pull_request` workflow on `macos-latest` that builds the desktop bundle, runs the Mac Release helper and forbidden-API scan, uploads the unsigned app artifact, and documents the check in the Mac README. |
 | 2026-04-23 | [phase-4-converted-docs-persistent-assets](phase-4-converted-docs-persistent-assets_2026-04-23.md) | Phase 4 Mac desktop: converted-document import via WKURLSchemeHandler opaque byte handoff, discriminated ShellFile union, Save/Save-As routing that never overwrites source files, generated Swift extension list with drift check, 2 plan iterations, 2 fix iterations, full validation green. |
 | 2026-04-22 | [mac-file-persistence](mac-file-persistence_2026-04-22.md) | Phase 3 Mac desktop: replaced bridge stubs with real Markdown open/save/save-as/reveal behavior, conflict/permission UI, native FileStore tests, exact panel filtering, positive native API allowlist, and rendered app-ready smoke validation. |
 | 2026-04-22 | [mac-build-smoke](mac-build-smoke_2026-04-22.md) | Phase 2.5 Mac desktop: added `scripts/build-mac-app.sh` + `npm run build:mac` + `scripts/verify-mac-release-launch.sh` to produce a predictable unsigned `.app` and mechanize the `doc2md [ERR]` title-bar check. Solo quest, single pass, zero fix iterations. |
