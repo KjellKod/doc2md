@@ -25,8 +25,8 @@ Build a Mac-native DMG app using Swift + `WKWebView` + Sparkle. The existing hos
 | 3. Markdown File Persistence | done | PR #80 (`mac-file-persistence_2026-04-22__2017`) | Implement open/save/save-as for Markdown with atomic replace, mtime conflicts, line endings, Finder reveal, and rendered-UI launch smoke. | Phase 4 |
 | 4. Converted Document Import and Markdown Persistence | done | PR #81 (`phase-4-converted-docs-persistent-assets_2026-04-23__2328`) | Import any supported non-`.md` source document through the existing converters, first-save to `.md`, keep later saves anchored to the chosen Markdown file, and handle large native-open payloads robustly. | Phase 5 |
 | 5a. Mac PR CI Check | done | PR #83 | Add a no-secrets GitHub Actions workflow that runs `npm run build:desktop` + unsigned `xcodebuild build` + `swiftc -parse` + forbidden-API grep on every PR so Mac-only regressions cannot land silently. | Phase 5b |
-| 5b. Sparkle Plumbing | planned | TBD | Add Sparkle 2 to the Xcode project, wire `SUFeedURL` / `SUPublicEDKey` in Info.plist, define the appcast XML schema, and verify offline + test-appcast update detection. No signing, no release automation. | Phase 5c |
-| 5c. Release CI, Signing, Notarization, DMG, Appcast Publish | planned | TBD | Tag-triggered macOS release workflow with a protected `mac-release` Environment: Developer ID signing, notarization, stapling, DMG, Sparkle ZIP + `sign_update`, appcast publish. The only phase that touches Apple or Sparkle secrets. | MVP ship |
+| 5b. Sparkle Plumbing | done | PR #84 | Add Sparkle 2 to the Xcode project, wire `SUFeedURL` / `SUPublicEDKey` in Info.plist, define the appcast XML schema, and verify offline + test-appcast update detection. No signing, no release automation. | Phase 5c |
+| 5c. Release CI, Signing, Notarization, DMG, Appcast Publish | active | mac-release-ci_2026-04-25__0010 | Tag-triggered macOS release workflow with a protected `mac-release` Environment: Developer ID signing, notarization, stapling, DMG, Sparkle ZIP + `sign_update`, appcast publish. The only phase that touches Apple or Sparkle secrets. | MVP ship |
 | 6. Editor and UI Refresh (cross-surface) | planned | TBD | Hosted-web + Mac editor polish: app icon, persistent mode switcher, explicit save control, find/replace, accessibility audit, keyboard-shortcut help. Runs in parallel with Phase 5b+ because it does not touch the Mac shell contract. | MVP polish |
 
 ## Phase 0: Design And Roadmap
@@ -246,6 +246,11 @@ Validation:
 Goal:
 
 Add the Sparkle 2 update framework to the Mac app, wire the appcast contract, and verify update detection locally against a test appcast. No release automation and no signing yet.
+
+Status note:
+
+- Completed in PR #84.
+- Phase 5b intentionally stopped at local/test Sparkle plumbing. Production signing, notarization, DMG packaging, EdDSA update signing, and release appcast publishing are handled by Phase 5c.
 
 Expected changes:
 
