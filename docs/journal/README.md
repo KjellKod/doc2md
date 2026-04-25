@@ -6,6 +6,7 @@ For the other perspective, see [Dexter's Journal](../dexter-journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 028 | [Celebration: Mac PR CI Check](028-celebrate-mac-pr-ci-check.md) | A no-secret macOS PR gate with SHA-pinned actions, desktop bundle and Release helper checks, and zero fix iterations |
 | 027 | [Mac Phase 4: Converted Document Import and Markdown Persistence](027-phase-4-converted-docs-persistent-assets.md) | Two plan iterations, two fix iterations, dual review catches different real things both times; opaque byte handoff via WKURLSchemeHandler and three-layer .md save defense so source files never get overwritten |
 | 026 | [Mac Build Helper and Release-Launch Smoke](026-mac-build-smoke.md) | Minimum-viable smoke that watches the title bar for doc2md [ERR], a discoverable local .app build, and the forbidden-API tripwire running on every build |
 | 025 | [Mac Phase 2 Bridge](025-celebrate-mac-phase2-bridge.md) | Frozen TypeScript contract, Swift stubs with a forbidden-API list, and permission-needed round-tripping on all four methods |

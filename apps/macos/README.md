@@ -94,6 +94,8 @@ The final output line is:
 Built: <absolute path to .build/mac/Build/Products/Release/doc2md.app>
 ```
 
+Every pull request against `main` runs this unsigned Release build on `macos-latest` through [`.github/workflows/mac-pr-check.yml`](../../.github/workflows/mac-pr-check.yml), so Mac regressions surface before merge.
+
 This is an unsigned local build. Signing, notarization, DMG packaging, and Sparkle updates are Phase 5.
 
 If `xcode-select -p` points at `/Library/Developer/CommandLineTools`, the helper tries `/Applications/Xcode.app/Contents/Developer` and fails with a full-Xcode error if that developer directory is unavailable. Install full Xcode and select it:
