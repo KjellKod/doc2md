@@ -1,0 +1,41 @@
+docs/dexter-journal/027-mac-pr-ci-check.md
+  9a313d2cc3ea2ca6 1-13
+docs/diary/2026-04-24.md
+  9a313d2cc3ea2ca6 1-38
+docs/journal/README.md
+  9a313d2cc3ea2ca6 9
+.quest-last-check
+  9a313d2cc3ea2ca6 1
+docs/journal/028-celebrate-mac-pr-ci-check.md
+  9a313d2cc3ea2ca6 1-105
+.github/workflows/mac-pr-check.yml
+  9a313d2cc3ea2ca6 1-47
+docs/dexter-journal/README.md
+  9a313d2cc3ea2ca6 9
+docs/quest-journal/mac-pr-ci-check_2026-04-24.md
+  9a313d2cc3ea2ca6 1-88
+apps/macos/README.md
+  9a313d2cc3ea2ca6 97-98
+docs/quest-journal/README.md
+  9a313d2cc3ea2ca6 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "8b5113bf74694515fa938364f5e60df1fe5e03f5",
+  "prompts": {
+    "9a313d2cc3ea2ca6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019dc198-bd4b-7f41-a447-4f0f921f43b6",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 297,
+      "total_deletions": 0,
+      "accepted_lines": 297,
+      "overriden_lines": 0
+    }
+  }
+}
