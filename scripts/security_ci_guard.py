@@ -114,19 +114,20 @@ def has_regex_like_release_tag_filter(text: str) -> bool:
     tag_indent = 0
 
     for line in text.splitlines():
-        stripped = line.strip()
+        content = line.split("#", 1)[0]
+        stripped = content.strip()
         if not stripped or stripped.startswith("#"):
             continue
 
-        indent = len(line) - len(line.lstrip())
+        indent = len(content) - len(content.lstrip())
         if in_tags:
             if indent <= tag_indent and not stripped.startswith("-"):
                 in_tags = False
-            elif "+" in line:
+            elif "+" in content:
                 return True
 
         if stripped.startswith("tags:"):
-            if "+" in line:
+            if "+" in content:
                 return True
             in_tags = True
             tag_indent = indent

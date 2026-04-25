@@ -193,6 +193,30 @@ class SecurityCiGuardReleaseTests(unittest.TestCase):
         self.assertEqual(len(failures), 1)
         self.assertIn("GitHub globs", failures[0])
 
+    def test_release_workflow_tag_filter_comment_plus_passes_guard(self):
+        module = load_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "release-mac.yml"
+            path.write_text(
+                textwrap.dedent(
+                    """
+                    name: ok
+                    on:
+                      push:
+                        tags:
+                          - "v*.*.*" # semver check with + happens in shell regex
+                    jobs:
+                      build:
+                        runs-on: ubuntu-latest
+                        steps:
+                          - run: true
+                    """
+                ).lstrip(),
+                encoding="utf-8",
+            )
+
+            self.assertEqual(module.scan_workflow(path), [])
+
 
 if __name__ == "__main__":
     unittest.main()
