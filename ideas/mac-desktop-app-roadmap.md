@@ -368,6 +368,7 @@ Clean up the editor/viewer UX across the hosted browser app and the Mac shell. T
 
 ### 6a. Mac App Icon
 
+- Status: implementation complete on `quest/mac-app-icon`; pending code review, maintainer visual approval, and PR merge.
 - Design or commission an `.icns` icon set (multiple sizes: 16, 32, 64, 128, 256, 512, 1024, plus @2x variants).
 - Add as an Xcode asset catalog (`Assets.xcassets/AppIcon.appiconset`).
 - Update `apps/macos/README.md` to describe how to update the icon.

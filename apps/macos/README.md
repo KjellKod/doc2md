@@ -48,6 +48,36 @@ npm run build:desktop
 
 This uses Vite desktop mode and emits relative asset paths so the bundle can be loaded from app resources.
 
+## App Icon
+
+The app icon is provided by the native Xcode asset catalog at:
+
+```text
+apps/macos/doc2md/Resources/Assets.xcassets/AppIcon.appiconset
+```
+
+The committed source export is:
+
+```text
+apps/macos/doc2md/Resources/AppIconSource/doc2md-icon-1024.png
+```
+
+To replace the icon, export a new 1024x1024 PNG to that source path, then regenerate the required macOS slots from the repo root:
+
+```bash
+bash scripts/generate-mac-icons.sh
+```
+
+The script uses macOS `sips` and writes the full macOS `AppIcon` slot set: 16, 32, 64, 128, 256, 512, and 1024 pixel outputs through the standard `16x16`, `32x32`, `128x128`, `256x256`, and `512x512` `1x`/`2x` asset catalog entries.
+
+Xcode consumes the icon through `Resources/Assets.xcassets`, which is registered in `apps/macos/doc2md.xcodeproj` and included in the `doc2md` target's Copy Bundle Resources phase. The target build setting `ASSETCATALOG_COMPILER_APPICON_NAME` must remain `AppIcon` for Debug and Release. Do not add `Resources/AppIconSource` to the project; it is design-source-only and should not be bundled into `doc2md.app`.
+
+After a Release build, the compiled app should contain:
+
+```text
+.build/mac/Build/Products/Release/doc2md.app/Contents/Resources/AppIcon.icns
+```
+
 ## Release-Style Local Build
 
 Build the Release configuration with Xcode:
