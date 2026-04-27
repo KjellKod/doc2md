@@ -1,0 +1,341 @@
+name: Mac release
+
+"on":
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag (vX.Y.Z)"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-mac-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build unsigned app
+    runs-on: macos-latest
+    outputs:
+      tag: ${{ steps.resolve.outputs.tag }}
+      sha: ${{ steps.resolve.outputs.sha }}
+      version: ${{ steps.resolve.outputs.version }}
+      bundle_version: ${{ steps.bundle.outputs.bundle_version }}
+    steps:
+      - name: Resolve release tag
+        id: resolve
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_TAG: ${{ inputs.tag }}
+          PUSH_REF: ${{ github.ref }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$REPOSITORY" != "KjellKod/doc2md" ]]; then
+            echo "::error::Mac releases must run from KjellKod/doc2md, not $REPOSITORY"
+            exit 1
+          fi
+
+          if [[ -n "${INPUT_TAG:-}" ]]; then
+            TAG="$INPUT_TAG"
+          else
+            TAG="${PUSH_REF#refs/tags/}"
+          fi
+
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Tag $TAG is not canonical semver vX.Y.Z"
+            exit 1
+          fi
+
+          REF_JSON="$(gh api "repos/${REPOSITORY}/git/refs/tags/$TAG")"
+          SHA="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["object"]["sha"])' <<<"$REF_JSON")"
+          REF_TYPE="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["object"]["type"])' <<<"$REF_JSON")"
+          if [[ "$REF_TYPE" == "tag" ]]; then
+            SHA="$(gh api "repos/${REPOSITORY}/git/tags/$SHA" --jq '.object.sha')"
+            REF_TYPE="commit"
+          fi
+          if [[ "$REF_TYPE" != "commit" ]]; then
+            echo "::error::Tag $TAG resolves to unsupported git object type $REF_TYPE"
+            exit 1
+          fi
+          if [[ -z "$SHA" ]]; then
+            echo "::error::Tag $TAG was not found in $REPOSITORY"
+            exit 1
+          fi
+
+          {
+            echo "tag=$TAG"
+            echo "sha=$SHA"
+            echo "version=${TAG#v}"
+          } >>"$GITHUB_OUTPUT"
+
+      - name: Checkout resolved release tag
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          ref: ${{ steps.resolve.outputs.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build desktop web bundle
+        run: npm run build:desktop
+
+      - name: Build unsigned Mac app
+        run: bash scripts/build-mac-app.sh --configuration Release
+
+      - name: Validate app version and bundle version
+        id: bundle
+        env:
+          APP_PATH: .build/mac/Build/Products/Release/doc2md.app
+          TAG_VERSION: ${{ steps.resolve.outputs.version }}
+          LATEST_APPCAST_URL: https://github.com/KjellKod/doc2md/releases/latest/download/appcast.xml
+        run: |
+          set -euo pipefail
+
+          INFO_PLIST="$APP_PATH/Contents/Info.plist"
+          SHORT_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$INFO_PLIST")"
+          BUNDLE_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$INFO_PLIST")"
+
+          if [[ "$SHORT_VERSION" != "$TAG_VERSION" ]]; then
+            echo "::error::CFBundleShortVersionString $SHORT_VERSION does not match release tag version $TAG_VERSION"
+            exit 1
+          fi
+
+          if [[ ! "$BUNDLE_VERSION" =~ ^[0-9]+$ ]]; then
+            echo "::error::CFBundleVersion must be numeric for release monotonicity checks: $BUNDLE_VERSION"
+            exit 1
+          fi
+
+          if [[ "$BUNDLE_VERSION" == "1" && "$SHORT_VERSION" != "0.1.0" ]]; then
+            echo "::error::CFBundleVersion 1 is reserved for the initial 0.1.0 release"
+            exit 1
+          fi
+
+          PRIOR_APPCAST="$RUNNER_TEMP/latest-appcast.xml"
+          HTTP_STATUS="$(curl --location --silent --show-error --output "$PRIOR_APPCAST" --write-out '%{http_code}' "$LATEST_APPCAST_URL" || true)"
+          if [[ "$HTTP_STATUS" == "200" ]]; then
+            PRIOR_VERSION="$(python3 -c 'import sys, xml.etree.ElementTree as ET; ns = {"sparkle": "http://www.andymatuschak.org/xml-namespaces/sparkle"}; version = ET.parse(sys.argv[1]).getroot().findtext("./channel/item/sparkle:version", namespaces=ns); assert version is not None, "latest appcast is missing sparkle:version"; print(version.strip())' "$PRIOR_APPCAST")"
+            if [[ ! "$PRIOR_VERSION" =~ ^[0-9]+$ ]]; then
+              echo "::error::Latest appcast sparkle:version is not numeric: $PRIOR_VERSION"
+              exit 1
+            fi
+            if ((10#$BUNDLE_VERSION <= 10#$PRIOR_VERSION)); then
+              echo "::error::CFBundleVersion $BUNDLE_VERSION must be greater than latest appcast version $PRIOR_VERSION"
+              exit 1
+            fi
+          elif [[ "$HTTP_STATUS" == "404" ]]; then
+            if [[ "$BUNDLE_VERSION" != "1" ]]; then
+              echo "::error::Initial release without prior appcast must use CFBundleVersion 1, got $BUNDLE_VERSION"
+              exit 1
+            fi
+          else
+            echo "::warning::Could not fetch latest appcast for monotonicity check (HTTP $HTTP_STATUS); continuing with sentinel checks only"
+          fi
+
+          echo "bundle_version=$BUNDLE_VERSION" >>"$GITHUB_OUTPUT"
+
+      - name: Prepare release build artifact
+        env:
+          APP_PATH: .build/mac/Build/Products/Release/doc2md.app
+          TAG: ${{ steps.resolve.outputs.tag }}
+          SHA: ${{ steps.resolve.outputs.sha }}
+          VERSION: ${{ steps.resolve.outputs.version }}
+          BUNDLE_VERSION: ${{ steps.bundle.outputs.bundle_version }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/doc2md-build"
+          tar -C "$(dirname "$APP_PATH")" -czf "$RUNNER_TEMP/doc2md-build/doc2md-app.tar.gz" "$(basename "$APP_PATH")"
+          cp .build/mac/SourcePackages/artifacts/sparkle/Sparkle/bin/sign_update "$RUNNER_TEMP/doc2md-build/sign_update"
+          chmod +x "$RUNNER_TEMP/doc2md-build/sign_update"
+          python3 -c 'import json, os, sys; json.dump({"tag": os.environ["TAG"], "sha": os.environ["SHA"], "version": os.environ["VERSION"], "bundleVersion": os.environ["BUNDLE_VERSION"]}, open(sys.argv[1], "w", encoding="utf-8"), indent=2)' "$RUNNER_TEMP/doc2md-build/release-meta.json"
+          printf '\n' >>"$RUNNER_TEMP/doc2md-build/release-meta.json"
+
+      - name: Upload unsigned build artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: doc2md-build
+          path: ${{ runner.temp }}/doc2md-build
+          if-no-files-found: error
+          retention-days: 7
+
+  package-mac:
+    name: Sign, notarize, and package Mac app
+    runs-on: macos-latest
+    needs: build
+    environment: mac-release
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout resolved release tag
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          ref: ${{ needs.build.outputs.sha }}
+
+      - name: Download unsigned build artifact
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: doc2md-build
+          path: ${{ runner.temp }}/doc2md-build
+
+      - name: Restore unsigned app
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/release-work"
+          tar -C "$RUNNER_TEMP/release-work" -xzf "$RUNNER_TEMP/doc2md-build/doc2md-app.tar.gz"
+
+      - name: Sign app, notarize, staple, package DMG, and build Sparkle ZIP
+        env:
+          APP_PATH: ${{ runner.temp }}/release-work/doc2md.app
+          VERSION: ${{ needs.build.outputs.version }}
+          APPLE_DEVELOPER_ID_APPLICATION_P12: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_P12 }}
+          APPLE_DEVELOPER_ID_APPLICATION_P12_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_P12_PASSWORD }}
+          APPLE_NOTARY_API_KEY_P8: ${{ secrets.APPLE_NOTARY_API_KEY_P8 }}
+          APPLE_NOTARY_API_KEY_ID: ${{ secrets.APPLE_NOTARY_API_KEY_ID }}
+          APPLE_NOTARY_API_ISSUER_ID: ${{ secrets.APPLE_NOTARY_API_ISSUER_ID }}
+          OUTPUT_DIR: ${{ runner.temp }}/doc2md-package
+          RELEASE_ENV_FILE: ${{ runner.temp }}/doc2md-release-env
+        run: |
+          set -euo pipefail
+          trap 'if [[ -n "${APPLE_RELEASE_KEYCHAIN_PATH:-}" ]]; then security delete-keychain "$APPLE_RELEASE_KEYCHAIN_PATH" >/dev/null 2>&1 || true; fi' EXIT
+          mkdir -p "$OUTPUT_DIR"
+          SIGN_STATUS=0
+          bash scripts/release/sign_mac_app.sh || SIGN_STATUS=$?
+          if [[ -f "$RELEASE_ENV_FILE" ]]; then
+            # shellcheck disable=SC1090
+            source "$RELEASE_ENV_FILE"
+          fi
+          if ((SIGN_STATUS != 0)); then
+            exit "$SIGN_STATUS"
+          fi
+          bash scripts/release/notarize_mac_app.sh
+          bash scripts/release/package_mac_dmg.sh
+          bash scripts/release/package_sparkle_zip.sh
+
+      - name: Upload signed package artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: doc2md-package
+          path: ${{ runner.temp }}/doc2md-package
+          if-no-files-found: error
+          retention-days: 7
+
+  sign-sparkle:
+    name: Sign Sparkle ZIP and generate appcast
+    runs-on: macos-latest
+    needs: [build, package-mac]
+    environment: mac-release
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout resolved release tag
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          ref: ${{ needs.build.outputs.sha }}
+
+      - name: Download Sparkle signing tool
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: doc2md-build
+          path: ${{ runner.temp }}/doc2md-build
+
+      - name: Download signed package artifact
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: doc2md-package
+          path: ${{ runner.temp }}/doc2md-package
+
+      - name: Sign Sparkle ZIP
+        id: sparkle
+        env:
+          SPARKLE_SIGN_UPDATE_PATH: ${{ runner.temp }}/doc2md-build/sign_update
+          SPARKLE_EDDSA_PRIVATE_KEY: ${{ secrets.SPARKLE_EDDSA_PRIVATE_KEY }}
+          ZIP_PATH: ${{ runner.temp }}/doc2md-package/doc2md-${{ needs.build.outputs.version }}.zip
+          OUTPUT_JSON: ${{ runner.temp }}/doc2md-appcast/sparkle-signature.json
+        run: |
+          set -euo pipefail
+          mkdir -p "$(dirname "$OUTPUT_JSON")"
+          command -v xmllint >/dev/null
+          chmod +x "$SPARKLE_SIGN_UPDATE_PATH"
+          bash scripts/release/sign_sparkle_zip.sh
+          ED_SIGNATURE="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["edSignature"])' "$OUTPUT_JSON")"
+          ZIP_BYTES="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["length"])' "$OUTPUT_JSON")"
+          echo "ed_signature=$ED_SIGNATURE" >>"$GITHUB_OUTPUT"
+          echo "zip_bytes=$ZIP_BYTES" >>"$GITHUB_OUTPUT"
+
+      - name: Generate appcast
+        env:
+          TAG: ${{ needs.build.outputs.tag }}
+          VERSION: ${{ needs.build.outputs.version }}
+          BUNDLE_VERSION: ${{ needs.build.outputs.bundle_version }}
+          ED_SIGNATURE: ${{ steps.sparkle.outputs.ed_signature }}
+          ZIP_BYTES: ${{ steps.sparkle.outputs.zip_bytes }}
+          APPCAST_PATH: ${{ runner.temp }}/doc2md-appcast/appcast.xml
+        run: |
+          set -euo pipefail
+          python3 scripts/release/generate_appcast.py \
+            --version "$BUNDLE_VERSION" \
+            --short-version "$VERSION" \
+            --enclosure-url "https://github.com/KjellKod/doc2md/releases/download/${TAG}/doc2md-${VERSION}.zip" \
+            --enclosure-length "$ZIP_BYTES" \
+            --ed-signature "$ED_SIGNATURE" \
+            > "$APPCAST_PATH"
+          xmllint --noout "$APPCAST_PATH"
+
+      - name: Upload appcast artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: doc2md-appcast
+          path: ${{ runner.temp }}/doc2md-appcast/appcast.xml
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Publish release assets
+    runs-on: macos-latest
+    needs: [build, package-mac, sign-sparkle]
+    environment: mac-release
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout resolved release tag
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          ref: ${{ needs.build.outputs.sha }}
+
+      - name: Download signed package artifact
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: doc2md-package
+          path: .
+
+      - name: Download appcast artifact
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: doc2md-appcast
+          path: .
+
+      - name: Create release if missing and upload assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.build.outputs.tag }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          set -euo pipefail
+          gh release view "$TAG" >/dev/null 2>&1 \
+            || gh release create "$TAG" --latest=true --generate-notes
+          gh release upload "$TAG" \
+            "doc2md-${VERSION}.dmg" \
+            "doc2md-${VERSION}.zip" \
+            "appcast.xml" \
+            --clobber

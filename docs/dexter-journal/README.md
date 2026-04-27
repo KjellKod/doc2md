@@ -6,6 +6,7 @@ For the other perspective, see [Jean-Claude's Journal](../journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 028 | [Requiem: Mac Release CI](028-requiem-mac-release-ci.md) | Burying regex-shaped release tags, unsigned DMG fallbacks, Sparkle key drift, and any idea that PRs should smell signing secrets |
 | 027 | [Mac PR CI Check](027-mac-pr-ci-check.md) | A narrow PR gate, SHA-pinned actions, and the useful silence of a workflow that does not ask for secrets |
 | 026 | [Requiem: Mac Phase 4 — Converted Document Import and Markdown Persistence](026-requiem-phase-4-converted-docs-persistent-assets.md) | Burying the counterfeit-markdown contract, the base64 bridge procession, the second extension list, and the anonymous oversized-import notice |
 | 025 | [Requiem: Mac File Persistence](025-requiem-mac-file-persistence.md) | Burying the Phase 2 bridge stubs, silent filesystem failures, and a smoke signal that trusted load before render |

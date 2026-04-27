@@ -1,8 +1,8 @@
 # doc2md Mac Shell
 
-This is the Mac-only shell for `doc2md.app`. It is a minimal Swift + SwiftUI + `WKWebView` app that displays the existing React UI, edits `.md` files directly, imports every other supported source format into Markdown through the shared web converters, and includes local-only Sparkle update plumbing.
+This is the Mac-only shell for `doc2md.app`. It is a minimal Swift + SwiftUI + `WKWebView` app that displays the existing React UI, edits `.md` files directly, imports every other supported source format into Markdown through the shared web converters, and includes Sparkle update plumbing.
 
-Out of scope for this phase: persisted security-scoped bookmarks, signing, notarization, DMG packaging, release automation, production appcast publishing, recent files, autosave, and asset persistence.
+Out of scope for this phase: persisted security-scoped bookmarks, recent files, autosave, and asset persistence.
 
 ## Phase 4 Capabilities
 
@@ -96,7 +96,7 @@ Built: <absolute path to .build/mac/Build/Products/Release/doc2md.app>
 
 Every pull request against `main` runs this unsigned Release build on `macos-latest` through [`.github/workflows/mac-pr-check.yml`](../../.github/workflows/mac-pr-check.yml), so Mac regressions surface before merge.
 
-This is an unsigned local build. Signing, notarization, DMG packaging, production Sparkle update signing, and appcast publishing are Phase 5c.
+This is an unsigned local build. Signed, notarized, DMG-packaged release artifacts are produced by the protected Phase 5c release workflow.
 
 If `xcode-select -p` points at `/Library/Developer/CommandLineTools`, the helper tries `/Applications/Xcode.app/Contents/Developer` and fails with a full-Xcode error if that developer directory is unavailable. Install full Xcode and select it:
 
@@ -153,17 +153,19 @@ cd apps/macos/doc2mdTests/Fixtures/Sparkle
 python3 -m http.server 47654 --bind 127.0.0.1
 ```
 
-Then launch the app with the environment override above and choose `doc2md > Check for Updates...`. The fixture advertises version `99.0` / build `9900`, which is newer than the local app version and should trigger Sparkle's standard update UI. The fixture uses a placeholder enclosure and signature for detection-only validation; Phase 5c will produce signed update archives and production appcasts.
+Then launch the app with the environment override above and choose `doc2md > Check for Updates...`. The fixture advertises version `99.0` / build `9900`, which is newer than the local app version and should trigger Sparkle's standard update UI. The fixture uses a placeholder enclosure and signature for detection-only validation; the protected release workflow produces signed update archives and production appcasts.
 
 Offline launch validation: stop the fixture server, launch the app normally, and confirm the window appears without Sparkle errors. Because automatic checks are disabled, Sparkle should not block launch or show update UI unless the menu item is used.
 
-The committed test public key is:
+The committed Sparkle public key is:
 
 ```text
 J7tl4vxYjEBbgB7HtuEteKnmv8rENwZnd7J1ThklvBs=
 ```
 
-It was generated as a throwaway Ed25519 key for local/test plumbing with OpenSSL, extracting the raw 32-byte public key and base64-encoding it:
+This is the production `SUPublicEDKey`. The matching private EdDSA key must be stored only as the `SPARKLE_EDDSA_PRIVATE_KEY` secret in the protected `mac-release` GitHub Environment. It must not be committed, logged, or passed on a command line.
+
+It was generated as an Ed25519 public key by extracting the raw 32-byte public key and base64-encoding it:
 
 ```bash
 tmpdir="$(mktemp -d)"
@@ -172,7 +174,50 @@ openssl pkey -in "$tmpdir/doc2md-sparkle-test-private.pem" -pubout -outform DER 
 rm -rf "$tmpdir"
 ```
 
-Only the public key is committed. Production key generation is different: use Sparkle's `generate_keys` tool once during Phase 5c, keep the private EdDSA key in the macOS Keychain or the release secret store, and commit only the resulting public key/appcast metadata needed by the signed release flow.
+Only the public key is committed. To rotate the key, generate a new Sparkle key pair with Sparkle's `generate_keys`, ship a transition release that can trust the new public key, update `SUPublicEDKey`, and retire the old private key from the protected Environment after the transition is complete.
+
+## Protected Release Workflow
+
+Phase 5c adds [`.github/workflows/release-mac.yml`](../../.github/workflows/release-mac.yml). It runs only for canonical semver tags (`vX.Y.Z`) or a manual `workflow_dispatch` that names an existing canonical tag in `KjellKod/doc2md`. Secret-bearing jobs use the protected `mac-release` Environment.
+
+Required `mac-release` Environment secrets:
+
+- `APPLE_DEVELOPER_ID_APPLICATION_P12`: base64-encoded Developer ID Application `.p12`.
+- `APPLE_DEVELOPER_ID_APPLICATION_P12_PASSWORD`: password for the `.p12`.
+- `APPLE_NOTARY_API_KEY_P8`: App Store Connect notary API private key, either raw PEM or base64-encoded PEM.
+- `APPLE_NOTARY_API_KEY_ID`: App Store Connect API key ID.
+- `APPLE_NOTARY_API_ISSUER_ID`: App Store Connect issuer ID.
+- `SPARKLE_EDDSA_PRIVATE_KEY`: Sparkle EdDSA private key matching the committed `SUPublicEDKey`.
+
+Apple signing/notarization secrets and Sparkle signing secrets are intentionally consumed by separate workflow jobs. Normal PRs and forks use the unsigned [Mac PR check](../../.github/workflows/mac-pr-check.yml) and cannot access the release Environment.
+
+Before tagging a release, manually bump both Xcode build settings in `apps/macos/doc2md.xcodeproj/project.pbxproj`:
+
+- `MARKETING_VERSION` must match the tag without the leading `v`.
+- `CURRENT_PROJECT_VERSION` must be numeric and strictly greater than the latest published appcast's `sparkle:version`.
+
+The initial `0.1.0` release may use `CURRENT_PROJECT_VERSION = 1`; later releases must not reuse build `1`.
+
+Local non-secret dry run:
+
+```bash
+npm run build:desktop
+bash scripts/build-mac-app.sh --configuration Release
+VERSION=0.1.0 RELEASE_DRY_RUN=1 APP_PATH=.build/mac/Build/Products/Release/doc2md.app bash scripts/release/sign_mac_app.sh
+VERSION=0.1.0 RELEASE_DRY_RUN=1 APP_PATH=.build/mac/Build/Products/Release/doc2md.app bash scripts/release/notarize_mac_app.sh
+VERSION=0.1.0 RELEASE_DRY_RUN=1 APP_PATH=.build/mac/Build/Products/Release/doc2md.app bash scripts/release/package_mac_dmg.sh
+VERSION=0.1.0 APP_PATH=.build/mac/Build/Products/Release/doc2md.app bash scripts/release/package_sparkle_zip.sh
+VERSION=0.1.0 RELEASE_DRY_RUN=1 ZIP_PATH=.build/release/doc2md-0.1.0.zip bash scripts/release/sign_sparkle_zip.sh
+python3 scripts/release/generate_appcast.py --version 1 --short-version 0.1.0 --enclosure-url "https://github.com/KjellKod/doc2md/releases/download/v0.1.0/doc2md-0.1.0.zip" --enclosure-length 100 --ed-signature DRY_RUN_SIGNATURE | xmllint --noout -
+```
+
+Protected release dispatch:
+
+```bash
+gh workflow run release-mac.yml -f tag=v0.1.0
+```
+
+Approve the `mac-release` Environment gate in GitHub Actions. The workflow signs and notarizes `doc2md.app`, staples the ticket, creates `doc2md-<version>.dmg`, creates and EdDSA-signs `doc2md-<version>.zip`, generates `appcast.xml`, creates the GitHub Release if needed, and uploads all three assets with `--clobber` for idempotent reruns.
 
 ## Manual Validation
 
