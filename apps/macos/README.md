@@ -48,6 +48,36 @@ npm run build:desktop
 
 This uses Vite desktop mode and emits relative asset paths so the bundle can be loaded from app resources.
 
+## App Icon
+
+The app icon is provided by the native Xcode asset catalog at:
+
+```text
+apps/macos/doc2md/Resources/Assets.xcassets/AppIcon.appiconset
+```
+
+The committed source export is:
+
+```text
+apps/macos/doc2md/Resources/AppIconSource/doc2md-icon-1024.png
+```
+
+To replace the icon, export a new 1024x1024 PNG to that source path, then regenerate the required macOS slots from the repo root:
+
+```bash
+bash scripts/generate-mac-icons.sh
+```
+
+The script uses macOS `sips` and writes the full macOS `AppIcon` slot set: 16, 32, 64, 128, 256, 512, and 1024 pixel outputs through the standard `16x16`, `32x32`, `128x128`, `256x256`, and `512x512` `1x`/`2x` asset catalog entries.
+
+Xcode consumes the icon through `Resources/Assets.xcassets`, which is registered in `apps/macos/doc2md.xcodeproj` and included in the `doc2md` target's Copy Bundle Resources phase. The target build setting `ASSETCATALOG_COMPILER_APPICON_NAME` must remain `AppIcon` for Debug and Release. Do not add `Resources/AppIconSource` to the project; it is design-source-only and should not be bundled into `doc2md.app`.
+
+After a Release build, the compiled app should contain:
+
+```text
+.build/mac/Build/Products/Release/doc2md.app/Contents/Resources/AppIcon.icns
+```
+
 ## Release-Style Local Build
 
 Build the Release configuration with Xcode:
@@ -190,6 +220,23 @@ Required `mac-release` Environment secrets:
 - `SPARKLE_EDDSA_PRIVATE_KEY`: Sparkle EdDSA private key matching the committed `SUPublicEDKey`.
 
 Apple signing/notarization secrets and Sparkle signing secrets are intentionally consumed by separate workflow jobs. Normal PRs and forks use the unsigned [Mac PR check](../../.github/workflows/mac-pr-check.yml) and cannot access the release Environment.
+
+Credential reuse guidance:
+
+- Apple Developer ID credentials may be reused from another app if both apps are owned by the same Apple Developer team and the maintainer is comfortable with the shared signing identity. A Developer ID Application certificate identifies the developer/team, not a single app.
+- Apple notary API credentials may also be reused from the same Apple Developer team, but a separate App Store Connect API key per repository is cleaner for audit, revocation, and blast-radius control.
+- Do not reuse another app's Sparkle EdDSA private key for `doc2md`. Generate a distinct Sparkle key pair for this app, commit only the matching `SUPublicEDKey`, and store only the private key text in the `SPARKLE_EDDSA_PRIVATE_KEY` Environment secret.
+- If the Sparkle private key does not match the committed `SUPublicEDKey`, Sparkle update verification will fail.
+
+Open-source PR safety rules:
+
+- Keep Apple and Sparkle secrets scoped only to the protected `mac-release` GitHub Environment, not repository-level secrets that every workflow can reference.
+- Require reviewers on the `mac-release` Environment so release jobs pause before secrets are exposed.
+- Do not add `pull_request_target` workflows. The repository security guard rejects this.
+- Do not reference Apple or Sparkle secrets from any `pull_request` workflow. PR and fork checks must stay no-secret.
+- Do not check out PR head code in any job that can access release secrets. The release workflow checks out a resolved canonical tag SHA.
+- Keep Apple signing/notarization and Sparkle update signing in separate jobs so one secret family is never present with the other.
+- Run `python3 scripts/security_ci_guard.py` after workflow changes; it checks for `pull_request_target`, PR workflows that reference release secrets, release-secret jobs without environment gates, mixed Apple/Sparkle secret jobs, and possible committed private-key material.
 
 Before tagging a release, manually bump both Xcode build settings in `apps/macos/doc2md.xcodeproj/project.pbxproj`:
 

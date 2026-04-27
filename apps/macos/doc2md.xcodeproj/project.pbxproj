@@ -21,6 +21,7 @@
 		9A0200000000000000000011 /* AppSchemeImportRouteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A010000000000000000000B /* AppSchemeImportRouteTests.swift */; };
 		9A0200000000000000000012 /* SparkleController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A010000000000000000000C /* SparkleController.swift */; };
 		9A0200000000000000000013 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 9A5000000000000000000001 /* Sparkle */; };
+		9A0200000000000000000014 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9A010000000000000000000E /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -48,6 +49,7 @@
 		9A010000000000000000000B /* AppSchemeImportRouteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSchemeImportRouteTests.swift; sourceTree = "<group>"; };
 		9A010000000000000000000C /* SparkleController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparkleController.swift; sourceTree = "<group>"; };
 		9A010000000000000000000D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		9A010000000000000000000E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -108,6 +110,7 @@
 			isa = PBXGroup;
 			children = (
 				9A0100000000000000000002 /* Web */,
+				9A010000000000000000000E /* Assets.xcassets */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -209,6 +212,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				9A0200000000000000000002 /* Web in Resources */,
+				9A0200000000000000000014 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -277,6 +281,7 @@
 		9A3000000000000000000003 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGNING_ALLOWED = NO;
@@ -303,6 +308,7 @@
 		9A3000000000000000000004 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGNING_ALLOWED = NO;
