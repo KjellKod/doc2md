@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { FileEntry } from "../types";
+import type { DesktopSaveState } from "../desktop/saveState";
 import { entryDisplayName } from "../utils/displayName";
 import ErrorMessage from "./ErrorMessage";
 import {
@@ -10,6 +11,8 @@ import {
 } from "./linkedinFormatting";
 import PdfQualityIndicator from "./PdfQualityIndicator";
 import { formatPreviewMarkdown } from "./previewFormatting";
+import SaveButton from "./SaveButton";
+import SaveStatePill from "./SaveStatePill";
 
 type LinkedInPreviewTone =
   | "bold"
@@ -93,6 +96,11 @@ function segmentLinkedInPreview(text: string) {
 interface PreviewPanelProps {
   entry: FileEntry | null;
   onMarkdownChange?: (markdown: string) => void;
+  onSave?: () => void | Promise<void>;
+  saveBusy?: boolean;
+  saveDisabled?: boolean;
+  saveKeyShortcuts?: string;
+  saveState?: DesktopSaveState;
   onStartWriting?: () => void;
 }
 
@@ -111,6 +119,11 @@ function fallbackCopyText(text: string) {
 export default function PreviewPanel({
   entry,
   onMarkdownChange,
+  onSave,
+  saveBusy = false,
+  saveDisabled = false,
+  saveKeyShortcuts,
+  saveState = "saved",
   onStartWriting,
 }: PreviewPanelProps) {
   const [mode, setMode] = useState<"edit" | "preview" | "linkedin">("preview");
@@ -323,7 +336,7 @@ export default function PreviewPanel({
 
   return (
     <div className="preview-body">
-      {showToggle || showCopyButton ? (
+      {showToggle || showCopyButton || onSave ? (
         <div className="preview-toolbar">
           {showToggle ? (
             <div
@@ -369,37 +382,50 @@ export default function PreviewPanel({
           ) : (
             <div />
           )}
-          {showCopyButton ? (
-            <div className="preview-actions">
-              <button
-                type="button"
-                className="preview-copy-button"
-                onClick={handleCopy}
-                aria-label={
-                  mode === "preview"
-                    ? "Copy formatted text"
-                    : mode === "linkedin"
-                      ? "Copy LinkedIn text"
-                      : "Copy markdown document"
-                }
-              >
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 24 24"
-                  className="preview-copy-icon"
+          <div className="preview-toolbar-actions">
+            {onSave ? (
+              <div className="save-control-group">
+                <SaveButton
+                  onSave={onSave}
+                  disabled={saveDisabled}
+                  busy={saveBusy}
+                  ariaKeyshortcuts={saveKeyShortcuts}
+                />
+                <SaveStatePill state={saveState} />
+              </div>
+            ) : null}
+            {showCopyButton ? (
+              <div className="preview-actions">
+                <button
+                  type="button"
+                  className="preview-copy-button"
+                  onClick={handleCopy}
+                  aria-label={
+                    mode === "preview"
+                      ? "Copy formatted text"
+                      : mode === "linkedin"
+                        ? "Copy LinkedIn text"
+                        : "Copy markdown document"
+                  }
                 >
-                  <rect x="9" y="7" width="10" height="12" rx="2" />
-                  <rect x="5" y="3" width="10" height="12" rx="2" />
-                </svg>
-              </button>
-              <span
-                className={`preview-copy-tooltip${copyState === "copied" ? " is-visible" : ""}`}
-                aria-live="polite"
-              >
-                {copyState === "copied" ? "Copied" : "Copy"}
-              </span>
-            </div>
-          ) : null}
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    className="preview-copy-icon"
+                  >
+                    <rect x="9" y="7" width="10" height="12" rx="2" />
+                    <rect x="5" y="3" width="10" height="12" rx="2" />
+                  </svg>
+                </button>
+                <span
+                  className={`preview-copy-tooltip${copyState === "copied" ? " is-visible" : ""}`}
+                  aria-live="polite"
+                >
+                  {copyState === "copied" ? "Copied" : "Copy"}
+                </span>
+              </div>
+            ) : null}
+          </div>
         </div>
       ) : null}
 

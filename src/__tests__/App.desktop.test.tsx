@@ -161,7 +161,54 @@ describe("App desktop bridge", () => {
       expectedMtimeMs: 10,
       lineEnding: "crlf",
     });
-    expect(await screen.findByText("Saved")).toBeInTheDocument();
+    expect((await screen.findAllByText("Saved")).length).toBeGreaterThan(0);
+
+    cleanupShell();
+  });
+
+  it("routes the visible Save button through the native save path", async () => {
+    const saveFile = vi.fn(async () => ({
+      ok: true as const,
+      path: "/Users/me/Button.md",
+      mtimeMs: 102,
+    }));
+    const cleanupShell = installMockShell({
+      openFile: vi.fn(async () => ({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Button.md",
+        content: "button\n",
+        mtimeMs: 101,
+        lineEnding: "lf" as const,
+      })),
+      saveFile,
+    });
+
+    render(<App />);
+
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await waitFor(() =>
+      expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
+        "Button.md",
+      ),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    fireEvent.change(screen.getByLabelText("Edit markdown"), {
+      target: { value: "button\nsaved\n" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save document" }));
+
+    await waitFor(() => expect(saveFile).toHaveBeenCalledTimes(1));
+    expect(saveFile).toHaveBeenCalledWith({
+      path: "/Users/me/Button.md",
+      content: "button\nsaved\n",
+      expectedMtimeMs: 101,
+      lineEnding: "lf",
+    });
+    expect(screen.getByRole("button", { name: "Save document" })).toHaveAttribute(
+      "aria-keyshortcuts",
+      "Meta+S",
+    );
 
     cleanupShell();
   });
@@ -247,7 +294,7 @@ describe("App desktop bridge", () => {
       ),
     );
     expect(await screen.findByRole("button", { name: /sample\.md/i })).toBeInTheDocument();
-    expect(screen.getByText("Edited")).toBeInTheDocument();
+    expect(screen.getAllByText("Edited").length).toBeGreaterThan(0);
 
     cleanupShell();
   });
@@ -517,7 +564,7 @@ describe("App desktop bridge", () => {
       content: "",
       lineEnding: "lf",
     });
-    expect(await screen.findByText("Edited")).toBeInTheDocument();
+    expect((await screen.findAllByText("Edited")).length).toBeGreaterThan(0);
 
     cleanupShell();
   });
@@ -624,7 +671,7 @@ describe("App desktop bridge", () => {
       saveFile,
     });
 
-    render(<App />);
+    const { container } = render(<App />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
     await waitFor(() =>
       expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
@@ -634,6 +681,10 @@ describe("App desktop bridge", () => {
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.save));
 
     expect(await screen.findByText("File changed on disk.")).toBeInTheDocument();
+    expect(container.querySelector(".save-state-pill")).toHaveTextContent(
+      "Conflict",
+    );
+    expect(screen.getByRole("button", { name: "Save document" })).toBeEnabled();
     fireEvent.click(screen.getByRole("button", { name: "Overwrite" }));
 
     await waitFor(() => expect(saveFile).toHaveBeenCalledTimes(2));
@@ -643,6 +694,40 @@ describe("App desktop bridge", () => {
       expectedMtimeMs: 30,
       lineEnding: "lf",
     });
+
+    cleanupShell();
+  });
+
+  it("shows Error in the toolbar pill when native save fails", async () => {
+    const cleanupShell = installMockShell({
+      openFile: vi.fn(async () => ({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Error.md",
+        content: "draft",
+        mtimeMs: 20,
+        lineEnding: "lf" as const,
+      })),
+      saveFile: vi.fn(async () => ({
+        ok: false as const,
+        code: "error" as const,
+        message: "Disk write failed.",
+      })),
+    });
+    const { container } = render(<App />);
+
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await waitFor(() =>
+      expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
+        "Error.md",
+      ),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Save document" }));
+
+    expect(await screen.findByText("Disk write failed.")).toBeInTheDocument();
+    expect(container.querySelector(".save-state-pill")).toHaveTextContent(
+      "Error",
+    );
 
     cleanupShell();
   });
@@ -852,7 +937,7 @@ describe("App desktop bridge", () => {
 
     await waitFor(() => expect(saveFile).toHaveBeenCalledTimes(1));
     resolveSave({ ok: true, path: "/Users/me/Pending.md", mtimeMs: 51 });
-    expect(await screen.findByText("Saved")).toBeInTheDocument();
+    expect((await screen.findAllByText("Saved")).length).toBeGreaterThan(0);
 
     cleanupShell();
   });

@@ -1,4 +1,5 @@
 import OSLog
+import AppKit
 import SwiftUI
 import WebKit
 
@@ -75,7 +76,7 @@ private struct WebView: NSViewRepresentable {
     @Binding var loadError: ShellLoadError?
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(loadError: $loadError)
+        Coordinator(shellHost: shellHost, loadError: $loadError)
     }
 
     func makeNSView(context: Context) -> WKWebView {
@@ -88,6 +89,7 @@ private struct WebView: NSViewRepresentable {
 
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
+        webView.uiDelegate = context.coordinator
         if #available(macOS 13.3, *) {
             webView.isInspectable = true
         }
@@ -129,22 +131,45 @@ private struct WebView: NSViewRepresentable {
         webView.load(URLRequest(url: indexURL))
     }
 
-    final class Coordinator: NSObject, WKNavigationDelegate {
+    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
         private static let appReadyProbeIntervalSeconds: TimeInterval = 0.5
         private static let appReadyProbeMaxAttempts = 5
         private static let appReadyProbeTimeoutMs =
             Int(Double(appReadyProbeMaxAttempts - 1) * appReadyProbeIntervalSeconds * 1000)
 
+        private let shellHost: ShellHost
         private let setLoadError: (ShellLoadError?) -> Void
         let appSchemeHandler = AppSchemeHandler()
 
-        init(loadError: Binding<ShellLoadError?>) {
+        init(shellHost: ShellHost, loadError: Binding<ShellLoadError?>) {
+            self.shellHost = shellHost
             setLoadError = { loadError.wrappedValue = $0 }
         }
 
         func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
             appSchemeHandler.clearImportHandoff()
             setLoadError(nil)
+        }
+
+        func webView(
+            _ webView: WKWebView,
+            runOpenPanelWith parameters: WKOpenPanelParameters,
+            initiatedByFrame frame: WKFrameInfo,
+            completionHandler: @escaping ([URL]?) -> Void
+        ) {
+            let panel = NSOpenPanel()
+            panel.canChooseFiles = true
+            panel.canChooseDirectories = false
+            panel.allowsMultipleSelection = parameters.allowsMultipleSelection
+
+            let response = panel.runModal()
+            guard response == .OK else {
+                completionHandler(nil)
+                return
+            }
+
+            shellHost.shellBridge.rememberOpenPanelSelection(panel.urls)
+            completionHandler(panel.urls)
         }
 
         func webView(

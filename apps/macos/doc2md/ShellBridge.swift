@@ -246,6 +246,14 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
         lastDirectoryURL = url.deletingLastPathComponent()
     }
 
+    func rememberOpenPanelSelection(_ urls: [URL]) {
+        guard let firstURL = urls.first else {
+            return
+        }
+
+        rememberLastDirectory(from: firstURL.standardizedFileURL)
+    }
+
     private func resolve(id: String, result: ShellCallResult) {
         do {
             let encoder = JSONEncoder()

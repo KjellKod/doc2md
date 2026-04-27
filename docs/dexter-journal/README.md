@@ -6,6 +6,7 @@ For the other perspective, see [Jean-Claude's Journal](../journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 030 | [Requiem: Save Control UI](030-requiem-save-control-ui.md) | Making Save visible without changing save semantics, reviving WKWebView browsing, and catching one hosted empty-draft regression |
 | 029 | [Requiem: Mac App Icon](029-requiem-mac-app-icon.md) | Burying the generic Xcode icon with an asset catalog, ten measured slots, native regeneration, and a clean dual review |
 | 028 | [Requiem: Mac Release CI](028-requiem-mac-release-ci.md) | Burying regex-shaped release tags, unsigned DMG fallbacks, Sparkle key drift, and any idea that PRs should smell signing secrets |
 | 027 | [Mac PR CI Check](027-mac-pr-ci-check.md) | A narrow PR gate, SHA-pinned actions, and the useful silence of a workflow that does not ask for secrets |

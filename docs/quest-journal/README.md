@@ -2,6 +2,7 @@
 
 | Date | Quest | Outcome |
 |------|-------|---------|
+| 2026-04-27 | [save-control-ui](save-control-ui_2026-04-27.md) | Phase 6c Save control: added visible hosted/Mac Save UI, compact save-state status, WKWebView file-picker support for app Browse, and clean re-review after one hosted-save fix. |
 | 2026-04-27 | [mac-app-icon](mac-app-icon_2026-04-27.md) | Phase 6a Mac app icon: added native Xcode AppIcon asset catalog slots, source/regeneration docs, project wiring, Release bundle verification, and clean dual review. |
 | 2026-04-24 | [mac-pr-ci-check](mac-pr-ci-check_2026-04-24.md) | Phase 5a Mac CI: added a no-secret, SHA-pinned `pull_request` workflow on `macos-latest` that builds the desktop bundle, runs the Mac Release helper and forbidden-API scan, uploads the unsigned app artifact, and documents the check in the Mac README. |
 | 2026-04-23 | [phase-4-converted-docs-persistent-assets](phase-4-converted-docs-persistent-assets_2026-04-23.md) | Phase 4 Mac desktop: converted-document import via WKURLSchemeHandler opaque byte handoff, discriminated ShellFile union, Save/Save-As routing that never overwrites source files, generated Swift extension list with drift check, 2 plan iterations, 2 fix iterations, full validation green. |

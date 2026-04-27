@@ -21,7 +21,11 @@ import type {
   ShellPermissionNeeded,
 } from "./types/doc2mdShell";
 import { entryDisplayName } from "./utils/displayName";
-import { downloadAllEntries, isDownloadableEntry } from "./utils/download";
+import {
+  downloadAllEntries,
+  downloadEntry,
+  isDownloadableEntry,
+} from "./utils/download";
 
 const BASE_PAGE_MAX_WIDTH = 1680;
 const MIN_PAGE_MAX_WIDTH = 1360;
@@ -730,6 +734,23 @@ export default function App() {
     void saveEntryFile(selectedEntry);
   }, [handleSaveAs, saveEntryFile, selectedEntry]);
 
+  const hostedHandleSave = useCallback(() => {
+    if (!isDownloadableEntry(selectedEntry)) {
+      return;
+    }
+
+    saveState.markSaving();
+    downloadEntry(selectedEntry);
+    saveState.markSaved();
+  }, [saveState, selectedEntry]);
+
+  const effectiveSave = isDesktop ? handleSave : hostedHandleSave;
+  const canSaveSelectedEntry = isDesktop
+    ? selectedEntry?.status === "success" || selectedEntry?.status === "warning"
+    : isDownloadableEntry(selectedEntry);
+  const saveButtonBusy = saveState.state === "saving";
+  const saveButtonDisabled = !canSaveSelectedEntry || saveButtonBusy;
+
   const handleRevealInFinder = useCallback(async () => {
     if (!shell || !selectedPath) {
       setDesktopNotice({
@@ -1127,13 +1148,16 @@ export default function App() {
                   <PreviewPanel
                     entry={selectedEntry}
                     onStartWriting={addScratchEntry}
+                    onSave={effectiveSave}
+                    saveBusy={saveButtonBusy}
+                    saveDisabled={saveButtonDisabled}
+                    saveKeyShortcuts={isDesktop ? "Meta+S" : undefined}
+                    saveState={saveState.state}
                     onMarkdownChange={(text) => {
                       if (selectedEntry) {
                         updateMarkdown(selectedEntry.id, text);
-                        if (isDesktop) {
-                          saveState.markEdited();
-                          setPendingConflict(null);
-                        }
+                        saveState.markEdited();
+                        setPendingConflict(null);
                       }
                     }}
                   />
