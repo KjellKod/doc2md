@@ -6,6 +6,15 @@ import {
   type DesktopSaveState,
 } from "./saveState";
 
+const HOSTED_SAVE_EVENTS = new Set<DesktopSaveEvent>([
+  "edit",
+  "saving",
+  "saved",
+]);
+
+/**
+ * Hosted web may surface edit/saving/saved; native-only problem states stay desktop-gated.
+ */
 export function useDesktopSaveState(isDesktop: boolean): {
   state: DesktopSaveState;
   markEdited: () => void;
@@ -22,7 +31,7 @@ export function useDesktopSaveState(isDesktop: boolean): {
 
   const dispatch = useCallback(
     (event: DesktopSaveEvent) => {
-      if (!isDesktop) {
+      if (!isDesktop && !HOSTED_SAVE_EVENTS.has(event)) {
         return;
       }
 
