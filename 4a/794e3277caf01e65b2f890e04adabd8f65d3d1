@@ -1,0 +1,38 @@
+ideas/mac-desktop-app-roadmap.md
+  d857e86f8599b261 17-23,36,38,321,419-471,478
+apps/macos/README.md
+  d857e86f8599b261 194-210
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "4a794e3277caf01e65b2f890e04adabd8f65d3d1",
+  "prompts": {
+    "ca41e8e7cea3363f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019dc341-47a0-79c3-9695-8be12ceb0e79",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 273,
+      "total_deletions": 0,
+      "accepted_lines": 273,
+      "overriden_lines": 0
+    },
+    "d857e86f8599b261": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019dcd3b-c547-7f71-b8fc-ebf9f54ba0ba",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 81,
+      "total_deletions": 2,
+      "accepted_lines": 81,
+      "overriden_lines": 0
+    }
+  }
+}
