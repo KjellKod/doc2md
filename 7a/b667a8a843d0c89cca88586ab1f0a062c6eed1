@@ -1,0 +1,48 @@
+docs/quest-journal/mac-app-icon_2026-04-27.md
+  d857e86f8599b261 1-82
+docs/dexter-journal/README.md
+  d857e86f8599b261 9
+ideas/mac-desktop-app-roadmap.md
+  d857e86f8599b261 371
+scripts/generate-mac-icons.sh
+  1a42af784c1d283e 1-46
+docs/dexter-journal/029-requiem-mac-app-icon.md
+  d857e86f8599b261 1-151
+docs/quest-journal/README.md
+  d857e86f8599b261 5
+docs/diary/2026-04-27.md
+  d857e86f8599b261 1-37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "7ab667a8a843d0c89cca88586ab1f0a062c6eed1",
+  "prompts": {
+    "1a42af784c1d283e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019dcfaa-cc34-7363-9513-38a877f7e70e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 46,
+      "total_deletions": 0,
+      "accepted_lines": 46,
+      "overriden_lines": 0
+    },
+    "d857e86f8599b261": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019dcd3b-c547-7f71-b8fc-ebf9f54ba0ba",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 274,
+      "total_deletions": 0,
+      "accepted_lines": 274,
+      "overriden_lines": 0
+    }
+  }
+}
