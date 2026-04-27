@@ -14,6 +14,13 @@ The work should not ship as one PR. It crosses repo structure, Xcode project set
 
 Build a Mac-native DMG app using Swift + `WKWebView` + Sparkle. The existing hosted browser app remains unchanged for cross-platform use. The Mac shell owns native filesystem, dialogs, menus, signing, notarization, and update checks. The React app and existing converters continue to own conversion, editing, preview, and Markdown state.
 
+Commercial boundary:
+
+- Keep the hosted web app at `https://kjellkod.github.io/doc2md/`, npm packages, and shared conversion logic free.
+- Do not promote, price, or download-link the Mac app from the hosted web app's main page until the commercial distribution plan is intentionally chosen.
+- Treat the Mac app as its own distribution surface: usable without payment, but eligible for a simple paid license with occasional reminders in the spirit of Sublime Text.
+- Prefer a sales/distribution channel that acts as the merchant of record or otherwise handles tax collection/remittance for the maintainer.
+
 ## Phase Overview
 
 | Phase | Status | Quest / PR | Goal | Blocks |
@@ -26,8 +33,9 @@ Build a Mac-native DMG app using Swift + `WKWebView` + Sparkle. The existing hos
 | 4. Converted Document Import and Markdown Persistence | done | PR #81 (`phase-4-converted-docs-persistent-assets_2026-04-23__2328`) | Import any supported non-`.md` source document through the existing converters, first-save to `.md`, keep later saves anchored to the chosen Markdown file, and handle large native-open payloads robustly. | Phase 5 |
 | 5a. Mac PR CI Check | done | PR #83 | Add a no-secrets GitHub Actions workflow that runs `npm run build:desktop` + unsigned `xcodebuild build` + `swiftc -parse` + forbidden-API grep on every PR so Mac-only regressions cannot land silently. | Phase 5b |
 | 5b. Sparkle Plumbing | done | PR #84 | Add Sparkle 2 to the Xcode project, wire `SUFeedURL` / `SUPublicEDKey` in Info.plist, define the appcast XML schema, and verify offline + test-appcast update detection. No signing, no release automation. | Phase 5c |
-| 5c. Release CI, Signing, Notarization, DMG, Appcast Publish | active | mac-release-ci_2026-04-25__0010 | Tag-triggered macOS release workflow with a protected `mac-release` Environment: Developer ID signing, notarization, stapling, DMG, Sparkle ZIP + `sign_update`, appcast publish. The only phase that touches Apple or Sparkle secrets. | MVP ship |
+| 5c. Release CI, Signing, Notarization, DMG, Appcast Publish | done | PR #85 (`mac-release-ci_2026-04-25__0010`) | Tag-triggered macOS release workflow with a protected `mac-release` Environment: Developer ID signing, notarization, stapling, DMG, Sparkle ZIP + `sign_update`, appcast publish. The only phase that touches Apple or Sparkle secrets. | MVP ship |
 | 6. Editor and UI Refresh (cross-surface) | planned | TBD | Hosted-web + Mac editor polish: app icon, persistent mode switcher, explicit save control, find/replace, accessibility audit, keyboard-shortcut help. Runs in parallel with Phase 5b+ because it does not touch the Mac shell contract. | MVP polish |
+| 7. Mac Commercial Distribution and Licensing | planned | TBD | Decide whether the Mac app ships through the Mac App Store, direct DMG sales, or both; add a simple nag-based license model without changing the free hosted web/npm surfaces. | Paid app launch |
 
 ## Phase 0: Design And Roadmap
 
@@ -310,7 +318,7 @@ Add a new workflow (for example `.github/workflows/release-mac.yml`) that builds
 - Minimum secret set and intended use:
   - `APPLE_DEVELOPER_ID_CERT_P12` (Base64 of the `.p12` Developer ID Application cert). `APPLE_DEVELOPER_ID_CERT_PASSWORD` (password for the `.p12`).
   - `APPLE_NOTARY_API_KEY_ID`, `APPLE_NOTARY_API_ISSUER_ID`, `APPLE_NOTARY_API_KEY_P8` (Base64 of the App Store Connect API key) — used by `xcrun notarytool`.
-  - `SPARKLE_EDDSA_PRIVATE_KEY` (Base64 of the EdDSA private key) — used only by `sign_update`.
+  - `SPARKLE_EDDSA_PRIVATE_KEY` (raw Sparkle EdDSA private key text matching the committed `SUPublicEDKey`) — used only by `sign_update`.
   - `SPARKLE_EDDSA_PUBLIC_KEY` — committed as `SUPublicEDKey` in `Info.plist`, NOT stored as a secret.
 - Keychain handling in CI:
   - Create a per-job temporary keychain with `security create-keychain`; never touch the runner default keychain.
@@ -408,12 +416,66 @@ Reserved for items the maintainer adds on the fly. Candidates surfaced during sc
 - Optional: session-local scratch buffer so refresh / accidental navigation does not erase unsaved work in the hosted browser.
 - Optional: PWA install hint for mobile users of the hosted app.
 
+## Phase 7: Mac Commercial Distribution And Licensing
+
+Goal:
+
+Keep the hosted web app and npm ecosystem free while making the Mac app a simple paid product. The Mac app should remain usable without payment, but unpaid users may see occasional license reminders. The tone should be practical and respectful: no document lock-in, no data hostage behavior, no artificial conversion limits.
+
+Distribution assumptions:
+
+- Do not put a Mac app upsell, pricing page, or download CTA on the hosted web app's main page until this phase explicitly chooses a distribution model.
+- Evaluate Mac App Store distribution, direct signed DMG sales, or both. The release pipeline already supports direct signed/notarized DMG + Sparkle updates; App Store distribution would need a separate packaging/review path.
+- Prefer a merchant-of-record style sales platform or store channel that handles tax collection/remittance, VAT/GST/sales-tax paperwork, invoices/receipts, and customer purchase records.
+- Keep pricing easy to understand. Working hypothesis, not a commitment: a low annual price around `$20/year`, plus an optional perpetual license that lasts until the next major paid upgrade.
+- Keep license enforcement offline-friendly. The app should not require network access to open, edit, convert, save, or export documents.
+
+Expected changes:
+
+- Add a lightweight licensing model for the Mac app only:
+  - `Licensed`, `Unlicensed`, `Trial/Grace`, and `License Check Failed` states.
+  - A local license file or activation token stored in the user's Application Support directory or Keychain.
+  - Occasional nag reminder for unlicensed users after a simple trigger, such as every N launches or every N exports/saves.
+  - A license entry window reachable from the app menu.
+- Add release-channel wording:
+  - Hosted web and npm remain free.
+  - Mac app license supports native packaging, signing, notarization, Sparkle updates, and ongoing maintenance.
+  - Unlicensed users may continue using the app if they accept reminders.
+- Add privacy and trust guardrails:
+  - No document contents are sent to a licensing provider.
+  - License checks must not block local document access.
+  - Failed network checks degrade to a reminder, not data loss.
+  - No license secrets, signing keys, or vendor API keys are committed.
+- Add a distribution decision record comparing:
+  - Mac App Store only.
+  - Direct DMG only.
+  - Hybrid: direct DMG first, App Store later if it is worth the operational cost.
+
+Acceptance criteria:
+
+- The hosted web app does not advertise or depend on the paid Mac app.
+- The Mac app can run unlicensed with occasional reminders.
+- A licensed user can enter/restore a license without editing config files.
+- License state survives relaunch.
+- Offline launch and document editing still work.
+- Pricing copy is simple and non-deceptive.
+- Tax/sales operational ownership is documented before taking money.
+
+Out of scope until the distribution decision is made:
+
+- Final price.
+- Final license provider.
+- App Store receipt validation.
+- Server-side license API.
+- Anti-tamper work beyond honest-user license checks.
+
 ## MVP Ship Criteria
 
 MVP is ready when:
 
 - Phases 1, 2, 2.5, 3, 4, 5a, 5b, and 5c are complete.
 - Phase 6 items are tracked but NOT gating for MVP ship; they land opportunistically.
+- Phase 7 is tracked but NOT gating for the free/open MVP. It gates paid Mac app launch only.
 - Hosted browser behavior is unchanged.
 - `doc2md.app` can open, edit, save, Save As, reveal in Finder, and handle conflicts.
 - Converted document Save As works for supported source formats.

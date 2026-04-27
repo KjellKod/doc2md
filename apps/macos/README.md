@@ -191,6 +191,23 @@ Required `mac-release` Environment secrets:
 
 Apple signing/notarization secrets and Sparkle signing secrets are intentionally consumed by separate workflow jobs. Normal PRs and forks use the unsigned [Mac PR check](../../.github/workflows/mac-pr-check.yml) and cannot access the release Environment.
 
+Credential reuse guidance:
+
+- Apple Developer ID credentials may be reused from another app if both apps are owned by the same Apple Developer team and the maintainer is comfortable with the shared signing identity. A Developer ID Application certificate identifies the developer/team, not a single app.
+- Apple notary API credentials may also be reused from the same Apple Developer team, but a separate App Store Connect API key per repository is cleaner for audit, revocation, and blast-radius control.
+- Do not reuse another app's Sparkle EdDSA private key for `doc2md`. Generate a distinct Sparkle key pair for this app, commit only the matching `SUPublicEDKey`, and store only the private key text in the `SPARKLE_EDDSA_PRIVATE_KEY` Environment secret.
+- If the Sparkle private key does not match the committed `SUPublicEDKey`, Sparkle update verification will fail.
+
+Open-source PR safety rules:
+
+- Keep Apple and Sparkle secrets scoped only to the protected `mac-release` GitHub Environment, not repository-level secrets that every workflow can reference.
+- Require reviewers on the `mac-release` Environment so release jobs pause before secrets are exposed.
+- Do not add `pull_request_target` workflows. The repository security guard rejects this.
+- Do not reference Apple or Sparkle secrets from any `pull_request` workflow. PR and fork checks must stay no-secret.
+- Do not check out PR head code in any job that can access release secrets. The release workflow checks out a resolved canonical tag SHA.
+- Keep Apple signing/notarization and Sparkle update signing in separate jobs so one secret family is never present with the other.
+- Run `python3 scripts/security_ci_guard.py` after workflow changes; it checks for `pull_request_target`, PR workflows that reference release secrets, release-secret jobs without environment gates, mixed Apple/Sparkle secret jobs, and possible committed private-key material.
+
 Before tagging a release, manually bump both Xcode build settings in `apps/macos/doc2md.xcodeproj/project.pbxproj`:
 
 - `MARKETING_VERSION` must match the tag without the leading `v`.
