@@ -4,6 +4,10 @@
 [copy-as-is]
 .agents/skills/README.md
 .agents/skills/celebrate/SKILL.md
+.agents/skills/git-commit-assistant/SKILL.md
+.agents/skills/pr-assistant/SKILL.md
+.agents/skills/pr-shepherd/SKILL.md
+.agents/skills/pre-commit-review/SKILL.md
 .agents/skills/quest/SKILL.md
 .ai/quest.md
 .ai/roles/quest_agent.md
@@ -27,6 +31,7 @@
 .claude/skills/gpt/SKILL.md
 .claude/skills/pr-assistant/SKILL.md
 .claude/skills/pr-shepherd/SKILL.md
+.claude/skills/pre-commit-review/SKILL.md
 .claude/skills/quest/SKILL.md
 .skills/BOOTSTRAP.md
 .skills/README.md
@@ -47,6 +52,7 @@
 .skills/plan-reviewer/SKILL.md
 .skills/pr-assistant/SKILL.md
 .skills/pr-shepherd/SKILL.md
+.skills/pre-commit-review/SKILL.md
 .skills/quest/SKILL.md
 .skills/quest/agents/README.md
 .skills/quest/agents/arbiter.md
@@ -58,6 +64,8 @@
 .skills/quest/delegation/questioner.md
 .skills/quest/delegation/router.md
 .skills/quest/delegation/workflow.md
+.skills/review-anti-patterns.md
+.skills/review-decisions/SKILL.md
 .skills/ux/SKILL.md
 scripts/claude_cli_bridge.py
 scripts/quest_celebrate/__init__.py
@@ -79,6 +87,8 @@ scripts/quest_preflight.sh
 scripts/quest_runtime/__init__.py
 scripts/quest_runtime/artifacts.py
 scripts/quest_runtime/claude_runner.py
+scripts/quest_runtime/pr_review_cycle.py
+scripts/quest_runtime/review_intelligence.py
 scripts/quest_runtime/state.py
 scripts/quest_startup_branch.py
 scripts/quest_state.py

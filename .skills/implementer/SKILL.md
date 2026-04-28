@@ -65,6 +65,10 @@ Avoid patterns like `getattr(obj, "method", None)` / `hasattr()` / “if callabl
 - If behavior is intentionally optional (plugin/provider boundary), detect capability **once at the boundary** and keep the rest of the code contract-driven.
 - Telemetry/metrics must be best-effort: failures in tracking should never change prompts, retries, or request logic; they should degrade to “no metrics” with clear logs/tests.
 
+### Rule 3c: Prefer concrete types over catch-alls
+
+If you're reaching for a catch-all type (`any`, `Any`, `Object`, `dynamic`, `void*`, `Box<dyn Any>`, untyped `dict` / `list`, etc.), stop and check whether a concrete type would work. If it genuinely wouldn't — boundary deserialization, true generic plumbing, gradual typing of legacy code — leave a one-line comment explaining why. Types and type checking drive quality; escape hatches are a deliberate choice, not a default. See the per-language table in `.skills/code-reviewer/SKILL.md` for what counts as a catch-all in each language.
+
 ### Rule 4: Tests map to acceptance criteria
 
 For each acceptance criterion, ensure at least one of:
@@ -84,7 +88,11 @@ Stop and ask a question if any of these are unclear:
 - error semantics and retryability
 - cross-system integration expectations
 
-If the uncertainty is not impactful, choose the simplest interpretation and record it in the Decision Log.
+If the uncertainty is not impactful, choose the simplest interpretation and record it in the Decision Log with an `ASSUMPTION` tag so reviewers can validate it:
+
+- Assumption: [what you assumed]
+  - context: [what in the plan was ambiguous]
+  - alternative: [what else you considered]
 
 ### Rule 7: Ask before deviating from repo standards
 
@@ -116,6 +124,21 @@ Decision Log format:
   - impact: what this affects
   - followups: planned cleanup/risks
 
+### Rule 8: Scope discipline
+
+Before touching any file, confirm the change is within the approved scope. If you notice something that should be fixed but is out of scope:
+
+1. Do NOT fix it
+2. Record it using the NOTICED pattern in your Decision Log (Rule 6):
+
+```
+NOTICED: [file or issue]
+DESCRIPTION: [what you saw]
+RECOMMENDATION: [fix in follow-up quest / add to backlog]
+```
+
+This preserves the observation without polluting the current diff.
+
 ---
 
 ## Implementation Process
@@ -143,3 +166,12 @@ Before starting the next step, verify:
 - tests are deterministic and meaningful
 - no secrets/sensitive data are logged or returned
 - changes are minimal and reviewable
+
+---
+
+## Common Pitfalls
+
+| Shortcut | Why It Fails | Red Flag |
+|----------|-------------|----------|
+| "I'll add tests after I finish the logic" | Bugs compound — a bug in step 1 makes steps 2-5 wrong. Tests written after the fact test implementation, not behavior. | Code files growing without corresponding test files appearing |
+| "Fixing one more thing while I'm here" | Diff grows, review slows, risk compounds. Mixed refactors and features make both harder to review and debug. | Commit message mentions unrelated cleanup |

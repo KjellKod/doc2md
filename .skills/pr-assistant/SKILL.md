@@ -214,14 +214,17 @@ Rules:
 
 - **Only include models that actually participated** in the work being committed. Do not list a model that was not involved.
 - If model participation is unclear, do not ask by default. Include only the current model when it clearly participated, and omit any other model you cannot verify.
+- If the work was done through Quest, check quest artifacts first to identify participating models.
+- If generating a squash commit for a PR, you may also check PR comments for clearly attributable model participation.
+- Do not require PR metadata in non-PR contexts. If attribution remains uncertain after available checks, omit the unverified model.
 - Use the specific model label (e.g., "Claude Opus 4.6", "Codex mini") when known from the session or quest artifacts.
 - Known model email mappings:
   - Claude → `noreply@anthropic.com`
   - Codex / OpenAI → `noreply@openai.com`
   - OpenCode → `noreply@opencode.ai`
 - Resolve `<human author identity>` from local git config when available:
-  - Prefer `git config user.name` + `git config user.email` and format as `Name <email>`
-  - If only a GitHub username can be inferred from git config or the remote URL, use that username
+  - Prefer a GitHub username when it can be inferred from the remote URL or GitHub CLI context
+  - Otherwise use `git config user.name`
   - If no human identity can be verified, use `the repository author`
 - The `in collaboration with` line is always present and always last.
 

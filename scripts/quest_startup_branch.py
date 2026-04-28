@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -14,6 +16,7 @@ DEFAULT_BRANCH_MODE = "branch"
 DEFAULT_BRANCH_PREFIX = "quest/"
 DEFAULT_WORKTREE_ROOT = ".worktrees/quest"
 VALID_BRANCH_MODES = {"branch", "worktree", "none"}
+SAFE_SLUG_RE = re.compile(r"^[a-z0-9]([a-z0-9-]*[a-z0-9])?$")
 
 
 def parse_args() -> argparse.Namespace:
@@ -23,6 +26,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--slug", required=True)
     parser.add_argument("--repo-root", default=".")
     parser.add_argument("--allowlist", default=".ai/allowlist.json")
+    parser.add_argument(
+        "--mode",
+        choices=["branch", "worktree", "none"],
+        default=None,
+        help="Override branch mode from allowlist (user's interactive choice).",
+    )
     return parser.parse_args()
 
 
@@ -55,6 +64,17 @@ def load_allowlist(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def detect_requested_branch_mode(args: argparse.Namespace, allowlist_path: Path) -> str:
+    if args.mode:
+        return args.mode
+    try:
+        allowlist = load_allowlist(allowlist_path)
+    except Exception:
+        return DEFAULT_BRANCH_MODE
+    startup = allowlist.get("quest_startup") or {}
+    return str(startup.get("branch_mode", DEFAULT_BRANCH_MODE))
+
+
 def detect_default_branch(repo_root: Path, current_branch: str) -> str:
     remote_head = run_git(
         repo_root,
@@ -69,10 +89,19 @@ def detect_default_branch(repo_root: Path, current_branch: str) -> str:
         if git_success(repo_root, "show-ref", "--verify", "--quiet", f"refs/heads/{candidate}"):
             return candidate
 
-    if current_branch in {"main", "master"}:
-        return current_branch
+    # Cannot determine default branch — assume current branch is it.
+    return current_branch
 
-    return "main"
+
+def is_git_repo(repo_root: Path) -> bool:
+    return git_success(repo_root, "rev-parse", "--is-inside-work-tree")
+
+
+def safe_is_git_repo(repo_root: Path) -> bool:
+    try:
+        return is_git_repo(repo_root)
+    except Exception:
+        return False
 
 
 def branch_exists(repo_root: Path, branch_name: str) -> bool:
@@ -94,6 +123,7 @@ def repo_dirty(repo_root: Path) -> bool:
 def build_result(
     *,
     status: str,
+    vcs_available: bool,
     branch: str | None,
     branch_mode: str,
     requested_branch_mode: str,
@@ -105,6 +135,7 @@ def build_result(
 ) -> dict[str, Any]:
     return {
         "status": status,
+        "vcs_available": vcs_available,
         "branch": branch,
         "branch_mode": branch_mode,
         "requested_branch_mode": requested_branch_mode,
@@ -122,18 +153,39 @@ def main() -> int:
     allowlist_path = Path(args.allowlist)
     if not allowlist_path.is_absolute():
         allowlist_path = (repo_root / allowlist_path).resolve()
-    requested_branch_mode = DEFAULT_BRANCH_MODE
+    requested_branch_mode = detect_requested_branch_mode(args, allowlist_path)
+
+    if not SAFE_SLUG_RE.match(args.slug) or ".." in args.slug:
+        payload = build_result(
+            status="blocked",
+            vcs_available=safe_is_git_repo(repo_root),
+            branch=None,
+            branch_mode="none",
+            requested_branch_mode=requested_branch_mode,
+            current_branch=None,
+            default_branch=None,
+            branch_created=False,
+            worktree_path=None,
+            message=(
+                f"Invalid slug '{args.slug}'. "
+                "Slugs must be lowercase alphanumeric with single hyphens, "
+                "no path separators or '..'."
+            ),
+        )
+        print(json.dumps(payload, indent=2))
+        return 0
 
     try:
         allowlist = load_allowlist(allowlist_path)
         startup = allowlist.get("quest_startup") or {}
-        requested_branch_mode = startup.get("branch_mode", DEFAULT_BRANCH_MODE)
+        requested_branch_mode = args.mode or startup.get("branch_mode", DEFAULT_BRANCH_MODE)
         branch_prefix = startup.get("branch_prefix", DEFAULT_BRANCH_PREFIX)
         worktree_root = startup.get("worktree_root", DEFAULT_WORKTREE_ROOT)
 
         if requested_branch_mode not in VALID_BRANCH_MODES:
             payload = build_result(
                 status="blocked",
+                vcs_available=safe_is_git_repo(repo_root),
                 branch=None,
                 branch_mode="none",
                 requested_branch_mode=str(requested_branch_mode),
@@ -149,10 +201,30 @@ def main() -> int:
             print(json.dumps(payload, indent=2))
             return 0
 
+        if not is_git_repo(repo_root):
+            payload = build_result(
+                status="skipped",
+                vcs_available=False,
+                branch=None,
+                branch_mode="none",
+                requested_branch_mode=requested_branch_mode,
+                current_branch=None,
+                default_branch=None,
+                branch_created=False,
+                worktree_path=None,
+                message=(
+                    "Not a git repository — skipping quest startup branch/worktree creation "
+                    "and staying in the current workspace."
+                ),
+            )
+            print(json.dumps(payload, indent=2))
+            return 0
+
         current_branch = run_git(repo_root, "branch", "--show-current", check=False)
         if not current_branch:
             payload = build_result(
                 status="blocked",
+                vcs_available=True,
                 branch=None,
                 branch_mode="none",
                 requested_branch_mode=requested_branch_mode,
@@ -171,6 +243,7 @@ def main() -> int:
         if current_branch != default_branch:
             payload = build_result(
                 status="skipped",
+                vcs_available=True,
                 branch=current_branch,
                 branch_mode="none",
                 requested_branch_mode=requested_branch_mode,
@@ -186,6 +259,7 @@ def main() -> int:
         if requested_branch_mode == "none":
             payload = build_result(
                 status="skipped",
+                vcs_available=True,
                 branch=current_branch,
                 branch_mode="none",
                 requested_branch_mode=requested_branch_mode,
@@ -201,6 +275,7 @@ def main() -> int:
         if branch_exists(repo_root, branch_name):
             payload = build_result(
                 status="blocked",
+                vcs_available=True,
                 branch=branch_name,
                 branch_mode="none",
                 requested_branch_mode=requested_branch_mode,
@@ -220,6 +295,7 @@ def main() -> int:
             if repo_dirty(repo_root):
                 payload = build_result(
                     status="blocked",
+                    vcs_available=True,
                     branch=current_branch,
                     branch_mode="none",
                     requested_branch_mode=requested_branch_mode,
@@ -238,6 +314,7 @@ def main() -> int:
             run_git(repo_root, "checkout", "-b", branch_name)
             payload = build_result(
                 status="created",
+                vcs_available=True,
                 branch=branch_name,
                 branch_mode="branch",
                 requested_branch_mode=requested_branch_mode,
@@ -254,6 +331,7 @@ def main() -> int:
         if worktree_path.exists():
             payload = build_result(
                 status="blocked",
+                vcs_available=True,
                 branch=branch_name,
                 branch_mode="none",
                 requested_branch_mode=requested_branch_mode,
@@ -279,8 +357,25 @@ def main() -> int:
             branch_name,
             default_branch,
         )
+
+        # Symlink .quest/ into the worktree so subagents can use
+        # relative .quest/<id>/... paths without special handling.
+        # git worktree checkout may create a real .quest/ dir from
+        # force-tracked files — replace it with a symlink to the
+        # main repo's .quest/ so the active quest is visible.
+        quest_link = worktree_path / ".quest"
+        quest_source = repo_root / ".quest"
+        if quest_link.is_symlink():
+            pass  # already a symlink, leave it
+        elif quest_link.is_dir():
+            shutil.rmtree(quest_link)
+            quest_link.symlink_to(quest_source)
+        elif not quest_link.exists():
+            quest_link.symlink_to(quest_source)
+
         payload = build_result(
             status="created",
+            vcs_available=True,
             branch=branch_name,
             branch_mode="worktree",
             requested_branch_mode=requested_branch_mode,
@@ -295,6 +390,7 @@ def main() -> int:
     except Exception as exc:
         payload = build_result(
             status="blocked",
+            vcs_available=safe_is_git_repo(repo_root),
             branch=None,
             branch_mode="none",
             requested_branch_mode=requested_branch_mode,
