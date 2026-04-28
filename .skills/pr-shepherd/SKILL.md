@@ -2,6 +2,10 @@
 
 Push a draft PR and iterate until CI passes and review comments are resolved, then mark ready for review.
 
+At activation, announce the skill name and scope in one line. Example: `[pr-shepherd] shepherding PR #97`.
+
+See `.skills/review-anti-patterns.md` for the shared rule set.
+
 ## Default Commenting Mode
 
 Use **inline-first** commenting by default.
@@ -18,9 +22,15 @@ Use **inline-first** commenting by default.
 3. Create a **draft** PR via `gh pr create --draft`.
 
 ### Step 2: Wait for CI
-1. Run `gh pr checks <PR_NUMBER>` to get an early read.
-2. If any checks are still pending, sleep ~180 seconds.
-3. Run `gh pr checks <PR_NUMBER>` again to observe final CI status.
+Use a hard polling budget for CI waits:
+- `interval_seconds = 30`
+- `max_retries = 30`
+- Hard cap: 15 minutes (15-minute cap, `30 seconds x 30 retries`)
+
+Loop:
+1. Run `gh pr checks <PR_NUMBER>` to get the current status.
+2. Stop when all checks are green, a confirmed failure is present, or the polling budget is exhausted.
+3. If checks are still pending and budget remains, sleep 30 seconds before the next retry.
 
 ### Step 3: Evaluate CI Results
 - **All checks pass** → proceed to Step 4.
@@ -29,6 +39,8 @@ Use **inline-first** commenting by default.
 ### Step 4: Check PR Comments
 1. Fetch **inline** review comments: `gh api repos/{owner}/{repo}/pulls/{pr}/comments`
 2. Fetch **general** PR comments: `gh pr view <PR_NUMBER> --comments`
+   - Comment fetch is single-shot by default.
+   - If a transient API state requires retrying, use `interval_seconds = 20`, `max_retries = 20`, 400-second cap (`20 seconds x 20 retries`).
 3. For each comment, respond **on the comment itself** (threaded reply), never move an inline discussion to the general PR thread:
    - **Inline review comments** → reply via `gh api repos/{owner}/{repo}/pulls/{pr}/comments/{comment_id}/replies -f body="..."`
    - **General discussion comments** → reply via `gh pr comment <PR_NUMBER> --body "..."`
@@ -36,6 +48,34 @@ Use **inline-first** commenting by default.
    - **Agree?** → Fix the code, commit, push. Reply on the comment acknowledging the fix.
    - **Disagree?** → Reply on the comment with clear reasoning explaining why.
    - **Question/clarification?** → Reply on the comment with the answer.
+
+### Step 4.4: Canonical Intake → Decisions → Validation → Batches → Push
+Run the review loop through the canonical review-intelligence pipeline. **Order matters:** validation steps must be attached to backlog items before batching, otherwise `build-fix-batches` falls back to one-item batches keyed by `finding_id` and the "batched PR response" behavior is lost.
+
+1. Collect one intake payload per cycle:
+   - `ci_checks`
+   - `inline_comments`
+   - `general_comments`
+   - `existing_findings`
+2. Normalize intake to canonical findings:
+   - `python3 scripts/quest_review_intelligence.py normalize-pr-intake --input <intake.json> --output <review_findings.json>`
+3. Build decision backlog with shared policy:
+   - `python3 scripts/quest_review_intelligence.py build-backlog --findings <review_findings.json> --output <review_backlog.json>`
+4. Select concrete validation per actionable finding and persist onto the backlog:
+   - `python3 scripts/quest_review_intelligence.py select-batch-validation --backlog <review_backlog.json> [--repo-inventory <repo_inventory.json>]`
+   - Updates each actionable item's `validation_steps` in place so batching sees real signatures.
+   - Single-finding preview (debugging only): `python3 scripts/quest_select_tests.py --finding <finding.json> [--repo-inventory <repo_inventory.json>]`.
+5. Build actionable non-overlapping batches:
+   - `python3 scripts/quest_review_intelligence.py build-fix-batches --backlog <review_backlog.json> --output <fix_batches.json>`
+   - Items sharing `batch_key` + `validation_scope` signature group together, split by write-scope overlap as needed.
+6. Execute one batch at a time:
+   - Apply only that batch's `fix_now` / `verify_first` items.
+   - Run validation steps in order (Level 0 → Level 1 → Level 2 when present).
+   - Push once after that batch validates.
+7. Classify loop stop after each cycle:
+   - `python3 scripts/quest_review_intelligence.py classify-pr-stop --ci-state <green|failing|pending|unknown> --actionable <count> --iteration <n> --backlog <review_backlog.json>`
+   - If cap is enforced, classification handles in-place retagging and deferred backlog append for newly deferred findings.
+   - Continue only when classification outcome is `continue`.
 
 ### Step 4.5: Inline Commenting Playbook
 Use this for every inline review reply so comments feel coaching-oriented and actionable.
@@ -52,7 +92,7 @@ Comment formula:
 4. Keep tone warm; humor is optional and brief.
 
 Example shape:
-`Nice cleanup here. One tiny gremlin: <specific issue>. Could we <specific fix>?`
+`Nice cleanup here. One issue: <specific issue>. Could we <specific fix>?`
 
 Tone rules:
 - Be kind, not vague.
@@ -76,8 +116,14 @@ Signature requirement for every posted review comment:
 `- Reviewed by <model>, in collaboration with <github username>`
 
 Ready-to-use template:
-`Nice improvement here. One small gremlin: <issue>. This can cause <impact>. Suggestion: <specific change>.`
+`Nice improvement here. One issue: <issue>. This can cause <impact>. Suggestion: <specific change>.`
 `- Reviewed by <model>, in collaboration with <github username>`
+
+### Step 4.6: Decision Policy Alignment
+When reducing findings to actionable buckets, align with `.skills/review-decisions/SKILL.md`:
+- Use only `fix_now`, `verify_first`, `defer`, `drop`, `needs_human_decision`
+- Keep reasoning explicit for deferred and dropped findings
+- At loop cap, convert unresolved items to `defer` (accepted debt) or `needs_human_decision`
 
 ### Step 5: Re-check CI (if changes were made)
 If any fixes were pushed in Step 4, loop back to Step 2.
@@ -93,7 +139,7 @@ Inform the user the PR is ready for their review.
 - Never mark ready-for-review while CI is failing.
 - Never ignore review comments — always respond.
 - Keep fix commits small and focused; don't bundle unrelated changes.
-- If stuck in a loop (>3 fix iterations), stop and ask the user for guidance.
+- Use `classify-pr-stop` for loop-cap enforcement; do not prompt the user before cap retagging is applied. Prompt only if post-retag items still require `needs_human_decision`.
 
 ## Command Invocation
 
