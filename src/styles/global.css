@@ -1000,12 +1000,22 @@ body.is-page-resizing * {
 }
 
 .preview-toolbar {
+  position: sticky;
+  top: 12px;
+  z-index: 5;
   display: flex;
   flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
+  margin: -8px -8px 0;
+  padding: 8px;
+  border: 1px solid var(--panel-border);
+  border-radius: 18px;
+  background: rgba(249, 246, 241, 0.96);
+  box-shadow: 0 14px 30px rgba(27, 39, 49, 0.08);
+  backdrop-filter: blur(12px);
 }
 
 .preview-loading-state {
@@ -1093,6 +1103,7 @@ body.is-page-resizing * {
 
 .preview-toggle {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -1389,6 +1400,7 @@ body.is-page-resizing * {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-height: 44px;
   padding: 7px 14px;
   border: 1px solid rgba(23, 56, 76, 0.16);
   border-radius: 999px;
@@ -1866,6 +1878,10 @@ body.is-page-resizing * {
   );
 }
 
+:root[data-theme="dark"] .preview-toolbar {
+  background: rgba(26, 31, 37, 0.96);
+}
+
 :root[data-theme="dark"] .preview-toggle-button:hover {
   border-color: rgba(137, 199, 229, 0.32);
 }
@@ -2090,6 +2106,8 @@ body.is-page-resizing * {
 
   .preview-toolbar {
     align-items: flex-start;
+    top: 8px;
+    margin: 0;
   }
 
   .preview-toolbar-actions {

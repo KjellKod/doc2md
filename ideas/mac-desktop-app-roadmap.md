@@ -34,7 +34,7 @@ Commercial boundary:
 | 5a. Mac PR CI Check | done | PR #83 | Add a no-secrets GitHub Actions workflow that runs `npm run build:desktop` + unsigned `xcodebuild build` + `swiftc -parse` + forbidden-API grep on every PR so Mac-only regressions cannot land silently. | Phase 5b |
 | 5b. Sparkle Plumbing | done | PR #84 | Add Sparkle 2 to the Xcode project, wire `SUFeedURL` / `SUPublicEDKey` in Info.plist, define the appcast XML schema, and verify offline + test-appcast update detection. No signing, no release automation. | Phase 5c |
 | 5c. Release CI, Signing, Notarization, DMG, Appcast Publish | done | PR #85 (`mac-release-ci_2026-04-25__0010`) | Tag-triggered macOS release workflow with a protected `mac-release` Environment: Developer ID signing, notarization, stapling, DMG, Sparkle ZIP + `sign_update`, appcast publish. The only phase that touches Apple or Sparkle secrets. | MVP ship |
-| 6. Editor and UI Refresh (cross-surface) | active | Phase 6a PR #86; Phase 6c `save-control-ui_2026-04-27__1212` | Hosted-web + Mac editor polish: app icon, persistent mode switcher, explicit save control, find/replace, accessibility audit, keyboard-shortcut help. Runs in parallel with Phase 5b+ because it does not touch the Mac shell contract. | MVP polish |
+| 6. Editor and UI Refresh (cross-surface) | active | Phase 6a PR #86; Phase 6b PR #88 (`persistent-mode-switcher_2026-04-27__2355`); Phase 6c PR #87 (`save-control-ui_2026-04-27__1212`) | Hosted-web + Mac editor polish: app icon, persistent mode switcher, explicit save control, find/replace, accessibility audit, keyboard-shortcut help. Runs in parallel with Phase 5b+ because it does not touch the Mac shell contract. | MVP polish |
 | 7. Mac Commercial Distribution and Licensing | planned | TBD | Decide whether the Mac app ships through the Mac App Store, direct DMG sales, or both; add a simple nag-based license model without changing the free hosted web/npm surfaces. | Paid app launch |
 
 ## Phase 0: Design And Roadmap
@@ -376,6 +376,7 @@ Clean up the editor/viewer UX across the hosted browser app and the Mac shell. T
 
 ### 6b. Persistent Mode Switcher (Edit / Preview / LinkedIn)
 
+- Status: done in PR #88 (`persistent-mode-switcher_2026-04-27__2355`).
 - Today the Edit / Preview / LinkedIn mode buttons live in a toolbar that scrolls away with the content. Users have to scroll up to switch modes.
 - Make the mode switcher stick to the top of the viewport (or dock into a compact floating control) so it is always reachable.
 - Handle edge cases carefully: mobile viewport, preview-pane collapse state, split-pane resizer, keyboard focus ring, scroll position after mode switch.
@@ -384,7 +385,7 @@ Clean up the editor/viewer UX across the hosted browser app and the Mac shell. T
 
 ### 6c. Explicit Save Control (Mobile-Safe)
 
-- Status: active in quest `save-control-ui_2026-04-27__1212`.
+- Status: done in PR #87 (`save-control-ui_2026-04-27__1212`).
 - Add a visible Save button next to the mode switcher (or in a save-state pill) so mobile users without a physical Cmd+S have an explicit path.
 - Decide per-surface behavior: on the Mac app, the button triggers the native save path (same as Cmd+S); on the hosted browser, it triggers the existing download-based save flow.
 - Confirm existing keyboard shortcut (Cmd+S / Ctrl+S) still works; the button is additive, not a replacement.
