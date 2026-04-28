@@ -1,0 +1,55 @@
+src/components/__tests__/FindReplaceBar.test.tsx
+  4da1f4ba6a89ad3b 30,117
+  5201f4e41c268ea8 99-116
+docs/dexter-journal/031-requiem-mac-find-replace.md
+  5201f4e41c268ea8 1-92
+docs/quest-journal/README.md
+  5201f4e41c268ea8 5
+docs/dexter-journal/README.md
+  5201f4e41c268ea8 9
+docs/quest-journal/mac-find-replace_2026-04-28.md
+  5201f4e41c268ea8 1-84
+docs/diary/2026-04-28.md
+  5201f4e41c268ea8 1-33
+src/components/PreviewPanel.test.tsx
+  4da1f4ba6a89ad3b 614-814
+src/components/PreviewPanel.tsx
+  4da1f4ba6a89ad3b 135-138,140-146,150,153-164,177-224,309-318,386,473-484,531-539
+src/components/FindReplaceBar.tsx
+  4da1f4ba6a89ad3b 19-71
+src/components/useFindReplace.ts
+  4da1f4ba6a89ad3b 1-279
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "7f973af65460245084ad199dd2530e4af43faa86",
+  "prompts": {
+    "4da1f4ba6a89ad3b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019dd512-65a3-7fe3-97a1-42540aab34a7",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 185,
+      "total_deletions": 28,
+      "accepted_lines": 182,
+      "overriden_lines": 0
+    },
+    "5201f4e41c268ea8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019dd2c9-6f76-7242-aa16-6e3ef46b5d7c",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 230,
+      "total_deletions": 1,
+      "accepted_lines": 229,
+      "overriden_lines": 0
+    }
+  }
+}
