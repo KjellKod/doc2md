@@ -1299,6 +1299,52 @@ body.is-page-resizing * {
   min-width: 0;
 }
 
+.find-replace-tooltip-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.find-replace-tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  z-index: 10;
+  padding: 7px 10px;
+  border-radius: 12px;
+  background: rgba(20, 25, 31, 0.94);
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1.2;
+  pointer-events: none;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(-50%, -4px);
+  transition:
+    opacity 80ms ease,
+    transform 80ms ease;
+}
+
+.find-replace-tooltip-left {
+  right: 0;
+  left: auto;
+  transform: translate(0, -4px);
+}
+
+.find-replace-tooltip-wrap:hover .find-replace-tooltip,
+.find-replace-tooltip-wrap:focus-within .find-replace-tooltip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.find-replace-tooltip-wrap:hover .find-replace-tooltip-left,
+.find-replace-tooltip-wrap:focus-within .find-replace-tooltip-left {
+  transform: translate(0, 0);
+}
+
 .find-replace-option {
   padding: 0 12px;
 }
@@ -1364,7 +1410,7 @@ body.is-page-resizing * {
   white-space: nowrap;
 }
 
-.find-replace-close-button {
+.find-replace-close-wrap {
   position: absolute;
   top: 8px;
   right: 8px;

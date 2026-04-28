@@ -137,30 +137,48 @@ export default function FindReplaceBar({
           />
         </label>
         <div className="find-replace-options" role="group" aria-label="Find options">
-          <button
-            type="button"
-            className={`find-replace-option${
-              findReplace.caseSensitive ? " is-active" : ""
-            }`}
-            onClick={() =>
-              findReplace.setCaseSensitive(!findReplace.caseSensitive)
-            }
-            aria-label="Case-sensitive search"
-            aria-pressed={findReplace.caseSensitive}
-            title="Case-sensitive search"
-          >
-            Aa
-          </button>
-          <button
-            type="button"
-            className={`find-replace-option${findReplace.regex ? " is-active" : ""}`}
-            onClick={() => findReplace.setRegex(!findReplace.regex)}
-            aria-label="Regex search"
-            aria-pressed={findReplace.regex}
-            title="Regex search"
-          >
-            .*
-          </button>
+          <span className="find-replace-tooltip-wrap">
+            <button
+              type="button"
+              className={`find-replace-option${
+                findReplace.caseSensitive ? " is-active" : ""
+              }`}
+              onClick={() =>
+                findReplace.setCaseSensitive(!findReplace.caseSensitive)
+              }
+              aria-label="Case-sensitive search"
+              aria-pressed={findReplace.caseSensitive}
+              aria-describedby="case-sensitive-tooltip"
+            >
+              Aa
+            </button>
+            <span
+              id="case-sensitive-tooltip"
+              role="tooltip"
+              className="find-replace-tooltip"
+            >
+              Match case
+            </span>
+          </span>
+          <span className="find-replace-tooltip-wrap">
+            <button
+              type="button"
+              className={`find-replace-option${findReplace.regex ? " is-active" : ""}`}
+              onClick={() => findReplace.setRegex(!findReplace.regex)}
+              aria-label="Regex search"
+              aria-pressed={findReplace.regex}
+              aria-describedby="regex-search-tooltip"
+            >
+              .*
+            </button>
+            <span
+              id="regex-search-tooltip"
+              role="tooltip"
+              className="find-replace-tooltip"
+            >
+              Use regex
+            </span>
+          </span>
         </div>
         <div className="find-replace-nav" role="group" aria-label="Match navigation">
           <button
@@ -190,16 +208,25 @@ export default function FindReplaceBar({
             {findReplace.error}
           </span>
         ) : null}
-        <button
-          type="button"
-          className={`find-replace-option${showReplace ? " is-active" : ""}`}
-          onClick={() => onShowReplaceChange(!showReplace)}
-          aria-label={showReplace ? "Hide replace controls" : "Show replace controls"}
-          aria-pressed={showReplace}
-          title={showReplace ? "Hide replace controls" : "Show replace controls"}
-        >
-          <Replace aria-hidden="true" />
-        </button>
+        <span className="find-replace-tooltip-wrap">
+          <button
+            type="button"
+            className={`find-replace-option${showReplace ? " is-active" : ""}`}
+            onClick={() => onShowReplaceChange(!showReplace)}
+            aria-label={showReplace ? "Hide replace controls" : "Show replace controls"}
+            aria-pressed={showReplace}
+            aria-describedby="replace-toggle-tooltip"
+          >
+            <Replace aria-hidden="true" />
+          </button>
+          <span
+            id="replace-toggle-tooltip"
+            role="tooltip"
+            className="find-replace-tooltip"
+          >
+            {showReplace ? "Hide replace" : "Show replace"}
+          </span>
+        </span>
       </div>
       {showReplace ? (
         <div className="find-replace-replace-row">
@@ -236,15 +263,24 @@ export default function FindReplaceBar({
           </div>
         </div>
       ) : null}
+      <span className="find-replace-tooltip-wrap find-replace-close-wrap">
         <button
           type="button"
-          className="find-replace-icon-button find-replace-close-button"
+          className="find-replace-icon-button"
           onClick={close}
           aria-label="Close find and replace"
-          title="Close find and replace"
+          aria-describedby="find-close-tooltip"
         >
           <X aria-hidden="true" />
         </button>
+        <span
+          id="find-close-tooltip"
+          role="tooltip"
+          className="find-replace-tooltip find-replace-tooltip-left"
+        >
+          Close
+        </span>
+      </span>
     </div>
   );
 }
