@@ -13,6 +13,8 @@ Added compact Find / Replace support to the shared Markdown editor for hosted we
 
 The feature stays inside the shared React editor path and routes edits through the existing `onMarkdownChange` flow so dirty tracking and Save behavior remain unchanged.
 
+As a final polish, the Mac build helper now rewrites Xcode's final success banner to include the resolved display version, for example `** 2.0.3-dev BUILD SUCCEEDED **`.
+
 ## Files Changed
 
 - `src/components/FindReplaceBar.tsx`
@@ -22,6 +24,7 @@ The feature stays inside the shared React editor path and routes edits through t
 - `src/components/__tests__/FindReplaceBar.test.tsx`
 - `src/components/__tests__/useFindReplace.test.ts`
 - `src/components/PreviewPanel.test.tsx`
+- `scripts/build-mac-app.sh`
 
 ## Validation
 
@@ -29,9 +32,9 @@ The feature stays inside the shared React editor path and routes edits through t
 - `npm run lint` passed.
 - `npm run build` passed.
 - `npm run build:desktop` passed.
-- `bash scripts/build-mac-app.sh --configuration Release` passed.
+- `bash scripts/build-mac-app.sh --configuration Release` passed and printed `** 2.0.3-dev BUILD SUCCEEDED **`.
 - `scripts/verify-mac-release-launch.sh` was skipped because an existing doc2md app process was running and the verifier would refuse to avoid killing that session.
-- `python3 scripts/security_ci_guard.py` was skipped because workflows and scripts were not touched.
+- `python3 scripts/security_ci_guard.py` passed after the build helper change.
 
 ## Review Outcome
 
