@@ -2,6 +2,7 @@
 
 | Date | Quest | Outcome |
 |------|-------|---------|
+| 2026-04-28 | [mac-find-replace](mac-find-replace_2026-04-28.md) | Phase 6d Find / Replace: added compact shared React editor search/replace with regex/case options, shortcut handling, active selection, replace current/all, accessibility coverage, and one clean fix loop. |
 | 2026-04-27 | [save-control-ui](save-control-ui_2026-04-27.md) | Phase 6c Save control: added visible hosted/Mac Save UI, compact save-state status, WKWebView file-picker support for app Browse, and clean re-review after one hosted-save fix. |
 | 2026-04-27 | [mac-app-icon](mac-app-icon_2026-04-27.md) | Phase 6a Mac app icon: added native Xcode AppIcon asset catalog slots, source/regeneration docs, project wiring, Release bundle verification, and clean dual review. |
 | 2026-04-24 | [mac-pr-ci-check](mac-pr-ci-check_2026-04-24.md) | Phase 5a Mac CI: added a no-secret, SHA-pinned `pull_request` workflow on `macos-latest` that builds the desktop bundle, runs the Mac Release helper and forbidden-API scan, uploads the unsigned app artifact, and documents the check in the Mac README. |

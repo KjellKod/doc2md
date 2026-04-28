@@ -6,6 +6,7 @@ For the other perspective, see [Jean-Claude's Journal](../journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 031 | [Requiem: Mac Find Replace](031-requiem-mac-find-replace.md) | Burying browser page find dependence, capped replace-all semantics, and shortcut focus drift inside the Markdown editor |
 | 030 | [Requiem: Save Control UI](030-requiem-save-control-ui.md) | Making Save visible without changing save semantics, reviving WKWebView browsing, and catching one hosted empty-draft regression |
 | 029 | [Requiem: Mac App Icon](029-requiem-mac-app-icon.md) | Burying the generic Xcode icon with an asset catalog, ten measured slots, native regeneration, and a clean dual review |
 | 028 | [Requiem: Mac Release CI](028-requiem-mac-release-ci.md) | Burying regex-shaped release tags, unsigned DMG fallbacks, Sparkle key drift, and any idea that PRs should smell signing secrets |
