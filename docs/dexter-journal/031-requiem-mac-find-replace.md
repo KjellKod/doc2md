@@ -1,6 +1,6 @@
 # 031 — Requiem: Mac Find Replace
 <!-- quest-id: mac-find-replace_2026-04-28__0032 -->
-<!-- pr: pending -->
+<!-- pr: #89 -->
 <!-- style: requiem -->
 <!-- quality-tier: Gold -->
 <!-- date: 2026-04-28 -->
