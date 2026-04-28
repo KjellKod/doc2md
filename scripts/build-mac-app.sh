@@ -74,6 +74,10 @@ absolute_path() {
   printf '%s/%s\n' "$(cd "$dir" && /bin/pwd)" "$base"
 }
 
+display_build_version() {
+  node --input-type=module -e "import { getDisplayVersionInfo } from './packages/core/scripts/release-version.mjs'; console.log(getDisplayVersionInfo().version);"
+}
+
 while (($#)); do
   case "$1" in
     --configuration)
@@ -131,6 +135,8 @@ fi
 
 cd "$REPO_ROOT"
 
+BUILD_VERSION="$(display_build_version)"
+
 node scripts/generate-supported-formats.mjs --check
 
 shopt -s nullglob
@@ -161,12 +167,23 @@ done < <(grep_matches_or_fail "$WATCHED_NATIVE_API_PATTERN" "${persistence_swift
 
 npm run build:desktop
 
+set +e
 "$XCODEBUILD_BIN" \
   -project apps/macos/doc2md.xcodeproj \
   -scheme doc2md \
   -configuration "$CONFIGURATION" \
   -derivedDataPath .build/mac \
-  build
+  build 2>&1 | sed "s/^\\*\\* BUILD SUCCEEDED \\*\\*$/** $BUILD_VERSION BUILD SUCCEEDED **/"
+pipeline_status=("${PIPESTATUS[@]}")
+set -e
+
+if ((pipeline_status[0] != 0)); then
+  exit "${pipeline_status[0]}"
+fi
+
+if ((pipeline_status[1] != 0)); then
+  fail "failed to rewrite xcodebuild success output"
+fi
 
 APP_PATH="$REPO_ROOT/.build/mac/Build/Products/$CONFIGURATION/doc2md.app"
 if [[ ! -d "$APP_PATH" ]]; then

@@ -1153,6 +1153,269 @@ body.is-page-resizing * {
   gap: 10px;
 }
 
+.find-entry-button,
+.find-replace-icon-button,
+.find-replace-option,
+.find-replace-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid rgba(23, 56, 76, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.68);
+  color: var(--accent);
+  font-weight: 800;
+  transition:
+    border-color 160ms ease,
+    color 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.find-entry-button {
+  gap: 8px;
+  padding: 0 14px;
+}
+
+.find-entry-button:hover,
+.find-entry-button:focus-visible,
+.find-replace-icon-button:hover:not(:disabled),
+.find-replace-icon-button:focus-visible,
+.find-replace-option:hover,
+.find-replace-option:focus-visible,
+.find-replace-action-button:hover:not(:disabled),
+.find-replace-action-button:focus-visible {
+  border-color: rgba(23, 56, 76, 0.28);
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--text-primary);
+}
+
+.find-entry-button:focus-visible,
+.find-replace-icon-button:focus-visible,
+.find-replace-option:focus-visible,
+.find-replace-action-button:focus-visible,
+.find-replace-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.find-entry-button:active,
+.find-replace-icon-button:active:not(:disabled),
+.find-replace-option:active,
+.find-replace-action-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.find-entry-icon,
+.find-replace-icon-button svg,
+.find-replace-option svg,
+.find-replace-field-icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.find-entry-label {
+  white-space: nowrap;
+}
+
+.find-replace-bar {
+  position: sticky;
+  top: 74px;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  min-width: 0;
+  margin: -4px -8px 0;
+  padding: 8px 58px 8px 8px;
+  border: 1px solid var(--panel-border);
+  border-radius: 18px;
+  background: rgba(249, 246, 241, 0.96);
+  box-shadow: 0 12px 24px rgba(27, 39, 49, 0.07);
+  backdrop-filter: blur(12px);
+}
+
+.find-replace-find-row {
+  display: grid;
+  grid-template-columns:
+    minmax(13rem, 1fr)
+    auto
+    auto
+    auto
+    minmax(0, auto)
+    auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.find-replace-input-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: min(12rem, 100%);
+}
+
+.find-replace-field-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.find-replace-input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid rgba(23, 56, 76, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.find-replace-field-icon + .find-replace-input {
+  padding-left: 36px;
+}
+
+.find-replace-input[aria-invalid="true"] {
+  border-color: rgba(143, 62, 55, 0.62);
+  background: var(--error-soft);
+}
+
+.find-replace-options,
+.find-replace-nav,
+.find-replace-replace-actions {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.find-replace-tooltip-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.find-replace-tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  z-index: 10;
+  padding: 7px 10px;
+  border-radius: 12px;
+  background: rgba(20, 25, 31, 0.94);
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1.2;
+  pointer-events: none;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(-50%, -4px);
+  transition:
+    opacity 80ms ease,
+    transform 80ms ease;
+}
+
+.find-replace-tooltip-left {
+  right: 0;
+  left: auto;
+  transform: translate(0, -4px);
+}
+
+.find-replace-tooltip-wrap:hover .find-replace-tooltip,
+.find-replace-tooltip-wrap:focus-within .find-replace-tooltip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.find-replace-tooltip-wrap:hover .find-replace-tooltip-left,
+.find-replace-tooltip-wrap:focus-within .find-replace-tooltip-left {
+  transform: translate(0, 0);
+}
+
+.find-replace-option {
+  padding: 0 12px;
+}
+
+.find-replace-option.is-active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.find-replace-icon-button {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+}
+
+.find-replace-icon-button:disabled,
+.find-replace-action-button:disabled {
+  border-color: var(--panel-border);
+  background: rgba(93, 104, 115, 0.08);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.find-replace-count,
+.find-replace-error {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  min-height: 34px;
+  max-width: 9rem;
+  padding: 5px 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.find-replace-count {
+  border: 1px solid rgba(23, 56, 76, 0.1);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.find-replace-error {
+  border: 1px solid rgba(143, 62, 55, 0.18);
+  background: var(--error-soft);
+  color: var(--error);
+}
+
+.find-replace-replace-row {
+  display: grid;
+  grid-template-columns: minmax(13rem, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.find-replace-action-button {
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
+.find-replace-close-wrap {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
 .save-control-group {
   display: inline-flex;
   align-items: center;
@@ -1425,17 +1688,33 @@ body.is-page-resizing * {
   color: #ffffff;
 }
 
-.markdown-edit-area {
+.markdown-edit-shell {
+  position: relative;
   flex: 1;
   min-height: 300px;
   width: 100%;
+}
+
+.markdown-edit-area,
+.markdown-find-overlay {
+  width: 100%;
+  min-height: 300px;
   padding: clamp(18px, 2vw, 26px);
   border: 1px solid var(--panel-border);
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.94);
   font-family: "SFMono-Regular", "Menlo", "Consolas", monospace;
   font-size: 0.92em;
   line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.markdown-edit-area {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--text-primary);
   resize: none;
   overflow: auto;
 }
@@ -1443,6 +1722,35 @@ body.is-page-resizing * {
 .markdown-edit-area:focus {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
+}
+
+.markdown-find-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  margin: 0;
+  overflow: hidden;
+  background: transparent;
+  color: transparent;
+  pointer-events: none;
+  user-select: none;
+}
+
+.markdown-find-highlight {
+  border-radius: 4px;
+  background: rgba(255, 198, 41, 0.72);
+  box-shadow:
+    0 0 0 2px rgba(128, 83, 0, 0.34),
+    0 0 14px rgba(255, 198, 41, 0.62);
+  color: transparent;
+}
+
+.markdown-find-highlight-zero {
+  display: inline-block;
+  width: 2px;
+  min-height: 1.15em;
+  padding: 0;
+  vertical-align: -0.15em;
 }
 
 .markdown-surface {
@@ -1882,6 +2190,43 @@ body.is-page-resizing * {
   background: rgba(26, 31, 37, 0.96);
 }
 
+:root[data-theme="dark"] .find-replace-bar {
+  background: rgba(26, 31, 37, 0.96);
+}
+
+:root[data-theme="dark"] .find-entry-button,
+:root[data-theme="dark"] .find-replace-icon-button,
+:root[data-theme="dark"] .find-replace-option,
+:root[data-theme="dark"] .find-replace-action-button,
+:root[data-theme="dark"] .find-replace-input {
+  border-color: rgba(204, 214, 223, 0.12);
+  background: rgba(23, 27, 33, 0.68);
+}
+
+:root[data-theme="dark"] .find-entry-button:hover,
+:root[data-theme="dark"] .find-entry-button:focus-visible,
+:root[data-theme="dark"] .find-replace-icon-button:hover:not(:disabled),
+:root[data-theme="dark"] .find-replace-icon-button:focus-visible,
+:root[data-theme="dark"] .find-replace-option:hover,
+:root[data-theme="dark"] .find-replace-option:focus-visible,
+:root[data-theme="dark"] .find-replace-action-button:hover:not(:disabled),
+:root[data-theme="dark"] .find-replace-action-button:focus-visible {
+  border-color: rgba(137, 199, 229, 0.3);
+  background: rgba(29, 34, 41, 0.96);
+  color: #edf3f8;
+}
+
+:root[data-theme="dark"] .find-replace-option.is-active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #10202b;
+}
+
+:root[data-theme="dark"] .find-replace-icon-button:disabled,
+:root[data-theme="dark"] .find-replace-action-button:disabled {
+  background: rgba(191, 214, 228, 0.08);
+}
+
 :root[data-theme="dark"] .preview-toggle-button:hover {
   border-color: rgba(137, 199, 229, 0.32);
 }
@@ -1910,6 +2255,17 @@ body.is-page-resizing * {
 :root[data-theme="dark"] .markdown-edit-area {
   background: rgba(18, 23, 28, 0.98);
   color: var(--text-primary);
+}
+
+:root[data-theme="dark"] .markdown-find-overlay {
+  background: transparent;
+}
+
+:root[data-theme="dark"] .markdown-find-highlight {
+  background: rgba(255, 198, 41, 0.82);
+  box-shadow:
+    0 0 0 2px rgba(255, 222, 118, 0.46),
+    0 0 16px rgba(255, 198, 41, 0.58);
 }
 
 :root[data-theme="dark"] .markdown-surface {
@@ -2112,6 +2468,26 @@ body.is-page-resizing * {
 
   .preview-toolbar-actions {
     justify-content: flex-start;
+  }
+
+  .find-replace-bar {
+    top: 88px;
+    margin: 0;
+  }
+
+  .find-replace-find-row,
+  .find-replace-replace-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .find-replace-options,
+  .find-replace-nav,
+  .find-replace-replace-actions {
+    width: 100%;
+  }
+
+  .find-replace-action-button {
+    flex: 1 1 8rem;
   }
 
   .save-button-label {
