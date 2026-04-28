@@ -399,16 +399,23 @@ Clean up the editor/viewer UX across the hosted browser app and the Mac shell. T
 
 ### 6e. Keyboard Shortcut Cheatsheet
 
-- A `?` overlay listing the editor and mode shortcuts. Reachable from a menu item (desktop and hosted).
-- Acceptance: every shortcut the app accepts is listed. No entry claims a shortcut the app does not support.
+- Status: deferred until after the signed/notarized DMG installer is working and the Mac app licensing/payment structure is decided.
+- YAGNI-reduced scope: add only a compact shortcut reference if the app has enough real shortcuts to justify discoverability work after 6d.
+- If implemented, prefer a small `?` / Help entry that lists only shortcuts the app actually supports.
+- Keep it cross-surface only if the same shortcuts exist in both hosted web and Mac. Desktop-only menu wiring can wait.
+- Do not build a command palette, onboarding tutorial, configurable shortcut system, searchable help center, or shortcut-remapping UI in this phase.
+- Acceptance if revived: users can discover the real supported shortcuts without visual clutter, and no entry claims a shortcut that does not exist.
 
 ### 6f. Accessibility Audit
 
-- ARIA labels on toolbar buttons, mode switcher, save state.
-- Keyboard-only navigation of all primary controls (tab order, visible focus ring).
-- Screen reader pass on the editor and preview (`role` attributes, `aria-live` for save-state changes).
-- Colour contrast check across themes.
-- Acceptance: Lighthouse accessibility score ≥ 95 on the hosted app; Mac shell exercised with VoiceOver without dead-end focus traps.
+- Status: deferred until after the signed/notarized DMG installer is working and the Mac app licensing/payment structure is decided.
+- YAGNI-reduced scope: do a lightweight accessibility pass only, focused on obvious usability bugs and invisible screen-reader affordances.
+- Preserve the current visual design where possible. Prefer invisible-but-helpful improvements such as `aria-label`, `aria-labelledby`, `aria-live`, accurate roles, and visible focus behavior.
+- Check keyboard-only reachability for primary controls that already exist: upload/open, edit, mode switcher, save, find/replace, copy, and close/dismiss controls.
+- Check that icon-only buttons have meaningful accessible names without adding visible labels unless the UI is also unclear to sighted users.
+- Check status/error announcements for save state, find/replace errors, and conversion errors where those states already exist.
+- Do not pursue formal WCAG certification, exhaustive assistive-technology matrix testing, a custom accessibility test harness, or a broad visual redesign in this phase.
+- Acceptance if revived: obvious keyboard/screen-reader dead ends are fixed, primary controls have accessible names, status changes are understandable, and the hosted app does not regress materially in Lighthouse accessibility checks.
 
 ### 6g. Open Slot: "??? — User Backlog"
 
