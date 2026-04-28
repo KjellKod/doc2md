@@ -1,5 +1,11 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  createEvent,
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react";
 import { useRef, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import FindReplaceBar from "../FindReplaceBar";
@@ -118,17 +124,24 @@ describe("FindReplaceBar", () => {
     expect(screen.getByText("Replaced 2")).toBeInTheDocument();
   });
 
-  it("opens replace controls with Ctrl+H when the find bar is focused", async () => {
+  it("does not intercept Ctrl+H while typing in find", () => {
     render(<ControlledFindReplaceBar />);
 
-    fireEvent.keyDown(screen.getByRole("search"), {
+    const findInput = screen.getByRole("textbox", {
+      name: "Find markdown text",
+    });
+    const event = createEvent.keyDown(findInput, {
       key: "h",
       ctrlKey: true,
+      cancelable: true,
     });
 
+    fireEvent(findInput, event);
+
+    expect(event.defaultPrevented).toBe(false);
     expect(
-      await screen.findByRole("textbox", { name: "Replacement text" }),
-    ).toBeInTheDocument();
+      screen.queryByRole("textbox", { name: "Replacement text" }),
+    ).not.toBeInTheDocument();
   });
 
   it("closes on Escape", () => {
