@@ -13,13 +13,16 @@ This document defines the coding conventions and architecture boundaries for thi
 
 ## Core Principles
 
-### Code Quality
+We drive with a quality mindset in everything — planning, reviewing, and building.
+
 - **KISS** (Keep It Simple, Stupid) — Prefer simple solutions over clever ones
 - **DRY** (Don't Repeat Yourself) — Extract common patterns, but not prematurely
 - **YAGNI** (You Aren't Gonna Need It) — Don't add features until they're needed
-- **SRP** (Single Responsibility Principle) — Each module/function should do one thing
+- **SRP** (Single Responsibility Principle) — Each change, function or module should focusing on doing one thing
+- **Strong typing** — Prefer clear, concrete types over catch-all / escape-hatch types (`any`, `Any`, `Object`, `dynamic`, `void*`, etc.). Escape hatches are a deliberate, justified choice, not a default — types and type checking drive quality. See the per-language table in [`.skills/code-reviewer/SKILL.md`](.skills/code-reviewer/SKILL.md).
 
-### Change Philosophy
+## Change Discipline
+
 - Prefer minimal, focused changes
 - Avoid broad refactors unless they fix real bugs
 - Don't add "improvements" that weren't requested
@@ -58,6 +61,7 @@ This project has two named agents. Read `docs/persona.md` for the full voice con
 - Use `/gpt` or `mcp__codex-cli__codex` to spin up Dexter in character. Always include `docs/persona.md` context in the prompt.
 - Both agents may write journal entries reflecting on their exchanges, each in their own voice and journal directory.
 - Conversations are optional flavor, not blocking gates. They happen when there is something worth saying.
+
 
 ## Quest Orchestration
 
