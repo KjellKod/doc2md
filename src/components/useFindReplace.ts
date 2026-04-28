@@ -11,6 +11,9 @@ export interface FindReplaceOptions {
 export interface FindMatch {
   start: number;
   end: number;
+  text?: string;
+  captures?: Array<string | undefined>;
+  groups?: Record<string, string | undefined>;
 }
 
 export interface FindMatchesResult {
@@ -83,7 +86,13 @@ export function findMatches(
       return { matches, total: matches.length, capped: true, error: null };
     }
 
-    matches.push({ start: match.index, end: match.index + match[0].length });
+    matches.push({
+      start: match.index,
+      end: match.index + match[0].length,
+      text: match[0],
+      captures: match.slice(1),
+      groups: match.groups,
+    });
     advancePastZeroWidth(regex, match);
     match = regex.exec(source);
   }
@@ -95,13 +104,74 @@ export function applyReplaceCurrent(
   source: string,
   match: FindMatch,
   replacement: string,
+  options?: FindReplaceOptions,
 ) {
+  const nextReplacement = options?.regex
+    ? expandRegexReplacement(source, match, replacement)
+    : replacement;
+
   return {
-    next: `${source.slice(0, match.start)}${replacement}${source.slice(
+    next: `${source.slice(0, match.start)}${nextReplacement}${source.slice(
       match.end,
     )}`,
-    delta: replacement.length - (match.end - match.start),
+    delta: nextReplacement.length - (match.end - match.start),
   };
+}
+
+function expandRegexReplacement(
+  source: string,
+  match: FindMatch,
+  replacement: string,
+) {
+  const fullMatch = match.text ?? source.slice(match.start, match.end);
+  const captures = match.captures ?? [];
+
+  return replacement.replace(
+    /\$(\$|&|`|'|<[^>]+>|\d{1,2})/g,
+    (token, specifier: string) => {
+      if (specifier === "$") {
+        return "$";
+      }
+
+      if (specifier === "&") {
+        return fullMatch;
+      }
+
+      if (specifier === "`") {
+        return source.slice(0, match.start);
+      }
+
+      if (specifier === "'") {
+        return source.slice(match.end);
+      }
+
+      if (specifier.startsWith("<")) {
+        const groupName = specifier.slice(1, -1);
+
+        if (match.groups && groupName in match.groups) {
+          return match.groups[groupName] ?? "";
+        }
+
+        return token;
+      }
+
+      const captureIndex = Number.parseInt(specifier, 10);
+
+      if (captureIndex >= 1 && captureIndex <= captures.length) {
+        return captures[captureIndex - 1] ?? "";
+      }
+
+      if (specifier.length === 2) {
+        const firstCaptureIndex = Number.parseInt(specifier[0], 10);
+
+        if (firstCaptureIndex >= 1 && firstCaptureIndex <= captures.length) {
+          return `${captures[firstCaptureIndex - 1] ?? ""}${specifier[1]}`;
+        }
+      }
+
+      return token;
+    },
+  );
 }
 
 function countRegexMatches(source: string, regex: RegExp) {
@@ -234,6 +304,7 @@ export function useFindReplace(
       source,
       activeMatch,
       replacement,
+      options,
     );
     onSourceChange(nextSource);
     setReplaceStatus("Replaced 1");

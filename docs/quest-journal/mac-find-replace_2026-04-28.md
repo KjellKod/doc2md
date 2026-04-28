@@ -81,9 +81,9 @@ Final dual code review passed:
     "attribution": "Code Reviewer A"
   },
   "victory_narrative": "The editor gained focused Find / Replace without replacing the editor, changing save semantics, or dragging native Mac code into a shared React problem.",
-  "test_count": 383,
+  "test_count": 393,
   "tests_added": 0,
-  "files_changed": 7
+  "files_changed": 8
 }
 ```
 <!-- celebration-data-end -->

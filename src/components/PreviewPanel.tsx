@@ -215,8 +215,7 @@ export default function PreviewPanel({
         key === "f" &&
         ((event.metaKey && !event.ctrlKey) || (event.ctrlKey && !event.metaKey));
       const isReplaceShortcut =
-        (key === "f" && event.metaKey && event.altKey) ||
-        (key === "h" && event.ctrlKey && !event.metaKey);
+        key === "f" && event.metaKey && event.altKey;
 
       if (!isFindShortcut && !isReplaceShortcut) {
         return;

@@ -82,6 +82,21 @@ export default function FindReplaceBar({
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (
+      event.ctrlKey &&
+      !event.metaKey &&
+      event.key.toLowerCase() === "h"
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      onShowReplaceChange(true);
+      window.setTimeout(() => {
+        replaceInputRef.current?.focus();
+        replaceInputRef.current?.select();
+      }, 0);
+      return;
+    }
+
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "f") {
       event.preventDefault();
       event.stopPropagation();

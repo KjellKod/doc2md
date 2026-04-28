@@ -694,14 +694,33 @@ describe("PreviewPanel", () => {
     editor.focus();
     window.dispatchEvent(
       new KeyboardEvent("keydown", {
-        key: "h",
-        ctrlKey: true,
+        key: "f",
+        metaKey: true,
+        altKey: true,
         bubbles: true,
         cancelable: true,
       }),
     );
 
     await waitFor(() => expect(document.activeElement).toBe(replaceInput));
+  });
+
+  it("does not intercept Ctrl+H outside the find bar", () => {
+    render(<PreviewPanel entry={createEntry({ markdown: "Alpha" })} />);
+
+    const event = new KeyboardEvent("keydown", {
+      key: "h",
+      ctrlKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+
+    window.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(
+      screen.queryByRole("textbox", { name: "Replacement text" }),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps replace visible while plain Cmd+F refocuses find", async () => {

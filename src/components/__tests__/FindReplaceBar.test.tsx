@@ -118,6 +118,19 @@ describe("FindReplaceBar", () => {
     expect(screen.getByText("Replaced 2")).toBeInTheDocument();
   });
 
+  it("opens replace controls with Ctrl+H when the find bar is focused", async () => {
+    render(<ControlledFindReplaceBar />);
+
+    fireEvent.keyDown(screen.getByRole("search"), {
+      key: "h",
+      ctrlKey: true,
+    });
+
+    expect(
+      await screen.findByRole("textbox", { name: "Replacement text" }),
+    ).toBeInTheDocument();
+  });
+
   it("closes on Escape", () => {
     const onClose = vi.fn();
 
