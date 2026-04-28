@@ -1226,13 +1226,12 @@ body.is-page-resizing * {
   position: sticky;
   top: 74px;
   z-index: 4;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
   min-width: 0;
   margin: -4px -8px 0;
-  padding: 8px;
+  padding: 8px 58px 8px 8px;
   border: 1px solid var(--panel-border);
   border-radius: 18px;
   background: rgba(249, 246, 241, 0.96);
@@ -1240,11 +1239,25 @@ body.is-page-resizing * {
   backdrop-filter: blur(12px);
 }
 
+.find-replace-find-row {
+  display: grid;
+  grid-template-columns:
+    minmax(13rem, 1fr)
+    auto
+    auto
+    auto
+    minmax(0, auto)
+    auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .find-replace-input-wrap {
   position: relative;
   display: inline-flex;
   align-items: center;
-  flex: 1 1 12rem;
+  flex: 1 1 auto;
   min-width: min(12rem, 100%);
 }
 
@@ -1278,7 +1291,7 @@ body.is-page-resizing * {
 
 .find-replace-options,
 .find-replace-nav,
-.find-replace-replace-row {
+.find-replace-replace-actions {
   display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
@@ -1339,12 +1352,22 @@ body.is-page-resizing * {
 }
 
 .find-replace-replace-row {
-  flex: 1 1 20rem;
+  display: grid;
+  grid-template-columns: minmax(13rem, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
 .find-replace-action-button {
   padding: 0 12px;
   white-space: nowrap;
+}
+
+.find-replace-close-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
 }
 
 .save-control-group {
@@ -2406,9 +2429,15 @@ body.is-page-resizing * {
     margin: 0;
   }
 
-  .find-replace-input-wrap,
+  .find-replace-find-row,
   .find-replace-replace-row {
-    flex-basis: 100%;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .find-replace-options,
+  .find-replace-nav,
+  .find-replace-replace-actions {
+    width: 100%;
   }
 
   .find-replace-action-button {

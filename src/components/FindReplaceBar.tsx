@@ -121,81 +121,86 @@ export default function FindReplaceBar({
       aria-label="Find and replace markdown"
       onKeyDown={handleKeyDown}
     >
-      <label className="find-replace-input-wrap">
-        <span className="visually-hidden">Find markdown text</span>
-        <Search className="find-replace-field-icon" aria-hidden="true" />
-        <input
-          ref={findInputRef}
-          className="find-replace-input"
-          value={findReplace.query}
-          onChange={(event) => findReplace.setQuery(event.target.value)}
-          onKeyDown={handleFindKeyDown}
-          placeholder="Find"
-          aria-label="Find markdown text"
-          aria-invalid={findReplace.error ? "true" : "false"}
-        />
-      </label>
-      <div className="find-replace-options" role="group" aria-label="Find options">
-        <button
-          type="button"
-          className={`find-replace-option${
-            findReplace.caseSensitive ? " is-active" : ""
-          }`}
-          onClick={() =>
-            findReplace.setCaseSensitive(!findReplace.caseSensitive)
-          }
-          aria-label="Case-sensitive search"
-          aria-pressed={findReplace.caseSensitive}
-        >
-          Aa
-        </button>
-        <button
-          type="button"
-          className={`find-replace-option${findReplace.regex ? " is-active" : ""}`}
-          onClick={() => findReplace.setRegex(!findReplace.regex)}
-          aria-label="Regex search"
-          aria-pressed={findReplace.regex}
-        >
-          .*
-        </button>
-      </div>
-      <div className="find-replace-nav" role="group" aria-label="Match navigation">
-        <button
-          type="button"
-          className="find-replace-icon-button"
-          onClick={findReplace.previous}
-          disabled={findReplace.matches.length === 0}
-          aria-label="Previous match"
-        >
-          <ChevronUp aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          className="find-replace-icon-button"
-          onClick={findReplace.next}
-          disabled={findReplace.matches.length === 0}
-          aria-label="Next match"
-        >
-          <ChevronDown aria-hidden="true" />
-        </button>
-      </div>
-      <span className="find-replace-count" aria-live="polite">
-        {statusLabel}
-      </span>
-      {findReplace.error ? (
-        <span className="find-replace-error" role="alert">
-          {findReplace.error}
+      <div className="find-replace-find-row">
+        <label className="find-replace-input-wrap">
+          <span className="visually-hidden">Find markdown text</span>
+          <Search className="find-replace-field-icon" aria-hidden="true" />
+          <input
+            ref={findInputRef}
+            className="find-replace-input"
+            value={findReplace.query}
+            onChange={(event) => findReplace.setQuery(event.target.value)}
+            onKeyDown={handleFindKeyDown}
+            placeholder="Find"
+            aria-label="Find markdown text"
+            aria-invalid={findReplace.error ? "true" : "false"}
+          />
+        </label>
+        <div className="find-replace-options" role="group" aria-label="Find options">
+          <button
+            type="button"
+            className={`find-replace-option${
+              findReplace.caseSensitive ? " is-active" : ""
+            }`}
+            onClick={() =>
+              findReplace.setCaseSensitive(!findReplace.caseSensitive)
+            }
+            aria-label="Case-sensitive search"
+            aria-pressed={findReplace.caseSensitive}
+            title="Case-sensitive search"
+          >
+            Aa
+          </button>
+          <button
+            type="button"
+            className={`find-replace-option${findReplace.regex ? " is-active" : ""}`}
+            onClick={() => findReplace.setRegex(!findReplace.regex)}
+            aria-label="Regex search"
+            aria-pressed={findReplace.regex}
+            title="Regex search"
+          >
+            .*
+          </button>
+        </div>
+        <div className="find-replace-nav" role="group" aria-label="Match navigation">
+          <button
+            type="button"
+            className="find-replace-icon-button"
+            onClick={findReplace.previous}
+            disabled={findReplace.matches.length === 0}
+            aria-label="Previous match"
+          >
+            <ChevronUp aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className="find-replace-icon-button"
+            onClick={findReplace.next}
+            disabled={findReplace.matches.length === 0}
+            aria-label="Next match"
+          >
+            <ChevronDown aria-hidden="true" />
+          </button>
+        </div>
+        <span className="find-replace-count" aria-live="polite">
+          {statusLabel}
         </span>
-      ) : null}
-      <button
-        type="button"
-        className={`find-replace-option${showReplace ? " is-active" : ""}`}
-        onClick={() => onShowReplaceChange(!showReplace)}
-        aria-label={showReplace ? "Hide replace controls" : "Show replace controls"}
-        aria-pressed={showReplace}
-      >
-        <Replace aria-hidden="true" />
-      </button>
+        {findReplace.error ? (
+          <span className="find-replace-error" role="alert">
+            {findReplace.error}
+          </span>
+        ) : null}
+        <button
+          type="button"
+          className={`find-replace-option${showReplace ? " is-active" : ""}`}
+          onClick={() => onShowReplaceChange(!showReplace)}
+          aria-label={showReplace ? "Hide replace controls" : "Show replace controls"}
+          aria-pressed={showReplace}
+          title={showReplace ? "Hide replace controls" : "Show replace controls"}
+        >
+          <Replace aria-hidden="true" />
+        </button>
+      </div>
       {showReplace ? (
         <div className="find-replace-replace-row">
           <label className="find-replace-input-wrap">
@@ -211,32 +216,35 @@ export default function FindReplaceBar({
               aria-label="Replacement text"
             />
           </label>
-          <button
-            type="button"
-            className="find-replace-action-button"
-            onClick={findReplace.replaceCurrent}
-            disabled={replaceDisabled}
-          >
-            Replace
-          </button>
-          <button
-            type="button"
-            className="find-replace-action-button"
-            onClick={findReplace.replaceAll}
-            disabled={Boolean(findReplace.error) || findReplace.query.length === 0}
-          >
-            All
-          </button>
+          <div className="find-replace-replace-actions">
+            <button
+              type="button"
+              className="find-replace-action-button"
+              onClick={findReplace.replaceCurrent}
+              disabled={replaceDisabled}
+            >
+              Replace
+            </button>
+            <button
+              type="button"
+              className="find-replace-action-button"
+              onClick={findReplace.replaceAll}
+              disabled={Boolean(findReplace.error) || findReplace.query.length === 0}
+            >
+              All
+            </button>
+          </div>
         </div>
       ) : null}
-      <button
-        type="button"
-        className="find-replace-icon-button"
-        onClick={close}
-        aria-label="Close find and replace"
-      >
-        <X aria-hidden="true" />
-      </button>
+        <button
+          type="button"
+          className="find-replace-icon-button find-replace-close-button"
+          onClick={close}
+          aria-label="Close find and replace"
+          title="Close find and replace"
+        >
+          <X aria-hidden="true" />
+        </button>
     </div>
   );
 }
