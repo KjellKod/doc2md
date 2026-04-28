@@ -15,6 +15,7 @@ import { formatPreviewMarkdown } from "./previewFormatting";
 import SaveButton from "./SaveButton";
 import SaveStatePill from "./SaveStatePill";
 import FindReplaceBar from "./FindReplaceBar";
+import type { FindMatch } from "./useFindReplace";
 
 type LinkedInPreviewTone =
   | "bold"
@@ -118,6 +119,34 @@ function fallbackCopyText(text: string) {
   document.body.removeChild(element);
 }
 
+function renderFindHighlight(source: string, match: FindMatch | null) {
+  if (!match) {
+    return source;
+  }
+
+  if (match.start === match.end) {
+    return (
+      <>
+        {source.slice(0, match.start)}
+        <mark className="markdown-find-highlight markdown-find-highlight-zero">
+          {" "}
+        </mark>
+        {source.slice(match.end)}
+      </>
+    );
+  }
+
+  return (
+    <>
+      {source.slice(0, match.start)}
+      <mark className="markdown-find-highlight">
+        {source.slice(match.start, match.end)}
+      </mark>
+      {source.slice(match.end)}
+    </>
+  );
+}
+
 export default function PreviewPanel({
   entry,
   onMarkdownChange,
@@ -132,12 +161,14 @@ export default function PreviewPanel({
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
   const [isFindOpen, setIsFindOpen] = useState(false);
   const [showReplace, setShowReplace] = useState(false);
+  const [activeFindMatch, setActiveFindMatch] = useState<FindMatch | null>(null);
   const [findFocusRequest, setFindFocusRequest] = useState<{
     id: number;
     target: "find" | "replace";
   }>({ id: 0, target: "find" });
   const previewRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const findHighlightRef = useRef<HTMLPreElement | null>(null);
   const findCapable =
     entry !== null &&
     (entry.status === "success" || entry.status === "warning") &&
@@ -148,17 +179,20 @@ export default function PreviewPanel({
   useEffect(() => {
     setMode(entry?.isScratch ? "edit" : "preview");
     setIsFindOpen(false);
+    setActiveFindMatch(null);
   }, [entry?.id, entry?.isScratch]);
 
   useEffect(() => {
     if (!findCapable && isFindOpen) {
       setIsFindOpen(false);
+      setActiveFindMatch(null);
     }
   }, [findCapable, isFindOpen]);
 
   useEffect(() => {
     if (mode !== "edit" && isFindOpen) {
       setIsFindOpen(false);
+      setActiveFindMatch(null);
     }
   }, [isFindOpen, mode]);
 
@@ -316,6 +350,20 @@ export default function PreviewPanel({
     }));
   }
 
+  function closeFind() {
+    setIsFindOpen(false);
+    setActiveFindMatch(null);
+  }
+
+  function syncFindHighlightScroll() {
+    if (!textareaRef.current || !findHighlightRef.current) {
+      return;
+    }
+
+    findHighlightRef.current.scrollTop = textareaRef.current.scrollTop;
+    findHighlightRef.current.scrollLeft = textareaRef.current.scrollLeft;
+  }
+
   async function copyRenderedContent() {
     const previewElement = previewRef.current;
 
@@ -382,13 +430,26 @@ export default function PreviewPanel({
   const showQualityIndicator = entry.format === "pdf" && entry.quality;
   const body =
     mode === "edit" ? (
-      <textarea
-        ref={textareaRef}
-        className="markdown-edit-area"
-        value={effectiveMarkdown}
-        onChange={(event) => onMarkdownChange?.(event.target.value)}
-        aria-label="Edit markdown"
-      />
+      <div className="markdown-edit-shell">
+        <pre
+          ref={findHighlightRef}
+          className="markdown-find-overlay"
+          aria-hidden="true"
+        >
+          {renderFindHighlight(
+            effectiveMarkdown,
+            isFindOpen ? activeFindMatch : null,
+          )}
+        </pre>
+        <textarea
+          ref={textareaRef}
+          className="markdown-edit-area"
+          value={effectiveMarkdown}
+          onChange={(event) => onMarkdownChange?.(event.target.value)}
+          onScroll={syncFindHighlightScroll}
+          aria-label="Edit markdown"
+        />
+      </div>
     ) : mode === "linkedin" ? (
       linkedinRefusal ? (
         <div className="linkedin-refusal" role="status">
@@ -528,17 +589,18 @@ export default function PreviewPanel({
         </div>
       ) : null}
 
-      {isFindOpen && mode === "edit" ? (
-        <FindReplaceBar
-          source={effectiveMarkdown}
-          onSourceChange={(nextMarkdown) => onMarkdownChange?.(nextMarkdown)}
-          textareaRef={textareaRef}
-          onClose={() => setIsFindOpen(false)}
-          showReplace={showReplace}
-          onShowReplaceChange={setShowReplace}
-          focusRequest={findFocusRequest}
-        />
-      ) : null}
+          {isFindOpen && mode === "edit" ? (
+            <FindReplaceBar
+              source={effectiveMarkdown}
+              onSourceChange={(nextMarkdown) => onMarkdownChange?.(nextMarkdown)}
+              textareaRef={textareaRef}
+              onClose={closeFind}
+              showReplace={showReplace}
+              onShowReplaceChange={setShowReplace}
+              focusRequest={findFocusRequest}
+              onActiveMatchChange={setActiveFindMatch}
+            />
+          ) : null}
 
       {showQualityIndicator ? (
         <PdfQualityIndicator quality={entry.quality!} />

@@ -15,6 +15,8 @@ The feature stays inside the shared React editor path and routes edits through t
 
 As a final polish, the Mac build helper now rewrites Xcode's final success banner to include the resolved display version, for example `** 2.0.3-dev BUILD SUCCEEDED **`.
 
+After manual feedback that textarea selection was too subtle, the editor now renders a synced highlight overlay for the active match so the found text visibly pops while focus remains in the find input.
+
 ## Files Changed
 
 - `src/components/FindReplaceBar.tsx`
@@ -28,7 +30,7 @@ As a final polish, the Mac build helper now rewrites Xcode's final success banne
 
 ## Validation
 
-- `npm test -- --run` passed.
+- `npm test -- --run` passed with 389 tests.
 - `npm run lint` passed.
 - `npm run build` passed.
 - `npm run build:desktop` passed.

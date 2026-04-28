@@ -28,6 +28,7 @@ function ControlledFindReplaceBar({
         showReplace={replaceVisible}
         onShowReplaceChange={setReplaceVisible}
         focusRequest={{ id: 0, target: showReplace ? "replace" : "find" }}
+        onActiveMatchChange={vi.fn()}
       />
     </>
   );

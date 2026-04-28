@@ -8,6 +8,7 @@ import {
   X,
 } from "lucide-react";
 import { useFindReplace } from "./useFindReplace";
+import type { FindMatch } from "./useFindReplace";
 
 interface FindReplaceBarProps {
   source: string;
@@ -20,6 +21,7 @@ interface FindReplaceBarProps {
     id: number;
     target: "find" | "replace";
   };
+  onActiveMatchChange: (match: FindMatch | null) => void;
 }
 
 export default function FindReplaceBar({
@@ -30,6 +32,7 @@ export default function FindReplaceBar({
   showReplace,
   onShowReplaceChange,
   focusRequest,
+  onActiveMatchChange,
 }: FindReplaceBarProps) {
   const findInputRef = useRef<HTMLInputElement | null>(null);
   const replaceInputRef = useRef<HTMLInputElement | null>(null);
@@ -62,10 +65,13 @@ export default function FindReplaceBar({
   }, [showReplace]);
 
   useEffect(() => {
+    onActiveMatchChange(activeMatch);
     setActiveSelection(textareaRef.current);
   }, [
     activeMatch?.start,
     activeMatch?.end,
+    activeMatch,
+    onActiveMatchChange,
     setActiveSelection,
     textareaRef,
   ]);

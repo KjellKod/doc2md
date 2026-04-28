@@ -562,8 +562,8 @@ describe("PreviewPanel", () => {
     );
   });
 
-  it("opens find from the visible control and searches editable markdown", () => {
-    render(
+  it("opens find from the visible control and highlights the active editor match", () => {
+    const { container } = render(
       <PreviewPanel
         entry={createEntry({
           markdown: "Alpha\nBeta\nAlpha",
@@ -585,6 +585,12 @@ describe("PreviewPanel", () => {
     );
 
     expect(screen.getByText("1 of 2")).toBeInTheDocument();
+    const highlight = container.querySelector(".markdown-find-highlight");
+    expect(highlight).toHaveTextContent("Alpha");
+    expect(highlight?.closest(".markdown-find-overlay")).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
   });
 
   it("opens find with Cmd+F and auto-switches to edit mode", async () => {
