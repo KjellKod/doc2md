@@ -34,7 +34,7 @@ Commercial boundary:
 | 5a. Mac PR CI Check | done | PR #83 | Add a no-secrets GitHub Actions workflow that runs `npm run build:desktop` + unsigned `xcodebuild build` + `swiftc -parse` + forbidden-API grep on every PR so Mac-only regressions cannot land silently. | Phase 5b |
 | 5b. Sparkle Plumbing | done | PR #84 | Add Sparkle 2 to the Xcode project, wire `SUFeedURL` / `SUPublicEDKey` in Info.plist, define the appcast XML schema, and verify offline + test-appcast update detection. No signing, no release automation. | Phase 5c |
 | 5c. Release CI, Signing, Notarization, DMG, Appcast Publish | done | PR #85 (`mac-release-ci_2026-04-25__0010`) | Tag-triggered macOS release workflow with a protected `mac-release` Environment: Developer ID signing, notarization, stapling, DMG, Sparkle ZIP + `sign_update`, appcast publish. The only phase that touches Apple or Sparkle secrets. | MVP ship |
-| 6. Editor and UI Refresh (cross-surface) | active | Phase 6a PR #86; Phase 6b PR #88 (`persistent-mode-switcher_2026-04-27__2355`); Phase 6c PR #87 (`save-control-ui_2026-04-27__1212`) | Hosted-web + Mac editor polish: app icon, persistent mode switcher, explicit save control, find/replace, accessibility audit, keyboard-shortcut help. Runs in parallel with Phase 5b+ because it does not touch the Mac shell contract. | MVP polish |
+| 6. Editor and UI Refresh (cross-surface) | active | Phase 6a PR #86; Phase 6b PR #88 (`persistent-mode-switcher_2026-04-27__2355`); Phase 6c PR #87 (`save-control-ui_2026-04-27__1212`); Phase 6d PR #89 (`mac-find-replace_2026-04-28__0032`) | Hosted-web + Mac editor polish: app icon, persistent mode switcher, explicit save control, find/replace, accessibility audit, keyboard-shortcut help. Runs in parallel with Phase 5b+ because it does not touch the Mac shell contract. | MVP polish |
 | 7. Mac Commercial Distribution and Licensing | planned | TBD | Decide whether the Mac app ships through the Mac App Store, direct DMG sales, or both; add a simple nag-based license model without changing the free hosted web/npm surfaces. | Paid app launch |
 
 ## Phase 0: Design And Roadmap
@@ -393,6 +393,7 @@ Clean up the editor/viewer UX across the hosted browser app and the Mac shell. T
 
 ### 6d. Find / Replace In Editor
 
+- Status: done in PR #89 (`mac-find-replace_2026-04-28__0032`).
 - Add keyboard shortcut (Cmd+F / Cmd+Option+F) and a visible entry point.
 - Case sensitivity and regex options. Highlight all matches; step through with Enter / Shift+Enter.
 - Acceptance: round-trip search-and-replace on a 100 KB document is responsive (no janky UI freeze).
