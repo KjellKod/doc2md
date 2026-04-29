@@ -1,0 +1,23 @@
+ideas/mac-desktop-app-roadmap.md
+  f66763d65ce3e977 37,396
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "a219af98b6447251f9cd78186943f184261d18e1",
+  "prompts": {
+    "f66763d65ce3e977": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b563801b-a193-4bb0-b7e2-55ea3fbcd026",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 1,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    }
+  }
+}
