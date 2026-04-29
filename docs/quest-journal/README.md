@@ -2,6 +2,7 @@
 
 | Date | Quest | Outcome |
 |------|-------|---------|
+| 2026-04-28 | [restart-new-doc](restart-new-doc_2026-04-28.md) | Solo quest. Made "New document" repeatable from any state with one shared dirty-safe reset path, a persistent hosted toolbar button, and Mac Cmd+N parity. 2 plan iterations, 0 fix iterations, clean Mac Release build. |
 | 2026-04-28 | [mac-find-replace](mac-find-replace_2026-04-28.md) | Phase 6d Find / Replace: added compact shared React editor search/replace with regex/case options, shortcut handling, active selection, replace current/all, accessibility coverage, versioned Mac build success output, and one clean fix loop. |
 | 2026-04-27 | [save-control-ui](save-control-ui_2026-04-27.md) | Phase 6c Save control: added visible hosted/Mac Save UI, compact save-state status, WKWebView file-picker support for app Browse, and clean re-review after one hosted-save fix. |
 | 2026-04-27 | [mac-app-icon](mac-app-icon_2026-04-27.md) | Phase 6a Mac app icon: added native Xcode AppIcon asset catalog slots, source/regeneration docs, project wiring, Release bundle verification, and clean dual review. |
