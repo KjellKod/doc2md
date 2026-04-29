@@ -1,0 +1,25 @@
+src/hooks/useFileConversion.test.ts
+  5d15bfe4f7ccfba6 236-278
+src/hooks/useFileConversion.ts
+  5d15bfe4f7ccfba6 130-133,230
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "24cd12d60ae72258b01ab69d88296c0626137f6c",
+  "prompts": {
+    "5d15bfe4f7ccfba6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019dd720-a3d8-7cc3-8328-408556136d6c",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 49,
+      "total_deletions": 0,
+      "accepted_lines": 49,
+      "overriden_lines": 0
+    }
+  }
+}
