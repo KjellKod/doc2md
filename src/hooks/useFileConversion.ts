@@ -127,6 +127,10 @@ export function useFileConversion() {
     ]);
   }
 
+  function replaceWithScratchEntry() {
+    setEntries(() => [createScratchEntry()]);
+  }
+
   function addOpenedFileEntry(openedFile: ShellOpenOk) {
     setEntries((currentEntries) => [
       ...currentEntries.map((entry) => ({
@@ -223,6 +227,7 @@ export function useFileConversion() {
     addOpenedFileEntry,
     addImportedFileEntry,
     clearEntries,
+    replaceWithScratchEntry,
     replaceEntryWithOpenedFile,
     selectEntry,
     selectedEntry,

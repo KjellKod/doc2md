@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Search } from "lucide-react";
+import { FilePlus, Search } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { FileEntry } from "../types";
@@ -105,6 +105,8 @@ interface PreviewPanelProps {
   saveKeyShortcuts?: string;
   saveState?: DesktopSaveState;
   onStartWriting?: () => void;
+  onNewDocument?: () => void;
+  editorFocusRequest?: { id: number; target: "editor" };
 }
 
 function fallbackCopyText(text: string) {
@@ -156,6 +158,8 @@ export default function PreviewPanel({
   saveKeyShortcuts,
   saveState = "saved",
   onStartWriting,
+  onNewDocument,
+  editorFocusRequest,
 }: PreviewPanelProps) {
   const [mode, setMode] = useState<"edit" | "preview" | "linkedin">("preview");
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
@@ -166,6 +170,8 @@ export default function PreviewPanel({
     id: number;
     target: "find" | "replace";
   }>({ id: 0, target: "find" });
+  const editorFocusRequestId = editorFocusRequest?.id;
+  const editorFocusRequestTarget = editorFocusRequest?.target;
   const previewRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const findHighlightRef = useRef<HTMLPreElement | null>(null);
@@ -207,6 +213,23 @@ export default function PreviewPanel({
 
     return () => window.clearTimeout(timeoutId);
   }, [copyState]);
+
+  useEffect(() => {
+    if (
+      editorFocusRequestId === undefined ||
+      editorFocusRequestId === 0 ||
+      editorFocusRequestTarget !== "editor"
+    ) {
+      return;
+    }
+
+    setMode("edit");
+    const timeoutId = window.setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [editorFocusRequestId, editorFocusRequestTarget]);
 
   useEffect(() => {
     function handleFindShortcut(event: KeyboardEvent) {
@@ -530,6 +553,17 @@ export default function PreviewPanel({
             <div />
           )}
           <div className="preview-toolbar-actions">
+            {onNewDocument ? (
+              <button
+                type="button"
+                className="ghost-button find-entry-button"
+                onClick={onNewDocument}
+                aria-label="New document"
+              >
+                <FilePlus className="find-entry-icon" aria-hidden="true" />
+                <span className="find-entry-label">New</span>
+              </button>
+            ) : null}
             {showToggle ? (
               <button
                 type="button"

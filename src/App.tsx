@@ -234,10 +234,10 @@ export default function App() {
     entries,
     addFiles,
     addUrl,
-    addScratchEntry,
     addOpenedFileEntry,
     addImportedFileEntry,
     clearEntries,
+    replaceWithScratchEntry,
     replaceEntryWithOpenedFile,
     selectEntry,
     selectedEntry,
@@ -253,6 +253,10 @@ export default function App() {
   const [pendingConflict, setPendingConflict] = useState<PendingConflict | null>(
     null,
   );
+  const [editorFocusRequest, setEditorFocusRequest] = useState<{
+    id: number;
+    target: "editor";
+  }>({ id: 0, target: "editor" });
   let convertedCount = 0;
   let draftCount = 0;
   let activeCount = 0;
@@ -441,6 +445,23 @@ export default function App() {
     setPendingConflict(null);
     setDesktopNotice({ kind: "none" });
   }, []);
+
+  const handleNewDocument = useCallback(() => {
+    if (
+      saveState.state !== "saved" &&
+      !window.confirm(
+        "Discard unsaved changes and start a new blank document?",
+      )
+    ) {
+      return;
+    }
+
+    replaceWithScratchEntry();
+    clearDesktopProblem();
+    saveState.reset();
+    setActivePage("convert");
+    setEditorFocusRequest(({ id }) => ({ id: id + 1, target: "editor" }));
+  }, [clearDesktopProblem, replaceWithScratchEntry, saveState]);
 
   const handleOpenFile = useCallback(async () => {
     if (!shell) {
@@ -890,11 +911,7 @@ export default function App() {
   }, [saveState]);
 
   const nativeMenuHandlers = {
-    onNew: () => {
-      addScratchEntry();
-      saveState.markEdited();
-      clearDesktopProblem();
-    },
+    onNew: handleNewDocument,
     onOpen: () => {
       void handleOpenFile();
     },
@@ -1147,7 +1164,9 @@ export default function App() {
                   </div>
                   <PreviewPanel
                     entry={selectedEntry}
-                    onStartWriting={addScratchEntry}
+                    onStartWriting={handleNewDocument}
+                    onNewDocument={handleNewDocument}
+                    editorFocusRequest={editorFocusRequest}
                     onSave={effectiveSave}
                     saveBusy={saveButtonBusy}
                     saveDisabled={saveButtonDisabled}

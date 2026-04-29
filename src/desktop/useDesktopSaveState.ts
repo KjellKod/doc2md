@@ -10,6 +10,7 @@ const HOSTED_SAVE_EVENTS = new Set<DesktopSaveEvent>([
   "edit",
   "saving",
   "saved",
+  "reset",
 ]);
 
 /**
