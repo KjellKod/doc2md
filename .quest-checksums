@@ -9,6 +9,7 @@ a7f47b5410c4c3ae874a20d96117b390088c409b8e090da3de69f58a8c67eb42  .agents/skills
 4a861aff2ad15ed36ad22faa52a7b99a497486871cb7aff32636bda1496e0c4f  .agents/skills/pre-commit-review/SKILL.md
 4c18aabda50f1d45e26f720fd09b78ced4214e410f64b2ddb518c880193c6a6d  .agents/skills/quest/SKILL.md
 7a2b9ab004f58f1b5b25c4de9f2a6a88d021664bb3a8b40d144a1ece914c40f7  .agents/skills/README.md
+78dc9c8ba591d5ee22eb8c32067ccdb55d530bf1024659695c646b3407c7110a  .ai/allowlist.json
 91b4bdf18546c6a791cd7a1c85c750747342bec12e83d2a2c19ea3859ba6d855  .ai/quest.md
 a17dbe2d7bfb6cdddde81b7b4fdec27083b9ee81db32c45a9644d4f9ebd2ca15  .ai/roles/quest_agent.md
 033cf9a19c72ce98a225f289d45fddaa28611e3bb62454585232aae942476490  .ai/schemas/allowlist.schema.json
