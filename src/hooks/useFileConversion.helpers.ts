@@ -40,11 +40,11 @@ export function createPendingEntries(files: File[], hasSelection: boolean) {
   );
 }
 
-export function createScratchEntry(): FileEntry {
+export function createScratchEntry(name = "Untitled.md"): FileEntry {
   return {
-    id: createEntryId("untitled.md", 0),
-    file: new File([], "Untitled.md", { type: "text/markdown" }),
-    name: "Untitled.md",
+    id: createEntryId(name, 0),
+    file: new File([], name, { type: "text/markdown" }),
+    name,
     format: "md",
     status: "success",
     markdown: "",

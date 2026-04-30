@@ -12,6 +12,11 @@ const HOSTED_SAVE_EVENTS = new Set<DesktopSaveEvent>([
   "saved",
   "reset",
 ]);
+const HOSTED_SAVE_STATES = new Set<DesktopSaveState>([
+  "edited",
+  "saving",
+  "saved",
+]);
 
 /**
  * Hosted web may surface edit/saving/saved; native-only problem states stay desktop-gated.
@@ -51,7 +56,7 @@ export function useDesktopSaveState(isDesktop: boolean): {
     markError: () => dispatch("error"),
     markPermissionNeeded: () => dispatch("permission-needed"),
     restore: (nextState) => {
-      if (!isDesktop) {
+      if (!isDesktop && !HOSTED_SAVE_STATES.has(nextState)) {
         return;
       }
 

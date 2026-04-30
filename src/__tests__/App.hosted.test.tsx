@@ -79,8 +79,8 @@ describe("App hosted save control", () => {
     expect(createObjectURL).not.toHaveBeenCalled();
   });
 
-  it("cancels hosted New from a dirty scratch without discarding the draft", async () => {
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+  it("adds hosted New from a dirty scratch without discarding the draft", async () => {
+    const confirmSpy = vi.spyOn(window, "confirm");
 
     render(<App />);
 
@@ -94,13 +94,25 @@ describe("App hosted save control", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "New document" }));
 
-    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    const editor = await screen.findByLabelText("Edit markdown");
+    await waitFor(() => expect(document.activeElement).toBe(editor));
+    expect(confirmSpy).not.toHaveBeenCalled();
+    expect(editor).toHaveValue("");
+    expect(screen.getByRole("status")).toHaveTextContent("Saved");
+    expect(screen.getAllByText("Keep me").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Untitled 2.md").length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole("button", { name: /keep me/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
     expect(screen.getByLabelText("Edit markdown")).toHaveValue("# Keep me");
-    expect(screen.getByRole("status")).toHaveTextContent("Edited");
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent("Edited"),
+    );
   });
 
-  it("accepts hosted New from a dirty scratch and focuses a blank saved editor", async () => {
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+  it("focuses a blank saved editor for hosted New from a dirty scratch", async () => {
+    const confirmSpy = vi.spyOn(window, "confirm");
 
     render(<App />);
 
@@ -116,7 +128,7 @@ describe("App hosted save control", () => {
 
     const editor = await screen.findByLabelText("Edit markdown");
     await waitFor(() => expect(document.activeElement).toBe(editor));
-    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    expect(confirmSpy).not.toHaveBeenCalled();
     expect(editor).toHaveValue("");
     expect(screen.getByRole("status")).toHaveTextContent("Saved");
   });
