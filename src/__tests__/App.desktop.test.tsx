@@ -5,14 +5,17 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "../App";
+import type { Doc2mdShell } from "../types/doc2mdShell";
 import {
   MAX_BROWSER_FILE_SIZE_BYTES,
   OVERSIZED_FILE_MESSAGE,
 } from "../converters/messages";
 import {
+  createMockShell,
   createMockImportShellFile,
   installMockShell,
 } from "../desktop/mockShellBridge";
@@ -69,6 +72,8 @@ describe("App desktop bridge", () => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
     delete window.doc2mdShell;
+    localStorage.clear();
+    sessionStorage.clear();
     cleanup();
   });
 
@@ -80,14 +85,37 @@ describe("App desktop bridge", () => {
   });
 
   it("gates desktop-only DOM when the shell version is incompatible", () => {
-    const cleanupShell = installMockShell({ version: 2 });
+    const cleanupShell = installMockShell({ version: 1 });
 
     render(<App />);
 
     expect(screen.queryByTestId("desktop-menu-bridge")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Desktop settings" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByText("No files or drafts yet.")).toBeInTheDocument();
 
     cleanupShell();
+  });
+
+  it("gates desktop-only DOM when a version 2 shell is missing persistence methods", () => {
+    const setPersistenceEnabled = vi.fn(async () => ({
+      ok: true as const,
+      persistenceEnabled: false,
+      recentFiles: [],
+    }));
+    window.doc2mdShell = {
+      ...createMockShell({ setPersistenceEnabled }),
+      getPersistenceSettings: undefined,
+    } as unknown as Doc2mdShell;
+
+    render(<App />);
+
+    expect(screen.queryByTestId("desktop-menu-bridge")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Desktop settings" }),
+    ).not.toBeInTheDocument();
+    expect(setPersistenceEnabled).not.toHaveBeenCalled();
   });
 
   it("routes native New through the shared clean scratch reset", async () => {
@@ -280,6 +308,355 @@ describe("App desktop bridge", () => {
     );
     expect(screen.getByText("Untitled.md")).toBeInTheDocument();
     expect(screen.getByText("Saved")).toBeInTheDocument();
+
+    cleanupShell();
+  });
+
+  it("renders desktop persistence settings and display-only recent files", async () => {
+    const cleanupShell = installMockShell({
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: true,
+        theme: "dark" as const,
+        recentFiles: [
+          {
+            path: "/Users/me/Notes.md",
+            displayName: "Notes.md",
+            lastOpenedAt: "2026-04-28T20:40:00.000Z",
+          },
+        ],
+      })),
+    });
+
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Desktop settings" }));
+
+    expect(screen.getByLabelText("Persistence")).toBeChecked();
+    expect(screen.getByText("Recent files")).toBeInTheDocument();
+    expect(screen.getByText("Notes.md")).toBeInTheDocument();
+    expect(screen.getByText("/Users/me/Notes.md")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Notes.md" }),
+    ).not.toBeInTheDocument();
+
+    cleanupShell();
+  });
+
+  it("restores persisted light theme after desktop settings load", async () => {
+    const cleanupShell = installMockShell({
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: true,
+        theme: "light" as const,
+        recentFiles: [],
+      })),
+    });
+
+    render(<App />);
+
+    expect(
+      await screen.findByRole("button", { name: "Switch to night mode" }),
+    ).toBeInTheDocument();
+    expect(document.documentElement.dataset.theme).toBeUndefined();
+
+    cleanupShell();
+  });
+
+  it("disabling persistence clears theme and recent files in the settings popover", async () => {
+    const setPersistenceEnabled = vi.fn(async () => ({
+      ok: true as const,
+      persistenceEnabled: false,
+      recentFiles: [],
+    }));
+    const cleanupShell = installMockShell({
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: true,
+        theme: "dark" as const,
+        recentFiles: [
+          {
+            path: "/Users/me/Old.md",
+            displayName: "Old.md",
+            lastOpenedAt: "2026-04-28T20:40:00.000Z",
+          },
+        ],
+      })),
+      setPersistenceEnabled,
+    });
+
+    render(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: "Desktop settings" }));
+    const checkbox = screen.getByLabelText("Persistence");
+
+    expect(checkbox).toBeChecked();
+    expect(screen.getByText("Old.md")).toBeInTheDocument();
+
+    fireEvent.click(checkbox);
+
+    await waitFor(() => expect(checkbox).not.toBeChecked());
+    expect(setPersistenceEnabled).toHaveBeenCalledWith({ enabled: false });
+    expect(screen.queryByText("Old.md")).not.toBeInTheDocument();
+    expect(screen.queryByText("Recent files")).not.toBeInTheDocument();
+
+    cleanupShell();
+  });
+
+  it("refreshes recent files after successful native open and save", async () => {
+    const getPersistenceSettings = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true as const,
+        persistenceEnabled: true,
+        recentFiles: [],
+      })
+      .mockResolvedValueOnce({
+        ok: true as const,
+        persistenceEnabled: true,
+        recentFiles: [
+          {
+            path: "/Users/me/Opened.md",
+            displayName: "Opened.md",
+            lastOpenedAt: "2026-04-28T20:40:00.000Z",
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        ok: true as const,
+        persistenceEnabled: true,
+        recentFiles: [
+          {
+            path: "/Users/me/Saved.md",
+            displayName: "Saved.md",
+            lastOpenedAt: "2026-04-28T20:41:00.000Z",
+          },
+          {
+            path: "/Users/me/Opened.md",
+            displayName: "Opened.md",
+            lastOpenedAt: "2026-04-28T20:40:00.000Z",
+          },
+        ],
+      });
+    const saveFile = vi.fn(async () => ({
+      ok: true as const,
+      path: "/Users/me/Saved.md",
+      mtimeMs: 12,
+    }));
+    const cleanupShell = installMockShell({
+      getPersistenceSettings,
+      openFile: vi.fn(async () => ({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Opened.md",
+        content: "# Opened\n",
+        mtimeMs: 10,
+        lineEnding: "lf" as const,
+      })),
+      saveFile,
+    });
+
+    render(<App />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+
+    await waitFor(() => expect(getPersistenceSettings).toHaveBeenCalledTimes(2));
+    fireEvent.click(screen.getByRole("button", { name: "Desktop settings" }));
+    let settingsDialog = screen.getByRole("dialog", { name: "Desktop settings" });
+    expect(within(settingsDialog).getByText("Opened.md")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    fireEvent.change(screen.getByLabelText("Edit markdown"), {
+      target: { value: "# Opened\n\nSaved" },
+    });
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.save));
+
+    await waitFor(() => expect(getPersistenceSettings).toHaveBeenCalledTimes(3));
+    expect(saveFile).toHaveBeenCalledWith({
+      path: "/Users/me/Opened.md",
+      content: "# Opened\n\nSaved",
+      expectedMtimeMs: 10,
+      lineEnding: "lf",
+    });
+    settingsDialog = screen.getByRole("dialog", { name: "Desktop settings" });
+    expect(within(settingsDialog).getByText("Saved.md")).toBeInTheDocument();
+
+    cleanupShell();
+  });
+
+  it("persists theme changes only when desktop persistence is enabled", async () => {
+    const getPersistenceSettings = vi.fn(async () => ({
+      ok: true as const,
+      persistenceEnabled: true,
+      theme: "dark" as const,
+      recentFiles: [],
+    }));
+    const setPersistenceTheme = vi.fn(async () => ({
+      ok: true as const,
+      persistenceEnabled: true,
+      theme: "light" as const,
+      recentFiles: [],
+    }));
+    const cleanupShell = installMockShell({
+      getPersistenceSettings,
+      setPersistenceTheme,
+    });
+
+    render(<App />);
+
+    await waitFor(() => expect(getPersistenceSettings).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(setPersistenceTheme).not.toHaveBeenCalled());
+    fireEvent.click(screen.getByRole("button", { name: "Switch to day mode" }));
+
+    await waitFor(() =>
+      expect(setPersistenceTheme).toHaveBeenCalledWith({ theme: "light" }),
+    );
+
+    cleanupShell();
+  });
+
+  it("persists the current theme when persistence is enabled", async () => {
+    const getPersistenceSettings = vi.fn(async () => ({
+      ok: true as const,
+      persistenceEnabled: false,
+      recentFiles: [],
+    }));
+    const setPersistenceEnabled = vi.fn(async () => ({
+      ok: true as const,
+      persistenceEnabled: true,
+      recentFiles: [],
+    }));
+    const setPersistenceTheme = vi.fn(async () => ({
+      ok: true as const,
+      persistenceEnabled: true,
+      theme: "light" as const,
+      recentFiles: [],
+    }));
+    const cleanupShell = installMockShell({
+      getPersistenceSettings,
+      setPersistenceEnabled,
+      setPersistenceTheme,
+    });
+
+    render(<App />);
+    await waitFor(() => expect(getPersistenceSettings).toHaveBeenCalledTimes(1));
+    fireEvent.click(await screen.findByRole("button", { name: "Switch to day mode" }));
+    fireEvent.click(screen.getByRole("button", { name: "Desktop settings" }));
+
+    fireEvent.click(screen.getByLabelText("Persistence"));
+
+    await waitFor(() =>
+      expect(setPersistenceTheme).toHaveBeenCalledWith({ theme: "light" }),
+    );
+    expect(setPersistenceEnabled).toHaveBeenCalledWith({ enabled: true });
+
+    cleanupShell();
+  });
+
+  it("does not persist theme changes when desktop persistence is disabled", async () => {
+    const getPersistenceSettings = vi.fn(async () => ({
+      ok: true as const,
+      persistenceEnabled: false,
+      recentFiles: [],
+    }));
+    const setPersistenceTheme = vi.fn(async () => ({
+      ok: true as const,
+      persistenceEnabled: true,
+      theme: "light" as const,
+      recentFiles: [],
+    }));
+    const cleanupShell = installMockShell({
+      getPersistenceSettings,
+      setPersistenceTheme,
+    });
+
+    render(<App />);
+    await waitFor(() => expect(getPersistenceSettings).toHaveBeenCalledTimes(1));
+    fireEvent.click(await screen.findByRole("button", { name: "Switch to day mode" }));
+
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+    expect(setPersistenceTheme).not.toHaveBeenCalled();
+
+    cleanupShell();
+  });
+
+  it("shows a desktop notice when persistence settings fail to load", async () => {
+    const cleanupShell = installMockShell({
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: false as const,
+        code: "error" as const,
+        message: "Settings unavailable.",
+      })),
+    });
+
+    render(<App />);
+
+    expect(await screen.findByText("Settings unavailable.")).toBeInTheDocument();
+    expect(localStorage.length).toBe(0);
+    expect(sessionStorage.length).toBe(0);
+
+    cleanupShell();
+  });
+
+  it("surfaces permission notices when persistence changes fail", async () => {
+    const cleanupShell = installMockShell({
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: false,
+        recentFiles: [],
+      })),
+      setPersistenceEnabled: vi.fn(async () => ({
+        ok: false as const,
+        code: "permission-needed" as const,
+        path: "/Users/me/Library/Application Support/doc2md/settings.json",
+        message: "Select the settings file again.",
+      })),
+    });
+
+    render(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: "Desktop settings" }));
+    fireEvent.click(screen.getByLabelText("Persistence"));
+
+    expect(
+      await screen.findByText("Permission needed: Select the settings file again."),
+    ).toBeInTheDocument();
+
+    cleanupShell();
+  });
+
+  it("keeps mode switcher save control and find replace usable when desktop settings opens and closes", async () => {
+    const cleanupShell = installMockShell();
+
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Desktop settings" }));
+    expect(screen.getByLabelText("Persistence")).toBeInTheDocument();
+    fireEvent.keyDown(screen.getByRole("dialog", { name: "Desktop settings" }), {
+      key: "Escape",
+    });
+    await waitFor(() =>
+      expect(screen.queryByLabelText("Persistence")).not.toBeInTheDocument(),
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "Install & Use" }));
+    expect(screen.getByRole("tab", { name: "Install & Use" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    fireEvent.click(screen.getByRole("tab", { name: "Convert" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Start writing" }));
+    const editor = await screen.findByLabelText("Edit markdown");
+    fireEvent.change(editor, {
+      target: { value: "# Find me\n\nReplace me" },
+    });
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Save document" })).toBeEnabled(),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Find and replace" }));
+    const findInput = await screen.findByLabelText("Find markdown text");
+    fireEvent.change(findInput, { target: { value: "Find" } });
+
+    expect(findInput).toHaveValue("Find");
 
     cleanupShell();
   });

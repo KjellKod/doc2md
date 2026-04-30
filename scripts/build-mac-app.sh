@@ -12,7 +12,8 @@ NATIVE_API_ALLOWLIST=(
   "startAccessingSecurityScopedResource :: current-session scoped file access around selected URLs"
   "stopAccessingSecurityScopedResource :: balanced release of scoped file access"
   "createFile :: sibling temp-file staging and placeholder creation before replaceItemAt"
-  "removeItem :: cleanup for failed temp-file or placeholder writes"
+  "removeItem :: cleanup for failed temp-file, placeholder writes, or disabled Application Support settings"
+  "Application Support settings :: metadata-only settings-file read/write/delete/atomic replacement"
 )
 WATCHED_NATIVE_API_PATTERN='FileManager|NSOpenPanel|NSSavePanel|NSWorkspace|FileHandle|replaceItemAt|replaceItem\(|replacingItem|startAccessingSecurityScopedResource|stopAccessingSecurityScopedResource|createFile|removeItem|moveItem|copyItem|\.write\(to:'
 ALLOWED_NATIVE_API_PATTERN='FileManager|NSOpenPanel|NSSavePanel|NSWorkspace|replaceItemAt|startAccessingSecurityScopedResource|stopAccessingSecurityScopedResource|createFile|removeItem'

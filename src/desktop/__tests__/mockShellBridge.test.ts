@@ -41,11 +41,32 @@ describe("mockShellBridge", () => {
       ok: true,
       path: "/mock/Untitled.md",
     });
+    await expect(shell.getPersistenceSettings()).resolves.toEqual({
+      ok: true,
+      persistenceEnabled: false,
+      recentFiles: [],
+    });
+    await expect(
+      shell.setPersistenceEnabled({ enabled: true }),
+    ).resolves.toEqual({
+      ok: true,
+      persistenceEnabled: true,
+      recentFiles: [],
+    });
+    await expect(shell.setPersistenceTheme({ theme: "light" })).resolves.toEqual({
+      ok: true,
+      persistenceEnabled: true,
+      theme: "light",
+      recentFiles: [],
+    });
 
     expect(shell.openFile).toHaveBeenCalledTimes(1);
     expect(shell.saveFile).toHaveBeenCalledTimes(1);
     expect(shell.saveFileAs).toHaveBeenCalledTimes(1);
     expect(shell.revealInFinder).toHaveBeenCalledTimes(1);
+    expect(shell.getPersistenceSettings).toHaveBeenCalledTimes(1);
+    expect(shell.setPersistenceEnabled).toHaveBeenCalledTimes(1);
+    expect(shell.setPersistenceTheme).toHaveBeenCalledTimes(1);
   });
 
   it("supports method overrides", async () => {
@@ -65,8 +86,9 @@ describe("mockShellBridge", () => {
   it("installs and cleans up the mock shell on window", () => {
     const cleanup = installMockShell();
 
-    expect(window.doc2mdShell?.version).toBe(1);
+    expect(window.doc2mdShell?.version).toBe(2);
     expect(window.doc2mdShell?.openFile).toBeDefined();
+    expect(window.doc2mdShell?.getPersistenceSettings).toBeDefined();
 
     cleanup();
     expect(window.doc2mdShell).toBeUndefined();

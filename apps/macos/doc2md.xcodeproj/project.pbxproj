@@ -22,6 +22,9 @@
 		9A0200000000000000000012 /* SparkleController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A010000000000000000000C /* SparkleController.swift */; };
 		9A0200000000000000000013 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 9A5000000000000000000001 /* Sparkle */; };
 		9A0200000000000000000014 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9A010000000000000000000E /* Assets.xcassets */; };
+		9A0200000000000000000015 /* PersistenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A010000000000000000000F /* PersistenceStore.swift */; };
+		9A0200000000000000000016 /* PersistenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A010000000000000000000F /* PersistenceStore.swift */; };
+		9A0200000000000000000017 /* PersistenceStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000010 /* PersistenceStoreTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -50,6 +53,8 @@
 		9A010000000000000000000C /* SparkleController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparkleController.swift; sourceTree = "<group>"; };
 		9A010000000000000000000D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9A010000000000000000000E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		9A010000000000000000000F /* PersistenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceStore.swift; sourceTree = "<group>"; };
+		9A0100000000000000000010 /* PersistenceStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceStoreTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -90,6 +95,7 @@
 				9A010000000000000000000C /* SparkleController.swift */,
 				9A0100000000000000000006 /* AppScheme.swift */,
 				9A0100000000000000000007 /* FileStore.swift */,
+				9A010000000000000000000F /* PersistenceStore.swift */,
 				9A010000000000000000000A /* SupportedFormats.generated.swift */,
 				9A0000000000000000000003 /* Resources */,
 				9A010000000000000000000D /* Info.plist */,
@@ -119,6 +125,7 @@
 			isa = PBXGroup;
 			children = (
 				9A0100000000000000000009 /* FileStoreTests.swift */,
+				9A0100000000000000000010 /* PersistenceStoreTests.swift */,
 				9A010000000000000000000B /* AppSchemeImportRouteTests.swift */,
 			);
 			path = doc2mdTests;
@@ -251,6 +258,7 @@
 				9A0200000000000000000004 /* MenuController.swift in Sources */,
 				9A0200000000000000000005 /* AppScheme.swift in Sources */,
 				9A0200000000000000000006 /* FileStore.swift in Sources */,
+				9A0200000000000000000015 /* PersistenceStore.swift in Sources */,
 				9A0200000000000000000009 /* SupportedFormats.generated.swift in Sources */,
 				9A0200000000000000000012 /* SparkleController.swift in Sources */,
 			);
@@ -262,6 +270,8 @@
 			files = (
 				9A0200000000000000000007 /* FileStoreTests.swift in Sources */,
 				9A0200000000000000000008 /* FileStore.swift in Sources */,
+				9A0200000000000000000016 /* PersistenceStore.swift in Sources */,
+				9A0200000000000000000017 /* PersistenceStoreTests.swift in Sources */,
 				9A0200000000000000000010 /* AppScheme.swift in Sources */,
 				9A0200000000000000000011 /* AppSchemeImportRouteTests.swift in Sources */,
 			);

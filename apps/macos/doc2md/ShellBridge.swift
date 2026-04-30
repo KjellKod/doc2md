@@ -9,12 +9,18 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
         static let saveFile = "doc2mdSaveFile"
         static let saveFileAs = "doc2mdSaveFileAs"
         static let revealInFinder = "doc2mdRevealInFinder"
+        static let getPersistenceSettings = "doc2mdGetPersistenceSettings"
+        static let setPersistenceEnabled = "doc2mdSetPersistenceEnabled"
+        static let setPersistenceTheme = "doc2mdSetPersistenceTheme"
 
         static let all = [
             openFile,
             saveFile,
             saveFileAs,
-            revealInFinder
+            revealInFinder,
+            getPersistenceSettings,
+            setPersistenceEnabled,
+            setPersistenceTheme
         ]
     }
 
@@ -37,9 +43,18 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
         let path: String
     }
 
+    private struct SetPersistenceEnabledArgs: Codable {
+        let enabled: Bool
+    }
+
+    private struct SetPersistenceThemeArgs: Codable {
+        let theme: StoredTheme
+    }
+
     weak var webView: WKWebView?
 
     private let fileStore = FileStore()
+    private let persistenceStore = PersistenceStore()
     private var knownURLsByPath: [String: URL] = [:]
     private var lastDirectoryURL: URL?
 
@@ -82,8 +97,17 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
             handleSaveFileAs(bridgeMessage)
         case HandlerName.revealInFinder:
             handleRevealInFinder(bridgeMessage)
+        case HandlerName.getPersistenceSettings:
+            handleGetPersistenceSettings(bridgeMessage)
+        case HandlerName.setPersistenceEnabled:
+            handleSetPersistenceEnabled(bridgeMessage)
+        case HandlerName.setPersistenceTheme:
+            handleSetPersistenceTheme(bridgeMessage)
         default:
-            resolve(id: bridgeMessage.id, result: .error(message: "Unknown shell handler."))
+            resolve(
+                id: bridgeMessage.id,
+                result: ShellCallResult.error(message: "Unknown shell handler.")
+            )
         }
     }
 
@@ -96,7 +120,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
                 guard let knownURL = knownURLsByPath[Self.standardPath(path)] else {
                     resolve(
                         id: message.id,
-                        result: .permissionNeeded(
+                        result: ShellCallResult.permissionNeeded(
                             path: path,
                             message: "Open the file again before reloading it."
                         )
@@ -127,7 +151,8 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
                     try fileStore.open(url: standardizedURL)
                 }
                 remember(url: standardizedURL)
-                resolve(id: message.id, result: .openMarkdown(result))
+                recordRecentFileIfEnabled(url: standardizedURL)
+                resolve(id: message.id, result: ShellCallResult.openMarkdown(result))
                 return
             }
 
@@ -137,6 +162,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
 
             let ticket = try ImportHandoff.shared.enqueue(url: standardizedURL)
             rememberLastDirectory(from: standardizedURL)
+            recordRecentFileIfEnabled(url: standardizedURL)
             // Import-source handoff URLs are intentionally not remembered as
             // directly editable paths; only `.md` targets belong in knownURLsByPath.
             let openImportResult = ShellOpenImportOk(
@@ -149,7 +175,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
                 importUrl: ImportHandoff.importURL(for: ticket.token),
                 mimeType: ticket.mimeType
             )
-            resolve(id: message.id, result: .openImport(openImportResult))
+            resolve(id: message.id, result: ShellCallResult.openImport(openImportResult))
         } catch {
             resolve(id: message.id, result: Self.response(for: error))
         }
@@ -161,7 +187,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
             guard let knownURL = knownURLsByPath[Self.standardPath(args.path)] else {
                 resolve(
                     id: message.id,
-                    result: .permissionNeeded(
+                    result: ShellCallResult.permissionNeeded(
                         path: args.path,
                         message: "Open the file again before saving it."
                     )
@@ -175,7 +201,8 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
             }
 
             remember(url: knownURL)
-            resolve(id: message.id, result: .save(result))
+            recordRecentFileIfEnabled(url: knownURL)
+            resolve(id: message.id, result: ShellCallResult.save(result))
         } catch {
             resolve(id: message.id, result: Self.response(for: error))
         }
@@ -205,7 +232,8 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
             }
 
             remember(url: url)
-            resolve(id: message.id, result: .save(result))
+            recordRecentFileIfEnabled(url: url)
+            resolve(id: message.id, result: ShellCallResult.save(result))
         } catch {
             resolve(id: message.id, result: Self.response(for: error))
         }
@@ -220,7 +248,32 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
                 try fileStore.reveal(path: url.path)
             }
 
-            resolve(id: message.id, result: .reveal(result))
+            resolve(id: message.id, result: ShellCallResult.reveal(result))
+        } catch {
+            resolve(id: message.id, result: Self.response(for: error))
+        }
+    }
+
+    private func handleGetPersistenceSettings(_ message: BridgeMessage) {
+        let settings = persistenceStore.load()
+        resolve(id: message.id, result: ShellPersistenceSettingsOk(settings: settings))
+    }
+
+    private func handleSetPersistenceEnabled(_ message: BridgeMessage) {
+        do {
+            let args = try Self.decode(SetPersistenceEnabledArgs.self, from: message.args)
+            let settings = try persistenceStore.setPersistenceEnabled(args.enabled)
+            resolve(id: message.id, result: ShellPersistenceSettingsOk(settings: settings))
+        } catch {
+            resolve(id: message.id, result: Self.response(for: error))
+        }
+    }
+
+    private func handleSetPersistenceTheme(_ message: BridgeMessage) {
+        do {
+            let args = try Self.decode(SetPersistenceThemeArgs.self, from: message.args)
+            let settings = try persistenceStore.setTheme(args.theme)
+            resolve(id: message.id, result: ShellPersistenceSettingsOk(settings: settings))
         } catch {
             resolve(id: message.id, result: Self.response(for: error))
         }
@@ -235,6 +288,16 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
         }
 
         return try operation()
+    }
+
+    private func recordRecentFileIfEnabled(url: URL) {
+        do {
+            _ = try persistenceStore.recordRecentFile(url: url)
+        } catch {
+            #if DEBUG
+            print("ShellBridge failed to record recent file: \(error.localizedDescription)")
+            #endif
+        }
     }
 
     private func remember(url: URL) {
@@ -254,7 +317,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
         rememberLastDirectory(from: firstURL.standardizedFileURL)
     }
 
-    private func resolve(id: String, result: ShellCallResult) {
+    private func resolve<T: Encodable>(id: String, result: T) {
         do {
             let encoder = JSONEncoder()
             let idData = try encoder.encode(id)
@@ -343,7 +406,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
 
     private static let scriptSource = #"""
 (() => {
-  if (window.doc2mdShell && window.doc2mdShell.version === 1) {
+  if (window.doc2mdShell && window.doc2mdShell.version === 2) {
     return;
   }
 
@@ -382,11 +445,14 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
   Object.defineProperty(window, "doc2mdShell", {
     configurable: true,
     value: {
-      version: 1,
+      version: 2,
       openFile: (args) => callShell("doc2mdOpenFile", args ?? null),
       saveFile: (args) => callShell("doc2mdSaveFile", args),
       saveFileAs: (args) => callShell("doc2mdSaveFileAs", args),
-      revealInFinder: (args) => callShell("doc2mdRevealInFinder", args)
+      revealInFinder: (args) => callShell("doc2mdRevealInFinder", args),
+      getPersistenceSettings: () => callShell("doc2mdGetPersistenceSettings", null),
+      setPersistenceEnabled: (args) => callShell("doc2mdSetPersistenceEnabled", args),
+      setPersistenceTheme: (args) => callShell("doc2mdSetPersistenceTheme", args)
     }
   });
 })();

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
+import type { Doc2mdShell } from "../../types/doc2mdShell";
 import { getShell, hasShell } from "../bridgeClient";
-import { installMockShell } from "../mockShellBridge";
+import { createMockShell, installMockShell } from "../mockShellBridge";
 
 describe("bridgeClient", () => {
   afterEach(() => {
@@ -12,7 +13,7 @@ describe("bridgeClient", () => {
     expect(getShell()).toBeNull();
   });
 
-  it("returns the installed version 1 shell", () => {
+  it("returns the installed version 2 shell", () => {
     const cleanup = installMockShell();
 
     expect(hasShell()).toBe(true);
@@ -23,11 +24,21 @@ describe("bridgeClient", () => {
   });
 
   it("ignores shells with incompatible versions", () => {
-    const cleanup = installMockShell({ version: 2 });
+    const cleanup = installMockShell({ version: 1 });
 
     expect(hasShell()).toBe(false);
     expect(getShell()).toBeNull();
 
     cleanup();
+  });
+
+  it("ignores version 2 shells missing persistence methods", () => {
+    window.doc2mdShell = {
+      ...createMockShell(),
+      setPersistenceTheme: undefined,
+    } as unknown as Doc2mdShell;
+
+    expect(hasShell()).toBe(false);
+    expect(getShell()).toBeNull();
   });
 });

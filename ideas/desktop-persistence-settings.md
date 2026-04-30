@@ -21,6 +21,14 @@ Add a compact settings control in the Mac app only:
 - When disabled, the desktop app clears persisted state.
 - A separate `Clear persistence` action is optional. If included, it should either delete the settings file or empty its contents.
 
+## Settled MVP Decisions
+
+- Recent files appear in the desktop settings popover only.
+- Recent entries are display-only and are not clickable in this MVP.
+- Turning persistence back on starts with an empty recent-file list until the next successful native file operation.
+- The app records successful Markdown opens, import-source opens, Save, and Save As paths.
+- Reopening recent files from persisted paths is deferred until a future security-scoped bookmark or user-mediated open flow.
+
 ## Desktop-Only Boundary
 
 - Do not show the setting in hosted web.
@@ -77,7 +85,4 @@ Notes:
 
 ## Open Questions
 
-- Should recent files appear in the existing file list, a File menu submenu, a settings popover, or all of those?
-- Should turning persistence back on start with an empty recent-file list or immediately record the currently open file?
-- Should the app remember only successfully opened Markdown files, or also converted source documents that were imported?
-- Should recent files support reopening via persisted security-scoped bookmarks, or start as display-only shortcuts that require user re-selection?
+- None for the MVP. Bookmark-backed reopen, File menu recents, and a separate clear action remain possible follow-up ideas.

@@ -1,9 +1,10 @@
 import { vi } from "vitest";
 import type {
+  DesktopPersistenceSettings,
   Doc2mdShell,
   ShellFile,
-  ShellSaveOk,
   ShellRevealOk,
+  ShellSaveOk,
 } from "../types/doc2mdShell";
 
 export type MockShellOverrides = Partial<Omit<Doc2mdShell, "version">> & {
@@ -46,16 +47,38 @@ const DEFAULT_REVEAL: ShellRevealOk = {
   path: "/mock/Untitled.md",
 };
 
+const DEFAULT_PERSISTENCE_SETTINGS: DesktopPersistenceSettings = {
+  ok: true,
+  persistenceEnabled: false,
+  recentFiles: [],
+};
+
 export function createMockShell(
   overrides: MockShellOverrides = {},
 ): Doc2mdShell {
   return {
-    version: (overrides.version ?? 1) as 1,
+    version: (overrides.version ?? 2) as 2,
     openFile: overrides.openFile ?? vi.fn(async () => DEFAULT_FILE),
     saveFile: overrides.saveFile ?? vi.fn(async () => DEFAULT_SAVE),
     saveFileAs: overrides.saveFileAs ?? vi.fn(async () => DEFAULT_SAVE),
     revealInFinder:
       overrides.revealInFinder ?? vi.fn(async () => DEFAULT_REVEAL),
+    getPersistenceSettings:
+      overrides.getPersistenceSettings ??
+      vi.fn(async () => DEFAULT_PERSISTENCE_SETTINGS),
+    setPersistenceEnabled:
+      overrides.setPersistenceEnabled ??
+      vi.fn(async (args) => ({
+        ...DEFAULT_PERSISTENCE_SETTINGS,
+        persistenceEnabled: args.enabled,
+      })),
+    setPersistenceTheme:
+      overrides.setPersistenceTheme ??
+      vi.fn(async (args) => ({
+        ...DEFAULT_PERSISTENCE_SETTINGS,
+        persistenceEnabled: true,
+        theme: args.theme,
+      })),
   };
 }
 
