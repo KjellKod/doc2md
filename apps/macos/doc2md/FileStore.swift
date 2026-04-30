@@ -135,8 +135,8 @@ final class FileStore {
     }
 
     func modificationTimeMs(for url: URL) throws -> Int64 {
-        let values = try url.resourceValues(forKeys: [.contentModificationDateKey])
-        guard let date = values.contentModificationDate else {
+        let attributes = try fileManager.attributesOfItem(atPath: url.standardizedFileURL.path)
+        guard let date = attributes[.modificationDate] as? Date else {
             throw FileStoreError.error(message: "Could not read the file modification time.")
         }
 

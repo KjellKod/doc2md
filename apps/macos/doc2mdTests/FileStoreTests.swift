@@ -48,6 +48,45 @@ final class FileStoreTests: XCTestCase {
         }
     }
 
+    func testSaveRejectsExternalEditWhenRememberedURLHasStaleResourceValues() throws {
+        var fileURL = try makeFile(name: "cached-conflict.md", data: Data("old\n".utf8))
+        let store = FileStore()
+        let expectedMtimeMs = try store.modificationTimeMs(for: fileURL)
+        let staleDate = Date(timeIntervalSince1970: Double(expectedMtimeMs) / 1000)
+        let externalEditDate = Date(timeIntervalSince1970: Double(expectedMtimeMs + 5_000) / 1000)
+
+        fileURL.setTemporaryResourceValue(
+            staleDate,
+            forKey: .contentModificationDateKey
+        )
+        try Data("external edit\n".utf8).write(to: fileURL)
+        try FileManager.default.setAttributes(
+            [.modificationDate: externalEditDate],
+            ofItemAtPath: fileURL.path
+        )
+
+        XCTAssertThrowsError(
+            try store.save(
+                args: SaveFileArgs(
+                    path: fileURL.path,
+                    content: "doc2md edit\n",
+                    expectedMtimeMs: expectedMtimeMs,
+                    lineEnding: .lf
+                ),
+                knownURL: fileURL
+            )
+        ) { error in
+            XCTAssertEqual(
+                error as? FileStoreError,
+                .conflict(
+                    path: fileURL.standardizedFileURL.path,
+                    actualMtimeMs: FileStore.mtimeMs(from: externalEditDate)
+                )
+            )
+        }
+        XCTAssertEqual(try Data(contentsOf: fileURL), Data("external edit\n".utf8))
+    }
+
     func testSaveWritesWithAtomicReplaceAndReturnsNewMtime() throws {
         let fileURL = try makeFile(name: "save.md", data: Data("old\n".utf8))
         let store = FileStore()
