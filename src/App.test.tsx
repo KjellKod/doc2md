@@ -102,6 +102,16 @@ describe("App", () => {
     ).toBeDisabled();
   });
 
+  it("does not render desktop persistence settings without a shell", () => {
+    render(<App />);
+
+    expect(
+      screen.queryByRole("button", { name: "Desktop settings" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Persistence")).not.toBeInTheDocument();
+    expect(screen.queryByText("Recent files")).not.toBeInTheDocument();
+  });
+
   it("supports editor-first scratch drafts without uploads", async () => {
     render(<App />);
 

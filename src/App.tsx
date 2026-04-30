@@ -1,5 +1,6 @@
 import type { CSSProperties, KeyboardEvent, MouseEvent, SVGProps } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Settings } from "lucide-react";
 import AboutSection from "./components/AboutSection";
 import DownloadButton from "./components/DownloadButton";
 import DropZone from "./components/DropZone";
@@ -13,12 +14,16 @@ import type { DesktopSaveState } from "./desktop/saveState";
 import { useDesktopSaveState } from "./desktop/useDesktopSaveState";
 import { useNativeMenuEvents } from "./desktop/useNativeMenuEvents";
 import { useFileConversion } from "./hooks/useFileConversion";
+import { useTheme } from "./hooks/useTheme";
 import type { FileEntry } from "./types";
 import type {
+  DesktopPersistenceSettings,
   ShellConflict,
   ShellError,
   ShellLineEnding,
   ShellPermissionNeeded,
+  ShellResult,
+  Theme,
 } from "./types/doc2mdShell";
 import { entryDisplayName } from "./utils/displayName";
 import {
@@ -36,6 +41,13 @@ type PageView = "convert" | "install";
 const DISPLAY_VERSION = __DOC2MD_DISPLAY_VERSION__;
 const CONVERSION_FAILED_SAVE_MESSAGE =
   "Cannot save: conversion failed. Please re-open the file or choose another.";
+const PERSISTENCE_UNAVAILABLE_MESSAGE =
+  "Desktop persistence settings unavailable.";
+const DEFAULT_DESKTOP_PERSISTENCE_SETTINGS: DesktopPersistenceSettings = {
+  ok: true,
+  persistenceEnabled: false,
+  recentFiles: [],
+};
 
 function PanelRightOpenIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -159,6 +171,33 @@ function noticeFromError(result: ShellError): DesktopNotice {
   };
 }
 
+function noticeFromPersistenceIssue(
+  result: ShellResult<DesktopPersistenceSettings>,
+): DesktopNotice {
+  if (result.ok) {
+    return { kind: "none" };
+  }
+
+  if (result.code === "permission-needed") {
+    return noticeFromPermission(result);
+  }
+
+  if (result.code === "error") {
+    return noticeFromError(result);
+  }
+
+  return {
+    kind: "error",
+    message: PERSISTENCE_UNAVAILABLE_MESSAGE,
+  };
+}
+
+function isPersistenceSettings(
+  result: ShellResult<DesktopPersistenceSettings>,
+): result is DesktopPersistenceSettings {
+  return result.ok;
+}
+
 async function readImportFailureMessage(
   importResponse: Response,
 ): Promise<string> {
@@ -221,7 +260,7 @@ function clampPageWidth(width: number) {
   );
 }
 
-export default function App() {
+function AppContent() {
   const [activePage, setActivePage] = useState<PageView>("convert");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isPageResizing, setIsPageResizing] = useState(false);
@@ -246,10 +285,20 @@ export default function App() {
   } = useFileConversion();
   const { isDesktop, shell } = useDesktopCapability();
   const saveState = useDesktopSaveState(isDesktop);
+  const { theme, setTheme } = useTheme();
   const saveInFlightRef = useRef(false);
+  const settingsPopoverRef = useRef<HTMLDivElement>(null);
+  const restoredThemeRef = useRef<Theme | null>(null);
+  const themeBaselineRef = useRef<Theme>(theme);
+  const currentThemeRef = useRef<Theme>(theme);
   const [desktopNotice, setDesktopNotice] = useState<DesktopNotice>({
     kind: "none",
   });
+  const [isDesktopSettingsOpen, setIsDesktopSettingsOpen] = useState(false);
+  const [persistenceSettings, setPersistenceSettings] =
+    useState<DesktopPersistenceSettings>(DEFAULT_DESKTOP_PERSISTENCE_SETTINGS);
+  const [initialPersistenceLoaded, setInitialPersistenceLoaded] =
+    useState(false);
   const [pendingConflict, setPendingConflict] = useState<PendingConflict | null>(
     null,
   );
@@ -352,6 +401,243 @@ export default function App() {
       document.body.classList.remove("is-page-resizing");
     };
   }, [isPageResizing]);
+
+  useEffect(() => {
+    currentThemeRef.current = theme;
+  }, [theme]);
+
+  const showPersistenceUnavailable = useCallback(() => {
+    setDesktopNotice({
+      kind: "error",
+      message: PERSISTENCE_UNAVAILABLE_MESSAGE,
+    });
+  }, []);
+
+  const showPersistenceIssue = useCallback(
+    (result: ShellResult<DesktopPersistenceSettings>) => {
+      setDesktopNotice(noticeFromPersistenceIssue(result));
+    },
+    [],
+  );
+
+  const resetPersistenceLifecycleRefs = useCallback((baselineTheme: Theme) => {
+    restoredThemeRef.current = null;
+    themeBaselineRef.current = baselineTheme;
+  }, []);
+
+  useEffect(() => {
+    if (!isDesktopSettingsOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: globalThis.MouseEvent) => {
+      const target = event.target;
+      if (
+        target instanceof Node &&
+        settingsPopoverRef.current?.contains(target)
+      ) {
+        return;
+      }
+
+      setIsDesktopSettingsOpen(false);
+    };
+
+    window.addEventListener("mousedown", handlePointerDown);
+
+    return () => {
+      window.removeEventListener("mousedown", handlePointerDown);
+    };
+  }, [isDesktopSettingsOpen]);
+
+  useEffect(() => {
+    if (!shell) {
+      setPersistenceSettings(DEFAULT_DESKTOP_PERSISTENCE_SETTINGS);
+      setInitialPersistenceLoaded(false);
+      setIsDesktopSettingsOpen(false);
+      resetPersistenceLifecycleRefs(currentThemeRef.current);
+      return;
+    }
+
+    let cancelled = false;
+    const desktopShell = shell;
+    setInitialPersistenceLoaded(false);
+
+    async function loadPersistenceSettings() {
+      try {
+        const result = await desktopShell.getPersistenceSettings();
+        if (cancelled) {
+          return;
+        }
+
+        if (isPersistenceSettings(result)) {
+          setPersistenceSettings(result);
+          resetPersistenceLifecycleRefs(
+            result.persistenceEnabled && result.theme
+              ? result.theme
+              : currentThemeRef.current,
+          );
+          if (result.persistenceEnabled && result.theme) {
+            restoredThemeRef.current = result.theme;
+            setTheme(result.theme);
+          }
+          return;
+        }
+
+        showPersistenceIssue(result);
+      } catch (error) {
+        if (!cancelled) {
+          showPersistenceUnavailable();
+          console.error("doc2md desktop persistence load failure", error);
+        }
+      } finally {
+        if (!cancelled) {
+          setInitialPersistenceLoaded(true);
+        }
+      }
+    }
+
+    void loadPersistenceSettings();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    resetPersistenceLifecycleRefs,
+    setTheme,
+    shell,
+    showPersistenceIssue,
+    showPersistenceUnavailable,
+  ]);
+
+  const refreshPersistenceSettings = useCallback(async () => {
+    if (!shell) {
+      return;
+    }
+
+    try {
+      const result = await shell.getPersistenceSettings();
+      if (isPersistenceSettings(result)) {
+        setPersistenceSettings(result);
+        return;
+      }
+
+      showPersistenceIssue(result);
+    } catch (error) {
+      showPersistenceUnavailable();
+      console.error("doc2md desktop persistence refresh failure", error);
+    }
+  }, [shell, showPersistenceIssue, showPersistenceUnavailable]);
+
+  useEffect(() => {
+    if (
+      !shell ||
+      !initialPersistenceLoaded ||
+      !persistenceSettings.persistenceEnabled
+    ) {
+      return;
+    }
+
+    if (restoredThemeRef.current === theme) {
+      restoredThemeRef.current = null;
+      themeBaselineRef.current = theme;
+      return;
+    }
+
+    if (themeBaselineRef.current === theme || persistenceSettings.theme === theme) {
+      return;
+    }
+
+    let cancelled = false;
+    const desktopShell = shell;
+
+    async function persistTheme() {
+      try {
+        const result = await desktopShell.setPersistenceTheme({ theme });
+        if (cancelled) {
+          return;
+        }
+
+        if (isPersistenceSettings(result)) {
+          setPersistenceSettings(result);
+          themeBaselineRef.current = theme;
+          return;
+        }
+
+        showPersistenceIssue(result);
+      } catch (error) {
+        if (!cancelled) {
+          showPersistenceUnavailable();
+          console.error("doc2md desktop persistence theme failure", error);
+        }
+      }
+    }
+
+    void persistTheme();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    initialPersistenceLoaded,
+    persistenceSettings.persistenceEnabled,
+    persistenceSettings.theme,
+    shell,
+    showPersistenceIssue,
+    showPersistenceUnavailable,
+    theme,
+  ]);
+
+  const handlePersistenceEnabledChange = useCallback(
+    async (enabled: boolean) => {
+      if (!shell) {
+        return;
+      }
+
+      try {
+        const result = await shell.setPersistenceEnabled({ enabled });
+        if (isPersistenceSettings(result)) {
+          const currentTheme = currentThemeRef.current;
+          setPersistenceSettings(result);
+          resetPersistenceLifecycleRefs(currentTheme);
+          if (enabled && result.persistenceEnabled) {
+            const themeResult = await shell.setPersistenceTheme({
+              theme: currentTheme,
+            });
+            if (isPersistenceSettings(themeResult)) {
+              setPersistenceSettings(themeResult);
+              resetPersistenceLifecycleRefs(themeResult.theme ?? currentTheme);
+              return;
+            }
+
+            showPersistenceIssue(themeResult);
+          }
+          return;
+        }
+
+        showPersistenceIssue(result);
+      } catch (error) {
+        showPersistenceUnavailable();
+        console.error("doc2md desktop persistence toggle failure", error);
+      }
+    },
+    [
+      resetPersistenceLifecycleRefs,
+      shell,
+      showPersistenceIssue,
+      showPersistenceUnavailable,
+    ],
+  );
+
+  const handleDesktopSettingsKeyDown = (
+    event: KeyboardEvent<HTMLDivElement>,
+  ) => {
+    if (event.key !== "Escape") {
+      return;
+    }
+
+    event.preventDefault();
+    setIsDesktopSettingsOpen(false);
+  };
 
   const handlePageResizeStart = (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
@@ -475,8 +761,11 @@ export default function App() {
           addOpenedFileEntry(result);
           saveState.markSaved();
           clearDesktopProblem();
+          void refreshPersistenceSettings();
           return;
         }
+
+        void refreshPersistenceSettings();
 
         if (window.location.protocol !== "doc2md:") {
           setDesktopNotice({
@@ -541,6 +830,7 @@ export default function App() {
     addImportedFileEntry,
     addOpenedFileEntry,
     clearDesktopProblem,
+    refreshPersistenceSettings,
     saveState,
     shell,
   ]);
@@ -583,6 +873,7 @@ export default function App() {
           });
           saveState.markSaved();
           clearDesktopProblem();
+          void refreshPersistenceSettings();
           return;
         }
 
@@ -624,6 +915,7 @@ export default function App() {
     [
       clearDesktopProblem,
       restoreCancelledSaveState,
+      refreshPersistenceSettings,
       saveState,
       shell,
       updateEntryDesktopFile,
@@ -669,6 +961,7 @@ export default function App() {
         });
         saveState.markSaved();
         clearDesktopProblem();
+        void refreshPersistenceSettings();
         return;
       }
 
@@ -708,6 +1001,7 @@ export default function App() {
   }, [
     clearDesktopProblem,
     restoreCancelledSaveState,
+    refreshPersistenceSettings,
     saveState,
     selectedEntry,
     shell,
@@ -850,6 +1144,7 @@ export default function App() {
         replaceEntryWithOpenedFile(entry.id, result);
         saveState.markSaved();
         clearDesktopProblem();
+        void refreshPersistenceSettings();
         return;
       }
 
@@ -880,6 +1175,7 @@ export default function App() {
     entries,
     pendingConflict,
     replaceEntryWithOpenedFile,
+    refreshPersistenceSettings,
     saveState,
     selectEntry,
     shell,
@@ -926,7 +1222,6 @@ export default function App() {
   };
 
   return (
-    <ThemeProvider>
       <div className="app-shell">
         <DesktopMenuBridge
           isDesktop={isDesktop}
@@ -943,7 +1238,89 @@ export default function App() {
             <header className="hero">
               <div className="hero-top">
                 <p className="eyebrow">Private markdown workspace</p>
-                <ThemeToggle />
+                <div className="hero-actions">
+                  <ThemeToggle />
+                  {isDesktop && shell ? (
+                    <div
+                      ref={settingsPopoverRef}
+                      className="desktop-settings"
+                      onKeyDown={handleDesktopSettingsKeyDown}
+                    >
+                      <button
+                        type="button"
+                        className="ghost-button desktop-settings-button"
+                        aria-label="Desktop settings"
+                        aria-expanded={isDesktopSettingsOpen}
+                        aria-controls="desktop-settings-popover"
+                        onClick={() =>
+                          setIsDesktopSettingsOpen((isOpen) => !isOpen)
+                        }
+                        title="Desktop settings"
+                      >
+                        <Settings className="desktop-settings-icon" aria-hidden="true" />
+                      </button>
+                      {isDesktopSettingsOpen ? (
+                        <div
+                          id="desktop-settings-popover"
+                          className="desktop-settings-popover"
+                          role="dialog"
+                          aria-label="Desktop settings"
+                        >
+                          <label className="desktop-persistence-toggle">
+                            <input
+                              type="checkbox"
+                              checked={persistenceSettings.persistenceEnabled}
+                              onChange={(event) =>
+                                void handlePersistenceEnabledChange(
+                                  event.currentTarget.checked,
+                                )
+                              }
+                            />
+                            <span>Persistence</span>
+                          </label>
+
+                          {persistenceSettings.persistenceEnabled ? (
+                            <div className="desktop-recent-files">
+                              <p className="desktop-settings-heading">
+                                Recent files
+                              </p>
+                              {persistenceSettings.recentFiles.length > 0 ? (
+                                <ol className="desktop-recent-list">
+                                  {persistenceSettings.recentFiles.map((file) => (
+                                    <li
+                                      key={file.path}
+                                      className="desktop-recent-item"
+                                    >
+                                      <span className="desktop-recent-name">
+                                        {file.displayName}
+                                      </span>
+                                      <span
+                                        className="desktop-recent-path"
+                                        title={file.path}
+                                      >
+                                        {file.path}
+                                      </span>
+                                      <time
+                                        className="desktop-recent-time"
+                                        dateTime={file.lastOpenedAt}
+                                      >
+                                        {file.lastOpenedAt}
+                                      </time>
+                                    </li>
+                                  ))}
+                                </ol>
+                              ) : (
+                                <p className="desktop-settings-empty">
+                                  No recent files yet.
+                                </p>
+                              )}
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
               </div>
               <h1>Edit or convert to Markdown, without leaving the browser.</h1>
               <p className="hero-copy">
@@ -1198,6 +1575,13 @@ export default function App() {
           </div>
         </main>
       </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
     </ThemeProvider>
   );
 }

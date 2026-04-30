@@ -6,6 +6,7 @@ For the other perspective, see [Dexter's Journal](../dexter-journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 030 | [Celebration: Desktop Persistence Settings](030-celebrate-desktop-persistence-settings.md) | Mac-only Application Support persistence for Day/Night theme and display-only recent files, with hosted web remaining stateless and final dual review clean after one fixer pass |
 | 029 | [Restart New Document](029-restart-new-doc.md) | Solo quest, two plan iterations, zero fix iterations: shared dirty-safe reset path, persistent hosted New button, the lesson that required-change findings belong in plan iteration not builder hints |
 | 028 | [Celebration: Mac PR CI Check](028-celebrate-mac-pr-ci-check.md) | A no-secret macOS PR gate with SHA-pinned actions, desktop bundle and Release helper checks, and zero fix iterations |
 | 027 | [Mac Phase 4: Converted Document Import and Markdown Persistence](027-phase-4-converted-docs-persistent-assets.md) | Two plan iterations, two fix iterations, dual review catches different real things both times; opaque byte handoff via WKURLSchemeHandler and three-layer .md save defense so source files never get overwritten |

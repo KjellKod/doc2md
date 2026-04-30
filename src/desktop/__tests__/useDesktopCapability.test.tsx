@@ -1,8 +1,9 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
+import type { Doc2mdShell } from "../../types/doc2mdShell";
 import { useDesktopCapability } from "../useDesktopCapability";
-import { installMockShell } from "../mockShellBridge";
+import { createMockShell, installMockShell } from "../mockShellBridge";
 
 function CapabilityProbe() {
   const { isDesktop, shell } = useDesktopCapability();
@@ -28,7 +29,7 @@ describe("useDesktopCapability", () => {
     );
   });
 
-  it("reports desktop mode when a version 1 shell is installed", () => {
+  it("reports desktop mode when a version 2 shell is installed", () => {
     const cleanupShell = installMockShell();
 
     render(<CapabilityProbe />);
@@ -41,7 +42,7 @@ describe("useDesktopCapability", () => {
   });
 
   it("version-gates incompatible shells", () => {
-    const cleanupShell = installMockShell({ version: 2 });
+    const cleanupShell = installMockShell({ version: 1 });
 
     render(<CapabilityProbe />);
 
@@ -50,5 +51,18 @@ describe("useDesktopCapability", () => {
     );
 
     cleanupShell();
+  });
+
+  it("reports browser mode for partial version 2 shells", () => {
+    window.doc2mdShell = {
+      ...createMockShell(),
+      getPersistenceSettings: undefined,
+    } as unknown as Doc2mdShell;
+
+    render(<CapabilityProbe />);
+
+    expect(screen.getByTestId("desktop-capability")).toHaveTextContent(
+      "browser",
+    );
   });
 });

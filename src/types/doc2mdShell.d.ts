@@ -1,4 +1,5 @@
 export type ShellLineEnding = "lf" | "crlf";
+export type Theme = "light" | "dark";
 
 export interface ShellOpenMarkdownOk {
   ok: true;
@@ -32,6 +33,19 @@ export interface ShellSaveOk {
 export interface ShellRevealOk {
   ok: true;
   path: string;
+}
+
+export interface DesktopRecentFile {
+  path: string;
+  displayName: string;
+  lastOpenedAt: string;
+}
+
+export interface DesktopPersistenceSettings {
+  ok: true;
+  persistenceEnabled: boolean;
+  theme?: Theme;
+  recentFiles: DesktopRecentFile[];
 }
 
 export interface ShellCancel {
@@ -87,14 +101,29 @@ export interface OpenFileArgs {
   path?: string;
 }
 
+export interface SetPersistenceEnabledArgs {
+  enabled: boolean;
+}
+
+export interface SetPersistenceThemeArgs {
+  theme: Theme;
+}
+
 export interface Doc2mdShell {
-  readonly version: 1;
+  readonly version: 2;
   openFile(args?: OpenFileArgs): Promise<ShellResult<ShellFile>>;
   saveFile(args: SaveFileArgs): Promise<ShellResult<ShellSaveOk>>;
   saveFileAs(args: SaveFileAsArgs): Promise<ShellResult<ShellSaveOk>>;
   revealInFinder(
     args: RevealInFinderArgs,
   ): Promise<ShellResult<ShellRevealOk>>;
+  getPersistenceSettings(): Promise<ShellResult<DesktopPersistenceSettings>>;
+  setPersistenceEnabled(
+    args: SetPersistenceEnabledArgs,
+  ): Promise<ShellResult<DesktopPersistenceSettings>>;
+  setPersistenceTheme(
+    args: SetPersistenceThemeArgs,
+  ): Promise<ShellResult<DesktopPersistenceSettings>>;
 }
 
 declare global {

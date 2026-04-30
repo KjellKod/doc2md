@@ -32,6 +32,24 @@ describe("useTheme", () => {
     expect(document.documentElement.dataset.theme).toBeUndefined();
   });
 
+  it("supports setting the theme directly", () => {
+    const { result } = renderHook(() => useTheme(), { wrapper });
+
+    act(() => {
+      result.current.setTheme("light");
+    });
+
+    expect(result.current.theme).toBe("light");
+    expect(document.documentElement.dataset.theme).toBeUndefined();
+
+    act(() => {
+      result.current.setTheme("dark");
+    });
+
+    expect(result.current.theme).toBe("dark");
+    expect(document.documentElement.dataset.theme).toBe("dark");
+  });
+
   it("returns to dark mode after toggling twice", () => {
     const { result } = renderHook(() => useTheme(), { wrapper });
 

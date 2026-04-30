@@ -41,7 +41,7 @@ describe("Mac native API allowlist", () => {
     );
   });
 
-  it("documents the approved Phase 4 native APIs with named justifications", () => {
+  it("documents approved native APIs with named justifications", () => {
     expect(script).toContain(
       "FileManager :: stat/read/temp-file creation/atomic replacement staging for user-selected Markdown files",
     );
@@ -62,6 +62,9 @@ describe("Mac native API allowlist", () => {
     );
     expect(script).toContain(
       "stopAccessingSecurityScopedResource :: balanced release of scoped file access",
+    );
+    expect(script).toContain(
+      "Application Support settings :: metadata-only settings-file read/write/delete/atomic replacement",
     );
   });
 
