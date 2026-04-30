@@ -918,7 +918,13 @@ function AppContent() {
     "permission-needed": "Permission needed",
   } as const;
   const saveStateLabel = saveStateLabels[activeSaveState];
-  const appReady = isDesktop && Boolean(desktopTitle) && Boolean(saveStateLabel);
+  const showDesktopShellBar =
+    isDesktop && (Boolean(selectedEntry) || desktopNotice.kind !== "none");
+  const appReady =
+    showDesktopShellBar &&
+    Boolean(selectedEntry) &&
+    Boolean(desktopTitle) &&
+    Boolean(saveStateLabel);
 
   const clearDesktopProblem = useCallback(() => {
     setDesktopNotice({ kind: "none" });
@@ -1743,27 +1749,36 @@ function AppContent() {
               aria-labelledby="view-tab-convert"
               hidden={activePage !== "convert"}
             >
-              {isDesktop ? (
+              {showDesktopShellBar ? (
                 <section
                   className={`desktop-shell-bar desktop-shell-bar-${activeSaveState}`}
                   aria-label="Desktop file status"
                   data-app-ready={appReady ? "true" : undefined}
                 >
                   <div className="desktop-shell-main">
-                    <span className="desktop-shell-title" title={desktopTitle}>
-                      {desktopTitle}
-                    </span>
-                    <span className="desktop-save-pill">{saveStateLabel}</span>
-                    <button
-                      type="button"
-                      className="ghost-button desktop-reveal-button"
-                      onClick={() => void handleRevealInFinder()}
-                      disabled={!selectedPath}
-                      aria-label="Reveal in Finder"
-                      title="Reveal in Finder"
+                    <span
+                      className="desktop-shell-title"
+                      title={selectedEntry ? desktopTitle : "doc2md"}
                     >
-                      Reveal
-                    </button>
+                      {selectedEntry ? desktopTitle : "doc2md"}
+                    </span>
+                    {selectedEntry ? (
+                      <>
+                        <span className="desktop-save-pill">
+                          {saveStateLabel}
+                        </span>
+                        <button
+                          type="button"
+                          className="ghost-button desktop-reveal-button"
+                          onClick={() => void handleRevealInFinder()}
+                          disabled={!selectedPath}
+                          aria-label="Reveal in Finder"
+                          title="Reveal in Finder"
+                        >
+                          Reveal
+                        </button>
+                      </>
+                    ) : null}
                   </div>
 
                   <div

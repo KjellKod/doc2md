@@ -485,6 +485,18 @@ describe("App desktop bridge", () => {
     expect(setPersistenceEnabled).not.toHaveBeenCalled();
   });
 
+  it("does not show desktop file status before a file or draft exists", () => {
+    const cleanupShell = installMockShell();
+
+    render(<App />);
+
+    expect(
+      screen.queryByLabelText("Desktop file status"),
+    ).not.toBeInTheDocument();
+
+    cleanupShell();
+  });
+
   it("routes native New through the shared add-draft action", async () => {
     const confirmSpy = vi.spyOn(window, "confirm");
     const cleanupShell = installMockShell();
@@ -516,7 +528,7 @@ describe("App desktop bridge", () => {
     render(<App />);
 
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
-    await screen.findByText("Untitled.md");
+    await screen.findByRole("button", { name: "Open Untitled.md" });
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
 
     expect((await screen.findAllByText("Untitled 2.md")).length).toBeGreaterThan(
@@ -705,17 +717,20 @@ describe("App desktop bridge", () => {
     cleanupShell();
   });
 
-  it("renders the desktop app-ready marker with visible title and save state", () => {
+  it("renders the desktop app-ready marker with visible title and save state", async () => {
     const cleanupShell = installMockShell();
 
     render(<App />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
 
-    expect(screen.getByLabelText("Desktop file status")).toHaveAttribute(
-      "data-app-ready",
-      "true",
+    await waitFor(() =>
+      expect(screen.getByLabelText("Desktop file status")).toHaveAttribute(
+        "data-app-ready",
+        "true",
+      ),
     );
-    expect(screen.getByText("Untitled.md")).toBeInTheDocument();
-    expect(screen.getByText("Saved")).toBeInTheDocument();
+    expect(screen.getAllByText("Untitled.md").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Saved").length).toBeGreaterThan(0);
 
     cleanupShell();
   });
