@@ -1,0 +1,25 @@
+docs/dexter-journal/README.md
+  f66763d65ce3e977 9
+docs/dexter-journal/032-requiem-restart-new-doc.md
+  f66763d65ce3e977 1-184
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "ef729ccc0ddafe2e4c14ede6a53c84316d8ba69c",
+  "prompts": {
+    "f66763d65ce3e977": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b563801b-a193-4bb0-b7e2-55ea3fbcd026",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 225,
+      "total_deletions": 0,
+      "accepted_lines": 225,
+      "overriden_lines": 0
+    }
+  }
+}
