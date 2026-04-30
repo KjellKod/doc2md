@@ -61,7 +61,7 @@ Usage: $SCRIPT_NAME <quest-dir> <target-phase>
 Validates quest state prerequisites before a phase transition.
 
 Arguments:
-  quest-dir     Path to the quest directory (e.g., .quest/feature-x_2026-02-15__1430)
+  quest-dir     Path to the quest directory (e.g., .quest/feature-x_2026-02-15__1430 or .quest/2026-02-15_1430__feature-x)
   target-phase  The phase to transition to
 
 Exit codes:
@@ -294,9 +294,9 @@ validate_review_backlog_schema() {
     return 1
   fi
 
-  local findings_validation_output
-  findings_validation_output=$(python3 "$validator" validate-findings --input "$backlog_file" 2>&1)
-  local findings_rc=$?
+  local backlog_validation_output
+  backlog_validation_output=$(python3 "$validator" validate-backlog --input "$backlog_file" 2>&1)
+  local backlog_rc=$?
 
   local item_errors
   item_errors=$(jq -r '
@@ -346,8 +346,8 @@ validate_review_backlog_schema() {
     ] | .[]' "$backlog_file" 2>/dev/null)
 
   local combined_errors=""
-  if [ "$findings_rc" -ne 0 ]; then
-    combined_errors="$findings_validation_output"
+  if [ "$backlog_rc" -ne 0 ]; then
+    combined_errors="$backlog_validation_output"
   fi
   if [ -n "$item_errors" ]; then
     if [ -n "$combined_errors" ]; then
