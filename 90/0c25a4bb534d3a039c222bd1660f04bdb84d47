@@ -1,0 +1,23 @@
+src/App.tsx
+  764a49a352901058 313,317-319,362-369,440-446,470-474,491-523,830-896,901-903,920,948-1029
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "900c25a4bb534d3a039c222bd1660f04bdb84d47",
+  "prompts": {
+    "764a49a352901058": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ff8c4f7b-a785-4430-b236-dfd0e43baed7",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 12,
+      "total_deletions": 8,
+      "accepted_lines": 12,
+      "overriden_lines": 0
+    }
+  }
+}
