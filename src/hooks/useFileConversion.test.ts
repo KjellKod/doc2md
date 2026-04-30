@@ -233,6 +233,49 @@ describe("useFileConversion", () => {
     );
   });
 
+  it("replaces existing entries with one clean selected scratch entry", async () => {
+    convertFileMock.mockResolvedValue(createSuccessResult("# Converted"));
+
+    const { result } = renderHook(() => useFileConversion());
+
+    act(() => {
+      result.current.addFiles([
+        createFile("existing.txt"),
+        createFile("second.txt"),
+      ]);
+    });
+
+    await waitFor(() => {
+      expect(result.current.entries).toHaveLength(2);
+    });
+
+    act(() => {
+      result.current.updateMarkdown(result.current.entries[0]!.id, "# Edited");
+      result.current.replaceWithScratchEntry();
+    });
+
+    expect(result.current.entries).toHaveLength(1);
+    expect(result.current.entries[0]).toMatchObject({
+      name: "Untitled.md",
+      format: "md",
+      status: "success",
+      markdown: "",
+      editedMarkdown: "",
+      selected: true,
+      isScratch: true,
+    });
+    expect(result.current.entries[0]?.desktopFile).toBeUndefined();
+    expect(result.current.selectedEntry?.id).toBe(
+      result.current.entries[0]?.id,
+    );
+    expect(
+      result.current.entries.some((entry) => entry.name === "existing.txt"),
+    ).toBe(false);
+    expect(
+      result.current.entries.some((entry) => entry.name === "second.txt"),
+    ).toBe(false);
+  });
+
   it("clears all entries and resets the selection", async () => {
     convertFileMock.mockResolvedValue(createSuccessResult("# Converted"));
 

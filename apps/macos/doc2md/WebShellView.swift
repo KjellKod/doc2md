@@ -174,6 +174,35 @@ private struct WebView: NSViewRepresentable {
 
         func webView(
             _ webView: WKWebView,
+            runJavaScriptConfirmPanelWithMessage message: String,
+            initiatedByFrame frame: WKFrameInfo,
+            completionHandler: @escaping (Bool) -> Void
+        ) {
+            let alert = NSAlert()
+            alert.messageText = message
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: "OK")
+            alert.addButton(withTitle: "Cancel")
+            let response = alert.runModal()
+            completionHandler(response == .alertFirstButtonReturn)
+        }
+
+        func webView(
+            _ webView: WKWebView,
+            runJavaScriptAlertPanelWithMessage message: String,
+            initiatedByFrame frame: WKFrameInfo,
+            completionHandler: @escaping () -> Void
+        ) {
+            let alert = NSAlert()
+            alert.messageText = message
+            alert.alertStyle = .informational
+            alert.addButton(withTitle: "OK")
+            _ = alert.runModal()
+            completionHandler()
+        }
+
+        func webView(
+            _ webView: WKWebView,
             didFailProvisionalNavigation navigation: WKNavigation!,
             withError error: Error
         ) {

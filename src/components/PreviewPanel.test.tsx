@@ -155,9 +155,22 @@ describe("PreviewPanel", () => {
 
     render(<PreviewPanel entry={null} onStartWriting={onStartWriting} />);
 
+    expect(
+      screen.queryByRole("button", { name: "New document" }),
+    ).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Start writing" }));
 
     expect(onStartWriting).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders a populated toolbar New button when a handler is provided", () => {
+    const onNewDocument = vi.fn();
+
+    render(<PreviewPanel entry={createEntry()} onNewDocument={onNewDocument} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "New document" }));
+
+    expect(onNewDocument).toHaveBeenCalledTimes(1);
   });
 
   it("does not render toggle when entry is pending", () => {
@@ -560,6 +573,29 @@ describe("PreviewPanel", () => {
       "aria-pressed",
       "true",
     );
+  });
+
+  it("focuses the editor when the editor focus request id increments", async () => {
+    const { rerender } = render(
+      <PreviewPanel
+        entry={createEntry()}
+        editorFocusRequest={{ id: 0, target: "editor" }}
+      />,
+    );
+
+    expect(screen.queryByRole("textbox", { name: "Edit markdown" })).toBeNull();
+
+    rerender(
+      <PreviewPanel
+        entry={createEntry()}
+        editorFocusRequest={{ id: 1, target: "editor" }}
+      />,
+    );
+
+    const editor = await screen.findByRole("textbox", {
+      name: "Edit markdown",
+    });
+    await waitFor(() => expect(document.activeElement).toBe(editor));
   });
 
   it("opens find from the visible control and highlights the active editor match", () => {

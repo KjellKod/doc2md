@@ -78,4 +78,46 @@ describe("App hosted save control", () => {
     fireEvent.click(saveButton);
     expect(createObjectURL).not.toHaveBeenCalled();
   });
+
+  it("cancels hosted New from a dirty scratch without discarding the draft", async () => {
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Start writing" }));
+    fireEvent.change(await screen.findByLabelText("Edit markdown"), {
+      target: { value: "# Keep me" },
+    });
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent("Edited"),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "New document" }));
+
+    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    expect(screen.getByLabelText("Edit markdown")).toHaveValue("# Keep me");
+    expect(screen.getByRole("status")).toHaveTextContent("Edited");
+  });
+
+  it("accepts hosted New from a dirty scratch and focuses a blank saved editor", async () => {
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Start writing" }));
+    fireEvent.change(await screen.findByLabelText("Edit markdown"), {
+      target: { value: "# Discard me" },
+    });
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent("Edited"),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "New document" }));
+
+    const editor = await screen.findByLabelText("Edit markdown");
+    await waitFor(() => expect(document.activeElement).toBe(editor));
+    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    expect(editor).toHaveValue("");
+    expect(screen.getByRole("status")).toHaveTextContent("Saved");
+  });
 });

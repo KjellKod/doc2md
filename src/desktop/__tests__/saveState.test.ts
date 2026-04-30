@@ -47,6 +47,16 @@ describe("saveState", () => {
     expect(result.current.state).toBe("saved");
   });
 
+  it("lets hosted callers reset dirty state to saved", () => {
+    const { result } = renderHook(() => useDesktopSaveState(false));
+
+    act(() => result.current.markEdited());
+    expect(result.current.state).toBe("edited");
+
+    act(() => result.current.reset());
+    expect(result.current.state).toBe("saved");
+  });
+
   it("keeps native-only problem events gated in hosted mode", () => {
     const { result } = renderHook(() => useDesktopSaveState(false));
 
