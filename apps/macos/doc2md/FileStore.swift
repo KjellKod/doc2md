@@ -38,6 +38,12 @@ struct ShellRevealOk: Codable {
     let path: String
 }
 
+struct ShellStatOk: Codable {
+    let ok: Bool
+    let path: String
+    let mtimeMs: Int64
+}
+
 struct SaveFileArgs: Codable {
     let path: String
     let content: String
@@ -132,6 +138,20 @@ final class FileStore {
 
         NSWorkspace.shared.activateFileViewerSelecting([url])
         return ShellRevealOk(ok: true, path: url.standardizedFileURL.path)
+    }
+
+    func stat(url: URL) throws -> ShellStatOk {
+        let standardizedURL = url.standardizedFileURL
+
+        guard fileManager.fileExists(atPath: standardizedURL.path) else {
+            throw FileStoreError.error(message: "The file no longer exists.")
+        }
+
+        return ShellStatOk(
+            ok: true,
+            path: standardizedURL.path,
+            mtimeMs: try modificationTimeMs(for: standardizedURL)
+        )
     }
 
     func modificationTimeMs(for url: URL) throws -> Int64 {

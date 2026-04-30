@@ -1,5 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -37,6 +38,15 @@ function createSuccessResult(markdown: string) {
     warnings: [],
     status: "success" as const,
   };
+}
+
+function createDeferred<T>() {
+  let resolve: (value: T) => void = () => {};
+  const promise = new Promise<T>((resolver) => {
+    resolve = resolver;
+  });
+
+  return { promise, resolve };
 }
 
 function mockDoc2mdProtocol() {
@@ -84,6 +94,363 @@ describe("App desktop bridge", () => {
     expect(screen.getByText("No files or drafts yet.")).toBeInTheDocument();
   });
 
+  it("stats a desktop-backed file on activation and marks only that entry conflicted when mtime changed", async () => {
+    const openFile = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Alpha.md",
+        content: "# Alpha",
+        mtimeMs: 10,
+        lineEnding: "lf" as const,
+      })
+      .mockResolvedValueOnce({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Beta.md",
+        content: "# Beta",
+        mtimeMs: 20,
+        lineEnding: "lf" as const,
+      });
+    const statFile = vi.fn(async ({ path }: { path: string }) => ({
+      ok: true as const,
+      path,
+      mtimeMs: path.endsWith("Alpha.md") ? 11 : 20,
+    }));
+    const cleanupShell = installMockShell({ openFile, statFile });
+
+    render(<App />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await screen.findByRole("button", { name: "Open Alpha.md" });
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await screen.findByRole("button", { name: "Open Beta.md" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Open Alpha.md" }));
+
+    await waitFor(() => {
+      expect(statFile).toHaveBeenCalledWith({ path: "/Users/me/Alpha.md" });
+      expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
+        "Conflict",
+      );
+    });
+    expect(screen.getByRole("button", { name: "Open Alpha.md" })).toHaveTextContent(
+      "Conflict",
+    );
+    expect(screen.getByRole("button", { name: "Open Beta.md" })).toHaveTextContent(
+      "Saved",
+    );
+
+    cleanupShell();
+  });
+
+  it("same-mtime stat activation preserves local edited state and does not reload content", async () => {
+    const openFile = vi.fn(async () => ({
+      ok: true as const,
+      kind: "markdown" as const,
+      path: "/Users/me/Edited.md",
+      content: "# Edited",
+      mtimeMs: 30,
+      lineEnding: "lf" as const,
+    }));
+    const statFile = vi.fn(async () => ({
+      ok: true as const,
+      path: "/Users/me/Edited.md",
+      mtimeMs: 30,
+    }));
+    const cleanupShell = installMockShell({ openFile, statFile });
+
+    render(<App />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await screen.findByRole("button", { name: "Open Edited.md" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Edit markdown" }), {
+      target: { value: "# Locally edited" },
+    });
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
+    await screen.findByRole("button", { name: "Open Untitled.md" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Open Edited.md" }));
+
+    await waitFor(() => expect(statFile).toHaveBeenCalledTimes(1));
+    expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
+      "Edited",
+    );
+    expect(
+      screen.getByRole("heading", { name: "Locally edited" }),
+    ).toBeInTheDocument();
+    expect(openFile).toHaveBeenCalledTimes(1);
+
+    cleanupShell();
+  });
+
+  it.each([
+    {
+      label: "permission-needed",
+      result: {
+        ok: false as const,
+        code: "permission-needed" as const,
+        path: "/Users/me/Alpha.md",
+        message: "Select Alpha again.",
+      },
+      activeStatus: "Permission needed",
+      activeRowStatus: "Permission",
+      notice: "Permission needed: Select Alpha again.",
+    },
+    {
+      label: "error",
+      result: {
+        ok: false as const,
+        code: "error" as const,
+        message: "Alpha stat failed.",
+      },
+      activeStatus: "Error",
+      activeRowStatus: "Error",
+      notice: "Alpha stat failed.",
+    },
+  ])("statFile $label updates only the active entry", async ({ result, activeStatus, activeRowStatus, notice }) => {
+    const openFile = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Alpha.md",
+        content: "# Alpha",
+        mtimeMs: 10,
+        lineEnding: "lf" as const,
+      })
+      .mockResolvedValueOnce({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Beta.md",
+        content: "# Beta",
+        mtimeMs: 20,
+        lineEnding: "lf" as const,
+      });
+    const statFile = vi.fn(async ({ path }: { path: string }) =>
+      path.endsWith("Alpha.md")
+        ? result
+        : { ok: true as const, path, mtimeMs: 20 },
+    );
+    const cleanupShell = installMockShell({ openFile, statFile });
+
+    render(<App />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await screen.findByRole("button", { name: "Open Alpha.md" });
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await screen.findByRole("button", { name: "Open Beta.md" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Open Alpha.md" }));
+
+    expect(await screen.findByText(notice)).toBeInTheDocument();
+    expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
+      activeStatus,
+    );
+    expect(screen.getByRole("button", { name: "Open Alpha.md" })).toHaveTextContent(
+      activeRowStatus,
+    );
+    expect(screen.getByRole("button", { name: "Open Beta.md" })).toHaveTextContent(
+      "Saved",
+    );
+
+    cleanupShell();
+  });
+
+  it("saved draft external mtime change conflicts on the next Save", async () => {
+    const saveFileAs = vi.fn(async () => ({
+      ok: true as const,
+      path: "/Users/me/SavedDraft.md",
+      mtimeMs: 100,
+    }));
+    const saveFile = vi.fn(async () => ({
+      ok: false as const,
+      code: "conflict" as const,
+      path: "/Users/me/SavedDraft.md",
+      actualMtimeMs: 101,
+    }));
+    const cleanupShell = installMockShell({ saveFile, saveFileAs });
+
+    render(<App />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
+    await screen.findByRole("button", { name: /untitled\.md/i });
+    fireEvent.change(screen.getByLabelText("Edit markdown"), {
+      target: { value: "# Saved draft" },
+    });
+
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.save));
+    await waitFor(() => expect(saveFileAs).toHaveBeenCalledTimes(1));
+    await screen.findByRole("button", { name: "Open SavedDraft.md" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    fireEvent.change(screen.getByLabelText("Edit markdown"), {
+      target: { value: "# Saved draft\n\nLocal change" },
+    });
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.save));
+
+    await waitFor(() => expect(saveFile).toHaveBeenCalledTimes(1));
+    expect(saveFile).toHaveBeenCalledWith({
+      path: "/Users/me/SavedDraft.md",
+      content: "# Saved draft\n\nLocal change",
+      expectedMtimeMs: 100,
+      lineEnding: "lf",
+    });
+    expect(saveFileAs).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText("File changed on disk.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Overwrite" })).toBeInTheDocument();
+
+    cleanupShell();
+  });
+
+  it("statFile refresh does not reload file content", async () => {
+    const openFile = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Alpha.md",
+        content: "# Alpha from open",
+        mtimeMs: 10,
+        lineEnding: "lf" as const,
+      })
+      .mockResolvedValueOnce({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Beta.md",
+        content: "# Beta",
+        mtimeMs: 20,
+        lineEnding: "lf" as const,
+      });
+    const statFile = vi.fn(async ({ path }: { path: string }) => ({
+      ok: true as const,
+      path,
+      mtimeMs: 11,
+    }));
+    const cleanupShell = installMockShell({ openFile, statFile });
+
+    render(<App />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await screen.findByRole("button", { name: "Open Alpha.md" });
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await screen.findByRole("button", { name: "Open Beta.md" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Open Alpha.md" }));
+
+    await screen.findByText("File changed on disk.");
+    expect(screen.getByRole("heading", { name: "Alpha from open" })).toBeInTheDocument();
+    expect(openFile).toHaveBeenCalledTimes(2);
+
+    cleanupShell();
+  });
+
+  it("stale stat responses are ignored after the entry is cleared", async () => {
+    const alphaStat = createDeferred<{
+      ok: true;
+      path: string;
+      mtimeMs: number;
+    }>();
+    const openFile = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Alpha.md",
+        content: "# Alpha",
+        mtimeMs: 10,
+        lineEnding: "lf" as const,
+      })
+      .mockResolvedValueOnce({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Beta.md",
+        content: "# Beta",
+        mtimeMs: 20,
+        lineEnding: "lf" as const,
+      });
+    const statFile = vi.fn(({ path }: { path: string }) =>
+      path.endsWith("Alpha.md")
+        ? alphaStat.promise
+        : Promise.resolve({ ok: true as const, path, mtimeMs: 20 }),
+    );
+    const cleanupShell = installMockShell({ openFile, statFile });
+
+    render(<App />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await screen.findByRole("button", { name: "Open Alpha.md" });
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await screen.findByRole("button", { name: "Open Beta.md" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Open Alpha.md" }));
+    await waitFor(() =>
+      expect(statFile).toHaveBeenCalledWith({ path: "/Users/me/Alpha.md" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Clear active file" }));
+    expect(
+      screen.queryByRole("button", { name: "Open Alpha.md" }),
+    ).not.toBeInTheDocument();
+
+    await act(async () => {
+      alphaStat.resolve({
+        ok: true,
+        path: "/Users/me/Alpha.md",
+        mtimeMs: 99,
+      });
+      await alphaStat.promise;
+    });
+
+    expect(screen.queryByText("File changed on disk.")).toBeNull();
+    expect(screen.getByRole("button", { name: "Open Beta.md" })).toHaveTextContent(
+      "Saved",
+    );
+    expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
+      "Beta.md",
+    );
+
+    cleanupShell();
+  });
+
+  it("scratch and import entries do not call statFile on activation", async () => {
+    mockDoc2mdProtocol();
+    convertFileMock.mockResolvedValue(createSuccessResult("# Imported"));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(new Blob(["hello world"], { type: "text/plain" }), {
+          status: 200,
+          headers: { "Content-Type": "text/plain" },
+        }),
+      ),
+    );
+    const statFile = vi.fn(async ({ path }: { path: string }) => ({
+      ok: true as const,
+      path,
+      mtimeMs: 1,
+    }));
+    const cleanupShell = installMockShell({
+      statFile,
+      openFile: vi.fn(async () =>
+        createMockImportShellFile({
+          path: "/Users/me/imported.txt",
+          name: "imported.txt",
+          mtimeMs: 10,
+        }),
+      ),
+    });
+
+    render(<App />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
+    await screen.findByRole("button", { name: /untitled\.md/i });
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await screen.findByRole("button", { name: "Open imported.md" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Open Untitled.md" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open imported.md" }));
+
+    expect(statFile).not.toHaveBeenCalled();
+
+    cleanupShell();
+  });
+
   it("gates desktop-only DOM when the shell version is incompatible", () => {
     const cleanupShell = installMockShell({ version: 1 });
 
@@ -118,6 +485,18 @@ describe("App desktop bridge", () => {
     expect(setPersistenceEnabled).not.toHaveBeenCalled();
   });
 
+  it("does not show desktop file status before a file or draft exists", () => {
+    const cleanupShell = installMockShell();
+
+    render(<App />);
+
+    expect(
+      screen.queryByLabelText("Desktop file status"),
+    ).not.toBeInTheDocument();
+
+    cleanupShell();
+  });
+
   it("routes native New through the shared add-draft action", async () => {
     const confirmSpy = vi.spyOn(window, "confirm");
     const cleanupShell = installMockShell();
@@ -149,7 +528,7 @@ describe("App desktop bridge", () => {
     render(<App />);
 
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
-    await screen.findByText("Untitled.md");
+    await screen.findByRole("button", { name: "Open Untitled.md" });
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
 
     expect((await screen.findAllByText("Untitled 2.md")).length).toBeGreaterThan(
@@ -338,17 +717,20 @@ describe("App desktop bridge", () => {
     cleanupShell();
   });
 
-  it("renders the desktop app-ready marker with visible title and save state", () => {
+  it("renders the desktop app-ready marker with visible title and save state", async () => {
     const cleanupShell = installMockShell();
 
     render(<App />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
 
-    expect(screen.getByLabelText("Desktop file status")).toHaveAttribute(
-      "data-app-ready",
-      "true",
+    await waitFor(() =>
+      expect(screen.getByLabelText("Desktop file status")).toHaveAttribute(
+        "data-app-ready",
+        "true",
+      ),
     );
-    expect(screen.getByText("Untitled.md")).toBeInTheDocument();
-    expect(screen.getByText("Saved")).toBeInTheDocument();
+    expect(screen.getAllByText("Untitled.md").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Saved").length).toBeGreaterThan(0);
 
     cleanupShell();
   });

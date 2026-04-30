@@ -35,6 +35,12 @@ export interface ShellRevealOk {
   path: string;
 }
 
+export interface ShellStatOk {
+  ok: true;
+  path: string;
+  mtimeMs: number;
+}
+
 export interface DesktopRecentFile {
   path: string;
   displayName: string;
@@ -97,6 +103,10 @@ export interface RevealInFinderArgs {
   path: string;
 }
 
+export interface StatFileArgs {
+  path: string;
+}
+
 export interface OpenFileArgs {
   path?: string;
 }
@@ -117,6 +127,7 @@ export interface Doc2mdShell {
   revealInFinder(
     args: RevealInFinderArgs,
   ): Promise<ShellResult<ShellRevealOk>>;
+  statFile(args: StatFileArgs): Promise<ShellResult<ShellStatOk>>;
   getPersistenceSettings(): Promise<ShellResult<DesktopPersistenceSettings>>;
   setPersistenceEnabled(
     args: SetPersistenceEnabledArgs,

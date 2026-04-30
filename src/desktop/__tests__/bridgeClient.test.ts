@@ -41,4 +41,14 @@ describe("bridgeClient", () => {
     expect(hasShell()).toBe(false);
     expect(getShell()).toBeNull();
   });
+
+  it("ignores version 2 shells missing statFile", () => {
+    window.doc2mdShell = {
+      ...createMockShell(),
+      statFile: undefined,
+    } as unknown as Doc2mdShell;
+
+    expect(hasShell()).toBe(false);
+    expect(getShell()).toBeNull();
+  });
 });

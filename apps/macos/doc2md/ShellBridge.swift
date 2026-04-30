@@ -9,6 +9,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
         static let saveFile = "doc2mdSaveFile"
         static let saveFileAs = "doc2mdSaveFileAs"
         static let revealInFinder = "doc2mdRevealInFinder"
+        static let statFile = "doc2mdStatFile"
         static let getPersistenceSettings = "doc2mdGetPersistenceSettings"
         static let setPersistenceEnabled = "doc2mdSetPersistenceEnabled"
         static let setPersistenceTheme = "doc2mdSetPersistenceTheme"
@@ -18,6 +19,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
             saveFile,
             saveFileAs,
             revealInFinder,
+            statFile,
             getPersistenceSettings,
             setPersistenceEnabled,
             setPersistenceTheme
@@ -40,6 +42,10 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
     }
 
     private struct RevealInFinderArgs: Codable {
+        let path: String
+    }
+
+    private struct StatFileArgs: Codable {
         let path: String
     }
 
@@ -97,6 +103,8 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
             handleSaveFileAs(bridgeMessage)
         case HandlerName.revealInFinder:
             handleRevealInFinder(bridgeMessage)
+        case HandlerName.statFile:
+            handleStatFile(bridgeMessage)
         case HandlerName.getPersistenceSettings:
             handleGetPersistenceSettings(bridgeMessage)
         case HandlerName.setPersistenceEnabled:
@@ -249,6 +257,30 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
             }
 
             resolve(id: message.id, result: ShellCallResult.reveal(result))
+        } catch {
+            resolve(id: message.id, result: Self.response(for: error))
+        }
+    }
+
+    private func handleStatFile(_ message: BridgeMessage) {
+        do {
+            let args = try Self.decode(StatFileArgs.self, from: message.args)
+            guard let knownURL = knownURLsByPath[Self.standardPath(args.path)] else {
+                resolve(
+                    id: message.id,
+                    result: ShellCallResult.permissionNeeded(
+                        path: args.path,
+                        message: "Open the file again before checking it."
+                    )
+                )
+                return
+            }
+
+            let result = try withSecurityScope(for: knownURL) {
+                try fileStore.stat(url: knownURL)
+            }
+
+            resolve(id: message.id, result: ShellCallResult.stat(result))
         } catch {
             resolve(id: message.id, result: Self.response(for: error))
         }
@@ -450,6 +482,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
       saveFile: (args) => callShell("doc2mdSaveFile", args),
       saveFileAs: (args) => callShell("doc2mdSaveFileAs", args),
       revealInFinder: (args) => callShell("doc2mdRevealInFinder", args),
+      statFile: (args) => callShell("doc2mdStatFile", args),
       getPersistenceSettings: () => callShell("doc2mdGetPersistenceSettings", null),
       setPersistenceEnabled: (args) => callShell("doc2mdSetPersistenceEnabled", args),
       setPersistenceTheme: (args) => callShell("doc2mdSetPersistenceTheme", args)
@@ -536,6 +569,24 @@ private struct ShellCallResult: Encodable {
             name: nil,
             format: nil,
             mtimeMs: nil,
+            content: nil,
+            lineEnding: nil,
+            importUrl: nil,
+            mimeType: nil,
+            code: nil,
+            actualMtimeMs: nil,
+            message: nil
+        )
+    }
+
+    static func stat(_ result: ShellStatOk) -> ShellCallResult {
+        ShellCallResult(
+            ok: true,
+            kind: nil,
+            path: result.path,
+            name: nil,
+            format: nil,
+            mtimeMs: result.mtimeMs,
             content: nil,
             lineEnding: nil,
             importUrl: nil,
