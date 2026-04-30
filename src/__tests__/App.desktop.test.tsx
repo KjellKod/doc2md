@@ -118,7 +118,7 @@ describe("App desktop bridge", () => {
     expect(setPersistenceEnabled).not.toHaveBeenCalled();
   });
 
-  it("routes native New through the shared clean scratch reset", async () => {
+  it("routes native New through the shared add-draft action", async () => {
     const confirmSpy = vi.spyOn(window, "confirm");
     const cleanupShell = installMockShell();
 
@@ -143,7 +143,27 @@ describe("App desktop bridge", () => {
     cleanupShell();
   });
 
-  it("starts a clean scratch from a saved desktop file without confirming", async () => {
+  it("creates separate uniquely named drafts on repeated native New", async () => {
+    const cleanupShell = installMockShell();
+
+    render(<App />);
+
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
+    await screen.findByText("Untitled.md");
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
+
+    expect((await screen.findAllByText("Untitled 2.md")).length).toBeGreaterThan(
+      0,
+    );
+    expect(screen.getByText("2 drafts")).toBeInTheDocument();
+    expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
+      "Untitled 2.md",
+    );
+
+    cleanupShell();
+  });
+
+  it("adds a clean scratch from a saved desktop file without confirming or removing the file", async () => {
     const confirmSpy = vi.spyOn(window, "confirm");
     const saveFile = vi.fn(async () => ({
       ok: true as const,
@@ -177,7 +197,7 @@ describe("App desktop bridge", () => {
     const editor = await screen.findByLabelText("Edit markdown");
     await waitFor(() => expect(document.activeElement).toBe(editor));
     expect(confirmSpy).not.toHaveBeenCalled();
-    expect(screen.queryByRole("button", { name: /original\.md/i })).toBeNull();
+    expect(screen.getByRole("button", { name: /original\.md/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /untitled\.md/i })).toBeInTheDocument();
     expect(editor).toHaveValue("");
     expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
@@ -194,8 +214,8 @@ describe("App desktop bridge", () => {
     cleanupShell();
   });
 
-  it("cancels desktop New from a dirty file without discarding edits", async () => {
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+  it("adds a scratch from a dirty file without prompting and restores dirty state when reselected", async () => {
+    const confirmSpy = vi.spyOn(window, "confirm");
     const cleanupShell = installMockShell({
       openFile: vi.fn(async () => ({
         ok: true as const,
@@ -222,23 +242,39 @@ describe("App desktop bridge", () => {
 
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
 
-    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    expect(confirmSpy).not.toHaveBeenCalled();
+    const editor = await screen.findByLabelText("Edit markdown");
+    await waitFor(() => expect(document.activeElement).toBe(editor));
+    expect(editor).toHaveValue("");
     expect(screen.getByRole("button", { name: /dirty\.md/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /untitled\.md/i })).toBeInTheDocument();
+    expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
+      "No saved path yet.",
+    );
+    expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
+      "Saved",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /dirty\.md/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     expect(screen.getByLabelText("Edit markdown")).toHaveValue(
       "# Dirty\n\nKeep this",
     );
-    expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
-      "/Users/me/Dirty.md",
+    await waitFor(() =>
+      expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
+        "Edited",
+      ),
     );
     expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
-      "Edited",
+      "/Users/me/Dirty.md",
     );
 
     cleanupShell();
   });
 
-  it("accepts desktop New from a dirty file and clears the saved path", async () => {
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+  it("saves a new draft through Save As without overwriting the previously selected dirty file", async () => {
+    const confirmSpy = vi.spyOn(window, "confirm");
     const saveFile = vi.fn(async () => ({
       ok: true as const,
       path: "/Users/me/Dirty.md",
@@ -279,9 +315,9 @@ describe("App desktop bridge", () => {
 
     const editor = await screen.findByLabelText("Edit markdown");
     await waitFor(() => expect(document.activeElement).toBe(editor));
-    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    expect(confirmSpy).not.toHaveBeenCalled();
     expect(editor).toHaveValue("");
-    expect(screen.queryByRole("button", { name: /dirty\.md/i })).toBeNull();
+    expect(screen.getByRole("button", { name: /dirty\.md/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /untitled\.md/i })).toBeInTheDocument();
     expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
       "Saved",
@@ -292,6 +328,11 @@ describe("App desktop bridge", () => {
 
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.save));
     await waitFor(() => expect(saveFileAs).toHaveBeenCalledTimes(1));
+    expect(saveFileAs).toHaveBeenCalledWith({
+      suggestedName: "Untitled.md",
+      content: "",
+      lineEnding: "lf",
+    });
     expect(saveFile).not.toHaveBeenCalled();
 
     cleanupShell();
@@ -1240,8 +1281,8 @@ describe("App desktop bridge", () => {
     cleanupShell();
   });
 
-  it("cancels desktop New from a conflict without clearing the pending conflict", async () => {
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+  it("hides a previous document conflict after New and restores it when reselected", async () => {
+    const confirmSpy = vi.spyOn(window, "confirm");
     const cleanupShell = installMockShell({
       openFile: vi.fn(async () => ({
         ok: true as const,
@@ -1270,10 +1311,26 @@ describe("App desktop bridge", () => {
 
     expect(await screen.findByText("File changed on disk.")).toBeInTheDocument();
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
+    await screen.findByRole("button", { name: /untitled\.md/i });
 
-    expect(confirmSpy).toHaveBeenCalledTimes(1);
-    expect(screen.getByText("File changed on disk.")).toBeInTheDocument();
+    expect(confirmSpy).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(screen.queryByText("File changed on disk.")).toBeNull(),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: "Overwrite" })).toBeNull(),
+    );
     expect(screen.getByRole("button", { name: /conflict\.md/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /untitled\.md/i })).toBeInTheDocument();
+    expect(screen.getByLabelText("Edit markdown")).toHaveValue("");
+    expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
+      "Saved",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /conflict\.md/i }));
+
+    expect(await screen.findByText("File changed on disk.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     expect(screen.getByLabelText("Edit markdown")).toHaveValue("local edit");
     expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
       "Conflict",
@@ -1282,8 +1339,8 @@ describe("App desktop bridge", () => {
     cleanupShell();
   });
 
-  it("accepts desktop New from a conflict and leaves no orphaned conflict", async () => {
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+  it("keeps a conflicted document in the workspace while saving the new draft through Save As", async () => {
+    const confirmSpy = vi.spyOn(window, "confirm");
     const saveFile = vi.fn(async () => ({
       ok: false as const,
       code: "conflict" as const,
@@ -1322,10 +1379,10 @@ describe("App desktop bridge", () => {
 
     const editor = await screen.findByLabelText("Edit markdown");
     await waitFor(() => expect(document.activeElement).toBe(editor));
-    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    expect(confirmSpy).not.toHaveBeenCalled();
     expect(screen.queryByText("File changed on disk.")).toBeNull();
     expect(screen.queryByRole("button", { name: "Overwrite" })).toBeNull();
-    expect(screen.queryByRole("button", { name: /conflict\.md/i })).toBeNull();
+    expect(screen.getByRole("button", { name: /conflict\.md/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /untitled\.md/i })).toBeInTheDocument();
     expect(editor).toHaveValue("");
     expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
@@ -1338,6 +1395,9 @@ describe("App desktop bridge", () => {
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.save));
     await waitFor(() => expect(saveFileAs).toHaveBeenCalledTimes(1));
     expect(saveFile).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: /conflict\.md/i }));
+    expect(await screen.findByText("File changed on disk.")).toBeInTheDocument();
 
     cleanupShell();
   });
@@ -1431,6 +1491,11 @@ describe("App desktop bridge", () => {
         "Beta.md",
       ),
     );
+    expect(screen.queryByText("File changed on disk.")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Overwrite" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: /alpha\.md/i }));
+    expect(await screen.findByText("File changed on disk.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Overwrite" }));
 
     await waitFor(() => expect(saveFile).toHaveBeenCalledTimes(2));

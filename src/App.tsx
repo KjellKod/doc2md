@@ -152,6 +152,14 @@ type PendingConflict = ShellConflict & {
   lineEnding: ShellLineEnding;
 };
 
+const NO_DESKTOP_NOTICE: DesktopNotice = { kind: "none" };
+
+function omitRecordKey<T>(record: Record<string, T>, key: string) {
+  const next = { ...record };
+  delete next[key];
+  return next;
+}
+
 const IMPORT_HANDOFF_EXPIRED_MESSAGE = "Import handoff expired. Open the file again.";
 const IMPORT_HANDOFF_FAILED_MESSAGE =
   "Import failed before the app received the file bytes.";
@@ -273,10 +281,10 @@ function AppContent() {
     entries,
     addFiles,
     addUrl,
+    addScratchEntry,
     addOpenedFileEntry,
     addImportedFileEntry,
     clearEntries,
-    replaceWithScratchEntry,
     replaceEntryWithOpenedFile,
     selectEntry,
     selectedEntry,
@@ -291,21 +299,30 @@ function AppContent() {
   const restoredThemeRef = useRef<Theme | null>(null);
   const themeBaselineRef = useRef<Theme>(theme);
   const currentThemeRef = useRef<Theme>(theme);
+  const activeEntryIdRef = useRef<string | null>(null);
+  const saveStateRef = useRef<DesktopSaveState>(saveState.state);
   const [desktopNotice, setDesktopNotice] = useState<DesktopNotice>({
     kind: "none",
   });
+  const [documentNotices, setDocumentNotices] = useState<
+    Record<string, DesktopNotice>
+  >({});
+  const [pendingConflicts, setPendingConflicts] = useState<
+    Record<string, PendingConflict>
+  >({});
+  const [entrySaveStates, setEntrySaveStates] = useState<
+    Record<string, DesktopSaveState>
+  >({});
   const [isDesktopSettingsOpen, setIsDesktopSettingsOpen] = useState(false);
   const [persistenceSettings, setPersistenceSettings] =
     useState<DesktopPersistenceSettings>(DEFAULT_DESKTOP_PERSISTENCE_SETTINGS);
   const [initialPersistenceLoaded, setInitialPersistenceLoaded] =
     useState(false);
-  const [pendingConflict, setPendingConflict] = useState<PendingConflict | null>(
-    null,
-  );
   const [editorFocusRequest, setEditorFocusRequest] = useState<{
     id: number;
     target: "editor";
   }>({ id: 0, target: "editor" });
+  const selectedEntryId = selectedEntry?.id ?? null;
   let convertedCount = 0;
   let draftCount = 0;
   let activeCount = 0;
@@ -405,6 +422,48 @@ function AppContent() {
   useEffect(() => {
     currentThemeRef.current = theme;
   }, [theme]);
+
+  useEffect(() => {
+    const liveEntryIds = new Set(entries.map((entry) => entry.id));
+    setEntrySaveStates((current) =>
+      Object.fromEntries(
+        Object.entries(current).filter(([entryId]) => liveEntryIds.has(entryId)),
+      ),
+    );
+    setDocumentNotices((current) =>
+      Object.fromEntries(
+        Object.entries(current).filter(([entryId]) => liveEntryIds.has(entryId)),
+      ),
+    );
+    setPendingConflicts((current) =>
+      Object.fromEntries(
+        Object.entries(current).filter(([entryId]) => liveEntryIds.has(entryId)),
+      ),
+    );
+  }, [entries]);
+
+  useEffect(() => {
+    const previousEntryId = activeEntryIdRef.current;
+    if (previousEntryId === selectedEntryId) {
+      return;
+    }
+
+    if (previousEntryId) {
+      setEntrySaveStates((current) => ({
+        ...current,
+        [previousEntryId]: saveStateRef.current,
+      }));
+    }
+
+    activeEntryIdRef.current = selectedEntryId;
+    saveState.restore(
+      selectedEntryId ? (entrySaveStates[selectedEntryId] ?? "saved") : "saved",
+    );
+  }, [entrySaveStates, saveState, selectedEntryId]);
+
+  useEffect(() => {
+    saveStateRef.current = saveState.state;
+  }, [saveState.state]);
 
   const showPersistenceUnavailable = useCallback(() => {
     setDesktopNotice({
@@ -716,6 +775,14 @@ function AppContent() {
   const desktopTitle = selectedPath
     ? basenameForPath(selectedPath)
     : suggestedNameForEntry(selectedEntry);
+  const activePendingConflict = selectedEntryId
+    ? (pendingConflicts[selectedEntryId] ?? null)
+    : null;
+  const activeDocumentNotice: DesktopNotice = selectedEntryId
+    ? (documentNotices[selectedEntryId] ?? NO_DESKTOP_NOTICE)
+    : NO_DESKTOP_NOTICE;
+  const visibleDesktopNotice: DesktopNotice =
+    desktopNotice.kind === "none" ? activeDocumentNotice : desktopNotice;
   const saveStateLabels = {
     saved: "Saved",
     edited: "Edited",
@@ -728,26 +795,35 @@ function AppContent() {
   const appReady = isDesktop && Boolean(desktopTitle) && Boolean(saveStateLabel);
 
   const clearDesktopProblem = useCallback(() => {
-    setPendingConflict(null);
     setDesktopNotice({ kind: "none" });
   }, []);
 
-  const handleNewDocument = useCallback(() => {
-    if (
-      saveState.state !== "saved" &&
-      !window.confirm(
-        "Discard unsaved changes and start a new blank document?",
-      )
-    ) {
-      return;
-    }
+  const clearDocumentProblem = useCallback((entryId: string) => {
+    setPendingConflicts((current) => omitRecordKey(current, entryId));
+    setDocumentNotices((current) => omitRecordKey(current, entryId));
+  }, []);
 
-    replaceWithScratchEntry();
-    clearDesktopProblem();
-    saveState.reset();
+  const setDocumentNotice = useCallback(
+    (entryId: string, notice: DesktopNotice) => {
+      setDocumentNotices((current) => {
+        if (notice.kind === "none") {
+          return omitRecordKey(current, entryId);
+        }
+
+        return {
+          ...current,
+          [entryId]: notice,
+        };
+      });
+    },
+    [],
+  );
+
+  const handleNewDocument = useCallback(() => {
+    addScratchEntry();
     setActivePage("convert");
     setEditorFocusRequest(({ id }) => ({ id: id + 1, target: "editor" }));
-  }, [clearDesktopProblem, replaceWithScratchEntry, saveState]);
+  }, [addScratchEntry]);
 
   const handleOpenFile = useCallback(async () => {
     if (!shell) {
@@ -758,7 +834,12 @@ function AppContent() {
       const result = await shell.openFile();
       if (result.ok) {
         if (result.kind === "markdown") {
-          addOpenedFileEntry(result);
+          const entryId = addOpenedFileEntry(result);
+          clearDocumentProblem(entryId);
+          setEntrySaveStates((current) => ({
+            ...current,
+            [entryId]: "saved",
+          }));
           saveState.markSaved();
           clearDesktopProblem();
           void refreshPersistenceSettings();
@@ -793,12 +874,16 @@ function AppContent() {
           lastModified: result.mtimeMs,
         });
 
-        addImportedFileEntry({
+        const entryId = addImportedFileEntry({
           file,
           path: result.path,
           mtimeMs: result.mtimeMs,
           sourceFormat: result.format,
         });
+        setEntrySaveStates((current) => ({
+          ...current,
+          [entryId]: "edited",
+        }));
         saveState.markEdited();
         clearDesktopProblem();
         return;
@@ -830,6 +915,7 @@ function AppContent() {
     addImportedFileEntry,
     addOpenedFileEntry,
     clearDesktopProblem,
+    clearDocumentProblem,
     refreshPersistenceSettings,
     saveState,
     shell,
@@ -872,19 +958,22 @@ function AppContent() {
             lineEnding: lineEndingForEntry(entry),
           });
           saveState.markSaved();
-          clearDesktopProblem();
+          clearDocumentProblem(entry.id);
           void refreshPersistenceSettings();
           return;
         }
 
         if (result.code === "conflict") {
-          setPendingConflict({
-            ...result,
-            entryId: entry.id,
-            lineEnding: lineEndingForEntry(entry),
-          });
+          setPendingConflicts((current) => ({
+            ...current,
+            [entry.id]: {
+              ...result,
+              entryId: entry.id,
+              lineEnding: lineEndingForEntry(entry),
+            },
+          }));
           saveState.markConflict();
-          setDesktopNotice({ kind: "none" });
+          setDocumentNotice(entry.id, { kind: "none" });
           return;
         }
 
@@ -895,15 +984,15 @@ function AppContent() {
 
         if (result.code === "permission-needed") {
           saveState.markPermissionNeeded();
-          setDesktopNotice(noticeFromPermission(result));
+          setDocumentNotice(entry.id, noticeFromPermission(result));
           return;
         }
 
         saveState.markError();
-        setDesktopNotice(noticeFromError(result));
+        setDocumentNotice(entry.id, noticeFromError(result));
       } catch (error) {
         saveState.markError();
-        setDesktopNotice({
+        setDocumentNotice(entry.id, {
           kind: "error",
           message: "Save failed before the app received a native result.",
         });
@@ -913,10 +1002,11 @@ function AppContent() {
       }
     },
     [
-      clearDesktopProblem,
+      clearDocumentProblem,
       restoreCancelledSaveState,
       refreshPersistenceSettings,
       saveState,
+      setDocumentNotice,
       shell,
       updateEntryDesktopFile,
     ],
@@ -930,14 +1020,14 @@ function AppContent() {
     const previousState = saveState.state;
     const entry = selectedEntry;
     if (entry.status === "pending" || entry.status === "converting") {
-      setDesktopNotice({
+      setDocumentNotice(entry.id, {
         kind: "info",
         message: "Finishing conversion. Try saving again in a moment.",
       });
       return;
     }
     if (entry.status === "error") {
-      setDesktopNotice({
+      setDocumentNotice(entry.id, {
         kind: "error",
         message: CONVERSION_FAILED_SAVE_MESSAGE,
       });
@@ -954,56 +1044,60 @@ function AppContent() {
       });
 
       if (result.ok) {
-        updateEntryDesktopFile(entry.id, {
-          path: result.path,
-          mtimeMs: result.mtimeMs,
-          lineEnding: lineEndingForEntry(entry),
-        });
-        saveState.markSaved();
-        clearDesktopProblem();
-        void refreshPersistenceSettings();
-        return;
-      }
+          updateEntryDesktopFile(entry.id, {
+            path: result.path,
+            mtimeMs: result.mtimeMs,
+            lineEnding: lineEndingForEntry(entry),
+          });
+          saveState.markSaved();
+          clearDocumentProblem(entry.id);
+          void refreshPersistenceSettings();
+          return;
+        }
 
       if (result.code === "cancelled") {
         restoreCancelledSaveState(previousState);
         return;
       }
 
-      if (result.code === "conflict") {
-        setPendingConflict({
-          ...result,
-          entryId: entry.id,
-          lineEnding: lineEndingForEntry(entry),
+        if (result.code === "conflict") {
+          setPendingConflicts((current) => ({
+            ...current,
+            [entry.id]: {
+              ...result,
+              entryId: entry.id,
+              lineEnding: lineEndingForEntry(entry),
+            },
+          }));
+          saveState.markConflict();
+          return;
+        }
+
+        if (result.code === "permission-needed") {
+          saveState.markPermissionNeeded();
+          setDocumentNotice(entry.id, noticeFromPermission(result));
+          return;
+        }
+
+        saveState.markError();
+        setDocumentNotice(entry.id, noticeFromError(result));
+      } catch (error) {
+        saveState.markError();
+        setDocumentNotice(entry.id, {
+          kind: "error",
+          message: "Save As failed before the app received a native result.",
         });
-        saveState.markConflict();
-        return;
-      }
-
-      if (result.code === "permission-needed") {
-        saveState.markPermissionNeeded();
-        setDesktopNotice(noticeFromPermission(result));
-        return;
-      }
-
-      saveState.markError();
-      setDesktopNotice(noticeFromError(result));
-    } catch (error) {
-      saveState.markError();
-      setDesktopNotice({
-        kind: "error",
-        message: "Save As failed before the app received a native result.",
-      });
       console.error("doc2md desktop saveFileAs transport failure", error);
     } finally {
-      saveInFlightRef.current = false;
+    saveInFlightRef.current = false;
     }
   }, [
-    clearDesktopProblem,
+    clearDocumentProblem,
     restoreCancelledSaveState,
     refreshPersistenceSettings,
     saveState,
     selectedEntry,
+    setDocumentNotice,
     shell,
     updateEntryDesktopFile,
   ]);
@@ -1021,7 +1115,7 @@ function AppContent() {
       selectedEntry.status === "pending" ||
       selectedEntry.status === "converting"
     ) {
-      setDesktopNotice({
+      setDocumentNotice(selectedEntry.id, {
         kind: "info",
         message: "Finishing conversion. Try saving again in a moment.",
       });
@@ -1029,7 +1123,7 @@ function AppContent() {
     }
 
     if (selectedEntry.status === "error") {
-      setDesktopNotice({
+      setDocumentNotice(selectedEntry.id, {
         kind: "error",
         message: CONVERSION_FAILED_SAVE_MESSAGE,
       });
@@ -1047,7 +1141,7 @@ function AppContent() {
     }
 
     void saveEntryFile(selectedEntry);
-  }, [handleSaveAs, saveEntryFile, selectedEntry]);
+  }, [handleSaveAs, saveEntryFile, selectedEntry, setDocumentNotice]);
 
   const hostedHandleSave = useCallback(() => {
     if (!isDownloadableEntry(selectedEntry)) {
@@ -1068,20 +1162,29 @@ function AppContent() {
 
   const handleRevealInFinder = useCallback(async () => {
     if (!shell || !selectedPath) {
-      setDesktopNotice({
-        kind: "info",
-        message: "Save the document before revealing it in Finder.",
-      });
+      if (selectedEntryId) {
+        setDocumentNotice(selectedEntryId, {
+          kind: "info",
+          message: "Save the document before revealing it in Finder.",
+        });
+      } else {
+        setDesktopNotice({
+          kind: "info",
+          message: "Save the document before revealing it in Finder.",
+        });
+      }
       return;
     }
 
     try {
       const result = await shell.revealInFinder({ path: selectedPath });
       if (result.ok) {
-        setDesktopNotice({
-          kind: "info",
-          message: `Revealed ${basenameForPath(result.path)} in Finder.`,
-        });
+        if (selectedEntryId) {
+          setDocumentNotice(selectedEntryId, {
+            kind: "info",
+            message: `Revealed ${basenameForPath(result.path)} in Finder.`,
+          });
+        }
         return;
       }
 
@@ -1089,52 +1192,64 @@ function AppContent() {
         return;
       }
 
+      if (!selectedEntryId) {
+        return;
+      }
+
       if (result.code === "permission-needed") {
         saveState.markPermissionNeeded();
-        setDesktopNotice(noticeFromPermission(result));
+        setDocumentNotice(selectedEntryId, noticeFromPermission(result));
         return;
       }
 
       if (result.code === "error") {
         saveState.markError();
-        setDesktopNotice(noticeFromError(result));
+        setDocumentNotice(selectedEntryId, noticeFromError(result));
       }
     } catch (error) {
       saveState.markError();
-      setDesktopNotice({
-        kind: "error",
-        message: "Reveal failed before the app received a native result.",
-      });
+      if (selectedEntryId) {
+        setDocumentNotice(selectedEntryId, {
+          kind: "error",
+          message: "Reveal failed before the app received a native result.",
+        });
+      }
       console.error("doc2md desktop revealInFinder transport failure", error);
     }
-  }, [saveState, selectedPath, shell]);
+  }, [saveState, selectedEntryId, selectedPath, setDocumentNotice, shell]);
 
   const handleReloadConflict = useCallback(async () => {
-    if (!shell || !pendingConflict) {
+    if (!shell || !activePendingConflict) {
       return;
     }
 
-    const entry = entries.find((candidate) => candidate.id === pendingConflict.entryId);
+    const entry = entries.find(
+      (candidate) => candidate.id === activePendingConflict.entryId,
+    );
     if (!entry) {
       saveState.markError();
       setDesktopNotice({
         kind: "error",
         message: "The conflicted document is no longer available.",
       });
-      setPendingConflict(null);
+      setPendingConflicts((current) => {
+        return omitRecordKey(current, activePendingConflict.entryId);
+      });
       return;
     }
 
     selectEntry(entry.id);
 
     try {
-      const result = await shell.openFile({ path: pendingConflict.path });
+      const result = await shell.openFile({ path: activePendingConflict.path });
       if (result.ok) {
         if (result.kind !== "markdown") {
           console.error("conflict-reload received non-markdown kind");
-          setPendingConflict(null);
+          setPendingConflicts((current) => {
+            return omitRecordKey(current, entry.id);
+          });
           saveState.markError();
-          setDesktopNotice({
+          setDocumentNotice(entry.id, {
             kind: "error",
             message: "Reload failed: file is no longer a Markdown target.",
           });
@@ -1143,7 +1258,7 @@ function AppContent() {
 
         replaceEntryWithOpenedFile(entry.id, result);
         saveState.markSaved();
-        clearDesktopProblem();
+        clearDocumentProblem(entry.id);
         void refreshPersistenceSettings();
         return;
       }
@@ -1154,57 +1269,66 @@ function AppContent() {
 
       if (result.code === "permission-needed") {
         saveState.markPermissionNeeded();
-        setDesktopNotice(noticeFromPermission(result));
+        setDocumentNotice(entry.id, noticeFromPermission(result));
         return;
       }
 
       if (result.code === "error") {
         saveState.markError();
-        setDesktopNotice(noticeFromError(result));
+        setDocumentNotice(entry.id, noticeFromError(result));
       }
     } catch (error) {
       saveState.markError();
-      setDesktopNotice({
+      setDocumentNotice(entry.id, {
         kind: "error",
         message: "Reload failed before the app received a native result.",
       });
       console.error("doc2md desktop reload transport failure", error);
     }
   }, [
-    clearDesktopProblem,
+    activePendingConflict,
+    clearDocumentProblem,
     entries,
-    pendingConflict,
     replaceEntryWithOpenedFile,
     refreshPersistenceSettings,
     saveState,
     selectEntry,
+    setDocumentNotice,
     shell,
   ]);
 
   const handleOverwriteConflict = useCallback(() => {
-    if (!pendingConflict) {
+    if (!activePendingConflict) {
       return;
     }
 
-    const entry = entries.find((candidate) => candidate.id === pendingConflict.entryId);
+    const entry = entries.find(
+      (candidate) => candidate.id === activePendingConflict.entryId,
+    );
     if (!entry) {
       saveState.markError();
       setDesktopNotice({
         kind: "error",
         message: "The conflicted document is no longer available.",
       });
-      setPendingConflict(null);
+      setPendingConflicts((current) => {
+        return omitRecordKey(current, activePendingConflict.entryId);
+      });
       return;
     }
 
     selectEntry(entry.id);
-    void saveEntryFile(entry, pendingConflict.actualMtimeMs);
-  }, [entries, pendingConflict, saveEntryFile, saveState, selectEntry]);
+    void saveEntryFile(entry, activePendingConflict.actualMtimeMs);
+  }, [activePendingConflict, entries, saveEntryFile, saveState, selectEntry]);
 
   const handleCancelConflict = useCallback(() => {
-    setPendingConflict(null);
+    if (selectedEntryId) {
+      setPendingConflicts((current) => {
+        return omitRecordKey(current, selectedEntryId);
+      });
+    }
     saveState.markCancelled();
-  }, [saveState]);
+  }, [saveState, selectedEntryId]);
 
   const nativeMenuHandlers = {
     onNew: handleNewDocument,
@@ -1409,13 +1533,13 @@ function AppContent() {
                     className="desktop-shell-status"
                     role={
                       saveState.state === "conflict" ||
-                      desktopNotice.kind === "permission-needed" ||
-                      desktopNotice.kind === "error"
+                      visibleDesktopNotice.kind === "permission-needed" ||
+                      visibleDesktopNotice.kind === "error"
                         ? "alert"
                         : "status"
                     }
                   >
-                    {pendingConflict ? (
+                    {activePendingConflict ? (
                       <div className="desktop-conflict-bar">
                         <span>File changed on disk.</span>
                         <button type="button" onClick={handleReloadConflict}>
@@ -1428,14 +1552,14 @@ function AppContent() {
                           Cancel
                         </button>
                       </div>
-                    ) : desktopNotice.kind === "permission-needed" ? (
+                    ) : visibleDesktopNotice.kind === "permission-needed" ? (
                       <span>
-                        Permission needed: {desktopNotice.message}
+                        Permission needed: {visibleDesktopNotice.message}
                       </span>
-                    ) : desktopNotice.kind === "error" ? (
-                      <span>{desktopNotice.message}</span>
-                    ) : desktopNotice.kind === "info" ? (
-                      <span>{desktopNotice.message}</span>
+                    ) : visibleDesktopNotice.kind === "error" ? (
+                      <span>{visibleDesktopNotice.message}</span>
+                    ) : visibleDesktopNotice.kind === "info" ? (
+                      <span>{visibleDesktopNotice.message}</span>
                     ) : (
                       <span>{selectedPath ?? "No saved path yet."}</span>
                     )}
@@ -1553,7 +1677,9 @@ function AppContent() {
                       if (selectedEntry) {
                         updateMarkdown(selectedEntry.id, text);
                         saveState.markEdited();
-                        setPendingConflict(null);
+                        setPendingConflicts((current) => {
+                          return omitRecordKey(current, selectedEntry.id);
+                        });
                       }
                     }}
                   />
