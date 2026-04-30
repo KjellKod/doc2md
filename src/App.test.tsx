@@ -32,9 +32,31 @@ function createFile(name: string) {
   return new File(["content"], name, { type: "text/plain" });
 }
 
+async function uploadConvertedFiles(container: HTMLElement, names: string[]) {
+  convertFileMock.mockImplementation((file: File) =>
+    Promise.resolve(createSuccessResult(`# ${file.name.replace(/\.[^.]+$/u, "")}`)),
+  );
+
+  const input = container.querySelector('input[type="file"]');
+  expect(input).not.toBeNull();
+
+  fireEvent.change(input!, {
+    target: {
+      files: names.map(createFile),
+    },
+  });
+
+  for (const name of names) {
+    expect(
+      await screen.findByRole("button", { name: `Open ${name}` }),
+    ).toBeInTheDocument();
+  }
+}
+
 describe("App", () => {
   afterEach(() => {
     vi.clearAllMocks();
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
     window.history.replaceState({}, "", "/");
     cleanup();
@@ -98,8 +120,8 @@ describe("App", () => {
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Download selected" }),
-    ).toBeDisabled();
+      screen.queryByRole("button", { name: "Download active file" }),
+    ).not.toBeInTheDocument();
   });
 
   it("does not render desktop persistence settings without a shell", () => {
@@ -124,7 +146,7 @@ describe("App", () => {
       screen.getByRole("textbox", { name: "Edit markdown" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Download selected" }),
+      screen.getByRole("button", { name: "Download active file" }),
     ).toBeDisabled();
     expect(screen.getByText("1 draft")).toBeInTheDocument();
 
@@ -140,7 +162,7 @@ describe("App", () => {
         screen.getByText("Draft is ready to preview and download."),
       ).toBeInTheDocument();
       expect(
-        screen.getByRole("button", { name: "Download selected" }),
+        screen.getByRole("button", { name: "Download active file" }),
       ).toBeEnabled();
     });
 
@@ -246,7 +268,7 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent("Converting locally.");
     expect(
-      screen.getByRole("button", { name: "Download selected" }),
+      screen.getByRole("button", { name: "Download active file" }),
     ).toBeDisabled();
 
     await act(async () => {
@@ -260,7 +282,7 @@ describe("App", () => {
         screen.getByRole("heading", { name: "Alpha" }),
       ).toBeInTheDocument();
       expect(
-        screen.getByRole("button", { name: "Download selected" }),
+        screen.getByRole("button", { name: "Download active file" }),
       ).toBeEnabled();
     });
 
@@ -269,6 +291,152 @@ describe("App", () => {
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "Beta" })).toBeInTheDocument();
     });
+  });
+
+  it("clears checked files first and leaves row checkbox toggles separate from preview activation", async () => {
+    const { container } = render(<App />);
+    await uploadConvertedFiles(container, ["alpha.txt", "beta.txt", "gamma.txt"]);
+
+    expect(screen.getByRole("heading", { name: "alpha" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select beta.txt" }));
+
+    expect(screen.getByRole("heading", { name: "alpha" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Clear selected files" }),
+    ).toBeEnabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Clear selected files" }));
+
+    expect(
+      screen.queryByRole("button", { name: "Open beta.txt" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open alpha.txt" })).toHaveClass(
+      "is-selected",
+    );
+    expect(
+      screen.getByRole("button", { name: "Clear active file" }),
+    ).toBeEnabled();
+  });
+
+  it("toggles a file checkbox from the keyboard without changing the active preview", async () => {
+    const { container } = render(<App />);
+    await uploadConvertedFiles(container, ["alpha.txt", "beta.txt"]);
+
+    const betaCheckbox = screen.getByRole("checkbox", {
+      name: "Select beta.txt",
+    });
+    betaCheckbox.focus();
+    fireEvent.keyDown(betaCheckbox, { key: " ", code: "Space" });
+    fireEvent.change(betaCheckbox, { target: { checked: true } });
+
+    expect(betaCheckbox).toBeChecked();
+    expect(screen.getByRole("heading", { name: "alpha" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Open alpha.txt" }),
+    ).toHaveClass("is-selected");
+    expect(
+      screen.getByRole("button", { name: "Open beta.txt" }),
+    ).not.toHaveClass("is-selected");
+  });
+
+  it("clears the active file when nothing is checked and selects the next file", async () => {
+    const { container } = render(<App />);
+    await uploadConvertedFiles(container, ["alpha.txt", "beta.txt", "gamma.txt"]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Open beta.txt" }));
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "beta" })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Clear active file" }));
+
+    expect(
+      screen.queryByRole("button", { name: "Open beta.txt" }),
+    ).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "gamma" })).toBeInTheDocument();
+    });
+  });
+
+  it("clears an edited active draft immediately without confirmation", async () => {
+    const confirmSpy = vi.spyOn(window, "confirm");
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Start writing" }));
+    await screen.findByRole("button", { name: /untitled\.md/i });
+    fireEvent.change(screen.getByRole("textbox", { name: "Edit markdown" }), {
+      target: { value: "# Unsaved draft" },
+    });
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: /unsaved draft/i }),
+      ).toBeInTheDocument(),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Clear active file" }));
+
+    expect(confirmSpy).not.toHaveBeenCalled();
+    expect(
+      screen.queryByRole("button", { name: /unsaved draft/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("No files or drafts yet.")).toBeInTheDocument();
+  });
+
+  it("downloads checked files and clears checked state after the action", async () => {
+    const clickedDownloads: string[] = [];
+    const mockLink = {
+      href: "",
+      download: "",
+      click: vi.fn(() => clickedDownloads.push(mockLink.download)),
+      remove: vi.fn(),
+    };
+    const { container } = render(<App />);
+    await uploadConvertedFiles(container, ["alpha.txt", "beta.txt"]);
+
+    globalThis.URL.createObjectURL = vi.fn(() => "blob:mock-url");
+    globalThis.URL.revokeObjectURL = vi.fn();
+    vi.spyOn(document, "createElement").mockReturnValue(
+      mockLink as unknown as HTMLAnchorElement,
+    );
+    vi.spyOn(document.body, "append").mockImplementation(
+      () => mockLink as unknown as HTMLAnchorElement,
+    );
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select beta.txt" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Download selected files" }),
+    );
+
+    expect(clickedDownloads).toEqual(["beta.md"]);
+    expect(screen.getByRole("checkbox", { name: "Select beta.txt" })).not.toBeChecked();
+    expect(
+      screen.getByRole("button", { name: "Download active file" }),
+    ).toBeEnabled();
+  });
+
+  it("select-all reports indeterminate state and toggles all opened files", async () => {
+    const { container } = render(<App />);
+    await uploadConvertedFiles(container, ["alpha.txt", "beta.txt"]);
+
+    const selectAll = screen.getByRole("checkbox", {
+      name: "Select all opened files",
+    }) as HTMLInputElement;
+    const alpha = screen.getByRole("checkbox", { name: "Select alpha.txt" });
+    const beta = screen.getByRole("checkbox", { name: "Select beta.txt" });
+
+    fireEvent.click(alpha);
+    expect(selectAll.indeterminate).toBe(true);
+
+    fireEvent.click(selectAll);
+    expect(alpha).toBeChecked();
+    expect(beta).toBeChecked();
+    expect(selectAll.indeterminate).toBe(false);
+    expect(selectAll).toBeChecked();
+
+    fireEvent.click(selectAll);
+    expect(alpha).not.toBeChecked();
+    expect(beta).not.toBeChecked();
   });
 
   it("imports a remote document URL through the browser path", async () => {

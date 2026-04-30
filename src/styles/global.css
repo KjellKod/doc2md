@@ -937,8 +937,31 @@ body.is-page-resizing * {
 .file-list-toolbar {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   padding: 2px 2px 0;
+}
+
+.file-list-select-all,
+.file-list-checkbox {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.file-list-select-all input,
+.file-list-checkbox input {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--accent);
+}
+
+.file-list-select-all input:focus-visible,
+.file-list-checkbox input:focus-visible {
+  outline: 3px solid rgba(151, 198, 228, 0.48);
+  outline-offset: 3px;
 }
 
 .file-list {
@@ -952,7 +975,16 @@ body.is-page-resizing * {
   overflow: auto;
 }
 
+.file-list-item-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
+}
+
 .file-list-item {
+  flex: 1;
+  min-width: 0;
   width: 100%;
   padding: 16px 18px;
   color: var(--text-primary);
@@ -986,6 +1018,7 @@ body.is-page-resizing * {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
+  min-width: 0;
 }
 
 .file-list-item-name-group {
@@ -1001,6 +1034,37 @@ body.is-page-resizing * {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.file-list-item-statuses {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.file-list-desktop-status {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--success-soft);
+  color: var(--success);
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.file-list-desktop-status--edited,
+.file-list-desktop-status--saving {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.file-list-desktop-status--conflict,
+.file-list-desktop-status--error,
+.file-list-desktop-status--permission-needed {
+  background: var(--error-soft);
+  color: var(--error);
 }
 
 .file-list-item-copy {

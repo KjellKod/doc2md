@@ -15,6 +15,7 @@ function isDoc2mdShell(shell: unknown): shell is Doc2mdShell {
     typeof candidate.saveFile === "function" &&
     typeof candidate.saveFileAs === "function" &&
     typeof candidate.revealInFinder === "function" &&
+    typeof candidate.statFile === "function" &&
     typeof candidate.getPersistenceSettings === "function" &&
     typeof candidate.setPersistenceEnabled === "function" &&
     typeof candidate.setPersistenceTheme === "function"

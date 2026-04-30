@@ -2,7 +2,6 @@ import type { CSSProperties, KeyboardEvent, MouseEvent, SVGProps } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Settings } from "lucide-react";
 import AboutSection from "./components/AboutSection";
-import DownloadButton from "./components/DownloadButton";
 import DropZone from "./components/DropZone";
 import FileList from "./components/FileList";
 import InstallPage from "./components/InstallPage";
@@ -27,7 +26,6 @@ import type {
 } from "./types/doc2mdShell";
 import { entryDisplayName } from "./utils/displayName";
 import {
-  downloadAllEntries,
   downloadEntry,
   isDownloadableEntry,
 } from "./utils/download";
@@ -150,6 +148,7 @@ type DesktopNotice =
 type PendingConflict = ShellConflict & {
   entryId: string;
   lineEnding: ShellLineEnding;
+  source: "save" | "stat";
 };
 
 const NO_DESKTOP_NOTICE: DesktopNotice = { kind: "none" };
@@ -284,7 +283,7 @@ function AppContent() {
     addScratchEntry,
     addOpenedFileEntry,
     addImportedFileEntry,
-    clearEntries,
+    clearEntriesById,
     replaceEntryWithOpenedFile,
     selectEntry,
     selectedEntry,
@@ -300,6 +299,7 @@ function AppContent() {
   const themeBaselineRef = useRef<Theme>(theme);
   const currentThemeRef = useRef<Theme>(theme);
   const activeEntryIdRef = useRef<string | null>(null);
+  const entriesRef = useRef<FileEntry[]>([]);
   const saveStateRef = useRef<DesktopSaveState>(saveState.state);
   const [desktopNotice, setDesktopNotice] = useState<DesktopNotice>({
     kind: "none",
@@ -310,9 +310,13 @@ function AppContent() {
   const [pendingConflicts, setPendingConflicts] = useState<
     Record<string, PendingConflict>
   >({});
+  const pendingConflictsRef = useRef<Record<string, PendingConflict>>({});
   const [entrySaveStates, setEntrySaveStates] = useState<
     Record<string, DesktopSaveState>
   >({});
+  const [checkedEntryIds, setCheckedEntryIds] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [isDesktopSettingsOpen, setIsDesktopSettingsOpen] = useState(false);
   const [persistenceSettings, setPersistenceSettings] =
     useState<DesktopPersistenceSettings>(DEFAULT_DESKTOP_PERSISTENCE_SETTINGS);
@@ -354,6 +358,14 @@ function AppContent() {
     " open",
   );
   const fileSummary = buildSummary("No files or drafts yet.", "");
+
+  useEffect(() => {
+    entriesRef.current = entries;
+  }, [entries]);
+
+  useEffect(() => {
+    pendingConflictsRef.current = pendingConflicts;
+  }, [pendingConflicts]);
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") {
@@ -425,6 +437,13 @@ function AppContent() {
 
   useEffect(() => {
     const liveEntryIds = new Set(entries.map((entry) => entry.id));
+    setCheckedEntryIds((current) => {
+      const next = new Set(
+        [...current].filter((entryId) => liveEntryIds.has(entryId)),
+      );
+
+      return next.size === current.size ? current : next;
+    });
     setEntrySaveStates((current) =>
       Object.fromEntries(
         Object.entries(current).filter(([entryId]) => liveEntryIds.has(entryId)),
@@ -448,7 +467,11 @@ function AppContent() {
       return;
     }
 
-    if (previousEntryId) {
+    const previousEntryStillExists =
+      previousEntryId &&
+      entriesRef.current.some((entry) => entry.id === previousEntryId);
+
+    if (previousEntryStillExists) {
       setEntrySaveStates((current) => ({
         ...current,
         [previousEntryId]: saveStateRef.current,
@@ -464,6 +487,39 @@ function AppContent() {
   useEffect(() => {
     saveStateRef.current = saveState.state;
   }, [saveState.state]);
+
+  const setEntryDesktopSaveState = useCallback(
+    (entryId: string, nextState: DesktopSaveState) => {
+      setEntrySaveStates((current) => ({
+        ...current,
+        [entryId]: nextState,
+      }));
+
+      if (activeEntryIdRef.current === entryId) {
+        saveState.restore(nextState);
+      }
+    },
+    [saveState],
+  );
+
+  const removeEntryScopedDesktopState = useCallback((entryIds: string[]) => {
+    const idsToRemove = new Set(entryIds);
+    setEntrySaveStates((current) =>
+      Object.fromEntries(
+        Object.entries(current).filter(([entryId]) => !idsToRemove.has(entryId)),
+      ),
+    );
+    setDocumentNotices((current) =>
+      Object.fromEntries(
+        Object.entries(current).filter(([entryId]) => !idsToRemove.has(entryId)),
+      ),
+    );
+    setPendingConflicts((current) =>
+      Object.fromEntries(
+        Object.entries(current).filter(([entryId]) => !idsToRemove.has(entryId)),
+      ),
+    );
+  }, []);
 
   const showPersistenceUnavailable = useCallback(() => {
     setDesktopNotice({
@@ -771,10 +827,80 @@ function AppContent() {
     await addUrl(url);
   }
 
+  const toggleCheckedEntry = useCallback((entryId: string, checked: boolean) => {
+    setCheckedEntryIds((current) => {
+      const next = new Set(current);
+      if (checked) {
+        next.add(entryId);
+      } else {
+        next.delete(entryId);
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleAllChecked = useCallback(() => {
+    setCheckedEntryIds((current) => {
+      const allChecked =
+        entries.length > 0 && entries.every((entry) => current.has(entry.id));
+
+      if (allChecked) {
+        return new Set();
+      }
+
+      return new Set(entries.map((entry) => entry.id));
+    });
+  }, [entries]);
+
+  const checkedTargets = entries.filter((entry) => checkedEntryIds.has(entry.id));
+
+  const handleDownload = useCallback(() => {
+    const targets =
+      checkedTargets.length > 0
+        ? checkedTargets
+        : selectedEntry
+          ? [selectedEntry]
+          : [];
+
+    for (const entry of targets) {
+      if (isDownloadableEntry(entry)) {
+        downloadEntry(entry);
+      }
+    }
+
+    setCheckedEntryIds(new Set());
+  }, [checkedTargets, selectedEntry]);
+
+  const handleClear = useCallback(() => {
+    const targets =
+      checkedTargets.length > 0
+        ? checkedTargets
+        : selectedEntry
+          ? [selectedEntry]
+          : [];
+    const targetIds = targets.map((entry) => entry.id);
+
+    if (targetIds.length === 0) {
+      return;
+    }
+
+    clearEntriesById(targetIds);
+    removeEntryScopedDesktopState(targetIds);
+    setCheckedEntryIds(new Set());
+  }, [
+    checkedTargets,
+    clearEntriesById,
+    removeEntryScopedDesktopState,
+    selectedEntry,
+  ]);
+
   const selectedPath = selectedEntry?.desktopFile?.path;
   const desktopTitle = selectedPath
     ? basenameForPath(selectedPath)
     : suggestedNameForEntry(selectedEntry);
+  const activeSaveState: DesktopSaveState = selectedEntryId
+    ? (entrySaveStates[selectedEntryId] ?? saveState.state)
+    : saveState.state;
   const activePendingConflict = selectedEntryId
     ? (pendingConflicts[selectedEntryId] ?? null)
     : null;
@@ -791,7 +917,7 @@ function AppContent() {
     error: "Error",
     "permission-needed": "Permission needed",
   } as const;
-  const saveStateLabel = saveStateLabels[saveState.state];
+  const saveStateLabel = saveStateLabels[activeSaveState];
   const appReady = isDesktop && Boolean(desktopTitle) && Boolean(saveStateLabel);
 
   const clearDesktopProblem = useCallback(() => {
@@ -817,6 +943,102 @@ function AppContent() {
       });
     },
     [],
+  );
+
+  const refreshDesktopMetadataForEntry = useCallback(
+    async (entry: FileEntry) => {
+      if (
+        !shell ||
+        !entry.desktopFile ||
+        entry.status === "pending" ||
+        entry.status === "converting"
+      ) {
+        return;
+      }
+
+      const entryId = entry.id;
+      const path = entry.desktopFile.path;
+      const rememberedMtimeMs = entry.desktopFile.mtimeMs;
+
+      try {
+        const result = await shell.statFile({ path });
+        const currentEntry = entriesRef.current.find(
+          (candidate) => candidate.id === entryId,
+        );
+        const currentDesktopFile = currentEntry?.desktopFile;
+        if (!currentEntry || currentDesktopFile?.path !== path) {
+          return;
+        }
+
+        if (result.ok) {
+          if (result.mtimeMs !== rememberedMtimeMs) {
+            setPendingConflicts((current) => ({
+              ...current,
+              [entryId]: {
+                ok: false,
+                code: "conflict",
+                path: result.path,
+                actualMtimeMs: result.mtimeMs,
+                entryId,
+                lineEnding: currentDesktopFile.lineEnding,
+                source: "stat",
+              },
+            }));
+            setDocumentNotice(entryId, { kind: "none" });
+            setEntryDesktopSaveState(entryId, "conflict");
+            return;
+          }
+
+          if (pendingConflictsRef.current[entryId]?.source === "stat") {
+            setPendingConflicts((current) => omitRecordKey(current, entryId));
+            setEntryDesktopSaveState(entryId, "saved");
+          }
+          return;
+        }
+
+        if (result.code === "cancelled") {
+          return;
+        }
+
+        if (result.code === "permission-needed") {
+          setDocumentNotice(entryId, noticeFromPermission(result));
+          setEntryDesktopSaveState(entryId, "permission-needed");
+          return;
+        }
+
+        if (result.code === "error") {
+          setDocumentNotice(entryId, noticeFromError(result));
+          setEntryDesktopSaveState(entryId, "error");
+        }
+      } catch (error) {
+        const currentEntry = entriesRef.current.find(
+          (candidate) => candidate.id === entryId,
+        );
+        if (!currentEntry || currentEntry.desktopFile?.path !== path) {
+          return;
+        }
+
+        setDocumentNotice(entryId, {
+          kind: "error",
+          message: "Stat failed before the app received a native result.",
+        });
+        setEntryDesktopSaveState(entryId, "error");
+        console.error("doc2md desktop statFile transport failure", error);
+      }
+    },
+    [setDocumentNotice, setEntryDesktopSaveState, shell],
+  );
+
+  const handleSelectEntry = useCallback(
+    (entryId: string) => {
+      const entry = entries.find((candidate) => candidate.id === entryId);
+      selectEntry(entryId);
+
+      if (entry) {
+        void refreshDesktopMetadataForEntry(entry);
+      }
+    },
+    [entries, refreshDesktopMetadataForEntry, selectEntry],
   );
 
   const handleNewDocument = useCallback(() => {
@@ -894,13 +1116,11 @@ function AppContent() {
       }
 
       if (result.code === "permission-needed") {
-        saveState.markPermissionNeeded();
         setDesktopNotice(noticeFromPermission(result));
         return;
       }
 
       if (result.code === "error") {
-        saveState.markError();
         setDesktopNotice(noticeFromError(result));
       }
     } catch (error) {
@@ -922,10 +1142,10 @@ function AppContent() {
   ]);
 
   const restoreCancelledSaveState = useCallback(
-    (previousState: DesktopSaveState) => {
-      saveState.restore(previousState);
+    (entryId: string, previousState: DesktopSaveState) => {
+      setEntryDesktopSaveState(entryId, previousState);
     },
-    [saveState],
+    [setEntryDesktopSaveState],
   );
 
   const saveEntryFile = useCallback(
@@ -939,9 +1159,9 @@ function AppContent() {
         return;
       }
 
-      const previousState = saveState.state;
+      const previousState = entrySaveStates[entry.id] ?? saveState.state;
       saveInFlightRef.current = true;
-      saveState.markSaving();
+      setEntryDesktopSaveState(entry.id, "saving");
 
       try {
         const result = await shell.saveFile({
@@ -957,7 +1177,7 @@ function AppContent() {
             mtimeMs: result.mtimeMs,
             lineEnding: lineEndingForEntry(entry),
           });
-          saveState.markSaved();
+          setEntryDesktopSaveState(entry.id, "saved");
           clearDocumentProblem(entry.id);
           void refreshPersistenceSettings();
           return;
@@ -970,28 +1190,29 @@ function AppContent() {
               ...result,
               entryId: entry.id,
               lineEnding: lineEndingForEntry(entry),
+              source: "save",
             },
           }));
-          saveState.markConflict();
+          setEntryDesktopSaveState(entry.id, "conflict");
           setDocumentNotice(entry.id, { kind: "none" });
           return;
         }
 
         if (result.code === "cancelled") {
-          restoreCancelledSaveState(previousState);
+          restoreCancelledSaveState(entry.id, previousState);
           return;
         }
 
         if (result.code === "permission-needed") {
-          saveState.markPermissionNeeded();
+          setEntryDesktopSaveState(entry.id, "permission-needed");
           setDocumentNotice(entry.id, noticeFromPermission(result));
           return;
         }
 
-        saveState.markError();
+        setEntryDesktopSaveState(entry.id, "error");
         setDocumentNotice(entry.id, noticeFromError(result));
       } catch (error) {
-        saveState.markError();
+        setEntryDesktopSaveState(entry.id, "error");
         setDocumentNotice(entry.id, {
           kind: "error",
           message: "Save failed before the app received a native result.",
@@ -1003,9 +1224,11 @@ function AppContent() {
     },
     [
       clearDocumentProblem,
+      entrySaveStates,
       restoreCancelledSaveState,
       refreshPersistenceSettings,
       saveState,
+      setEntryDesktopSaveState,
       setDocumentNotice,
       shell,
       updateEntryDesktopFile,
@@ -1017,8 +1240,8 @@ function AppContent() {
       return;
     }
 
-    const previousState = saveState.state;
     const entry = selectedEntry;
+    const previousState = entrySaveStates[entry.id] ?? saveState.state;
     if (entry.status === "pending" || entry.status === "converting") {
       setDocumentNotice(entry.id, {
         kind: "info",
@@ -1034,7 +1257,7 @@ function AppContent() {
       return;
     }
     saveInFlightRef.current = true;
-    saveState.markSaving();
+    setEntryDesktopSaveState(entry.id, "saving");
 
     try {
       const result = await shell.saveFileAs({
@@ -1049,14 +1272,14 @@ function AppContent() {
             mtimeMs: result.mtimeMs,
             lineEnding: lineEndingForEntry(entry),
           });
-          saveState.markSaved();
+          setEntryDesktopSaveState(entry.id, "saved");
           clearDocumentProblem(entry.id);
           void refreshPersistenceSettings();
           return;
         }
 
       if (result.code === "cancelled") {
-        restoreCancelledSaveState(previousState);
+        restoreCancelledSaveState(entry.id, previousState);
         return;
       }
 
@@ -1067,22 +1290,23 @@ function AppContent() {
               ...result,
               entryId: entry.id,
               lineEnding: lineEndingForEntry(entry),
+              source: "save",
             },
           }));
-          saveState.markConflict();
+          setEntryDesktopSaveState(entry.id, "conflict");
           return;
         }
 
         if (result.code === "permission-needed") {
-          saveState.markPermissionNeeded();
+          setEntryDesktopSaveState(entry.id, "permission-needed");
           setDocumentNotice(entry.id, noticeFromPermission(result));
           return;
         }
 
-        saveState.markError();
+        setEntryDesktopSaveState(entry.id, "error");
         setDocumentNotice(entry.id, noticeFromError(result));
       } catch (error) {
-        saveState.markError();
+        setEntryDesktopSaveState(entry.id, "error");
         setDocumentNotice(entry.id, {
           kind: "error",
           message: "Save As failed before the app received a native result.",
@@ -1093,10 +1317,12 @@ function AppContent() {
     }
   }, [
     clearDocumentProblem,
+    entrySaveStates,
     restoreCancelledSaveState,
     refreshPersistenceSettings,
     saveState,
     selectedEntry,
+    setEntryDesktopSaveState,
     setDocumentNotice,
     shell,
     updateEntryDesktopFile,
@@ -1157,7 +1383,7 @@ function AppContent() {
   const canSaveSelectedEntry = isDesktop
     ? selectedEntry?.status === "success" || selectedEntry?.status === "warning"
     : isDownloadableEntry(selectedEntry);
-  const saveButtonBusy = saveState.state === "saving";
+  const saveButtonBusy = activeSaveState === "saving";
   const saveButtonDisabled = !canSaveSelectedEntry || saveButtonBusy;
 
   const handleRevealInFinder = useCallback(async () => {
@@ -1197,18 +1423,18 @@ function AppContent() {
       }
 
       if (result.code === "permission-needed") {
-        saveState.markPermissionNeeded();
+        setEntryDesktopSaveState(selectedEntryId, "permission-needed");
         setDocumentNotice(selectedEntryId, noticeFromPermission(result));
         return;
       }
 
       if (result.code === "error") {
-        saveState.markError();
+        setEntryDesktopSaveState(selectedEntryId, "error");
         setDocumentNotice(selectedEntryId, noticeFromError(result));
       }
     } catch (error) {
-      saveState.markError();
       if (selectedEntryId) {
+        setEntryDesktopSaveState(selectedEntryId, "error");
         setDocumentNotice(selectedEntryId, {
           kind: "error",
           message: "Reveal failed before the app received a native result.",
@@ -1216,7 +1442,13 @@ function AppContent() {
       }
       console.error("doc2md desktop revealInFinder transport failure", error);
     }
-  }, [saveState, selectedEntryId, selectedPath, setDocumentNotice, shell]);
+  }, [
+    selectedEntryId,
+    selectedPath,
+    setDocumentNotice,
+    setEntryDesktopSaveState,
+    shell,
+  ]);
 
   const handleReloadConflict = useCallback(async () => {
     if (!shell || !activePendingConflict) {
@@ -1227,7 +1459,6 @@ function AppContent() {
       (candidate) => candidate.id === activePendingConflict.entryId,
     );
     if (!entry) {
-      saveState.markError();
       setDesktopNotice({
         kind: "error",
         message: "The conflicted document is no longer available.",
@@ -1248,7 +1479,7 @@ function AppContent() {
           setPendingConflicts((current) => {
             return omitRecordKey(current, entry.id);
           });
-          saveState.markError();
+          setEntryDesktopSaveState(entry.id, "error");
           setDocumentNotice(entry.id, {
             kind: "error",
             message: "Reload failed: file is no longer a Markdown target.",
@@ -1257,7 +1488,7 @@ function AppContent() {
         }
 
         replaceEntryWithOpenedFile(entry.id, result);
-        saveState.markSaved();
+        setEntryDesktopSaveState(entry.id, "saved");
         clearDocumentProblem(entry.id);
         void refreshPersistenceSettings();
         return;
@@ -1268,17 +1499,17 @@ function AppContent() {
       }
 
       if (result.code === "permission-needed") {
-        saveState.markPermissionNeeded();
+        setEntryDesktopSaveState(entry.id, "permission-needed");
         setDocumentNotice(entry.id, noticeFromPermission(result));
         return;
       }
 
       if (result.code === "error") {
-        saveState.markError();
+        setEntryDesktopSaveState(entry.id, "error");
         setDocumentNotice(entry.id, noticeFromError(result));
       }
     } catch (error) {
-      saveState.markError();
+      setEntryDesktopSaveState(entry.id, "error");
       setDocumentNotice(entry.id, {
         kind: "error",
         message: "Reload failed before the app received a native result.",
@@ -1291,9 +1522,9 @@ function AppContent() {
     entries,
     replaceEntryWithOpenedFile,
     refreshPersistenceSettings,
-    saveState,
     selectEntry,
     setDocumentNotice,
+    setEntryDesktopSaveState,
     shell,
   ]);
 
@@ -1306,7 +1537,6 @@ function AppContent() {
       (candidate) => candidate.id === activePendingConflict.entryId,
     );
     if (!entry) {
-      saveState.markError();
       setDesktopNotice({
         kind: "error",
         message: "The conflicted document is no longer available.",
@@ -1319,16 +1549,16 @@ function AppContent() {
 
     selectEntry(entry.id);
     void saveEntryFile(entry, activePendingConflict.actualMtimeMs);
-  }, [activePendingConflict, entries, saveEntryFile, saveState, selectEntry]);
+  }, [activePendingConflict, entries, saveEntryFile, selectEntry]);
 
   const handleCancelConflict = useCallback(() => {
     if (selectedEntryId) {
       setPendingConflicts((current) => {
         return omitRecordKey(current, selectedEntryId);
       });
+      setEntryDesktopSaveState(selectedEntryId, "edited");
     }
-    saveState.markCancelled();
-  }, [saveState, selectedEntryId]);
+  }, [selectedEntryId, setEntryDesktopSaveState]);
 
   const nativeMenuHandlers = {
     onNew: handleNewDocument,
@@ -1342,7 +1572,14 @@ function AppContent() {
     onRevealInFinder: () => {
       void handleRevealInFinder();
     },
-    onCloseWindow: saveState.reset,
+    onCloseWindow: () => {
+      if (selectedEntryId) {
+        setEntryDesktopSaveState(selectedEntryId, "saved");
+        clearDocumentProblem(selectedEntryId);
+      } else {
+        saveState.reset();
+      }
+    },
   };
 
   return (
@@ -1508,7 +1745,7 @@ function AppContent() {
             >
               {isDesktop ? (
                 <section
-                  className={`desktop-shell-bar desktop-shell-bar-${saveState.state}`}
+                  className={`desktop-shell-bar desktop-shell-bar-${activeSaveState}`}
                   aria-label="Desktop file status"
                   data-app-ready={appReady ? "true" : undefined}
                 >
@@ -1532,7 +1769,7 @@ function AppContent() {
                   <div
                     className="desktop-shell-status"
                     role={
-                      saveState.state === "conflict" ||
+                      activeSaveState === "conflict" ||
                       visibleDesktopNotice.kind === "permission-needed" ||
                       visibleDesktopNotice.kind === "error"
                         ? "alert"
@@ -1624,14 +1861,17 @@ function AppContent() {
                         <h2>Files</h2>
                         <p className="panel-copy">{fileSummary}</p>
                       </div>
-                      <DownloadButton entry={selectedEntry} />
                     </div>
 
                     <FileList
                       entries={entries}
-                      onClearAll={clearEntries}
-                      onDownloadAll={() => downloadAllEntries(entries)}
-                      onSelect={selectEntry}
+                      checkedIds={checkedEntryIds}
+                      desktopStatuses={entrySaveStates}
+                      onCheckedChange={toggleCheckedEntry}
+                      onClear={handleClear}
+                      onDownload={handleDownload}
+                      onSelect={handleSelectEntry}
+                      onToggleAllChecked={toggleAllChecked}
                     />
                   </section>
                 )}
@@ -1672,11 +1912,11 @@ function AppContent() {
                     saveBusy={saveButtonBusy}
                     saveDisabled={saveButtonDisabled}
                     saveKeyShortcuts={isDesktop ? "Meta+S" : undefined}
-                    saveState={saveState.state}
+                    saveState={activeSaveState}
                     onMarkdownChange={(text) => {
                       if (selectedEntry) {
                         updateMarkdown(selectedEntry.id, text);
-                        saveState.markEdited();
+                        setEntryDesktopSaveState(selectedEntry.id, "edited");
                         setPendingConflicts((current) => {
                           return omitRecordKey(current, selectedEntry.id);
                         });

@@ -25,6 +25,30 @@ final class FileStoreTests: XCTestCase {
         XCTAssertGreaterThan(opened.mtimeMs, 0)
     }
 
+    func testStatReturnsPathAndMtimeWithoutReadingContent() throws {
+        let fileURL = try makeFile(name: "binary.md", data: Data([0xff, 0xfe, 0x00]))
+        let store = FileStore()
+
+        let stat = try store.stat(url: fileURL)
+
+        XCTAssertEqual(stat.ok, true)
+        XCTAssertEqual(stat.path, fileURL.standardizedFileURL.path)
+        XCTAssertGreaterThan(stat.mtimeMs, 0)
+    }
+
+    func testStatMissingFileMapsToError() throws {
+        let directory = try makeDirectory()
+        let missingURL = directory.appendingPathComponent("missing.md")
+        let store = FileStore()
+
+        XCTAssertThrowsError(try store.stat(url: missingURL)) { error in
+            XCTAssertEqual(
+                error as? FileStoreError,
+                .error(message: "The file no longer exists.")
+            )
+        }
+    }
+
     func testSaveRejectsMtimeConflict() throws {
         let fileURL = try makeFile(name: "conflict.md", data: Data("old\n".utf8))
         let store = FileStore()

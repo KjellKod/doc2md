@@ -333,6 +333,63 @@ describe("useFileConversion", () => {
     expect(result.current.selectedEntry).toBeNull();
   });
 
+  it("clears entries by id and selects the next remaining entry", async () => {
+    convertFileMock.mockImplementation((file: File) =>
+      Promise.resolve(createSuccessResult(`# ${file.name}`)),
+    );
+
+    const { result } = renderHook(() => useFileConversion());
+
+    act(() => {
+      result.current.addFiles([
+        createFile("alpha.txt"),
+        createFile("beta.txt"),
+        createFile("gamma.txt"),
+      ]);
+    });
+
+    await waitFor(() => {
+      expect(result.current.entries).toHaveLength(3);
+    });
+
+    const [alpha, beta, gamma] = result.current.entries;
+
+    act(() => {
+      result.current.clearEntriesById([alpha!.id, gamma!.id]);
+    });
+
+    expect(result.current.entries.map((entry) => entry.id)).toEqual([beta!.id]);
+    expect(result.current.selectedEntry?.id).toBe(beta!.id);
+  });
+
+  it("clears active last entry by id and selects the previous remaining entry", async () => {
+    convertFileMock.mockImplementation((file: File) =>
+      Promise.resolve(createSuccessResult(`# ${file.name}`)),
+    );
+
+    const { result } = renderHook(() => useFileConversion());
+
+    act(() => {
+      result.current.addFiles([createFile("alpha.txt"), createFile("beta.txt")]);
+    });
+
+    await waitFor(() => {
+      expect(result.current.entries).toHaveLength(2);
+    });
+
+    const [alpha, beta] = result.current.entries;
+
+    act(() => {
+      result.current.selectEntry(beta!.id);
+    });
+    act(() => {
+      result.current.clearEntriesById([beta!.id]);
+    });
+
+    expect(result.current.entries.map((entry) => entry.id)).toEqual([alpha!.id]);
+    expect(result.current.selectedEntry?.id).toBe(alpha!.id);
+  });
+
   it("adds imported files through the shared conversion pipeline and keeps source metadata", async () => {
     convertFileMock.mockResolvedValue(createSuccessResult("# Imported"));
 

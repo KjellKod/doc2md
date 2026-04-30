@@ -240,6 +240,42 @@ export function useFileConversion() {
     setEntries([]);
   }
 
+  function clearEntriesById(ids: string[]) {
+    const idsToClear = new Set(ids);
+    if (idsToClear.size === 0) {
+      return;
+    }
+
+    setEntries((currentEntries) => {
+      const activeIndex = currentEntries.findIndex((entry) => entry.selected);
+      const survivingEntries = currentEntries.filter(
+        (entry) => !idsToClear.has(entry.id),
+      );
+
+      if (
+        survivingEntries.length === 0 ||
+        activeIndex < 0 ||
+        !idsToClear.has(currentEntries[activeIndex]!.id)
+      ) {
+        return survivingEntries;
+      }
+
+      const nextEntry = currentEntries
+        .slice(activeIndex + 1)
+        .find((entry) => !idsToClear.has(entry.id));
+      const previousEntry = [...currentEntries]
+        .slice(0, activeIndex)
+        .reverse()
+        .find((entry) => !idsToClear.has(entry.id));
+      const fallbackId = nextEntry?.id ?? previousEntry?.id;
+
+      return survivingEntries.map((entry) => ({
+        ...entry,
+        selected: entry.id === fallbackId,
+      }));
+    });
+  }
+
   function updateMarkdown(id: string, markdown: string) {
     updateEntry(id, (entry) => ({ ...entry, editedMarkdown: markdown }));
   }
@@ -254,6 +290,7 @@ export function useFileConversion() {
     addOpenedFileEntry,
     addImportedFileEntry,
     clearEntries,
+    clearEntriesById,
     replaceEntryWithOpenedFile,
     selectEntry,
     selectedEntry,
