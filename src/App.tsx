@@ -1382,8 +1382,9 @@ function AppContent() {
 
     saveState.markSaving();
     downloadEntry(selectedEntry);
+    setEntryDesktopSaveState(selectedEntry.id, "saved");
     saveState.markSaved();
-  }, [saveState, selectedEntry]);
+  }, [saveState, selectedEntry, setEntryDesktopSaveState]);
 
   const effectiveSave = isDesktop ? handleSave : hostedHandleSave;
   const canSaveSelectedEntry = isDesktop
