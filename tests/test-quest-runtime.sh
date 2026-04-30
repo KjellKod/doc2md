@@ -1021,6 +1021,31 @@ EOF
   return $rc
 }
 
+test_manifest_validator_ignores_local_claude_project_memory() {
+  local tmpdir
+  tmpdir=$(mktemp -d)
+  (
+    cd "$tmpdir" || exit 1
+    mkdir -p scripts .claude/projects/-Users-local-repo/memory
+    cp "$REPO_ROOT/scripts/quest_validate-manifest.sh" scripts/quest_validate-manifest.sh
+    cat > .quest-manifest <<'EOF'
+[copy-as-is]
+scripts/quest_validate-manifest.sh
+
+[directories]
+.quest
+EOF
+    printf '# host-local memory\n' > .claude/projects/-Users-local-repo/memory/MEMORY.md
+
+    QUEST_MANIFEST_STRICT=1 bash scripts/quest_validate-manifest.sh > output.txt 2>&1 &&
+      grep -q 'All Quest files are listed' output.txt &&
+      ! grep -q '.claude/projects' output.txt
+  )
+  local rc=$?
+  rm -rf "$tmpdir"
+  return $rc
+}
+
 test_manifest_validator_rejects_unknown_option() {
   local tmpdir
   tmpdir=$(mktemp -d)
@@ -1646,6 +1671,7 @@ run_test test_manifest_lists_installed_quest_smoke_tests
 run_test test_manifest_excludes_source_only_unit_tests
 run_test test_manifest_validator_allows_custom_skills_in_installed_mode
 run_test test_manifest_validator_strict_mode_catches_unmanifested_skills
+run_test test_manifest_validator_ignores_local_claude_project_memory
 run_test test_manifest_validator_rejects_unknown_option
 run_test test_validation_hook_script_accepts_legacy_symlink_target
 run_test test_quest_claude_runner_polls_handoff_and_logs_runtime

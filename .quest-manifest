@@ -26,9 +26,6 @@
 .claude/agents/planner.md
 .claude/hooks/enforce-allowlist.sh
 .claude/hooks/session-start.sh
-.claude/projects/-Users-kjell-ws-extra-doc2md/memory/MEMORY.md
-.claude/projects/-Users-kjell-ws-extra-doc2md/memory/feedback_always_pr.md
-.claude/projects/-Users-kjell-ws-extra-doc2md/memory/feedback_no_pre_tags.md
 .claude/skills/celebrate/SKILL.md
 .claude/skills/git-commit-assistant/SKILL.md
 .claude/skills/gpt/SKILL.md
