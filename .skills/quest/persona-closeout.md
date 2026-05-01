@@ -51,6 +51,12 @@ The active orchestrator writes its own memoir entry before PR ready/merge:
 If a cross-agent conversation happened during the quest, the other agent may
 also write a memoir entry in its own directory. That second entry is optional:
 write it only when the quest or conversation produced something worth keeping.
+If the other agent does not write the entry directly, the active orchestrator
+may write it from that agent's conversation response, preserving the agent's
+perspective and voice instead of flattening it into the orchestrator's summary.
+
+Memoir content is the agent's own perspective on the quest and any conversations
+that occurred. In solo mode, the active agent writes a solo reflection entry.
 
 Numbering uses the next sequential number after the highest existing entry in
 the matching journal directory.
@@ -75,6 +81,7 @@ The diary is operational, not literary. Include:
 - Decisions made
 - Cross-agent conversation summary, if any, referencing
   `.quest/<id>/logs/conversation.log`
+- Conversation attempt and outcome, including skipped or failed invocations
 - Open questions for the next session
 
 ## Bookkeeping Gate
