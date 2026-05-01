@@ -1,0 +1,23 @@
+.skills/quest/persona-closeout.md
+  067262d3215bdf96 54-59,84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "58b4dbf52d378d1e7ef0746e3c27a4539826806e",
+  "prompts": {
+    "067262d3215bdf96": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019de0ea-1d9c-7bd1-bc8a-f275a2036526",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 7,
+      "total_deletions": 0,
+      "accepted_lines": 8,
+      "overriden_lines": 0
+    }
+  }
+}
