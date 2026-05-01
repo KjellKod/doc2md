@@ -25,6 +25,30 @@ final class FileStoreTests: XCTestCase {
         XCTAssertGreaterThan(opened.mtimeMs, 0)
     }
 
+    func testStatReturnsPathAndMtimeWithoutReadingContent() throws {
+        let fileURL = try makeFile(name: "binary.md", data: Data([0xff, 0xfe, 0x00]))
+        let store = FileStore()
+
+        let stat = try store.stat(url: fileURL)
+
+        XCTAssertEqual(stat.ok, true)
+        XCTAssertEqual(stat.path, fileURL.standardizedFileURL.path)
+        XCTAssertGreaterThan(stat.mtimeMs, 0)
+    }
+
+    func testStatMissingFileMapsToError() throws {
+        let directory = try makeDirectory()
+        let missingURL = directory.appendingPathComponent("missing.md")
+        let store = FileStore()
+
+        XCTAssertThrowsError(try store.stat(url: missingURL)) { error in
+            XCTAssertEqual(
+                error as? FileStoreError,
+                .error(message: "The file no longer exists.")
+            )
+        }
+    }
+
     func testSaveRejectsMtimeConflict() throws {
         let fileURL = try makeFile(name: "conflict.md", data: Data("old\n".utf8))
         let store = FileStore()
@@ -46,6 +70,45 @@ final class FileStoreTests: XCTestCase {
                 .conflict(path: fileURL.standardizedFileURL.path, actualMtimeMs: actualMtimeMs)
             )
         }
+    }
+
+    func testSaveRejectsExternalEditWhenRememberedURLHasStaleResourceValues() throws {
+        var fileURL = try makeFile(name: "cached-conflict.md", data: Data("old\n".utf8))
+        let store = FileStore()
+        let expectedMtimeMs = try store.modificationTimeMs(for: fileURL)
+        let staleDate = Date(timeIntervalSince1970: Double(expectedMtimeMs) / 1000)
+        let externalEditDate = Date(timeIntervalSince1970: Double(expectedMtimeMs + 5_000) / 1000)
+
+        fileURL.setTemporaryResourceValue(
+            staleDate,
+            forKey: .contentModificationDateKey
+        )
+        try Data("external edit\n".utf8).write(to: fileURL)
+        try FileManager.default.setAttributes(
+            [.modificationDate: externalEditDate],
+            ofItemAtPath: fileURL.path
+        )
+
+        XCTAssertThrowsError(
+            try store.save(
+                args: SaveFileArgs(
+                    path: fileURL.path,
+                    content: "doc2md edit\n",
+                    expectedMtimeMs: expectedMtimeMs,
+                    lineEnding: .lf
+                ),
+                knownURL: fileURL
+            )
+        ) { error in
+            XCTAssertEqual(
+                error as? FileStoreError,
+                .conflict(
+                    path: fileURL.standardizedFileURL.path,
+                    actualMtimeMs: FileStore.mtimeMs(from: externalEditDate)
+                )
+            )
+        }
+        XCTAssertEqual(try Data(contentsOf: fileURL), Data("external edit\n".utf8))
     }
 
     func testSaveWritesWithAtomicReplaceAndReturnsNewMtime() throws {

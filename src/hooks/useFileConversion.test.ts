@@ -233,6 +233,85 @@ describe("useFileConversion", () => {
     );
   });
 
+  it("adds uniquely named scratch entries without removing existing entries", async () => {
+    convertFileMock.mockResolvedValue(createSuccessResult("# Converted"));
+
+    const { result } = renderHook(() => useFileConversion());
+
+    act(() => {
+      result.current.addFiles([
+        createFile("existing.txt"),
+        createFile("second.txt"),
+      ]);
+    });
+
+    await waitFor(() => {
+      expect(result.current.entries).toHaveLength(2);
+    });
+
+    act(() => {
+      result.current.updateMarkdown(result.current.entries[0]!.id, "# Edited");
+      result.current.addScratchEntry();
+    });
+
+    expect(result.current.entries).toHaveLength(3);
+    expect(result.current.entries[0]).toMatchObject({
+      name: "existing.txt",
+      editedMarkdown: "# Edited",
+      selected: false,
+    });
+    expect(result.current.entries[1]).toMatchObject({
+      name: "second.txt",
+      selected: false,
+    });
+    expect(result.current.entries[2]).toMatchObject({
+      name: "Untitled.md",
+      format: "md",
+      status: "success",
+      markdown: "",
+      editedMarkdown: "",
+      selected: true,
+      isScratch: true,
+    });
+    expect(result.current.entries[2]?.desktopFile).toBeUndefined();
+    expect(result.current.selectedEntry?.id).toBe(
+      result.current.entries[2]?.id,
+    );
+  });
+
+  it("reuses the lowest available untitled number after a scratch entry is saved", () => {
+    const { result } = renderHook(() => useFileConversion());
+
+    act(() => {
+      result.current.addScratchEntry();
+    });
+    act(() => {
+      result.current.addScratchEntry();
+    });
+
+    expect(result.current.entries.map((entry) => entry.name)).toEqual([
+      "Untitled.md",
+      "Untitled 2.md",
+    ]);
+
+    act(() => {
+      result.current.updateEntryDesktopFile(result.current.entries[1]!.id, {
+        path: "/Users/me/Notes.md",
+        mtimeMs: 10,
+        lineEnding: "lf",
+      });
+    });
+    act(() => {
+      result.current.addScratchEntry();
+    });
+
+    expect(result.current.entries.map((entry) => entry.name)).toEqual([
+      "Untitled.md",
+      "Notes.md",
+      "Untitled 2.md",
+    ]);
+  });
+
   it("clears all entries and resets the selection", async () => {
     convertFileMock.mockResolvedValue(createSuccessResult("# Converted"));
 
@@ -252,6 +331,63 @@ describe("useFileConversion", () => {
 
     expect(result.current.entries).toEqual([]);
     expect(result.current.selectedEntry).toBeNull();
+  });
+
+  it("clears entries by id and selects the next remaining entry", async () => {
+    convertFileMock.mockImplementation((file: File) =>
+      Promise.resolve(createSuccessResult(`# ${file.name}`)),
+    );
+
+    const { result } = renderHook(() => useFileConversion());
+
+    act(() => {
+      result.current.addFiles([
+        createFile("alpha.txt"),
+        createFile("beta.txt"),
+        createFile("gamma.txt"),
+      ]);
+    });
+
+    await waitFor(() => {
+      expect(result.current.entries).toHaveLength(3);
+    });
+
+    const [alpha, beta, gamma] = result.current.entries;
+
+    act(() => {
+      result.current.clearEntriesById([alpha!.id, gamma!.id]);
+    });
+
+    expect(result.current.entries.map((entry) => entry.id)).toEqual([beta!.id]);
+    expect(result.current.selectedEntry?.id).toBe(beta!.id);
+  });
+
+  it("clears active last entry by id and selects the previous remaining entry", async () => {
+    convertFileMock.mockImplementation((file: File) =>
+      Promise.resolve(createSuccessResult(`# ${file.name}`)),
+    );
+
+    const { result } = renderHook(() => useFileConversion());
+
+    act(() => {
+      result.current.addFiles([createFile("alpha.txt"), createFile("beta.txt")]);
+    });
+
+    await waitFor(() => {
+      expect(result.current.entries).toHaveLength(2);
+    });
+
+    const [alpha, beta] = result.current.entries;
+
+    act(() => {
+      result.current.selectEntry(beta!.id);
+    });
+    act(() => {
+      result.current.clearEntriesById([beta!.id]);
+    });
+
+    expect(result.current.entries.map((entry) => entry.id)).toEqual([alpha!.id]);
+    expect(result.current.selectedEntry?.id).toBe(alpha!.id);
   });
 
   it("adds imported files through the shared conversion pipeline and keeps source metadata", async () => {

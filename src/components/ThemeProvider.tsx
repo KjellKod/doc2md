@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { ThemeContext, type Theme } from "../hooks/themeContext";
+import { ThemeContext } from "../hooks/themeContext";
+import type { Theme } from "../types/doc2mdShell";
 
 interface ThemeProviderProps {
   children: ReactNode;
@@ -25,6 +26,7 @@ export default function ThemeProvider({ children }: ThemeProviderProps) {
 
   const value = {
     theme,
+    setTheme,
     toggleTheme: () => {
       setTheme((currentTheme) => (currentTheme === "light" ? "dark" : "light"));
     },

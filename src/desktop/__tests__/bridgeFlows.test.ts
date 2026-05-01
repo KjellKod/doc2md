@@ -20,6 +20,18 @@ const revealArgs = {
   path: "/mock/Untitled.md",
 };
 
+const statArgs = {
+  path: "/mock/Untitled.md",
+};
+
+const setPersistenceEnabledArgs = {
+  enabled: true,
+};
+
+const setPersistenceThemeArgs = {
+  theme: "light" as const,
+};
+
 function eventForResult<T extends { ok: true }>(
   result: ShellResult<T>,
 ): DesktopSaveEvent {
@@ -60,8 +72,107 @@ describe("bridge flows", () => {
       path: "/mock/Untitled.md",
     });
     expect(Object.keys(revealResult).sort()).toEqual(["ok", "path"]);
+
+    const statResult = await shell.statFile(statArgs);
+
+    expect(statResult).toEqual({
+      ok: true,
+      path: "/mock/Untitled.md",
+      mtimeMs: 2,
+    });
+    expect(JSON.stringify(statResult)).not.toMatch(/content|lineEnding/i);
   });
 
+  it("returns success shapes for persistence methods", async () => {
+    const shell = createMockShell({
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: true,
+        theme: "dark" as const,
+        recentFiles: [
+          {
+            path: "/mock/Notes.md",
+            displayName: "Notes.md",
+            lastOpenedAt: "2026-04-28T20:40:00.000Z",
+          },
+        ],
+      })),
+    });
+
+    await expect(shell.getPersistenceSettings()).resolves.toEqual({
+      ok: true,
+      persistenceEnabled: true,
+      theme: "dark",
+      recentFiles: [
+        {
+          path: "/mock/Notes.md",
+          displayName: "Notes.md",
+          lastOpenedAt: "2026-04-28T20:40:00.000Z",
+        },
+      ],
+    });
+    await expect(
+      shell.setPersistenceEnabled(setPersistenceEnabledArgs),
+    ).resolves.toEqual({
+      ok: true,
+      persistenceEnabled: true,
+      recentFiles: [],
+    });
+    await expect(
+      shell.setPersistenceTheme(setPersistenceThemeArgs),
+    ).resolves.toEqual({
+      ok: true,
+      persistenceEnabled: true,
+      theme: "light",
+      recentFiles: [],
+    });
+
+    const settings = await shell.getPersistenceSettings();
+    expect(JSON.stringify(settings)).not.toMatch(/content|markdown/i);
+  });
+
+  it("resolves persistence method error results", async () => {
+    const shell = createMockShell({
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: false as const,
+        code: "error" as const,
+        message: "Persistence unavailable.",
+      })),
+      setPersistenceEnabled: vi.fn(async () => ({
+        ok: false as const,
+        code: "error" as const,
+        message: "Persistence unavailable.",
+      })),
+      setPersistenceTheme: vi.fn(async () => ({
+        ok: false as const,
+        code: "error" as const,
+        message: "Persistence unavailable.",
+      })),
+    });
+
+    await expect(shell.getPersistenceSettings()).resolves.toEqual({
+      ok: false,
+      code: "error",
+      message: "Persistence unavailable.",
+    });
+    await expect(
+      shell.setPersistenceEnabled(setPersistenceEnabledArgs),
+    ).resolves.toEqual({
+      ok: false,
+      code: "error",
+      message: "Persistence unavailable.",
+    });
+    await expect(
+      shell.setPersistenceTheme(setPersistenceThemeArgs),
+    ).resolves.toEqual({
+      ok: false,
+      code: "error",
+      message: "Persistence unavailable.",
+    });
+  });
+
+  // statFile rows here exercise generic envelope serialization only; the native
+  // statFile handler does not return stat-side conflict results.
   it.each([
     {
       method: "openFile",
@@ -102,6 +213,16 @@ describe("bridge flows", () => {
         })),
       }),
       call: (shell: Doc2mdShell) => shell.revealInFinder(revealArgs),
+    },
+    {
+      method: "statFile",
+      shell: createMockShell({
+        statFile: vi.fn(async () => ({
+          ok: false as const,
+          code: "cancelled" as const,
+        })),
+      }),
+      call: (shell: Doc2mdShell) => shell.statFile(statArgs),
     },
   ])("resolves $method cancellation results", async ({ shell, call }) => {
     const result = await call(shell);
@@ -110,6 +231,8 @@ describe("bridge flows", () => {
     expect(transition("saving", eventForResult(result))).toBe("edited");
   });
 
+  // statFile rows here exercise generic envelope serialization only; the native
+  // statFile handler does not return stat-side conflict results.
   it.each([
     {
       method: "openFile",
@@ -158,6 +281,18 @@ describe("bridge flows", () => {
         })),
       }),
       call: (shell: Doc2mdShell) => shell.revealInFinder(revealArgs),
+    },
+    {
+      method: "statFile",
+      shell: createMockShell({
+        statFile: vi.fn(async () => ({
+          ok: false as const,
+          code: "conflict" as const,
+          path: "/mock/Untitled.md",
+          actualMtimeMs: 3,
+        })),
+      }),
+      call: (shell: Doc2mdShell) => shell.statFile(statArgs),
     },
   ])("resolves $method conflict results", async ({ shell, call }) => {
     const result = await call(shell);
@@ -171,6 +306,8 @@ describe("bridge flows", () => {
     expect(transition("saving", eventForResult(result))).toBe("conflict");
   });
 
+  // statFile rows here exercise generic envelope serialization only; the native
+  // statFile handler returns its own permission-needed contract.
   it.each([
     {
       method: "openFile",
@@ -215,6 +352,17 @@ describe("bridge flows", () => {
         })),
       }),
       call: (shell: Doc2mdShell) => shell.revealInFinder(revealArgs),
+    },
+    {
+      method: "statFile",
+      shell: createMockShell({
+        statFile: vi.fn(async () => ({
+          ok: false as const,
+          code: "error" as const,
+          message: "Not implemented in Phase 2",
+        })),
+      }),
+      call: (shell: Doc2mdShell) => shell.statFile(statArgs),
     },
   ])("resolves $method error results", async ({ shell, call }) => {
     const result = await call(shell);
@@ -296,6 +444,24 @@ describe("bridge flows", () => {
         code: "permission-needed",
         path: "/mock/Untitled.md",
         message: "Select the containing folder again.",
+      },
+    },
+    {
+      method: "statFile",
+      shell: createMockShell({
+        statFile: vi.fn(async () => ({
+          ok: false as const,
+          code: "permission-needed" as const,
+          path: "/mock/Untitled.md",
+          message: "Select the document again.",
+        })),
+      }),
+      call: (shell: Doc2mdShell) => shell.statFile(statArgs),
+      expected: {
+        ok: false,
+        code: "permission-needed",
+        path: "/mock/Untitled.md",
+        message: "Select the document again.",
       },
     },
   ])("resolves $method permission-needed results", async ({

@@ -10,6 +10,12 @@ const HOSTED_SAVE_EVENTS = new Set<DesktopSaveEvent>([
   "edit",
   "saving",
   "saved",
+  "reset",
+]);
+const HOSTED_SAVE_STATES = new Set<DesktopSaveState>([
+  "edited",
+  "saving",
+  "saved",
 ]);
 
 /**
@@ -50,7 +56,7 @@ export function useDesktopSaveState(isDesktop: boolean): {
     markError: () => dispatch("error"),
     markPermissionNeeded: () => dispatch("permission-needed"),
     restore: (nextState) => {
-      if (!isDesktop) {
+      if (!isDesktop && !HOSTED_SAVE_STATES.has(nextState)) {
         return;
       }
 

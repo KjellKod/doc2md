@@ -1,9 +1,9 @@
 import { createContext } from "react";
-
-export type Theme = "light" | "dark";
+import type { Theme } from "../types/doc2mdShell";
 
 export interface ThemeContextValue {
   theme: Theme;
+  setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
 }
 

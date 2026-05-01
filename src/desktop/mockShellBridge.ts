@@ -1,9 +1,11 @@
 import { vi } from "vitest";
 import type {
+  DesktopPersistenceSettings,
   Doc2mdShell,
   ShellFile,
-  ShellSaveOk,
   ShellRevealOk,
+  ShellSaveOk,
+  ShellStatOk,
 } from "../types/doc2mdShell";
 
 export type MockShellOverrides = Partial<Omit<Doc2mdShell, "version">> & {
@@ -46,16 +48,77 @@ const DEFAULT_REVEAL: ShellRevealOk = {
   path: "/mock/Untitled.md",
 };
 
+const DEFAULT_STAT: ShellStatOk = {
+  ok: true,
+  path: "/mock/Untitled.md",
+  mtimeMs: 1,
+};
+
+const DEFAULT_PERSISTENCE_SETTINGS: DesktopPersistenceSettings = {
+  ok: true,
+  persistenceEnabled: false,
+  recentFiles: [],
+};
+
 export function createMockShell(
   overrides: MockShellOverrides = {},
 ): Doc2mdShell {
+  const mtimesByPath = new Map([[DEFAULT_FILE.path, DEFAULT_FILE.mtimeMs]]);
+  const openFile = overrides.openFile ?? vi.fn(async () => DEFAULT_FILE);
+  const saveFile = overrides.saveFile ?? vi.fn(async () => DEFAULT_SAVE);
+  const saveFileAs = overrides.saveFileAs ?? vi.fn(async () => DEFAULT_SAVE);
+  const wrappedOpenFile = vi.fn(async (args) => {
+    const result = await openFile(args);
+    if (result.ok && result.kind === "markdown") {
+      mtimesByPath.set(result.path, result.mtimeMs);
+    }
+    return result;
+  });
+  const wrappedSaveFile = vi.fn(async (args) => {
+    const result = await saveFile(args);
+    if (result.ok) {
+      mtimesByPath.set(result.path, result.mtimeMs);
+    }
+    return result;
+  });
+  const wrappedSaveFileAs = vi.fn(async (args) => {
+    const result = await saveFileAs(args);
+    if (result.ok) {
+      mtimesByPath.set(result.path, result.mtimeMs);
+    }
+    return result;
+  });
+
   return {
-    version: (overrides.version ?? 1) as 1,
-    openFile: overrides.openFile ?? vi.fn(async () => DEFAULT_FILE),
-    saveFile: overrides.saveFile ?? vi.fn(async () => DEFAULT_SAVE),
-    saveFileAs: overrides.saveFileAs ?? vi.fn(async () => DEFAULT_SAVE),
+    version: (overrides.version ?? 2) as 2,
+    openFile: wrappedOpenFile,
+    saveFile: wrappedSaveFile,
+    saveFileAs: wrappedSaveFileAs,
     revealInFinder:
       overrides.revealInFinder ?? vi.fn(async () => DEFAULT_REVEAL),
+    statFile:
+      overrides.statFile ??
+      vi.fn(async (args) => ({
+        ...DEFAULT_STAT,
+        path: args.path,
+        mtimeMs: mtimesByPath.get(args.path) ?? DEFAULT_STAT.mtimeMs,
+      })),
+    getPersistenceSettings:
+      overrides.getPersistenceSettings ??
+      vi.fn(async () => DEFAULT_PERSISTENCE_SETTINGS),
+    setPersistenceEnabled:
+      overrides.setPersistenceEnabled ??
+      vi.fn(async (args) => ({
+        ...DEFAULT_PERSISTENCE_SETTINGS,
+        persistenceEnabled: args.enabled,
+      })),
+    setPersistenceTheme:
+      overrides.setPersistenceTheme ??
+      vi.fn(async (args) => ({
+        ...DEFAULT_PERSISTENCE_SETTINGS,
+        persistenceEnabled: true,
+        theme: args.theme,
+      })),
   };
 }
 

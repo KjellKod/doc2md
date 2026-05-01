@@ -1,22 +1,38 @@
 # doc2md Mac Shell
 
-This is the Mac-only shell for `doc2md.app`. It is a minimal Swift + SwiftUI + `WKWebView` app that displays the existing React UI, edits `.md` files directly, imports every other supported source format into Markdown through the shared web converters, and includes Sparkle update plumbing.
+This is the Mac-only shell for `doc2md.app`. It is a minimal Swift + SwiftUI + `WKWebView` app that displays the existing React UI, edits `.md` files directly, imports every other supported source format into Markdown through the shared web converters, remembers opt-in desktop metadata, and includes Sparkle update plumbing.
 
-Out of scope for this phase: persisted security-scoped bookmarks, recent files, autosave, and asset persistence.
+Out of scope for this phase: persisted security-scoped bookmarks, recent-file reopening, autosave, and asset persistence.
 
-## Phase 4 Capabilities
+## Desktop Capabilities
 
-- `window.doc2mdShell.version === 1` is injected into the `WKWebView` at document start.
-- The bridge exposes `openFile`, `saveFile`, `saveFileAs`, and `revealInFinder`.
+- `window.doc2mdShell.version === 2` is injected into the `WKWebView` at document start.
+- The bridge exposes `openFile`, `saveFile`, `saveFileAs`, `revealInFinder`, `statFile`, `getPersistenceSettings`, `setPersistenceEnabled`, and `setPersistenceTheme`.
 - Open reads `.md` and `.markdown` files directly, preserving LF/CRLF metadata for later saves.
 - Open imports every other supported format, including `.txt`, `.json`, `.csv`, `.tsv`, `.html`, `.docx`, `.xlsx`, `.pdf`, and `.pptx`, through a one-shot native handoff back into the existing web conversion pipeline.
 - First save for an imported document always goes through `Save As` to a chosen `.md` target. After that, Cmd+S updates the chosen Markdown file with the same mtime conflict detection used for directly opened `.md` files.
 - Save writes through a sibling temp file and `FileManager.replaceItemAt`, with mtime conflict detection. Save targets must use the `.md` extension.
 - Save As uses `NSSavePanel`; Reveal in Finder uses `NSWorkspace`.
+- `statFile` returns path and modification-time metadata for an already opened Markdown path only. It does not read document bytes and does not add file watching or background polling.
 - Current-session security-scoped URLs are retained in memory only.
+- Desktop settings can enable local persistence for the Day/Night theme and display-only recent-file metadata.
 - File menu commands dispatch `doc2md:native-new`, `doc2md:native-open`, `doc2md:native-save`, `doc2md:native-save-as`, `doc2md:native-reveal-in-finder`, and `doc2md:native-close-window` into the webview.
 - Standard Edit actions remain on the AppKit and `WKWebView` responder chain.
 - Embedded images and other source-document assets are dropped, matching the hosted web product.
+
+## Desktop Persistence
+
+The settings popover is rendered only when the version-2 Mac bridge is available. Hosted web builds do not show the control and do not read or write browser storage for this feature.
+
+When `Persistence` is enabled, the native shell writes a small JSON file under the app's Application Support directory. The file contains only:
+
+- `persistenceEnabled`
+- optional `theme` (`light` or `dark`)
+- up to 10 `recentFiles` rows with `path`, `displayName`, and `lastOpenedAt`
+
+Recent files are recorded only after successful native Markdown open, source import open, Save, or Save As operations with a real path. Paths are standardized, deduped newest-first, and capped at 10. The list is display-only in this MVP; reopening from persisted paths is intentionally deferred until a bookmark-backed or user-mediated permission flow exists.
+
+Disabling `Persistence` deletes the settings file and returns the app to the disabled/default persistence snapshot. No document contents, imported bytes, credentials, signing material, release secrets, license data, or payment data are stored.
 
 ## Debug Development
 

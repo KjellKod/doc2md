@@ -78,4 +78,58 @@ describe("App hosted save control", () => {
     fireEvent.click(saveButton);
     expect(createObjectURL).not.toHaveBeenCalled();
   });
+
+  it("adds hosted New from a dirty scratch without discarding the draft", async () => {
+    const confirmSpy = vi.spyOn(window, "confirm");
+
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Start writing" }));
+    fireEvent.change(await screen.findByLabelText("Edit markdown"), {
+      target: { value: "# Keep me" },
+    });
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent("Edited"),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "New document" }));
+
+    const editor = await screen.findByLabelText("Edit markdown");
+    await waitFor(() => expect(document.activeElement).toBe(editor));
+    expect(confirmSpy).not.toHaveBeenCalled();
+    expect(editor).toHaveValue("");
+    expect(screen.getByRole("status")).toHaveTextContent("Saved");
+    expect(screen.getAllByText("Keep me").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Untitled 2.md").length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole("button", { name: /keep me/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+    expect(screen.getByLabelText("Edit markdown")).toHaveValue("# Keep me");
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent("Edited"),
+    );
+  });
+
+  it("focuses a blank saved editor for hosted New from a dirty scratch", async () => {
+    const confirmSpy = vi.spyOn(window, "confirm");
+
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Start writing" }));
+    fireEvent.change(await screen.findByLabelText("Edit markdown"), {
+      target: { value: "# Discard me" },
+    });
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent("Edited"),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "New document" }));
+
+    const editor = await screen.findByLabelText("Edit markdown");
+    await waitFor(() => expect(document.activeElement).toBe(editor));
+    expect(confirmSpy).not.toHaveBeenCalled();
+    expect(editor).toHaveValue("");
+    expect(screen.getByRole("status")).toHaveTextContent("Saved");
+  });
 });

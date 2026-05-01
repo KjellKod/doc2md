@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { convertFile, getFileExtension } from "../converters";
 import {
   CONVERSION_TIMEOUT_MS,
@@ -24,8 +24,27 @@ function basename(path: string) {
   return path.split(/[\\/]/).filter(Boolean).pop() || "Untitled.md";
 }
 
+function scratchNameAt(index: number) {
+  return index === 1 ? "Untitled.md" : `Untitled ${index}.md`;
+}
+
+function nextScratchName(scratchNames: string[]) {
+  const usedNames = new Set(scratchNames.map((name) => name.toLowerCase()));
+
+  let index = 1;
+  while (usedNames.has(scratchNameAt(index).toLowerCase())) {
+    index += 1;
+  }
+
+  return scratchNameAt(index);
+}
+
 export function useFileConversion() {
   const [entries, setEntries] = useState<FileEntry[]>([]);
+  const scratchNamesRef = useRef<string[]>([]);
+  scratchNamesRef.current = entries
+    .filter((entry) => entry.isScratch && !entry.desktopFile)
+    .map((entry) => entry.name);
 
   function updateEntry(id: string, updater: (entry: FileEntry) => FileEntry) {
     setEntries((currentEntries) =>
@@ -118,23 +137,33 @@ export function useFileConversion() {
   }
 
   function addScratchEntry() {
-    setEntries((currentEntries) => [
-      ...currentEntries.map((entry) => ({
-        ...entry,
-        selected: false,
-      })),
-      createScratchEntry(),
-    ]);
+    const scratchName = nextScratchName(scratchNamesRef.current);
+    scratchNamesRef.current = [...scratchNamesRef.current, scratchName];
+    const scratchEntry = createScratchEntry(scratchName);
+    setEntries((currentEntries) => {
+      return [
+        ...currentEntries.map((entry) => ({
+          ...entry,
+          selected: false,
+        })),
+        scratchEntry,
+      ];
+    });
+
+    return scratchEntry.id;
   }
 
   function addOpenedFileEntry(openedFile: ShellOpenOk) {
+    const openedEntry = createDesktopMarkdownEntry(openedFile);
     setEntries((currentEntries) => [
       ...currentEntries.map((entry) => ({
         ...entry,
         selected: false,
       })),
-      createDesktopMarkdownEntry(openedFile),
+      openedEntry,
     ]);
+
+    return openedEntry.id;
   }
 
   function addImportedFileEntry(args: {
@@ -158,6 +187,8 @@ export function useFileConversion() {
     ]);
 
     void processEntry(importedEntry);
+
+    return importedEntry.id;
   }
 
   function replaceEntryWithOpenedFile(entryId: string, openedFile: ShellOpenOk) {
@@ -209,6 +240,42 @@ export function useFileConversion() {
     setEntries([]);
   }
 
+  function clearEntriesById(ids: string[]) {
+    const idsToClear = new Set(ids);
+    if (idsToClear.size === 0) {
+      return;
+    }
+
+    setEntries((currentEntries) => {
+      const activeIndex = currentEntries.findIndex((entry) => entry.selected);
+      const survivingEntries = currentEntries.filter(
+        (entry) => !idsToClear.has(entry.id),
+      );
+
+      if (
+        survivingEntries.length === 0 ||
+        activeIndex < 0 ||
+        !idsToClear.has(currentEntries[activeIndex]!.id)
+      ) {
+        return survivingEntries;
+      }
+
+      const nextEntry = currentEntries
+        .slice(activeIndex + 1)
+        .find((entry) => !idsToClear.has(entry.id));
+      const previousEntry = [...currentEntries]
+        .slice(0, activeIndex)
+        .reverse()
+        .find((entry) => !idsToClear.has(entry.id));
+      const fallbackId = nextEntry?.id ?? previousEntry?.id;
+
+      return survivingEntries.map((entry) => ({
+        ...entry,
+        selected: entry.id === fallbackId,
+      }));
+    });
+  }
+
   function updateMarkdown(id: string, markdown: string) {
     updateEntry(id, (entry) => ({ ...entry, editedMarkdown: markdown }));
   }
@@ -223,6 +290,7 @@ export function useFileConversion() {
     addOpenedFileEntry,
     addImportedFileEntry,
     clearEntries,
+    clearEntriesById,
     replaceEntryWithOpenedFile,
     selectEntry,
     selectedEntry,
