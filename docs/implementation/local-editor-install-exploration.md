@@ -196,14 +196,14 @@ Settings such as backup toggle, update preferences, and beta-update opt-in live 
 
 Use Sparkle 2 for updates. The app includes `SPUStandardUpdaterController`, a `Check for Updates...` menu item, `SUFeedURL`, and `SUPublicEDKey` in `Info.plist`. Sparkle's documentation supports Swift Package Manager integration, EdDSA update signatures, appcast feeds, and DMG/ZIP-style update archives.
 
-The appcast should live at a stable GitHub Pages URL, for example:
+The appcast should live at a stable HTTPS URL under the canonical Mac app domain once DNS and release hosting are configured:
 
 ```text
-https://kjellkod.github.io/doc2md/appcast.xml
-https://kjellkod.github.io/doc2md/appcast-beta.xml
+https://updates.doc2md.dev/appcast.xml
+https://updates.doc2md.dev/appcast-beta.xml
 ```
 
-Use a DMG for first install and a ZIP of the `.app` bundle for Sparkle updates. Sparkle's publishing docs show `ditto -c -k --sequesterRsrc --keepParent MyApp.app MyApp.zip` for ZIP creation; use that form so symlinks and resource forks are preserved. The release process signs the ZIP update archive with Sparkle EdDSA. The private key lives outside the repo in 1Password or equivalent secret storage. The appcast can be generated with Sparkle's `generate_appcast` tooling and published beside the hosted browser app. GitHub Releases can hold versioned DMG and ZIP artifacts; GitHub Pages provides stable feed URLs for production and beta appcasts.
+Use a DMG for first install and a ZIP of the `.app` bundle for Sparkle updates. Sparkle's publishing docs show `ditto -c -k --sequesterRsrc --keepParent MyApp.app MyApp.zip` for ZIP creation; use that form so symlinks and resource forks are preserved. The release process signs the ZIP update archive with Sparkle EdDSA. The private key lives outside the repo in 1Password or equivalent secret storage. The appcast can be generated with Sparkle's `generate_appcast` tooling. GitHub Releases can hold versioned DMG and ZIP artifacts; `doc2md.dev` provides the stable public domain for production and beta appcasts.
 
 ## 8. Signing And Notarization
 
@@ -324,7 +324,7 @@ Validation:
 
 1. **Swift or Tauri?** Swift. Tauri is fallback only if cross-platform desktop becomes important.
 2. **Preserve embedded assets from source documents?** No. Match hosted web behavior and drop them in this version.
-3. **Where does the appcast live?** GitHub Pages at a stable URL under `https://kjellkod.github.io/doc2md/`.
+3. **Where does the appcast live?** Under `https://updates.doc2md.dev/` once the commercial/update domain is configured. GitHub Releases can continue storing versioned artifacts behind that stable public URL.
 4. **Updater?** Sparkle 2 with EdDSA-signed update archives.
 5. **macOS minimum?** macOS 13 Ventura for MVP. It keeps the test matrix small while covering Sparkle 2 defaults, Swift 5.7-era concurrency, and current `WKWebView` behavior.
 6. **Does the Mac app import hosted browser scratch drafts?** No.

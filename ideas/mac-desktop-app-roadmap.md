@@ -17,6 +17,7 @@ Build a Mac-native DMG app using Swift + `WKWebView` + Sparkle. The existing hos
 Commercial boundary:
 
 - Keep the hosted web app at `https://kjellkod.github.io/doc2md/`, npm packages, and shared conversion logic free.
+- Use `doc2md.dev` as the canonical Mac app commercial, download, support, licensing, and update domain once the distribution surface is live.
 - Do not promote, price, or download-link the Mac app from the hosted web app's main page until the commercial distribution plan is intentionally chosen.
 - Treat the Mac app as its own distribution surface: usable without payment, but eligible for a simple paid license with occasional reminders in the spirit of Sublime Text.
 - Prefer a sales/distribution channel that acts as the merchant of record or otherwise handles tax collection/remittance for the maintainer.
@@ -436,6 +437,7 @@ Keep the hosted web app and npm ecosystem free while making the Mac app a simple
 Distribution assumptions:
 
 - Do not put a Mac app upsell, pricing page, or download CTA on the hosted web app's main page until this phase explicitly chooses a distribution model.
+- `doc2md.dev` has been purchased and should become the canonical public domain for the Mac app's commercial distribution surface. Keep the hosted web app separate unless Phase 7 intentionally changes that boundary.
 - Evaluate Mac App Store distribution, direct signed DMG sales, or both. The release pipeline already supports direct signed/notarized DMG + Sparkle updates; App Store distribution would need a separate packaging/review path.
 - Prefer a merchant-of-record style sales platform or store channel that handles tax collection/remittance, VAT/GST/sales-tax paperwork, invoices/receipts, and customer purchase records.
 - Keep pricing easy to understand. Working hypothesis, not a commitment: a low annual price around `$20/year`, plus an optional perpetual license that lasts until the next major paid upgrade.
@@ -449,6 +451,7 @@ Expected changes:
   - Occasional nag reminder for unlicensed users after a simple trigger, such as every N launches or every N exports/saves.
   - A license entry window reachable from the app menu.
 - Add release-channel wording:
+  - `doc2md.dev` is the canonical Mac app distribution/support/licensing domain.
   - Hosted web and npm remain free.
   - Mac app license supports native packaging, signing, notarization, Sparkle updates, and ongoing maintenance.
   - Unlicensed users may continue using the app if they accept reminders.

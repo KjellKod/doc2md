@@ -192,3 +192,4 @@ if [[ ! -d "$APP_PATH" ]]; then
 fi
 
 printf 'Built: %s\n' "$(absolute_path "$APP_PATH")"
+printf 'Default npm shortcut: npm run build:mac\n'
