@@ -1,3 +1,5 @@
+.skills/grill-me/
+.claude/skills/grill-me/
 .claude/projects
 apps/macos/doc2md.xcodeproj/project.xcworkspace/*
 !apps/macos/doc2md.xcodeproj/project.xcworkspace/xcshareddata/
