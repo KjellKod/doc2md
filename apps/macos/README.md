@@ -150,6 +150,28 @@ If `xcode-select -p` points at `/Library/Developer/CommandLineTools`, the helper
 sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 ```
 
+## One-Command DMG Build
+
+Build a local unsigned DMG from the repo root:
+
+```bash
+npm run build:dmg
+```
+
+The command builds the Release `.app`, derives the version automatically from the repo's release-version helper, and writes:
+
+```text
+.build/release/doc2md-<version>.dmg
+```
+
+Dirty or unreleased local builds use a `-dev` version suffix. To force a specific local filename for a smoke test:
+
+```bash
+npm run build:dmg -- --version 0.1.0
+```
+
+This local DMG is unsigned unless you pass `--signed` with a valid `CODESIGN_IDENTITY` already available. Public release DMGs should still come from the protected release workflow so signing, notarization, stapling, Sparkle ZIP signing, appcast generation, and asset upload happen together.
+
 ## Launch Smoke
 
 Build and sanity-check that the Release app renders:
@@ -261,18 +283,13 @@ Before tagging a release, manually bump both Xcode build settings in `apps/macos
 
 The initial `0.1.0` release may use `CURRENT_PROJECT_VERSION = 1`; later releases must not reuse build `1`.
 
-Local non-secret dry run:
+Local unsigned DMG smoke:
 
 ```bash
-npm run build:desktop
-bash scripts/build-mac-app.sh --configuration Release
-VERSION=0.1.0 RELEASE_DRY_RUN=1 APP_PATH=.build/mac/Build/Products/Release/doc2md.app bash scripts/release/sign_mac_app.sh
-VERSION=0.1.0 RELEASE_DRY_RUN=1 APP_PATH=.build/mac/Build/Products/Release/doc2md.app bash scripts/release/notarize_mac_app.sh
-VERSION=0.1.0 RELEASE_DRY_RUN=1 APP_PATH=.build/mac/Build/Products/Release/doc2md.app bash scripts/release/package_mac_dmg.sh
-VERSION=0.1.0 APP_PATH=.build/mac/Build/Products/Release/doc2md.app bash scripts/release/package_sparkle_zip.sh
-VERSION=0.1.0 RELEASE_DRY_RUN=1 ZIP_PATH=.build/release/doc2md-0.1.0.zip bash scripts/release/sign_sparkle_zip.sh
-python3 scripts/release/generate_appcast.py --version 1 --short-version 0.1.0 --enclosure-url "https://github.com/KjellKod/doc2md/releases/download/v0.1.0/doc2md-0.1.0.zip" --enclosure-length 100 --ed-signature DRY_RUN_SIGNATURE | xmllint --noout -
+npm run build:dmg
 ```
+
+The lower-level release scripts remain available for CI and targeted signing/notarization debugging, but day-to-day DMG creation should use the one-command wrapper.
 
 Protected release dispatch:
 
