@@ -1,0 +1,29 @@
+scripts/build-mac-dmg.sh
+  067262d3215bdf96 1-101
+package.json
+  067262d3215bdf96 18
+scripts/build-mac-app.sh
+  067262d3215bdf96 195
+apps/macos/README.md
+  067262d3215bdf96 153-174,286,289,292
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "b3b644c5304ad164454b1dcf125caefe13f0755f",
+  "prompts": {
+    "067262d3215bdf96": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019de0ea-1d9c-7bd1-bc8a-f275a2036526",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 130,
+      "total_deletions": 9,
+      "accepted_lines": 130,
+      "overriden_lines": 0
+    }
+  }
+}
