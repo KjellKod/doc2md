@@ -225,6 +225,8 @@ Then launch the app with the environment override above and choose `doc2md > Che
 
 Offline launch validation: stop the fixture server, launch the app normally, and confirm the window appears without Sparkle errors. Because automatic checks are disabled, Sparkle should not block launch or show update UI unless the menu item is used.
 
+Production update hosting target: `updates.doc2md.dev` should be the stable public Sparkle appcast host once DNS and release hosting are configured. GitHub Releases can continue storing versioned DMG/ZIP/appcast artifacts behind that public domain.
+
 The committed Sparkle public key is:
 
 ```text

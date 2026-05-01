@@ -41,6 +41,20 @@ Sources:
 - Paddle Mac app licensing help: https://www.paddle.com/help/start/intro-to-paddle/selling-a-mac-app-with-trials-and-licensing
 - Apple App Review Guidelines: https://developer.apple.com/app-store/review/guidelines/
 
+## Domain Decision
+
+`doc2md.dev` has been purchased and should be the canonical domain for the Mac app's commercial distribution surface. The hosted browser app can remain at `https://kjellkod.github.io/doc2md/` for now; `doc2md.dev` is for the Mac app, downloads, licensing, updates, and support unless Phase 7 intentionally changes that boundary.
+
+Proposed public endpoints:
+
+- `doc2md.dev` for the Mac product, download, docs, pricing, privacy, terms, and support entry point.
+- `updates.doc2md.dev` for Sparkle appcasts.
+- `license.doc2md.dev` for the private issuer API.
+- `support@doc2md.dev` for user support.
+- `licenses@doc2md.dev` for license delivery.
+
+The `.dev` TLD is HTTPS-only in modern browsers because it is HSTS-preloaded. That is a useful trust property, but it means every public endpoint must have valid TLS from day one.
+
 ## Fit Against The Roadmap
 
 This model matches Phase 7 well:
@@ -66,7 +80,7 @@ Use the smallest practical version for Phase 7:
 
 1. Direct signed/notarized DMG first; defer Mac App Store.
 2. Lemon Squeezy first-choice merchant of record; Paddle as operational fallback only.
-3. Private license issuer, likely Cloudflare Worker or similar small HTTPS service.
+3. Private license issuer, likely Cloudflare Worker or similar small HTTPS service under `license.doc2md.dev`.
 4. Offline Ed25519-signed license token:
    - `doc2md-license-v1.<claims>.<signature>`
    - claims: version, key id, license id, purchaser email or display name, tier, issued-at, optional expiry, merchant customer/order id.
@@ -152,6 +166,7 @@ Keep Phase 7 split into reviewable quests:
    - choose direct DMG first,
    - document App Store deferral,
    - choose Lemon Squeezy first and Paddle fallback,
+   - configure `doc2md.dev` DNS/TLS and decide which endpoints go live at launch,
    - define privacy and refund/support language.
 2. License token verifier:
    - Swift verifier,
