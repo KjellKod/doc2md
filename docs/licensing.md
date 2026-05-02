@@ -19,7 +19,7 @@ The following areas are licensed under the MIT License unless a more specific fi
 
 See `LICENSES/MIT.txt` and `packages/core/LICENSE`.
 
-The first published: `src/desktop/` and the desktop-only sections currently embedded in `src/App.tsx` remain MIT. That is deliberate. Those files are mixed with the hosted web app, and trying to license small blocks differently would be confusing and brittle. If the business later needs those React desktop pieces under the desktop license, first move them into a clear desktop-owned path in a separate refactor.
+The first published desktop release keeps `src/desktop/` and the desktop-specific sections currently embedded in `src/App.tsx` under MIT. This is an intentional boundary decision: code shared by the desktop app, the core npm package, and the hosted web app remains MIT, as described in these license docs. Keeping shared code under one clear license avoids confusing file-level splits while the Mac-specific native app code remains covered by the desktop shareware license.
 
 ## What Is Source-Visible Shareware?
 
