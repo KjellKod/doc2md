@@ -21,7 +21,7 @@ See `LICENSES/MIT.txt` and `packages/core/LICENSE`.
 
 The first published desktop release keeps `src/desktop/` and the desktop-specific sections currently embedded in `src/App.tsx` under MIT. This is an intentional boundary decision: code shared by the desktop app, the core npm package, and the hosted web app remains MIT, as described in these license docs. Keeping shared code under one clear license avoids confusing file-level splits while the Mac-specific native app code remains covered by the desktop shareware license.
 
-## What Is Source-Visible Shareware?
+# What Is Source-Visible Shareware?
 
 The Mac desktop app in `apps/macos/` is source-visible shareware. It is not open source and is not MIT.
 
