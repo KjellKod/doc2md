@@ -30,15 +30,15 @@ final class InMemoryLicenseTokenStorage: LicenseTokenStorage {
 }
 
 struct LicenseFixtureFactory {
-    let privateKey: Curve25519.Signing.PrivateKey
+    let signingIdentity: Curve25519.Signing.PrivateKey
     let publicKey: LicensePublicKey
     let now: Date
 
     init(now: Date = Date(timeIntervalSince1970: 1_800_000_000)) {
-        privateKey = Curve25519.Signing.PrivateKey()
+        signingIdentity = Curve25519.Signing.PrivateKey()
         publicKey = LicensePublicKey(
             keyID: "test-key",
-            publicKeyBase64: LicenseToken.base64URLEncode(privateKey.publicKey.rawRepresentation),
+            publicKeyBase64: LicenseToken.base64URLEncode(signingIdentity.publicKey.rawRepresentation),
             isDevelopmentKey: true
         )
         self.now = now
@@ -67,7 +67,7 @@ struct LicenseFixtureFactory {
         let claimsData = try encoder.encode(claims)
         let claimsSegment = LicenseToken.base64URLEncode(claimsData)
         let signedString = "\(LicenseToken.prefix).\(claimsSegment)"
-        let signature = try privateKey.signature(for: Data(signedString.utf8))
+        let signature = try signingIdentity.signature(for: Data(signedString.utf8))
         return "\(signedString).\(LicenseToken.base64URLEncode(signature))"
     }
 
@@ -75,4 +75,3 @@ struct LicenseFixtureFactory {
         LicenseVerifier(publicKeys: [publicKey], now: { now ?? self.now })
     }
 }
-

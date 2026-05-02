@@ -36,8 +36,10 @@ function scanFixture(lines: string[]) {
 describe("Mac native API allowlist", () => {
   it("scans every first-party Swift source touched by persistence work", () => {
     expect(script).toContain(
-      'PERSISTENCE_SWIFT_SOURCE_GLOB="apps/macos/doc2md/*.swift"',
+      'PERSISTENCE_SWIFT_SOURCE_ROOT="apps/macos/doc2md"',
     );
+    expect(script).toContain("collect_persistence_swift_sources()");
+    expect(script).toContain("find \"$source_root\" -type f -name '*.swift'");
     expect(script).toContain(
       "native API allowlist scan found no Swift sources",
     );
@@ -67,6 +69,9 @@ describe("Mac native API allowlist", () => {
     );
     expect(script).toContain(
       "Application Support settings :: metadata-only settings-file read/write/delete/atomic replacement",
+    );
+    expect(script).toContain(
+      "Application Support license token :: license-token file read/write/delete under doc2md Application Support",
     );
   });
 

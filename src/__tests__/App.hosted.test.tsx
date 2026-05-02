@@ -162,7 +162,9 @@ describe("App hosted save control", () => {
     const xhrOpenSpy = vi
       .spyOn(XMLHttpRequest.prototype, "open")
       .mockImplementation(() => undefined);
-    const sendBeaconSpy = vi.fn(() => true);
+    const sendBeaconSpy = vi.fn<
+      (url: string | URL, data?: BodyInit | null) => boolean
+    >(() => true);
     Object.defineProperty(navigator, "sendBeacon", {
       configurable: true,
       value: sendBeaconSpy,
