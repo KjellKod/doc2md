@@ -79,26 +79,8 @@ The custom `LicenseRef-doc2md-Desktop` text lives at `LICENSES/LicenseRef-doc2md
 
 Do not add broad file headers mechanically. Add them where the boundary matters or when new files are created in a licensed area.
 
-## Contribution And Provenance Notes
+## Contributions
 
-Before publishing paid desktop distribution terms, confirm project ownership records for:
+Contributions to MIT-licensed areas are accepted under the same MIT terms unless the project states otherwise.
 
-- non-owner commits
-- co-authors and AI assistance trailers
-- copied snippets
-- generated files
-- vendored assets
-- app icon/source assets
-- third-party notices
-- future contributor terms
-
-MIT areas may continue with inbound-equals-outbound or a Developer Certificate of Origin if the maintainer chooses. Non-MIT desktop areas such as `apps/macos/` should require a CLA or explicit contributor agreement before accepting outside contributions, or the project should avoid outside contributions there.
-
-## Questions For Legal Review
-
-- Is the custom desktop shareware license language enforceable and appropriately narrow?
-- Which jurisdiction should replace the `[JURISDICTION]` placeholder?
-- Are the redistribution, derivative desktop app, commercial repackaging, reminder-integrity, and branding restrictions drafted correctly?
-- Can all current `apps/macos/` code and assets be covered by the desktop license?
-- What contributor agreement should apply to future non-MIT desktop contributions?
-- What exact notice inventory should ship with signed DMG releases?
+Contributions to non-MIT desktop areas, including `apps/macos/`, may require explicit contributor terms before they can be accepted. The project may decline contributions to those areas when the licensing boundary or ownership terms are unclear.
