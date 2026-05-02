@@ -87,7 +87,7 @@ This journal embeds the celebration payload used by `/celebrate`.
     {
       "icon": "[BUG]",
       "title": "Gremlin Slayer",
-      "desc": "Tackled 9 review findings"
+      "desc": "Tackled 5 review findings"
     },
     {
       "icon": "[TEST]",
