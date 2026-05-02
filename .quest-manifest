@@ -54,6 +54,7 @@
 .skills/pr-shepherd/SKILL.md
 .skills/pre-commit-review/SKILL.md
 .skills/quest/SKILL.md
+.skills/sharpen/SKILL.md
 .skills/quest/agents/README.md
 .skills/quest/agents/arbiter.md
 .skills/quest/agents/builder.md
@@ -92,6 +93,7 @@ scripts/quest_runtime/__init__.py
 scripts/quest_runtime/artifacts.py
 scripts/quest_runtime/claude_runner.py
 scripts/quest_runtime/pr_review_cycle.py
+scripts/quest_runtime/quest_ids.py
 scripts/quest_runtime/review_intelligence.py
 scripts/quest_runtime/state.py
 scripts/quest_review_intelligence.py

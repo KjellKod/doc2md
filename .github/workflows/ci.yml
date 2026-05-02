@@ -71,6 +71,42 @@ jobs:
       - name: Build application
         run: npm run build
 
+  e2e:
+    name: e2e
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build application
+        run: npm run build
+
+      - name: Run Playwright e2e tests
+        run: npm run test:e2e
+
+      - name: Upload Playwright failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+
   ci:
     name: ci
     runs-on: ubuntu-latest
@@ -79,13 +115,15 @@ jobs:
       - lint-and-type
       - test
       - build
+      - e2e
 
     steps:
       - name: Verify upstream jobs
         run: |
           if [ "${{ needs.lint-and-type.result }}" != "success" ] || \
              [ "${{ needs.test.result }}" != "success" ] || \
-             [ "${{ needs.build.result }}" != "success" ]; then
+             [ "${{ needs.build.result }}" != "success" ] || \
+             [ "${{ needs.e2e.result }}" != "success" ]; then
             echo "At least one upstream CI job failed."
             exit 1
           fi
