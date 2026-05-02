@@ -16,7 +16,7 @@ This license does not apply to doc2md components that are explicitly licensed un
 
 You may download and use the official doc2md Mac desktop application for free, including for internal commercial work.
 
-The app may show reminders asking you to purchase a license. Purchasing a license may remove or reduce those reminders. The paid license does not unlock additional conversion features unless the project says otherwise.
+The official app may be used as an unregistered evaluation version with no fixed trial period. If you continue using the app, you must purchase a license. A registered license removes evaluation reminders. The license is an honesty-based shareware license; conversion features are not artificially disabled in the unregistered evaluation version.
 
 3. Source Visibility
 
