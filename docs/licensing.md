@@ -43,6 +43,8 @@ See:
 - `apps/macos/LICENSE`
 - `LICENSES/LicenseRef-doc2md-Desktop.txt`
 
+For licensing questions or permission requests, contact Kjell Hedstrom at `kjell@candidtalentedge.com`.
+
 ## What The Desktop License Does Not Restrict
 
 The desktop license does not limit independent use of MIT-licensed doc2md components. You can use, copy, modify, publish, distribute, sublicense, and sell MIT-covered parts such as `@doc2md/core`, `packages/core/`, and the MIT-covered root `src/` under the MIT License terms.

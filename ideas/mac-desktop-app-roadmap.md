@@ -452,6 +452,7 @@ Expected changes:
   - A license entry window reachable from the app menu.
 - Add release-channel wording:
   - `doc2md.dev` is the canonical Mac app distribution/support/licensing domain.
+  - Replace temporary maintainer contact emails in public docs with the final support address, expected to be `support@doc2md.dev` or the chosen support address/domain.
   - Hosted web and npm remain free.
   - Mac app license supports native packaging, signing, notarization, Sparkle updates, and ongoing maintenance.
   - Unlicensed users may continue using the app if they accept reminders.
