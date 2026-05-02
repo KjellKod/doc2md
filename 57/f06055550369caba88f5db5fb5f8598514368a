@@ -1,0 +1,23 @@
+ideas/archive/doc2md-dual-licensing.md
+  8056ef714ed7dc72 1-4,6-205
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "57f06055550369caba88f5db5fb5f8598514368a",
+  "prompts": {
+    "8056ef714ed7dc72": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019de630-980f-71d0-b937-efa289731a25",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 205,
+      "total_deletions": 0,
+      "accepted_lines": 204,
+      "overriden_lines": 1
+    }
+  }
+}
