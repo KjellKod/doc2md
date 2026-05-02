@@ -11,7 +11,7 @@ Context
 - `@doc2md/core` should remain MIT. It is the reusable conversion engine, Node API, and CLI package.
 - The hosted web app should remain open and trust-first.
 - The Mac desktop app now has shareware/commercial licensing behavior, Sparkle update plumbing, signed release machinery, app-specific assets, app branding, and license-reminder logic.
-- Repo-local proposal: `ideas/doc2md-dual-licensing.md`.
+- Repo-local proposal: `ideas/archive/doc2md-dual-licensing.md`.
 - External source notes were distilled from:
   - `/Users/kjell/Documents/Evaluations/doc2md_license_draft.md`
   - `/Users/kjell/Documents/Evaluations/doc2md_license_research_prompt.md`
@@ -27,7 +27,7 @@ Land a clear mixed-license structure for doc2md:
 
 Required planning/research scope
 
-1. Review `ideas/doc2md-dual-licensing.md` and the current repo layout.
+1. Review `ideas/archive/doc2md-dual-licensing.md` and the current repo layout.
 2. Validate license options for the Mac desktop app:
    - Custom doc2md Desktop Shareware License / Mac app EULA plus source-available notice.
    - Business Source License 1.1.

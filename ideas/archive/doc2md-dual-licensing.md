@@ -2,7 +2,7 @@
 
 ## Status
 
-Active proposal for a licensing cleanup quest. This is an engineering and business brief for final maintainer approval before release.
+Completed in PR #103. The implemented public license guide now lives in `docs/licensing.md`; this file is archived as the original proposal and research brief.
 
 ## Problem
 
