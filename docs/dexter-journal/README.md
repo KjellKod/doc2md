@@ -6,6 +6,8 @@ For the other perspective, see [Jean-Claude's Journal](../journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 035 | [Requiem: Playwright Browser Baseline](035-requiem-playwright-browser-baseline.md) | Burying jsdom-only confidence, retry-masked failures, and a download check that forgot to count |
+| 034 | [Playwright Browser Baseline](034-playwright-browser-baseline.md) | Giving the hosted app a real browser witness without letting the baseline become a framework |
 | 032 | [Opened Files Bulk Actions](032-opened-files-bulk-actions.md) | Making selection explicit and file state local before the active document could start lying |
 | 031 | [Requiem: Mac Find Replace](031-requiem-mac-find-replace.md) | Burying browser page find dependence, capped replace-all semantics, and shortcut focus drift inside the Markdown editor |
 | 030 | [Requiem: Save Control UI](030-requiem-save-control-ui.md) | Making Save visible without changing save semantics, reviving WKWebView browsing, and catching one hosted empty-draft regression |

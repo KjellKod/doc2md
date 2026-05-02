@@ -2,6 +2,7 @@
 
 | Date | Quest | Outcome |
 |------|-------|---------|
+| 2026-05-02 | [playwright-browser-baseline](playwright-browser-baseline_2026-05-02.md) | Added a Chromium-only Playwright hosted-browser baseline and PR e2e job. |
 | 2026-04-30 | [opened-files-bulk-actions](opened-files-bulk-actions_2026-04-30.md) | Added opened-file multi-select Clear/Download behavior, active-file fallback, per-entry desktop save/conflict/notice state, metadata-only `statFile` refresh, and a clean re-review after one fix loop. |
 | 2026-04-28 | [mac-find-replace](mac-find-replace_2026-04-28.md) | Phase 6d Find / Replace: added compact shared React editor search/replace with regex/case options, shortcut handling, active selection, replace current/all, accessibility coverage, versioned Mac build success output, and one clean fix loop. |
 | 2026-04-27 | [save-control-ui](save-control-ui_2026-04-27.md) | Phase 6c Save control: added visible hosted/Mac Save UI, compact save-state status, WKWebView file-picker support for app Browse, and clean re-review after one hosted-save fix. |
