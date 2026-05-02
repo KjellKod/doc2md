@@ -1,0 +1,25 @@
+docs/quest-journal/playwright-browser-baseline_2026-05-02.md
+  0d64e8358bc9c013 90
+tests/e2e/hosted-browser-baseline.spec.ts
+  0d64e8358bc9c013 31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "aecd1d602caccc7d27ef31ebe9dc8d576193cf70",
+  "prompts": {
+    "0d64e8358bc9c013": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019de3d1-6cdb-73c0-9c6e-05a51dbf79df",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 6,
+      "total_deletions": 6,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    }
+  }
+}
