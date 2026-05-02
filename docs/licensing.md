@@ -19,7 +19,7 @@ The following areas are licensed under the MIT License unless a more specific fi
 
 See `LICENSES/MIT.txt` and `packages/core/LICENSE`.
 
-For this quest, `src/desktop/` and the desktop-only sections currently embedded in `src/App.tsx` remain MIT. That is deliberate. Those files are mixed with the hosted web app, and trying to license small blocks differently would be confusing and brittle. If the business later needs those React desktop pieces under the desktop license, first move them into a clear desktop-owned path in a separate refactor.
+The first published: `src/desktop/` and the desktop-only sections currently embedded in `src/App.tsx` remain MIT. That is deliberate. Those files are mixed with the hosted web app, and trying to license small blocks differently would be confusing and brittle. If the business later needs those React desktop pieces under the desktop license, first move them into a clear desktop-owned path in a separate refactor.
 
 ## What Is Source-Visible Shareware?
 
