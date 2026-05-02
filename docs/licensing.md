@@ -27,7 +27,16 @@ The Mac desktop app in `apps/macos/` is source-visible shareware. It is not open
 
 You may inspect the source, use the official app for free, use it for internal commercial work, and make private local evaluation builds or personal patches under the doc2md Desktop Shareware License.
 
-You need written permission to redistribute the Mac app, sell it, sublicense it, commercially repackage it, publish derivative desktop apps, publish renamed or forked public builds, bundle it into another product, or reuse doc2md branding in a way that suggests endorsement or causes confusion.
+## What Requires Written Permission
+
+You need written permission before you:
+
+- **Redistribute** the Mac desktop app or modified versions of it.
+- **Sell, sublicense, or commercially repackage** the Mac desktop app.
+- **Publish derivative desktop apps** based on the Mac desktop app.
+- **Publish renamed or forked public builds** of the Mac desktop app.
+- **Bundle the Mac desktop app** into another product or service.
+- **Reuse doc2md branding** in a way that suggests endorsement or causes confusion with the official project.
 
 See:
 
