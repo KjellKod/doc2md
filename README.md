@@ -107,7 +107,7 @@ doc2md uses a mixed-license model.
 
 The conversion engine, `@doc2md/core` package, CLI, hosted web app, and root `src/` code are licensed under the MIT License.
 
-The Mac desktop app in `apps/macos/` is source-visible shareware and is covered by a separate desktop license. You may inspect the source and use the official app for free, but you may not redistribute, sell, sublicense, commercially repackage, publish derivative desktop apps, bundle the app into another product, or reuse doc2md branding without written permission.
+The Mac desktop app in `apps/macos/` is source-visible shareware and is covered by a separate desktop license. You may inspect the source and use the official app as an unregistered evaluation version with no fixed trial period; continued use requires purchasing a license. You may not redistribute, sell, sublicense, commercially repackage, publish derivative desktop apps, bundle the app into another product, or reuse doc2md branding without written permission.
 
 See [LICENSE](LICENSE) and [docs/licensing.md](docs/licensing.md).
 

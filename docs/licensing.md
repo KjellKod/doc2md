@@ -21,11 +21,15 @@ See `LICENSES/MIT.txt` and `packages/core/LICENSE`.
 
 The first published desktop release keeps `src/desktop/` and the desktop-specific sections currently embedded in `src/App.tsx` under MIT. This is an intentional boundary decision: code shared by the desktop app, the core npm package, and the hosted web app remains MIT, as described in these license docs. Keeping shared code under one clear license avoids confusing file-level splits while the Mac-specific native app code remains covered by the desktop shareware license.
 
-# What Is Source-Visible Shareware?
+## What Is Source-Visible Shareware?
 
 The Mac desktop app in `apps/macos/` is source-visible shareware. It is not open source and is not MIT.
 
-You may inspect the source, use the official app for free, use it for internal commercial work, and make private local evaluation builds or personal patches under the doc2md Desktop Shareware License.
+You may inspect the source, use the official app as an unregistered evaluation version with no fixed trial period, use it for internal commercial work, and make private local evaluation builds or personal patches under the doc2md Desktop Shareware License.
+
+If you continue using the official app after evaluation, you must purchase a license. A registered license removes evaluation reminders. Conversion features are not artificially disabled in the unregistered evaluation version.
+
+Private local modifications and local evaluation builds may be used only for personal or internal evaluation. They may not be distributed, published, sold, sublicensed, hosted, bundled, or provided to others without written permission.
 
 ## What Requires Written Permission
 
@@ -36,6 +40,7 @@ You need written permission before you:
 - **Publish derivative desktop apps** based on the Mac desktop app.
 - **Publish renamed or forked public builds** of the Mac desktop app.
 - **Bundle the Mac desktop app** into another product or service.
+- **Use the Mac desktop app** to offer a public or third-party conversion service.
 - **Reuse doc2md branding** in a way that suggests endorsement or causes confusion with the official project.
 
 See:
@@ -43,7 +48,7 @@ See:
 - `apps/macos/LICENSE`
 - `LICENSES/LicenseRef-doc2md-Desktop.txt`
 
-For licensing questions or permission requests, contact Kjell Hedstrom at `kjell@candidtalentedge.com`.
+For licensing questions or written-permission requests, contact Kjell Hedstrom at `kjell@candidtalentedge.com` or through the project repository at `https://github.com/kjellkod/doc2md`.
 
 ## What The Desktop License Does Not Restrict
 
@@ -83,6 +88,6 @@ Do not add broad file headers mechanically. Add them where the boundary matters 
 
 ## Contributions
 
-Contributions to MIT-licensed areas are accepted under the same MIT terms unless the project states otherwise.
+Contributions to MIT-licensed areas are accepted under the same MIT terms.
 
-Contributions to non-MIT desktop areas, including `apps/macos/`, may require explicit contributor terms before they can be accepted. The project may decline contributions to those areas when the licensing boundary or ownership terms are unclear.
+Contributions to non-MIT desktop areas, including `apps/macos/`, are submitted under the desktop license unless separately agreed in writing. The project may decline contributions to those areas when the licensing boundary or ownership terms are unclear.
