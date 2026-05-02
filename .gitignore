@@ -18,6 +18,7 @@ examples/output/*
 .ws/
 *.local
 dist
+test-results/
 .build/
 node_modules
 __pycache__/
