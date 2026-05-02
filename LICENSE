@@ -16,7 +16,7 @@ See `LICENSES/MIT.txt`.
 
 The Mac desktop app in `apps/macos/` is not licensed under MIT.
 
-The Mac desktop app is source-visible shareware covered by the doc2md Desktop Shareware License. You may inspect the source, use the official app for free, and make private local evaluation builds under that license. You may not redistribute, sell, sublicense, commercially repackage, publish derivative desktop apps, bundle the app into another product, or reuse doc2md branding without written permission from the copyright holder.
+The Mac desktop app is source-visible shareware covered by the doc2md Desktop Shareware License. You may inspect the source, use the official app as an unregistered evaluation version with no fixed trial period, and make private local evaluation builds under that license. Continued use requires purchasing a license. You may not redistribute, sell, sublicense, commercially repackage, publish derivative desktop apps, bundle the app into another product, or reuse doc2md branding without written permission.
 
 See:
 
