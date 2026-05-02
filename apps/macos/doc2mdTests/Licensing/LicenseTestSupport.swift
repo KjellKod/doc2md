@@ -6,6 +6,7 @@ final class InMemoryLicenseTokenStorage: LicenseTokenStorage {
     private(set) var savedTokens: [String] = []
     private(set) var clearCount = 0
     var failSave = false
+    var failClear = false
 
     init(candidate: StoredLicenseCandidate = .missing) {
         self.candidate = candidate
@@ -25,6 +26,9 @@ final class InMemoryLicenseTokenStorage: LicenseTokenStorage {
 
     func clearToken() throws {
         clearCount += 1
+        if failClear {
+            throw LicenseStorageError.failed("clear failed")
+        }
         candidate = .missing
     }
 }

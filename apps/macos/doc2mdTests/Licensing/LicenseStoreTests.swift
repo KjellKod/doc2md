@@ -79,4 +79,30 @@ final class LicenseStoreTests: XCTestCase {
             XCTFail("expected invalid state")
         }
     }
+
+    func testClearTokenAttemptsFallbackWhenKeychainClearFails() throws {
+        let fixture = LicenseFixtureFactory()
+        let keychain = InMemoryLicenseTokenStorage(candidate: .available(try fixture.token()))
+        let fallback = InMemoryLicenseTokenStorage(candidate: .available(try fixture.token()))
+        keychain.failClear = true
+        let store = LicenseStore(keychainStore: keychain, fallbackStore: fallback, verifier: fixture.verifier())
+
+        XCTAssertThrowsError(try store.clearToken())
+        XCTAssertEqual(keychain.clearCount, 1)
+        XCTAssertEqual(fallback.clearCount, 1)
+        XCTAssertEqual(fallback.candidate, .missing)
+    }
+
+    func testClearTokenAttemptsFallbackFailureAfterKeychainClear() throws {
+        let fixture = LicenseFixtureFactory()
+        let keychain = InMemoryLicenseTokenStorage(candidate: .available(try fixture.token()))
+        let fallback = InMemoryLicenseTokenStorage(candidate: .available(try fixture.token()))
+        fallback.failClear = true
+        let store = LicenseStore(keychainStore: keychain, fallbackStore: fallback, verifier: fixture.verifier())
+
+        XCTAssertThrowsError(try store.clearToken())
+        XCTAssertEqual(keychain.clearCount, 1)
+        XCTAssertEqual(keychain.candidate, .missing)
+        XCTAssertEqual(fallback.clearCount, 1)
+    }
 }

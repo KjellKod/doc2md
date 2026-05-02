@@ -2,12 +2,14 @@ import SwiftUI
 
 @main
 struct Doc2mdApp: App {
+    @StateObject private var licenseController: LicenseController
     @StateObject private var shellHost: ShellHost
     private let sparkleController: SparkleController
 
     init() {
         let sharedLicenseController = LicenseController()
         let sharedUpdatePreferences = UpdateCheckPreferences()
+        _licenseController = StateObject(wrappedValue: sharedLicenseController)
         _shellHost = StateObject(
             wrappedValue: ShellHost(
                 licenseController: sharedLicenseController,
@@ -80,7 +82,7 @@ struct Doc2mdApp: App {
                         set: { sparkleController.licensedMonthlyChecksEnabled = $0 }
                     )
                 )
-                .disabled(shellHost.licenseController.state.allowsReminders)
+                .disabled(licenseController.state.allowsReminders)
 
                 Divider()
 

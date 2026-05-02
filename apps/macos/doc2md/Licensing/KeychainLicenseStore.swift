@@ -27,10 +27,23 @@ final class KeychainLicenseStore: LicenseTokenStorage {
     }
 
     func saveToken(_ token: String) throws {
-        try clearToken()
+        let data = Data(token.utf8)
+        let query = baseQuery()
+        let updateAttributes: [String: Any] = [
+            kSecValueData as String: data,
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+        ]
 
-        var attributes = baseQuery()
-        attributes[kSecValueData as String] = Data(token.utf8)
+        let updateStatus = SecItemUpdate(query as CFDictionary, updateAttributes as CFDictionary)
+        if updateStatus == errSecSuccess {
+            return
+        }
+        guard updateStatus == errSecItemNotFound else {
+            throw LicenseStorageError.failed("Keychain write failed.")
+        }
+
+        var attributes = query
+        attributes[kSecValueData as String] = data
         attributes[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
 
         let status = SecItemAdd(attributes as CFDictionary, nil)

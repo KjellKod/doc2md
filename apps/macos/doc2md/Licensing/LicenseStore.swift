@@ -91,8 +91,25 @@ final class LicenseStore {
     }
 
     func clearToken() throws {
-        try keychainStore.clearToken()
-        try fallbackStore.clearToken()
+        var clearError: Error?
+
+        do {
+            try keychainStore.clearToken()
+        } catch {
+            clearError = error
+        }
+
+        do {
+            try fallbackStore.clearToken()
+        } catch {
+            if clearError == nil {
+                clearError = error
+            }
+        }
+
+        if let clearError {
+            throw clearError
+        }
     }
 
     private func readCandidate(from store: LicenseTokenStorage) -> StoredLicenseCandidate {
@@ -146,4 +163,3 @@ private enum CandidateClassification {
         return false
     }
 }
-
