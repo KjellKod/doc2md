@@ -28,7 +28,7 @@ const files: MarkdownFixture[] = [
 ];
 
 async function openHostedApp(page: Page) {
-  await page.goto("/");
+  await page.goto("./");
   await expect(page.getByRole("heading", { name: "Upload" })).toBeVisible();
 }
 
