@@ -1,10 +1,8 @@
 doc2md Desktop Shareware License
-Version 0.1 Business Draft
+Version 0.1
 
 Copyright (c) 2026 Kjell Hedström.
 All rights reserved except as expressly granted in this license.
-
-This is a business draft for legal review. It is not legal advice and should not be treated as final legal text until reviewed by qualified counsel.
 
 1. Scope
 

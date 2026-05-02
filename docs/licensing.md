@@ -2,8 +2,6 @@
 
 This guide explains the repository's mixed-license model in plain English.
 
-This is not legal advice. The custom desktop license is a business draft and should be reviewed by qualified counsel before public commercial reliance.
-
 ## Summary
 
 doc2md has two goals:
@@ -74,7 +72,7 @@ Do not add broad file headers mechanically. Add them where the boundary matters 
 
 ## Contribution And Provenance Notes
 
-Visible git history is not a legal audit. Before relying on the desktop license for public paid distribution, review:
+Before publishing paid desktop distribution terms, confirm project ownership records for:
 
 - non-owner commits
 - co-authors and AI assistance trailers

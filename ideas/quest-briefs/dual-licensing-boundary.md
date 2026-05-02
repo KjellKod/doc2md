@@ -46,7 +46,7 @@ Required planning/research scope
    - Fit for a source-visible shareware Mac app with no feature gating.
    - User trust impact.
    - Tooling/GitHub/npm metadata implications.
-4. Make a clear recommendation. If custom license text remains the recommendation, mark it as a business draft requiring lawyer review.
+4. Make a clear recommendation. If custom license text remains the recommendation, make the maintainer-owned release boundary explicit.
 5. Audit contribution/provenance risk before relicensing existing desktop files:
    - visible non-owner commits
    - co-authors
@@ -131,9 +131,9 @@ Constraints
 - Do not add feature gating or change license reminder behavior in this quest.
 - Do not move large code paths just to make license boundaries prettier unless the plan shows that the move is necessary and low risk.
 - Do not use `apps/mac`; this repo uses `apps/macos`.
-- Do not use vague restrictions like "substantially similar apps" unless legal review explicitly approves wording. Prefer restrictions tied to covered files, derivative works, redistribution, resale, sublicensing, and branding confusion.
+- Do not use vague restrictions like "substantially similar apps". Prefer restrictions tied to covered files, derivative works, redistribution, resale, sublicensing, and branding confusion.
 ```
 
 ## Recommended Quest Mode
 
-Run as a full quest if legal text and boundary decisions are part of the implementation. A solo quest is acceptable only if the implementation is limited to documentation, package metadata, and license-map files, with custom text marked as a business draft for lawyer review.
+Run as a full quest if license text and boundary decisions are part of the implementation. A solo quest is acceptable only if the implementation is limited to documentation, package metadata, and license-map files, with custom text kept narrow and release-ready.

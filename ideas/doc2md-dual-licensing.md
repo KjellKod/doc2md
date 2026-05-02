@@ -2,7 +2,7 @@
 
 ## Status
 
-Active proposal for a licensing cleanup quest. This is an engineering and business brief, not legal advice. Final custom or source-available license text needs legal review before public reliance.
+Active proposal for a licensing cleanup quest. This is an engineering and business brief for final maintainer approval before release.
 
 ## Problem
 
@@ -64,7 +64,7 @@ Before committing to custom text, validate existing source-available licenses:
 
 | Option | Fit | Concern |
 | --- | --- | --- |
-| Custom doc2md Desktop Shareware License / EULA | Best fit for the exact shareware app model. Can allow free use while blocking redistribution, sublicensing, resale, commercial repackaging, renamed builds, bundled distribution, and branding confusion. | Custom text needs lawyer review and is harder for users/tools to classify. Not OSI open source. |
+| Custom doc2md Desktop Shareware License / EULA | Best fit for the exact shareware app model. Can allow free use while blocking redistribution, sublicensing, resale, commercial repackaging, renamed builds, bundled distribution, and branding confusion. | Custom text is harder for users/tools to classify. Not OSI open source. |
 | Business Source License 1.1 | Existing source-available template with delayed open-source conversion. | Poor desktop fit. Grants copying/modification/redistribution and non-production use by default; "production use" is awkward for a desktop app; requires eventual open-source conversion no later than the license limit. |
 | Functional Source License / Fair Source | Existing fair-source style with delayed conversion to MIT/Apache. | Designed around non-compete production restrictions, often service-oriented; permits broad use/modification/distribution and forces eventual permissive conversion. |
 | Elastic License 2.0 | Short existing source-available license with limited restrictions. | Too permissive. Allows use, modification, derivative works, and redistribution; restrictions focus on managed services, license-key circumvention, and notices. |
@@ -187,12 +187,12 @@ Avoid vague language that could chill legitimate MIT-core use. In particular, do
 - Generated/release artifacts and app icons are not accidentally presented as MIT if the intent is all rights reserved or desktop-license-covered.
 - No source file gains contradictory license headers.
 - License docs use actual repo paths: `apps/macos`, not `apps/mac`.
-- A lawyer review checklist is included before public release.
+- A final release checklist is included before public release.
 - The plan includes an explicit contribution/provenance audit step before relicensing existing desktop files.
 - The root `LICENSE` no longer presents the whole repo as MIT.
 - The Mac-app distribution preserves required notices for bundled MIT code and third-party dependencies.
 
-## Questions For Legal Review
+## Release Review Questions
 
 - Is a custom desktop shareware/source-available license preferable to an existing source-available license for this exact app model?
 - Are restrictions on redistribution, derivative desktop apps, commercial repackaging, and reminder bypass drafted narrowly enough?
