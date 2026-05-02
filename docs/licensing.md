@@ -68,7 +68,7 @@ The Mac app may bundle MIT-licensed internal doc2md code and third-party depende
 
 Prior versions that were released under MIT remain available under MIT. The project cannot claw back MIT rights already granted for those versions.
 
-Future releases may use this mixed-license model. The maintainer may choose to tag or document the last repo-wide MIT version, for example `vX.Y.Z-last-mit`, but this quest does not create that tag.
+The current mixed-license model applies to future releases unless a later release states a different license boundary. Any last repo-wide MIT release should be identified in release notes or tags when that history matters to users.
 
 ## SPDX (Software Package Data Exchange) Guidance
 
