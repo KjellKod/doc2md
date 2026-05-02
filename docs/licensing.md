@@ -63,7 +63,7 @@ Prior versions that were released under MIT remain available under MIT. The proj
 
 Future releases may use this mixed-license model. The maintainer may choose to tag or document the last repo-wide MIT version, for example `vX.Y.Z-last-mit`, but this quest does not create that tag.
 
-## SPDX Guidance
+## SPDX (Software Package Data Exchange) Guidance
 
 Use SPDX headers where file-level clarity matters:
 
