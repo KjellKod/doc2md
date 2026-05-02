@@ -1,0 +1,27 @@
+ideas/doc2md-dual-licensing.md
+  8056ef714ed7dc72 1-205
+docs/quest-journal/dual-licensing-boundary_2026-05-02.md
+  8056ef714ed7dc72 1-120
+ideas/quest-briefs/dual-licensing-boundary.md
+  8056ef714ed7dc72 1-122,124-139
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "4efd6d1df179d0f11d2756775c59abd0e03ebe8f",
+  "prompts": {
+    "8056ef714ed7dc72": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019de630-980f-71d0-b937-efa289731a25",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 464,
+      "total_deletions": 0,
+      "accepted_lines": 463,
+      "overriden_lines": 1
+    }
+  }
+}
