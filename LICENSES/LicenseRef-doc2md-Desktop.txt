@@ -1,0 +1,91 @@
+doc2md Desktop Shareware License
+Version 0.1 Business Draft
+
+Copyright (c) 2026 Kjell Hedström.
+All rights reserved except as expressly granted in this license.
+
+This is a business draft for legal review. It is not legal advice and should not be treated as final legal text until reviewed by qualified counsel.
+
+1. Scope
+
+This license applies to the doc2md Mac desktop application, including the source code, app-specific UI, packaging, update logic, license-reminder logic, release and signing machinery, app icons, screenshots, branding assets, and related files located in `apps/macos/` or otherwise marked with:
+
+SPDX-License-Identifier: LicenseRef-doc2md-Desktop
+
+This license does not apply to doc2md components that are explicitly licensed under MIT or another license. In particular, it does not restrict the independent use of `packages/core/`, `@doc2md/core`, the CLI package, the hosted web app, root `src/`, shared converters, tests, examples, or documentation that are covered by MIT or another stated license.
+
+2. Free Use
+
+You may download and use the official doc2md Mac desktop application for free, including for internal commercial work.
+
+The app may show reminders asking you to purchase a license. Purchasing a license may remove or reduce those reminders. The paid license does not unlock additional conversion features unless the project says otherwise.
+
+3. Source Visibility
+
+The source is publicly visible to support transparency, trust, security review, issue diagnosis, and contribution proposals.
+
+Public source visibility does not grant open-source rights unless those rights are expressly granted in this license or another applicable license.
+
+4. What You May Do
+
+Subject to this license, you may:
+
+a. Use the official doc2md Mac desktop application.
+b. Inspect the covered source code.
+c. Build the app for your own personal or internal evaluation.
+d. Make private local changes or personal patches for your own personal or internal evaluation, as long as you do not distribute, publish, sell, sublicense, or provide those changed versions to others.
+
+5. What Requires Written Permission
+
+You may not do any of the following without explicit written permission from the copyright holder:
+
+a. Redistribute the Mac desktop app or modified versions of it.
+b. Publish, sell, sublicense, rent, lease, or commercially exploit the covered desktop app.
+c. Publish or distribute derivative desktop applications based on the covered desktop app.
+d. Repackage the app as part of another paid product, marketplace product, bundled commercial tool, or hosted service.
+e. Publish renamed or forked public builds of the covered desktop app.
+f. Remove, bypass, disable, or modify license reminders, payment prompts, update notices, copyright notices, license notices, or third-party notices in versions distributed to others.
+g. Use the doc2md name, logo, icons, screenshots, trade dress, domain names, or other branding in a way that suggests endorsement or creates confusion with the official project.
+h. Claim that your modified version is the official doc2md desktop app.
+
+6. Commercial Permission
+
+Permission to modify, redistribute, repackage, resell, sublicense, publish derivative desktop apps, bundle the app into another product, or use doc2md branding may be negotiated by contacting the project owner.
+
+No permission is granted unless it is in writing and signed or otherwise clearly approved by the copyright holder.
+
+7. Contributions
+
+Unless otherwise agreed in writing, contributions to files covered by this license are submitted under this license.
+
+The project may decline outside contributions to source-visible shareware areas unless the contributor agrees to separate contributor terms. A Developer Certificate of Origin alone may not be enough for future proprietary or source-visible distribution rights.
+
+8. Third-Party Software And MIT Components
+
+Third-party dependencies remain under their own licenses. This license does not change the rights or obligations that apply to third-party software.
+
+MIT-licensed doc2md components bundled into the Mac app remain under MIT and must keep their required notices.
+
+9. No Trademark License
+
+This license does not grant rights to use the doc2md name, logo, icons, screenshots, trade dress, domain names, or other branding except as needed to truthfully refer to the project.
+
+10. Termination
+
+If you violate this license, your rights under this license terminate automatically. The copyright holder may reinstate your rights in writing.
+
+11. Disclaimer Of Warranty
+
+The covered software is provided "as is", without warranty of any kind, express or implied, including but not limited to warranties of merchantability, fitness for a particular purpose, and noninfringement.
+
+12. Limitation Of Liability
+
+To the maximum extent permitted by law, the copyright holder will not be liable for any claim, damages, or other liability arising from the covered software or the use of the covered software.
+
+13. Governing Law
+
+This license is governed by the laws of [JURISDICTION], excluding conflict-of-law rules.
+
+14. Entire Agreement For This License
+
+This license is the entire permission granted for the covered desktop app unless replaced by a separate written agreement.

@@ -1,21 +1,33 @@
-MIT License
+# doc2md Licensing
 
-Copyright (c) 2026 Kjell Hedström, github.com/KjellKod/doc2md
+doc2md uses a mixed-license model. This file is a license map for the repository.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+## MIT-Licensed Components
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Unless a more specific license file says otherwise, these areas are licensed under the MIT License:
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+- `packages/core/`, including the `@doc2md/core` Node API and CLI package
+- `src/`, including the hosted web app, shared converters, and current desktop bridge React code
+- tests, examples, scripts, and documentation related to the MIT-licensed components
+
+See `LICENSES/MIT.txt`.
+
+## Mac Desktop App
+
+The Mac desktop app in `apps/macos/` is not licensed under MIT.
+
+The Mac desktop app is source-visible shareware covered by the doc2md Desktop Shareware License. You may inspect the source, use the official app for free, and make private local evaluation builds under that license. You may not redistribute, sell, sublicense, commercially repackage, publish derivative desktop apps, bundle the app into another product, or reuse doc2md branding without written permission from the copyright holder.
+
+See:
+
+- `apps/macos/LICENSE`
+- `LICENSES/LicenseRef-doc2md-Desktop.txt`
+- `docs/licensing.md`
+
+## Branding
+
+The doc2md name, logo, app icons, screenshots, trade dress, domain names, and product branding are not licensed for reuse except where explicitly stated. Do not use them in a way that suggests endorsement or creates confusion with the official doc2md project.
+
+## Third-Party Dependencies
+
+Third-party dependencies remain under their own licenses. MIT-licensed code bundled into the Mac app keeps its MIT notice requirements. See `apps/macos/THIRD_PARTY_NOTICES.md` for Mac app notice guidance.

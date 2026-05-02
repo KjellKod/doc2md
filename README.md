@@ -103,6 +103,12 @@ doc2md is a browser-first tool: conversion runs in the browser, output stays loc
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+doc2md uses a mixed-license model.
+
+The conversion engine, `@doc2md/core` package, CLI, hosted web app, and root `src/` code are licensed under the MIT License.
+
+The Mac desktop app in `apps/macos/` is source-visible shareware and is covered by a separate desktop license. You may inspect the source and use the official app for free, but you may not redistribute, sell, sublicense, commercially repackage, publish derivative desktop apps, bundle the app into another product, or reuse doc2md branding without written permission.
+
+See [LICENSE](LICENSE) and [docs/licensing.md](docs/licensing.md).
 
 **doc2md** is built with [Quest](https://github.com/KjellKod/quest/blob/main/README.md) — vetted by [Dexter](docs/dexter-journal/) and narrated by [Jean-Claude](docs/journal/), for a deliberate and robust engineering tool. An initiative through CandidTalentEdge.

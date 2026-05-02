@@ -1,0 +1,7 @@
+# License for @doc2md/core
+
+The code in this package is licensed under the MIT License.
+
+This package includes the `@doc2md/core` Node API and CLI package surface.
+
+See `../../LICENSES/MIT.txt`.

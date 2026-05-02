@@ -2,7 +2,7 @@
   "name": "doc2md",
   "private": true,
   "version": "0.1.0",
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "type": "module",
   "workspaces": [
     "packages/core"
