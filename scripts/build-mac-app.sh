@@ -2,7 +2,8 @@
 set -euo pipefail
 
 CONFIGURATION="Release"
-PERSISTENCE_SWIFT_SOURCE_GLOB="apps/macos/doc2md/*.swift"
+ALLOW_DEVELOPMENT_LICENSE_KEY_FOR_PR=0
+PERSISTENCE_SWIFT_SOURCE_ROOT="apps/macos/doc2md"
 NATIVE_API_ALLOWLIST=(
   "FileManager :: stat/read/temp-file creation/atomic replacement staging for user-selected Markdown files"
   "NSOpenPanel :: user-selected supported-document open panel"
@@ -14,13 +15,14 @@ NATIVE_API_ALLOWLIST=(
   "createFile :: sibling temp-file staging and placeholder creation before replaceItemAt"
   "removeItem :: cleanup for failed temp-file, placeholder writes, or disabled Application Support settings"
   "Application Support settings :: metadata-only settings-file read/write/delete/atomic replacement"
+  "Application Support license token :: license-token file read/write/delete under doc2md Application Support"
 )
 WATCHED_NATIVE_API_PATTERN='FileManager|NSOpenPanel|NSSavePanel|NSWorkspace|FileHandle|replaceItemAt|replaceItem\(|replacingItem|startAccessingSecurityScopedResource|stopAccessingSecurityScopedResource|createFile|removeItem|moveItem|copyItem|\.write\(to:'
 ALLOWED_NATIVE_API_PATTERN='FileManager|NSOpenPanel|NSSavePanel|NSWorkspace|replaceItemAt|startAccessingSecurityScopedResource|stopAccessingSecurityScopedResource|createFile|removeItem'
 FORBIDDEN_NATIVE_API_PATTERN='FileHandle|replaceItem\(|replacingItem|(^|[^A-Za-z0-9_])moveItem[[:space:]]*\(|(^|[^A-Za-z0-9_])copyItem[[:space:]]*\(|\.write\(to:'
 
 usage() {
-  printf 'Usage: %s [--configuration Debug|Release]\n' "$(basename "$0")"
+  printf 'Usage: %s [--configuration Debug|Release] [--allow-development-license-key-for-pr]\n' "$(basename "$0")"
 }
 
 fail() {
@@ -48,6 +50,32 @@ grep_matches_or_fail() {
   esac
 
   printf '%s\n' "$output"
+}
+
+collect_persistence_swift_sources() {
+  local source_root="$1"
+
+  [[ -d "$source_root" ]] || fail "native API allowlist scan source root not found: $source_root"
+
+  while IFS= read -r -d '' source_file; do
+    persistence_swift_sources+=("$source_file")
+  done < <(find "$source_root" -type f -name '*.swift' -print0 | sort -z)
+}
+
+is_allowed_native_api_match() {
+  local match="$1"
+
+  if printf '%s\n' "$match" | grep -Eq "$ALLOWED_NATIVE_API_PATTERN"; then
+    return 0
+  fi
+
+  case "$match" in
+    apps/macos/doc2md/Licensing/ApplicationSupportLicenseStore.swift:*'Data((token + "\n").utf8).write(to: tokenURL, options: [.atomic])'*)
+      return 0
+      ;;
+  esac
+
+  return 1
 }
 
 absolute_path() {
@@ -79,12 +107,26 @@ display_build_version() {
   node --input-type=module -e "import { getDisplayVersionInfo } from './packages/core/scripts/release-version.mjs'; console.log(getDisplayVersionInfo().version);"
 }
 
+verify_release_license_public_key() {
+  local source_file="apps/macos/doc2md/Licensing/LicensePublicKeys.swift"
+
+  [[ -f "$source_file" ]] || fail "license public key source not found: $source_file"
+
+  if grep -q 'isDevelopmentKey: true' "$source_file" || grep -q 'doc2md-dev-' "$source_file"; then
+    fail "Release builds must embed a production license public key and non-dev key_id before distribution."
+  fi
+}
+
 while (($#)); do
   case "$1" in
     --configuration)
       [[ $# -ge 2 ]] || fail "--configuration requires Debug or Release"
       CONFIGURATION="$2"
       shift 2
+      ;;
+    --allow-development-license-key-for-pr)
+      ALLOW_DEVELOPMENT_LICENSE_KEY_FOR_PR=1
+      shift
       ;;
     -h|--help)
       usage
@@ -140,12 +182,17 @@ BUILD_VERSION="$(display_build_version)"
 
 node scripts/generate-supported-formats.mjs --check
 
-shopt -s nullglob
-persistence_swift_sources=($PERSISTENCE_SWIFT_SOURCE_GLOB)
-shopt -u nullglob
+if [[ "$CONFIGURATION" = "Release" && "$ALLOW_DEVELOPMENT_LICENSE_KEY_FOR_PR" != "1" ]]; then
+  verify_release_license_public_key
+elif [[ "$CONFIGURATION" = "Release" ]]; then
+  printf 'Warning: allowing development license public key for PR-only Release compile. Distribution builds must not use this flag.\n' >&2
+fi
+
+persistence_swift_sources=()
+collect_persistence_swift_sources "$PERSISTENCE_SWIFT_SOURCE_ROOT"
 
 if ((${#persistence_swift_sources[@]} == 0)); then
-  fail "native API allowlist scan found no Swift sources for scope: $PERSISTENCE_SWIFT_SOURCE_GLOB"
+  fail "native API allowlist scan found no Swift sources under: $PERSISTENCE_SWIFT_SOURCE_ROOT"
 fi
 
 printf 'Native file API allowlist:\n'
@@ -155,13 +202,16 @@ done
 
 while IFS= read -r match; do
   [[ -n "$match" ]] || continue
-  fail "unexpected native file API outside allowlist: $match"
+
+  if ! is_allowed_native_api_match "$match"; then
+    fail "unexpected native file API outside allowlist: $match"
+  fi
 done < <(grep_matches_or_fail "$FORBIDDEN_NATIVE_API_PATTERN" "${persistence_swift_sources[@]}")
 
 while IFS= read -r match; do
   [[ -n "$match" ]] || continue
 
-  if ! printf '%s\n' "$match" | grep -Eq "$ALLOWED_NATIVE_API_PATTERN"; then
+  if ! is_allowed_native_api_match "$match"; then
     fail "unexpected native file API outside allowlist: $match"
   fi
 done < <(grep_matches_or_fail "$WATCHED_NATIVE_API_PATTERN" "${persistence_swift_sources[@]}")

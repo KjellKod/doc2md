@@ -203,7 +203,7 @@ The smoke quits the `doc2md` app it launched before exit and falls back to killi
 
 ## Sparkle Plumbing
 
-The Mac app links Sparkle 2 through Swift Package Manager and starts `SPUStandardUpdaterController` at launch. Automatic checks and automatic updates are disabled in `Info.plist`, so normal Debug and local Release launches do not contact production infrastructure. The committed `SUFeedURL` is loopback-only:
+The Mac app links Sparkle 2 through Swift Package Manager and starts `SPUStandardUpdaterController` at launch. Update checks are separate from license enforcement and never block open, edit, convert, save, or export. The committed `SUFeedURL` is loopback-only:
 
 ```text
 http://127.0.0.1:47654/appcast.xml
@@ -225,7 +225,9 @@ python3 -m http.server 47654 --bind 127.0.0.1
 
 Then launch the app with the environment override above and choose `doc2md > Check for Updates...`. The fixture advertises version `99.0` / build `9900`, which is newer than the local app version and should trigger Sparkle's standard update UI. The fixture uses a placeholder enclosure and signature for detection-only validation; the protected release workflow produces signed update archives and production appcasts.
 
-Offline launch validation: stop the fixture server, launch the app normally, and confirm the window appears without Sparkle errors. Because automatic checks are disabled, Sparkle should not block launch or show update UI unless the menu item is used.
+Offline launch validation: stop the fixture server, launch the app normally, and confirm the window appears without Sparkle errors. Sparkle should not block launch, document operations, or license state changes if an update check fails.
+
+Unlicensed, invalid, and license-check-failed users get discreet automatic checks with no opt-out. Licensed users can enable a persisted `Monthly Update Checks` menu toggle; it defaults off, checks no more than monthly when enabled, and does not mutate license state. Manual `Check for Updates...` remains available.
 
 Production update hosting target: `updates.doc2md.dev` should be the stable public Sparkle appcast host once DNS and release hosting are configured. GitHub Releases can continue storing versioned DMG/ZIP/appcast artifacts behind that public domain.
 
@@ -279,6 +281,18 @@ Open-source PR safety rules:
 - Do not check out PR head code in any job that can access release secrets. The release workflow checks out a resolved canonical tag SHA.
 - Keep Apple signing/notarization and Sparkle update signing in separate jobs so one secret family is never present with the other.
 - Run `python3 scripts/security_ci_guard.py` after workflow changes; it checks for `pull_request_target`, PR workflows that reference release secrets, release-secret jobs without environment gates, mixed Apple/Sparkle secret jobs, and possible committed private-key material.
+
+## Licensing MVP
+
+Phase 7 adds Mac-only honest-user licensing. The app remains free to keep using when unlicensed; a valid paid license removes occasional reminders. Hosted web remains free, stateless, and independent at `https://kjellkod.github.io/doc2md/`.
+
+The MVP license states are `Unlicensed`, `Licensed`, `Invalid`, and `License Check Failed`. There is no time-limited access state. License verification is local Ed25519 public-key verification over `doc2md-license-v1.<base64url-json-claims>`. The private signing key, merchant credentials, webhook secrets, customer records, Apple secrets, and Sparkle private key must not be committed or exposed to PR CI.
+
+License storage is local and non-syncing: Keychain is primary and Application Support is fallback. Conflict resolution verifies candidates first, then applies storage priority, so invalid Keychain data never deletes the only valid Application Support fallback.
+
+The `Enter License...` menu item opens local paste-token activation. The Mac-only `Buy License` affordance is disabled and says purchases are not live yet; it must not open `doc2md.dev/buy` or any checkout until a later launch change enables purchases. Before taking money, maintainers must assign merchant account ownership, tax/sales responsibility, refund/support workflow ownership, license delivery ownership, and explicit go-live approval.
+
+Unlicensed reminders are save-count based in the current startup session: after successful save 10, then 35, 60, and so on. Failed, cancelled, conflicted, open, edit, import, conversion, and export actions do not count, and reminders are shown only after save completion returns control to the app.
 
 Before tagging a release, manually bump both Xcode build settings in `apps/macos/doc2md.xcodeproj/project.pbxproj`:
 

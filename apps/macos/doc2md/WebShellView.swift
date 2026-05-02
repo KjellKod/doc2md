@@ -6,8 +6,26 @@ import WebKit
 private let logger = Logger(subsystem: "com.kjellkod.doc2md", category: "webshell")
 
 final class ShellHost: ObservableObject {
-    let shellBridge = ShellBridge()
+    let licenseController: LicenseController
+    let updatePreferences: UpdateCheckPreferences
+    lazy var licenseReminderController = LicenseReminderController(
+        licenseController: licenseController,
+        onEnterLicense: { [weak self] in
+            self?.menuController.showLicenseWindow()
+        }
+    )
+    lazy var shellBridge = ShellBridge(licenseReminderController: licenseReminderController)
     let menuController = MenuController()
+
+    init(
+        licenseController: LicenseController = LicenseController(),
+        updatePreferences: UpdateCheckPreferences = UpdateCheckPreferences()
+    ) {
+        self.licenseController = licenseController
+        self.updatePreferences = updatePreferences
+        menuController.licenseController = licenseController
+        menuController.updatePreferences = updatePreferences
+    }
 
     func attach(webView: WKWebView) {
         shellBridge.webView = webView

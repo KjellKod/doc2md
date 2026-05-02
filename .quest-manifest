@@ -28,6 +28,7 @@
 .claude/hooks/session-start.sh
 .claude/skills/celebrate/SKILL.md
 .claude/skills/git-commit-assistant/SKILL.md
+.claude/skills/grill-me/SKILL.md
 .claude/skills/gpt/SKILL.md
 .claude/skills/pr-assistant/SKILL.md
 .claude/skills/pr-shepherd/SKILL.md
@@ -44,6 +45,7 @@
 .skills/doc2md/examples/basic-usage.md
 .skills/doc2md/scripts/convert-documents.mjs
 .skills/git-commit-assistant/SKILL.md
+.skills/grill-me/SKILL.md
 .skills/gpt/SKILL.md
 .skills/implementer/SKILL.md
 .skills/jc-and-dexter/CELEBRATE.md
@@ -68,6 +70,7 @@
 .skills/quest/delegation/workflow.md
 .skills/review-anti-patterns.md
 .skills/review-decisions/SKILL.md
+.skills/sharpen/SKILL.md
 .skills/ux/SKILL.md
 scripts/quest_allowlist_matcher.py
 scripts/quest_backfill_journal.py
@@ -92,6 +95,7 @@ scripts/quest_preflight.sh
 scripts/quest_runtime/__init__.py
 scripts/quest_runtime/artifacts.py
 scripts/quest_runtime/claude_runner.py
+scripts/quest_runtime/quest_ids.py
 scripts/quest_runtime/pr_review_cycle.py
 scripts/quest_runtime/quest_ids.py
 scripts/quest_runtime/review_intelligence.py

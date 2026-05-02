@@ -26,6 +26,35 @@
 		9A0200000000000000000016 /* PersistenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A010000000000000000000F /* PersistenceStore.swift */; };
 		9A0200000000000000000017 /* PersistenceStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000010 /* PersistenceStoreTests.swift */; };
 		9A0200000000000000000018 /* THIRD_PARTY_NOTICES.md in Resources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000011 /* THIRD_PARTY_NOTICES.md */; };
+		9A0200000000000000000020 /* LicenseClaims.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000020 /* LicenseClaims.swift */; };
+		9A0200000000000000000021 /* LicenseToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000021 /* LicenseToken.swift */; };
+		9A0200000000000000000022 /* LicensePublicKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000022 /* LicensePublicKeys.swift */; };
+		9A0200000000000000000023 /* LicenseVerifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000023 /* LicenseVerifier.swift */; };
+		9A0200000000000000000024 /* LicenseState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000024 /* LicenseState.swift */; };
+		9A0200000000000000000025 /* LicenseStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000025 /* LicenseStore.swift */; };
+		9A0200000000000000000026 /* KeychainLicenseStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000026 /* KeychainLicenseStore.swift */; };
+		9A0200000000000000000027 /* ApplicationSupportLicenseStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000027 /* ApplicationSupportLicenseStore.swift */; };
+		9A0200000000000000000028 /* LicenseController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000028 /* LicenseController.swift */; };
+		9A0200000000000000000029 /* LicenseReminderController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000029 /* LicenseReminderController.swift */; };
+		9A020000000000000000002A /* UpdateCheckPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A010000000000000000002A /* UpdateCheckPreferences.swift */; };
+		9A020000000000000000002B /* LicenseWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A010000000000000000002B /* LicenseWindow.swift */; };
+		9A0200000000000000000030 /* LicenseClaims.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000020 /* LicenseClaims.swift */; };
+		9A0200000000000000000031 /* LicenseToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000021 /* LicenseToken.swift */; };
+		9A0200000000000000000032 /* LicensePublicKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000022 /* LicensePublicKeys.swift */; };
+		9A0200000000000000000033 /* LicenseVerifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000023 /* LicenseVerifier.swift */; };
+		9A0200000000000000000034 /* LicenseState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000024 /* LicenseState.swift */; };
+		9A0200000000000000000035 /* LicenseStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000025 /* LicenseStore.swift */; };
+		9A0200000000000000000036 /* KeychainLicenseStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000026 /* KeychainLicenseStore.swift */; };
+		9A0200000000000000000037 /* ApplicationSupportLicenseStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000027 /* ApplicationSupportLicenseStore.swift */; };
+		9A0200000000000000000038 /* LicenseController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000028 /* LicenseController.swift */; };
+		9A0200000000000000000039 /* LicenseReminderController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000029 /* LicenseReminderController.swift */; };
+		9A020000000000000000003A /* UpdateCheckPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A010000000000000000002A /* UpdateCheckPreferences.swift */; };
+		9A020000000000000000003B /* LicenseWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A010000000000000000002B /* LicenseWindow.swift */; };
+		9A0200000000000000000040 /* LicenseTestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000030 /* LicenseTestSupport.swift */; };
+		9A0200000000000000000041 /* LicenseVerifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000031 /* LicenseVerifierTests.swift */; };
+		9A0200000000000000000042 /* LicenseStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000032 /* LicenseStoreTests.swift */; };
+		9A0200000000000000000043 /* LicenseReminderControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000033 /* LicenseReminderControllerTests.swift */; };
+		9A0200000000000000000044 /* SparkleUpdatePreferenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000034 /* SparkleUpdatePreferenceTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,6 +86,23 @@
 		9A010000000000000000000F /* PersistenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceStore.swift; sourceTree = "<group>"; };
 		9A0100000000000000000010 /* PersistenceStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceStoreTests.swift; sourceTree = "<group>"; };
 		9A0100000000000000000011 /* THIRD_PARTY_NOTICES.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ../../THIRD_PARTY_NOTICES.md; sourceTree = "<group>"; };
+		9A0100000000000000000020 /* LicenseClaims.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseClaims.swift; sourceTree = "<group>"; };
+		9A0100000000000000000021 /* LicenseToken.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseToken.swift; sourceTree = "<group>"; };
+		9A0100000000000000000022 /* LicensePublicKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicensePublicKeys.swift; sourceTree = "<group>"; };
+		9A0100000000000000000023 /* LicenseVerifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseVerifier.swift; sourceTree = "<group>"; };
+		9A0100000000000000000024 /* LicenseState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseState.swift; sourceTree = "<group>"; };
+		9A0100000000000000000025 /* LicenseStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseStore.swift; sourceTree = "<group>"; };
+		9A0100000000000000000026 /* KeychainLicenseStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainLicenseStore.swift; sourceTree = "<group>"; };
+		9A0100000000000000000027 /* ApplicationSupportLicenseStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationSupportLicenseStore.swift; sourceTree = "<group>"; };
+		9A0100000000000000000028 /* LicenseController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseController.swift; sourceTree = "<group>"; };
+		9A0100000000000000000029 /* LicenseReminderController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseReminderController.swift; sourceTree = "<group>"; };
+		9A010000000000000000002A /* UpdateCheckPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateCheckPreferences.swift; sourceTree = "<group>"; };
+		9A010000000000000000002B /* LicenseWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseWindow.swift; sourceTree = "<group>"; };
+		9A0100000000000000000030 /* LicenseTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseTestSupport.swift; sourceTree = "<group>"; };
+		9A0100000000000000000031 /* LicenseVerifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseVerifierTests.swift; sourceTree = "<group>"; };
+		9A0100000000000000000032 /* LicenseStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseStoreTests.swift; sourceTree = "<group>"; };
+		9A0100000000000000000033 /* LicenseReminderControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseReminderControllerTests.swift; sourceTree = "<group>"; };
+		9A0100000000000000000034 /* SparkleUpdatePreferenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparkleUpdatePreferenceTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -99,10 +145,30 @@
 				9A0100000000000000000007 /* FileStore.swift */,
 				9A010000000000000000000F /* PersistenceStore.swift */,
 				9A010000000000000000000A /* SupportedFormats.generated.swift */,
+				9A0000000000000000000005 /* Licensing */,
 				9A0000000000000000000003 /* Resources */,
 				9A010000000000000000000D /* Info.plist */,
 			);
 			path = doc2md;
+			sourceTree = "<group>";
+		};
+		9A0000000000000000000005 /* Licensing */ = {
+			isa = PBXGroup;
+			children = (
+				9A0100000000000000000020 /* LicenseClaims.swift */,
+				9A0100000000000000000021 /* LicenseToken.swift */,
+				9A0100000000000000000022 /* LicensePublicKeys.swift */,
+				9A0100000000000000000023 /* LicenseVerifier.swift */,
+				9A0100000000000000000024 /* LicenseState.swift */,
+				9A0100000000000000000025 /* LicenseStore.swift */,
+				9A0100000000000000000026 /* KeychainLicenseStore.swift */,
+				9A0100000000000000000027 /* ApplicationSupportLicenseStore.swift */,
+				9A0100000000000000000028 /* LicenseController.swift */,
+				9A0100000000000000000029 /* LicenseReminderController.swift */,
+				9A010000000000000000002A /* UpdateCheckPreferences.swift */,
+				9A010000000000000000002B /* LicenseWindow.swift */,
+			);
+			path = Licensing;
 			sourceTree = "<group>";
 		};
 		9A0000000000000000000002 /* Products */ = {
@@ -130,8 +196,21 @@
 				9A0100000000000000000009 /* FileStoreTests.swift */,
 				9A0100000000000000000010 /* PersistenceStoreTests.swift */,
 				9A010000000000000000000B /* AppSchemeImportRouteTests.swift */,
+				9A0000000000000000000006 /* Licensing */,
 			);
 			path = doc2mdTests;
+			sourceTree = "<group>";
+		};
+		9A0000000000000000000006 /* Licensing */ = {
+			isa = PBXGroup;
+			children = (
+				9A0100000000000000000030 /* LicenseTestSupport.swift */,
+				9A0100000000000000000031 /* LicenseVerifierTests.swift */,
+				9A0100000000000000000032 /* LicenseStoreTests.swift */,
+				9A0100000000000000000033 /* LicenseReminderControllerTests.swift */,
+				9A0100000000000000000034 /* SparkleUpdatePreferenceTests.swift */,
+			);
+			path = Licensing;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -265,6 +344,18 @@
 				9A0200000000000000000015 /* PersistenceStore.swift in Sources */,
 				9A0200000000000000000009 /* SupportedFormats.generated.swift in Sources */,
 				9A0200000000000000000012 /* SparkleController.swift in Sources */,
+				9A0200000000000000000020 /* LicenseClaims.swift in Sources */,
+				9A0200000000000000000021 /* LicenseToken.swift in Sources */,
+				9A0200000000000000000022 /* LicensePublicKeys.swift in Sources */,
+				9A0200000000000000000023 /* LicenseVerifier.swift in Sources */,
+				9A0200000000000000000024 /* LicenseState.swift in Sources */,
+				9A0200000000000000000025 /* LicenseStore.swift in Sources */,
+				9A0200000000000000000026 /* KeychainLicenseStore.swift in Sources */,
+				9A0200000000000000000027 /* ApplicationSupportLicenseStore.swift in Sources */,
+				9A0200000000000000000028 /* LicenseController.swift in Sources */,
+				9A0200000000000000000029 /* LicenseReminderController.swift in Sources */,
+				9A020000000000000000002A /* UpdateCheckPreferences.swift in Sources */,
+				9A020000000000000000002B /* LicenseWindow.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -278,6 +369,23 @@
 				9A0200000000000000000017 /* PersistenceStoreTests.swift in Sources */,
 				9A0200000000000000000010 /* AppScheme.swift in Sources */,
 				9A0200000000000000000011 /* AppSchemeImportRouteTests.swift in Sources */,
+				9A0200000000000000000030 /* LicenseClaims.swift in Sources */,
+				9A0200000000000000000031 /* LicenseToken.swift in Sources */,
+				9A0200000000000000000032 /* LicensePublicKeys.swift in Sources */,
+				9A0200000000000000000033 /* LicenseVerifier.swift in Sources */,
+				9A0200000000000000000034 /* LicenseState.swift in Sources */,
+				9A0200000000000000000035 /* LicenseStore.swift in Sources */,
+				9A0200000000000000000036 /* KeychainLicenseStore.swift in Sources */,
+				9A0200000000000000000037 /* ApplicationSupportLicenseStore.swift in Sources */,
+				9A0200000000000000000038 /* LicenseController.swift in Sources */,
+				9A0200000000000000000039 /* LicenseReminderController.swift in Sources */,
+				9A020000000000000000003A /* UpdateCheckPreferences.swift in Sources */,
+				9A020000000000000000003B /* LicenseWindow.swift in Sources */,
+				9A0200000000000000000040 /* LicenseTestSupport.swift in Sources */,
+				9A0200000000000000000041 /* LicenseVerifierTests.swift in Sources */,
+				9A0200000000000000000042 /* LicenseStoreTests.swift in Sources */,
+				9A0200000000000000000043 /* LicenseReminderControllerTests.swift in Sources */,
+				9A0200000000000000000044 /* SparkleUpdatePreferenceTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

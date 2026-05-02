@@ -467,8 +467,10 @@ Distribution assumptions:
 
 - Do not put a Mac app upsell, pricing page, or download CTA on the hosted web app's main page until this phase explicitly chooses a distribution model.
 - `doc2md.dev` has been purchased and should become the canonical public domain for the Mac app's commercial distribution surface. Keep the hosted web app separate unless a later phase intentionally changes that boundary.
-- Evaluate Mac App Store distribution, direct signed DMG sales, or both. The release pipeline already supports direct signed/notarized DMG + Sparkle updates; App Store distribution would need a separate packaging/review path.
-- Until a public storefront is available, license purchase information stays routed through `https://github.com/kjellkod/doc2md` or `kjell@candidtalentedge.com`.
+- Use direct signed/notarized DMG distribution first. Defer Mac App Store distribution unless future constraints justify the operational cost; a hybrid direct-DMG plus App Store path remains a future option.
+- Use Lemon Squeezy as the first-choice merchant of record and Paddle as fallback only. Do not build both for the MVP.
+- Purchases are not live in the MVP. Mac-only purchase affordances must be disabled with plain "Purchases are not live yet" copy and no external checkout navigation until a later enabling change.
+- Before taking money, assign merchant account ownership, tax/sales responsibility, refund/support workflow ownership, license delivery ownership, and explicit go-live approval.
 - Prefer a merchant-of-record style sales platform or store channel that handles tax collection/remittance, VAT/GST/sales-tax paperwork, invoices/receipts, and customer purchase records.
 - Keep pricing easy to understand. Working hypothesis, not a commitment: a low annual price around `$20/year`, plus an optional perpetual license that lasts until the next major paid upgrade.
 - Keep license enforcement offline-friendly. The app should not require network access to open, edit, convert, save, or export documents.
@@ -476,9 +478,9 @@ Distribution assumptions:
 Expected changes:
 
 - Add a lightweight licensing model for the Mac app only:
-  - `Registered`, `Unregistered Evaluation`, and `License Check Failed` states.
-  - A local license file or activation token stored in the user's Application Support directory or Keychain.
-  - Occasional evaluation reminder for unregistered users after a simple trigger, such as every N launches or every N exports/saves.
+  - `Licensed`, `Unlicensed`, `Invalid`, and `License Check Failed` states. The MVP has no time-limited access state.
+  - A local signed license token stored in non-syncing Keychain, with non-syncing Application Support fallback.
+  - Occasional reminder for unlicensed users after successful save number 10 in a startup session, then every 25 successful saves in that same session.
   - A license entry window reachable from the app menu.
 - Add release-channel wording:
   - `doc2md.dev` is the canonical Mac app distribution/support/licensing domain.
@@ -490,6 +492,7 @@ Expected changes:
   - No document contents are sent to a licensing provider.
   - License checks must not block local document access.
   - Failed network checks degrade to a reminder, not data loss.
+  - Sparkle update checks remain independent from licensing. Unlicensed users have no automatic-update opt-out; licensed users can enable a persisted monthly-check toggle.
   - No license secrets, signing keys, or vendor API keys are committed.
 - Add a distribution decision record comparing:
   - Mac App Store only.
@@ -510,7 +513,7 @@ Acceptance criteria:
 Out of scope until the distribution decision is made:
 
 - Final price.
-- Final license provider.
+- Final production merchant launch.
 - App Store receipt validation.
 - Server-side license API.
 - Anti-tamper work beyond honest-user license checks.

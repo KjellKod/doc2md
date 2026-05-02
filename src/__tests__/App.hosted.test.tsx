@@ -13,6 +13,30 @@ const { convertFileMock } = vi.hoisted(() => ({
   convertFileMock: vi.fn(),
 }));
 
+const forbiddenHostedNetworkPattern =
+  /license\.doc2md\.dev|doc2md\.dev\/buy|checkout/i;
+
+const requestInputToURLString = (input: unknown) => {
+  if (typeof input === "string") {
+    return input;
+  }
+  if (input instanceof URL) {
+    return input.href;
+  }
+  if (typeof Request !== "undefined" && input instanceof Request) {
+    return input.url;
+  }
+  if (
+    input &&
+    typeof input === "object" &&
+    "url" in input &&
+    typeof input.url === "string"
+  ) {
+    return input.url;
+  }
+  return String(input);
+};
+
 vi.mock("../converters", () => ({
   convertFile: convertFileMock,
   getFileExtension: (fileName: string) =>
@@ -130,5 +154,59 @@ describe("App hosted save control", () => {
     expect(confirmSpy).not.toHaveBeenCalled();
     expect(editor).toHaveValue("");
     expect(screen.getByRole("status")).toHaveTextContent("Saved");
+  });
+
+  it("does not expose Mac licensing, checkout, browser license storage, or issuer requests", () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    const xhrOpenSpy = vi
+      .spyOn(XMLHttpRequest.prototype, "open")
+      .mockImplementation(() => undefined);
+    const sendBeaconSpy = vi.fn(() => true);
+    Object.defineProperty(navigator, "sendBeacon", {
+      configurable: true,
+      value: sendBeaconSpy,
+    });
+    const localStorageSetItem = vi.spyOn(
+      Storage.prototype,
+      "setItem",
+    );
+
+    render(<App />);
+
+    const bodyText = document.body.textContent ?? "";
+    expect(bodyText).not.toMatch(
+      /\b(License|Buy License|Checkout|doc2md\.dev\/buy|license\.doc2md\.dev)\b/i,
+    );
+    expect(localStorageSetItem).not.toHaveBeenCalledWith(
+      expect.stringMatching(/license/i),
+      expect.anything(),
+    );
+    expect(Object.keys(localStorage)).not.toEqual(
+      expect.arrayContaining([expect.stringMatching(/license/i)]),
+    );
+    expect(Object.keys(sessionStorage)).not.toEqual(
+      expect.arrayContaining([expect.stringMatching(/license/i)]),
+    );
+    expect(fetchSpy.mock.calls.map(([input]) => requestInputToURLString(input)))
+      .not.toEqual(
+        expect.arrayContaining([
+          expect.stringMatching(forbiddenHostedNetworkPattern),
+        ]),
+      );
+    expect(
+      xhrOpenSpy.mock.calls.map(([, url]) => requestInputToURLString(url)),
+    ).not.toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(forbiddenHostedNetworkPattern),
+      ]),
+    );
+    expect(
+      sendBeaconSpy.mock.calls.map(([url]) => requestInputToURLString(url)),
+    ).not.toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(forbiddenHostedNetworkPattern),
+      ]),
+    );
   });
 });

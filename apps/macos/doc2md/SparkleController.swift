@@ -3,16 +3,28 @@ import Sparkle
 
 final class SparkleController: NSObject, SPUUpdaterDelegate {
     private static let feedURLEnvironmentKey = "DOC2MD_SPARKLE_FEED_URL"
-
+    private let licenseController: LicenseController
+    private let updatePreferences: UpdateCheckPreferences
+    private let now: () -> Date
     private lazy var updaterController = SPUStandardUpdaterController(
         startingUpdater: false,
         updaterDelegate: self,
         userDriverDelegate: nil
     )
 
-    override init() {
+    init(
+        licenseController: LicenseController = LicenseController(),
+        updatePreferences: UpdateCheckPreferences = UpdateCheckPreferences(),
+        now: @escaping () -> Date = Date.init,
+        startAutomatically: Bool = true
+    ) {
+        self.licenseController = licenseController
+        self.updatePreferences = updatePreferences
+        self.now = now
         super.init()
-        startUpdater()
+        if startAutomatically {
+            startUpdater()
+        }
     }
 
     func checkForUpdates() {
@@ -29,9 +41,34 @@ final class SparkleController: NSObject, SPUUpdaterDelegate {
         return feedURL
     }
 
+    var licensedMonthlyChecksEnabled: Bool {
+        get {
+            updatePreferences.licensedMonthlyChecksEnabled
+        }
+        set {
+            updatePreferences.licensedMonthlyChecksEnabled = newValue
+        }
+    }
+
+    func shouldRunAutomaticCheck() -> Bool {
+        updatePolicy.shouldRunAutomaticCheck(for: licenseController.state)
+    }
+
+    func recordAutomaticCheck() {
+        updatePolicy.recordAutomaticCheck(for: licenseController.state)
+    }
+
+    private var updatePolicy: UpdateCheckPolicy {
+        UpdateCheckPolicy(preferences: updatePreferences, now: now)
+    }
+
     private func startUpdater() {
         do {
             try updaterController.startUpdater()
+            if shouldRunAutomaticCheck() {
+                updaterController.updater.checkForUpdatesInBackground()
+                recordAutomaticCheck()
+            }
         } catch {
             #if DEBUG
             print("Sparkle updater failed to start: \(error.localizedDescription)")
