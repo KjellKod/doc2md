@@ -25,11 +25,13 @@ Desktop-specific UI and bridge code is covered by the desktop shareware license 
 
 The Mac desktop app is source-visible shareware. It is not open source and is not MIT, except for bundled MIT Components that keep their own MIT terms.
 
-You may inspect the source, use the official app as an unregistered evaluation version with no fixed trial period, use it for internal commercial work, and make private local evaluation builds or personal patches under the doc2md Desktop Shareware License.
+You may inspect the source, use the official app as an unregistered evaluation version with no fixed trial period, evaluate it against real business workflows, and make private local evaluation builds or personal patches under the doc2md Desktop Shareware License.
 
-Evaluation means good-faith assessment of whether the official app meets your needs. If you decide to keep using the official app, or use it for ongoing productive work after evaluation, you must purchase a license. A registered license removes evaluation reminders. Conversion features are not artificially disabled in the unregistered evaluation version.
+If you use the official app for routine or ongoing productive work after evaluation, including work performed for an employer, client, customer, or other paid commercial purpose, you must purchase a license. Commercial productive use includes using the official app to create, convert, prepare, review, or deliver materials as part of paid employment, contract work, consulting, client services, business operations, or other work for which you or your organization receive compensation or business value.
 
-Private local modifications and local evaluation builds may be used only for personal or internal evaluation. For organizations, internal evaluation covers employees or contractors evaluating the app for that organization's own use. Private builds and patches may not be distributed, published, sold, sublicensed, hosted, bundled, provided to clients or other third parties, or used as a third-party service without written permission.
+A registered license removes evaluation reminders. Conversion features are not artificially disabled in the unregistered evaluation version. License purchase information is published through the project repository or, before a public storefront is available, by request to `kjell@candidtalentedge.com`.
+
+Private local modifications and local evaluation builds may be used only for personal or internal evaluation. For organizations, internal evaluation covers employees or contractors evaluating the app for that organization's own use. Private builds and patches may not be distributed, published, sold, sublicensed, hosted, bundled, provided to clients or other third parties, or used as a third-party service without written permission. A purchased license for the official app does not authorize productive use of self-built or modified copies.
 
 ## What Requires Written Permission
 
@@ -48,7 +50,7 @@ See:
 - `apps/macos/LICENSE`
 - `LICENSES/LicenseRef-doc2md-Desktop.txt`
 
-For licensing questions or written-permission requests, contact the project owner Kjell Hedström at `kjell@candidtalentedge.com` or through the project repository at `https://github.com/kjellkod/doc2md`. GitHub issues, pull requests, comments, reviews, and discussions are request channels only. They are not written permission unless Kjell Hedström expressly identifies the response as written permission under the desktop license and signs or otherwise authenticates that grant.
+For licensing questions or written-permission requests, contact the project owner Kjell Hedström at `kjell@candidtalentedge.com` or through the project repository at `https://github.com/kjellkod/doc2md`. GitHub issues, pull requests, comments, reviews, and discussions are request channels only. They are not written permission unless Kjell Hedström expressly identifies the response as written permission under the desktop license and signs that grant by handwritten, electronic, PGP, or SSH signature.
 
 ## What The Desktop License Does Not Restrict
 

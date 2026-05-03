@@ -8,7 +8,7 @@ Public app releases must bundle this notice inventory, or a generated equivalent
 
 ## Internal doc2md MIT Components
 
-The Mac app bundles a desktop web build generated from MIT-licensed doc2md code in the root `src/` tree and `packages/core/`.
+The Mac app bundles a desktop web build generated from MIT-licensed portions of the root `src/` tree and `packages/core/`, plus desktop-license-covered bridge and UI code where applicable.
 
 When distributing the Mac app, preserve the MIT notice for bundled MIT doc2md code. See:
 

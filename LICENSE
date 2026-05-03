@@ -9,6 +9,7 @@ Unless a more specific license file or file-level notice says otherwise, these a
 - `packages/core/`, including the `@doc2md/core` Node API and CLI package
 - hosted web app code, shared converters, and root `src/` files or sections that are not marked or documented as desktop-specific desktop app code
 - tests, examples, scripts, and documentation related to the MIT-licensed components
+- repository documentation, journal entries, diary entries, and quest briefs that narrate the project, including `docs/` and `ideas/`, except where a more specific notice applies
 
 See `LICENSES/MIT.txt`.
 
@@ -16,7 +17,7 @@ See `LICENSES/MIT.txt`.
 
 The Mac desktop app and desktop-specific UI/bridge code are not licensed under MIT, except for bundled MIT Components that keep their own MIT terms.
 
-The Mac desktop app is source-visible shareware covered by the doc2md Desktop Shareware License. You may inspect the source, use the official app as an unregistered evaluation version with no fixed trial period for good-faith evaluation, and make private local evaluation builds under that license. Ongoing productive use after evaluation requires purchasing a license. You may not redistribute, sell, sublicense, commercially repackage, publish derivative desktop apps, bundle the app into another product, offer a third-party conversion service with it, or reuse doc2md branding without written permission.
+The Mac desktop app is source-visible shareware covered by the doc2md Desktop Shareware License. You may inspect the source, use the official app as an unregistered evaluation version with no fixed trial period for good-faith evaluation, and make private local evaluation builds under that license. Routine or ongoing productive use after evaluation, including paid employment, client, customer, consulting, contract, or business operations work, requires purchasing a license. You may not redistribute, sell, sublicense, commercially repackage, publish derivative desktop apps, bundle the app into another product, offer a third-party conversion service with it, or reuse doc2md branding without written permission.
 
 Desktop-specific source covered by the desktop license includes `apps/macos/`, `src/desktop/`, `src/types/doc2mdShell.d.ts`, desktop-specific UI or bridge sections in otherwise shared files, and other files marked with `SPDX-License-Identifier: LicenseRef-doc2md-Desktop`.
 
