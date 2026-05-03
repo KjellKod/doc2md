@@ -32,8 +32,8 @@
 
 ## Agents
 
-- **The Judge** (arbiter): 
-- **The Implementer** (builder): 
+- **The Judge** (arbiter):
+- **The Implementer** (builder):
 
 ## Quest Brief
 
@@ -55,7 +55,7 @@ Goals:
   - Mac desktop app
   - desktop bridge/save/open/reveal/persistence behavior
 - Do not change the business model.
-- Do not introduce BSL, FSL, Elastic, PolyForm, Commons Clause, GPL, AGPL, or SSPL.
+- Do not introduce disallowed source-available or copyleft license families.
 
 Target areas to inspect:
 - `src/App.tsx`

@@ -15,4 +15,4 @@ If this PR touches desktop shareware components, I understand the project may re
 
 ## Release Notice Check
 
-- [ ] Generate transitive license notices from the lockfile and bundle them into the DMG before tagging the first signed release.
+- [ ] Generate transitive license notices from the npm lockfile, SwiftPM/Xcode package metadata, and bundled app contents, then bundle them into the DMG before tagging the first signed release.

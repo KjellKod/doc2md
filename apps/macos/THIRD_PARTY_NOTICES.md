@@ -32,15 +32,26 @@ The current app build can include these direct runtime dependencies from the roo
 | `remark-gfm` | 4.0.1 | MIT |
 | `turndown` | 7.2.2 | MIT |
 
+## Native Mac Dependencies
+
+The Mac app also links native SwiftPM/Xcode dependencies. Current native package metadata lives in:
+
+- `doc2md.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`
+- `doc2md.xcodeproj/project.pbxproj`
+
+The current native app build links Sparkle 2 through Swift Package Manager. Public app release notices should include required notices for Sparkle and any other native packages included in the exact released artifact.
+
 ## Transitive Dependencies
 
-Public app distributions should include notices for the exact transitive dependency set bundled in the released artifact, not a hand-maintained guess. Generate or verify that notice inventory from the lockfile and bundled app contents before release.
+Public app distributions should include notices for the exact JavaScript and native transitive dependency set bundled in the released artifact, not a hand-maintained guess. Generate or verify that notice inventory from the npm lockfile, SwiftPM/Xcode package metadata, and bundled app contents before release.
 
 Relevant dependency metadata lives in:
 
 - `../../package-lock.json`
 - `../../package.json`
 - `../../packages/core/package.json`
+- `doc2md.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`
+- `doc2md.xcodeproj/project.pbxproj`
 
 The release notice inventory should preserve license text required by bundled MIT, Apache-2.0, BSD, ISC, and other third-party packages.
 
