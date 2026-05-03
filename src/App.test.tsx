@@ -124,16 +124,6 @@ describe("App", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("does not render desktop persistence settings without a shell", () => {
-    render(<App />);
-
-    expect(
-      screen.queryByRole("button", { name: "Desktop settings" }),
-    ).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Persistence")).not.toBeInTheDocument();
-    expect(screen.queryByText("Recent files")).not.toBeInTheDocument();
-  });
-
   it("supports editor-first scratch drafts without uploads", async () => {
     render(<App />);
 
@@ -201,7 +191,7 @@ describe("App", () => {
     ).toBeInTheDocument();
   });
 
-  it("lets desktop users drag the workspace wider from the right edge", () => {
+  it("lets users drag the workspace wider from the right edge", () => {
     const originalInnerWidth = window.innerWidth;
     Object.defineProperty(window, "innerWidth", {
       configurable: true,

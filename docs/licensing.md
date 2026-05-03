@@ -14,12 +14,12 @@ doc2md has two goals:
 The following areas are licensed under the MIT License unless a more specific file or section says otherwise:
 
 - `packages/core/`, including `@doc2md/core` and its CLI
-- hosted web app code, shared converters, and root `src/` files or sections that are not marked or documented as desktop-specific desktop app code
+- hosted web app code, shared converters, and root `src/` files that are not marked or documented as desktop-specific desktop app code
 - tests, examples, scripts, and documentation related to the MIT-licensed components
 
 See `LICENSES/MIT.txt` and `packages/core/LICENSE`.
 
-Desktop-specific UI and bridge code is covered by the desktop shareware license when it is in `apps/macos/`, `src/desktop/`, `src/types/doc2mdShell.d.ts`, or otherwise marked with `SPDX-License-Identifier: LicenseRef-doc2md-Desktop`. Shared hosted-web and converter code remains MIT.
+Desktop-specific UI and bridge code is covered by the desktop shareware license when it is in `apps/macos/`, `src/desktop/`, `src/types/doc2mdShell.d.ts`, desktop-specific tests, or otherwise marked with `SPDX-License-Identifier: LicenseRef-doc2md-Desktop`. Shared hosted-web and converter code remains MIT.
 
 ## What Is Source-Visible Shareware?
 
@@ -29,9 +29,9 @@ You may inspect the source, use the official app as an unregistered evaluation v
 
 If you use the official app for routine or ongoing productive work after evaluation, including work performed for an employer, client, customer, or other paid commercial purpose, you must purchase a license. Commercial productive use includes using the official app to create, convert, prepare, review, or deliver materials as part of paid employment, contract work, consulting, client services, business operations, or other work for which you or your organization receive compensation or business value.
 
-A registered license removes evaluation reminders. Conversion features are not artificially disabled in the unregistered evaluation version. License purchase information is published through the project repository or, before a public storefront is available, by request to `kjell@candidtalentedge.com`.
+A registered license removes evaluation reminders. Conversion features are not artificially disabled in the unregistered evaluation version. License purchase information is published at `https://github.com/kjellkod/doc2md` or, before a public storefront is available, by request to `kjell@candidtalentedge.com`.
 
-Private local modifications and local evaluation builds may be used only for personal or internal evaluation. For organizations, internal evaluation covers employees or contractors evaluating the app for that organization's own use. Private builds and patches may not be distributed, published, sold, sublicensed, hosted, bundled, provided to clients or other third parties, or used as a third-party service without written permission. A purchased license for the official app does not authorize productive use of self-built or modified copies.
+Private local modifications and local evaluation builds may be used only for personal or internal evaluation. For organizations, internal evaluation covers employees or contractors evaluating the app for that organization's own use. Private builds and patches may not be distributed, published, sold, sublicensed, hosted, bundled, provided to clients or other third parties, or used as a third-party service without written permission. A purchased license for the official app does not authorize productive use of self-built or modified copies, including unmodified self-built copies. Productive use of any copy other than the official app requires written permission.
 
 ## What Requires Written Permission
 

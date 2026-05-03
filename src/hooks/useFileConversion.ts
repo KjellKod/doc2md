@@ -1,30 +1,24 @@
 import { useRef, useState } from "react";
-import { convertFile, getFileExtension } from "../converters";
+import { convertFile } from "../converters";
 import {
   CONVERSION_TIMEOUT_MS,
   MAX_BROWSER_FILE_SIZE_BYTES,
   OVERSIZED_FILE_MESSAGE,
 } from "../converters/messages";
 import type { FileEntry } from "../types";
-// Desktop-specific bridge metadata handling in this shared hook is Covered Software
-// under LicenseRef-doc2md-Desktop. Hosted-web/shared conversion logic remains MIT.
-import type { ShellLineEnding, ShellOpenOk } from "../types/doc2mdShell";
 import { downloadRemoteDocument } from "../utils/remoteDocument";
 import {
   applyConversionResult,
   createImportedEntry,
-  createDesktopMarkdownEntry,
+  createMarkdownEntry,
   createScratchEntry,
   createPendingEntries,
   getConversionFailureWarning,
   markEntryConverting,
   markEntryError,
-  replaceEntryWithDesktopMarkdown,
+  renameEntryFile,
+  replaceEntryWithMarkdown,
 } from "./useFileConversion.helpers";
-
-function basename(path: string) {
-  return path.split(/[\\/]/).filter(Boolean).pop() || "Untitled.md";
-}
 
 function scratchNameAt(index: number) {
   return index === 1 ? "Untitled.md" : `Untitled ${index}.md`;
@@ -45,7 +39,7 @@ export function useFileConversion() {
   const [entries, setEntries] = useState<FileEntry[]>([]);
   const scratchNamesRef = useRef<string[]>([]);
   scratchNamesRef.current = entries
-    .filter((entry) => entry.isScratch && !entry.desktopFile)
+    .filter((entry) => entry.isScratch)
     .map((entry) => entry.name);
 
   function updateEntry(id: string, updater: (entry: FileEntry) => FileEntry) {
@@ -155,8 +149,12 @@ export function useFileConversion() {
     return scratchEntry.id;
   }
 
-  function addOpenedFileEntry(openedFile: ShellOpenOk) {
-    const openedEntry = createDesktopMarkdownEntry(openedFile);
+  function addMarkdownEntry(args: {
+    name: string;
+    content: string;
+    lastModified?: number;
+  }) {
+    const openedEntry = createMarkdownEntry(args);
     setEntries((currentEntries) => [
       ...currentEntries.map((entry) => ({
         ...entry,
@@ -168,17 +166,8 @@ export function useFileConversion() {
     return openedEntry.id;
   }
 
-  function addImportedFileEntry(args: {
-    file: File;
-    path: string;
-    mtimeMs: number;
-    sourceFormat: string;
-  }) {
-    const importedEntry = createImportedEntry(args.file, {
-      path: args.path,
-      format: args.sourceFormat,
-      mtimeMs: args.mtimeMs,
-    });
+  function addImportedFileEntry(file: File) {
+    const importedEntry = createImportedEntry(file);
 
     setEntries((currentEntries) => [
       ...currentEntries.map((entry) => ({
@@ -193,38 +182,27 @@ export function useFileConversion() {
     return importedEntry.id;
   }
 
-  function replaceEntryWithOpenedFile(entryId: string, openedFile: ShellOpenOk) {
-    setEntries((currentEntries) =>
-      currentEntries.map((entry) =>
-        entry.id === entryId
-          ? replaceEntryWithDesktopMarkdown(entry, openedFile)
-          : entry,
-      ),
-    );
-  }
-
-  function updateEntryDesktopFile(
+  function replaceEntryWithMarkdownFile(
     entryId: string,
-    metadata: {
-      path: string;
-      mtimeMs: number;
-      lineEnding: ShellLineEnding;
+    args: {
+      name: string;
+      content: string;
+      lastModified?: number;
     },
   ) {
     setEntries((currentEntries) =>
       currentEntries.map((entry) =>
         entry.id === entryId
-          ? {
-              ...entry,
-              file: new File([entry.editedMarkdown ?? entry.markdown], basename(metadata.path), {
-                type: "text/markdown",
-              }),
-              name: basename(metadata.path),
-              format: getFileExtension(basename(metadata.path)) || entry.format,
-              isScratch: false,
-              desktopFile: metadata,
-            }
+          ? replaceEntryWithMarkdown(entry, args)
           : entry,
+      ),
+    );
+  }
+
+  function renameEntry(entryId: string, name: string) {
+    setEntries((currentEntries) =>
+      currentEntries.map((entry) =>
+        entry.id === entryId ? renameEntryFile(entry, name) : entry,
       ),
     );
   }
@@ -289,14 +267,14 @@ export function useFileConversion() {
     addFiles,
     addUrl,
     addScratchEntry,
-    addOpenedFileEntry,
+    addMarkdownEntry,
     addImportedFileEntry,
     clearEntries,
     clearEntriesById,
-    replaceEntryWithOpenedFile,
+    replaceEntryWithMarkdownFile,
+    renameEntry,
     selectEntry,
     selectedEntry,
-    updateEntryDesktopFile,
     updateMarkdown,
   };
 }

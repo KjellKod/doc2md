@@ -273,7 +273,6 @@ describe("useFileConversion", () => {
       selected: true,
       isScratch: true,
     });
-    expect(result.current.entries[2]?.desktopFile).toBeUndefined();
     expect(result.current.selectedEntry?.id).toBe(
       result.current.entries[2]?.id,
     );
@@ -295,11 +294,7 @@ describe("useFileConversion", () => {
     ]);
 
     act(() => {
-      result.current.updateEntryDesktopFile(result.current.entries[1]!.id, {
-        path: "/Users/me/Notes.md",
-        mtimeMs: 10,
-        lineEnding: "lf",
-      });
+      result.current.renameEntry(result.current.entries[1]!.id, "Notes.md");
     });
     act(() => {
       result.current.addScratchEntry();
@@ -390,19 +385,14 @@ describe("useFileConversion", () => {
     expect(result.current.selectedEntry?.id).toBe(alpha!.id);
   });
 
-  it("adds imported files through the shared conversion pipeline and keeps source metadata", async () => {
+  it("adds imported files through the shared conversion pipeline with a markdown save suggestion", async () => {
     convertFileMock.mockResolvedValue(createSuccessResult("# Imported"));
 
     const { result } = renderHook(() => useFileConversion());
     const file = new File(["hello"], "imported.txt", { type: "text/plain" });
 
     act(() => {
-      result.current.addImportedFileEntry({
-        file,
-        path: "/Users/me/imported.txt",
-        mtimeMs: 99,
-        sourceFormat: "txt",
-      });
+      result.current.addImportedFileEntry(file);
     });
 
     await waitFor(() => {
@@ -415,13 +405,7 @@ describe("useFileConversion", () => {
     expect(result.current.entries[0]).toMatchObject({
       name: "imported.md",
       format: "md",
-      sourceMeta: {
-        path: "/Users/me/imported.txt",
-        format: "txt",
-        mtimeMs: 99,
-      },
     });
-    expect(result.current.entries[0]?.desktopFile).toBeUndefined();
   });
 
   it("converts re-added files after clearing entries", async () => {

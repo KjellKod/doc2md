@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import type { Theme } from "../types/doc2mdShell";
+import type { Theme } from "../types/theme";
 
 export interface ThemeContextValue {
   theme: Theme;

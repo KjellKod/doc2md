@@ -79,24 +79,13 @@ describe("useFileConversion helpers", () => {
     });
   });
 
-  it("creates imported entries with a markdown save suggestion and source metadata", () => {
-    expect(
-      createImportedEntry(createFile("meeting-notes.txt"), {
-        path: "/Users/me/meeting-notes.txt",
-        format: "txt",
-        mtimeMs: 42,
-      }),
-    ).toMatchObject({
+  it("creates imported entries with a markdown save suggestion", () => {
+    expect(createImportedEntry(createFile("meeting-notes.txt"))).toMatchObject({
       file: expect.objectContaining({ name: "meeting-notes.txt" }),
       name: "meeting-notes.md",
       format: "md",
       status: "pending",
       selected: true,
-      sourceMeta: {
-        path: "/Users/me/meeting-notes.txt",
-        format: "txt",
-        mtimeMs: 42,
-      },
     });
   });
 

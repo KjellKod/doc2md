@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import type { DesktopSaveState } from "../../desktop/saveState";
+import type { SaveState } from "../../types/saveState";
 import SaveStatePill from "../SaveStatePill";
 
 describe("SaveStatePill", () => {
@@ -9,7 +9,7 @@ describe("SaveStatePill", () => {
     cleanup();
   });
 
-  it.each<[DesktopSaveState, string]>([
+  it.each<[SaveState, string]>([
     ["saved", "Saved"],
     ["edited", "Edited"],
     ["saving", "Saving"],

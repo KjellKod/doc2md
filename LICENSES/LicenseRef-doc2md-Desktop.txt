@@ -12,7 +12,7 @@ The Official App may be used as an unregistered evaluation version with no fixed
 
 2. Definitions
 
-"Covered Software" means the doc2md Mac desktop application and desktop-specific code, files, assets, packaging, update logic, license-reminder logic, release and signing machinery, app icons, screenshots, Branding, and related materials located in `apps/macos/`, `src/desktop/`, `src/types/doc2mdShell.d.ts`, desktop-specific UI or bridge sections in otherwise shared files, or other files marked with:
+"Covered Software" means the doc2md Mac desktop application and desktop-specific code, files, assets, packaging, update logic, license-reminder logic, release and signing machinery, app icons, screenshots, Branding, and related materials located in `apps/macos/`, `src/desktop/`, `src/types/doc2mdShell.d.ts`, desktop-specific tests or files marked with:
 
 SPDX-License-Identifier: LicenseRef-doc2md-Desktop
 
@@ -20,7 +20,7 @@ SPDX-License-Identifier: LicenseRef-doc2md-Desktop
 
 "Covered Source" means the source code and related source-visible materials for the Covered Software.
 
-"MIT Components" means doc2md components that are licensed under the MIT License or another stated open-source license, including `@doc2md/core`, `packages/core/`, hosted web app code, shared converters, root `src/` files and sections not marked or documented as desktop-specific Covered Software, files marked `SPDX-License-Identifier: MIT`, and files that otherwise state they are MIT-licensed.
+"MIT Components" means doc2md components that are licensed under the MIT License or another stated open-source license, including `@doc2md/core`, `packages/core/`, hosted web app code, shared converters, root `src/` files not marked or documented as desktop-specific Covered Software, files marked `SPDX-License-Identifier: MIT`, and files that otherwise state they are MIT-licensed.
 
 "Branding" means the doc2md name, logos, icons, screenshots, trade dress, domain names, product names, release names, and other source identifiers associated with doc2md.
 
@@ -46,6 +46,8 @@ Evaluation may include personal use and evaluation against real business workflo
 
 If you use the Official App for routine or ongoing productive work after evaluation, including work performed for an employer, client, customer, or other paid commercial purpose, you must purchase a license.
 
+License purchase information is published at `https://github.com/kjellkod/doc2md` or, before a public storefront is available, by request to `kjell@candidtalentedge.com`.
+
 Commercial productive use includes using the Official App to create, convert, prepare, review, or deliver materials as part of paid employment, contract work, consulting, client services, business operations, or other work for which you or your organization receive compensation or business value.
 
 This section does not allow Redistribution, resale, sublicensing, public derivative apps, marketplace listings, hosted-service bundling, client redistribution, use as a managed third-party conversion service, or other commercialization of the Covered Software itself.
@@ -58,7 +60,7 @@ You may build the Covered Software locally for your own personal or internal eva
 
 You may make private local changes or personal patches to the Covered Source for your own personal or internal evaluation. For an organization, internal evaluation means evaluation by that organization and its employees or contractors for that organization's own use. Those private local changes and builds may not be distributed, published, sold, sublicensed, rented, leased, hosted, bundled, provided to clients or other third parties, or used to offer a public or third-party service without Written Permission.
 
-A purchased license for the Official App does not authorize productive use of self-built or modified copies. Productive use of any copy other than the Official App requires Written Permission.
+A purchased license for the Official App does not authorize productive use of self-built or modified copies, including self-built copies made from unmodified source. Productive use of any copy other than the Official App requires Written Permission.
 
 6. Registered License And Evaluation Reminders
 
@@ -66,7 +68,7 @@ The Official App may show evaluation reminders while it is unregistered.
 
 Purchasing and applying a registered license removes evaluation reminders for the licensed user or licensed scope.
 
-License purchase information is published through the project repository at `https://github.com/kjellkod/doc2md` or, before a public storefront is available, by request to `kjell@candidtalentedge.com`.
+License purchase information is published at `https://github.com/kjellkod/doc2md` or, before a public storefront is available, by request to `kjell@candidtalentedge.com`.
 
 The unregistered evaluation version is intended to remain fully usable for conversion during evaluation. Conversion features are not artificially disabled solely because the Official App is unregistered.
 

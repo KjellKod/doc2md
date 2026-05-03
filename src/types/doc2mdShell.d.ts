@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: LicenseRef-doc2md-Desktop
 
+import type { Theme } from "./theme";
+
 export type ShellLineEnding = "lf" | "crlf";
-export type Theme = "light" | "dark";
 
 export interface ShellOpenMarkdownOk {
   ok: true;

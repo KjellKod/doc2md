@@ -11,7 +11,7 @@ import {
   within,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import App from "../App";
+import DesktopApp from "../desktop/DesktopApp";
 import type { Doc2mdShell } from "../types/doc2mdShell";
 import {
   MAX_BROWSER_FILE_SIZE_BYTES,
@@ -90,7 +90,7 @@ describe("App desktop bridge", () => {
   });
 
   it("renders no desktop-only DOM when window.doc2mdShell is absent", () => {
-    render(<App />);
+    render(<DesktopApp />);
 
     expect(screen.queryByTestId("desktop-menu-bridge")).not.toBeInTheDocument();
     expect(screen.getByText("No files or drafts yet.")).toBeInTheDocument();
@@ -122,7 +122,7 @@ describe("App desktop bridge", () => {
     }));
     const cleanupShell = installMockShell({ openFile, statFile });
 
-    render(<App />);
+    render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
     await screen.findByRole("button", { name: "Open Alpha.md" });
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
@@ -162,7 +162,7 @@ describe("App desktop bridge", () => {
     }));
     const cleanupShell = installMockShell({ openFile, statFile });
 
-    render(<App />);
+    render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
     await screen.findByRole("button", { name: "Open Edited.md" });
 
@@ -237,7 +237,7 @@ describe("App desktop bridge", () => {
     );
     const cleanupShell = installMockShell({ openFile, statFile });
 
-    render(<App />);
+    render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
     await screen.findByRole("button", { name: "Open Alpha.md" });
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
@@ -273,7 +273,7 @@ describe("App desktop bridge", () => {
     }));
     const cleanupShell = installMockShell({ saveFile, saveFileAs });
 
-    render(<App />);
+    render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
     await screen.findByRole("button", { name: /untitled\.md/i });
     fireEvent.change(screen.getByLabelText("Edit markdown"), {
@@ -330,7 +330,7 @@ describe("App desktop bridge", () => {
     }));
     const cleanupShell = installMockShell({ openFile, statFile });
 
-    render(<App />);
+    render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
     await screen.findByRole("button", { name: "Open Alpha.md" });
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
@@ -376,7 +376,7 @@ describe("App desktop bridge", () => {
     );
     const cleanupShell = installMockShell({ openFile, statFile });
 
-    render(<App />);
+    render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
     await screen.findByRole("button", { name: "Open Alpha.md" });
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
@@ -439,7 +439,7 @@ describe("App desktop bridge", () => {
       ),
     });
 
-    render(<App />);
+    render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
     await screen.findByRole("button", { name: /untitled\.md/i });
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
@@ -456,7 +456,7 @@ describe("App desktop bridge", () => {
   it("gates desktop-only DOM when the shell version is incompatible", () => {
     const cleanupShell = installMockShell({ version: 1 });
 
-    render(<App />);
+    render(<DesktopApp />);
 
     expect(screen.queryByTestId("desktop-menu-bridge")).not.toBeInTheDocument();
     expect(
@@ -478,7 +478,7 @@ describe("App desktop bridge", () => {
       getPersistenceSettings: undefined,
     } as unknown as Doc2mdShell;
 
-    render(<App />);
+    render(<DesktopApp />);
 
     expect(screen.queryByTestId("desktop-menu-bridge")).not.toBeInTheDocument();
     expect(
@@ -490,7 +490,7 @@ describe("App desktop bridge", () => {
   it("does not show desktop file status before a file or draft exists", () => {
     const cleanupShell = installMockShell();
 
-    render(<App />);
+    render(<DesktopApp />);
 
     expect(
       screen.queryByLabelText("Desktop file status"),
@@ -503,7 +503,7 @@ describe("App desktop bridge", () => {
     const confirmSpy = vi.spyOn(window, "confirm");
     const cleanupShell = installMockShell();
 
-    render(<App />);
+    render(<DesktopApp />);
 
     expect(screen.getByTestId("desktop-menu-bridge")).toBeInTheDocument();
 
@@ -527,7 +527,7 @@ describe("App desktop bridge", () => {
   it("creates separate uniquely named drafts on repeated native New", async () => {
     const cleanupShell = installMockShell();
 
-    render(<App />);
+    render(<DesktopApp />);
 
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
     await screen.findByRole("button", { name: "Open Untitled.md" });
@@ -569,7 +569,7 @@ describe("App desktop bridge", () => {
       saveFileAs,
     });
 
-    render(<App />);
+    render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
     await screen.findByRole("button", { name: /original\.md/i });
 
@@ -608,7 +608,7 @@ describe("App desktop bridge", () => {
       })),
     });
 
-    render(<App />);
+    render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
     await screen.findByRole("button", { name: /dirty\.md/i });
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
@@ -679,7 +679,7 @@ describe("App desktop bridge", () => {
       saveFileAs,
     });
 
-    render(<App />);
+    render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
     await screen.findByRole("button", { name: /dirty\.md/i });
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
@@ -722,7 +722,7 @@ describe("App desktop bridge", () => {
   it("renders the desktop app-ready marker with visible title and save state", async () => {
     const cleanupShell = installMockShell();
 
-    render(<App />);
+    render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
 
     await waitFor(() =>
@@ -753,7 +753,7 @@ describe("App desktop bridge", () => {
       })),
     });
 
-    render(<App />);
+    render(<DesktopApp />);
 
     fireEvent.click(await screen.findByRole("button", { name: "Desktop settings" }));
 
@@ -778,7 +778,7 @@ describe("App desktop bridge", () => {
       })),
     });
 
-    render(<App />);
+    render(<DesktopApp />);
 
     expect(
       await screen.findByRole("button", { name: "Switch to night mode" }),
@@ -810,7 +810,7 @@ describe("App desktop bridge", () => {
       setPersistenceEnabled,
     });
 
-    render(<App />);
+    render(<DesktopApp />);
     fireEvent.click(await screen.findByRole("button", { name: "Desktop settings" }));
     const checkbox = screen.getByLabelText("Persistence");
 
@@ -880,7 +880,7 @@ describe("App desktop bridge", () => {
       saveFile,
     });
 
-    render(<App />);
+    render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
 
     await waitFor(() => expect(getPersistenceSettings).toHaveBeenCalledTimes(2));
@@ -925,7 +925,7 @@ describe("App desktop bridge", () => {
       setPersistenceTheme,
     });
 
-    render(<App />);
+    render(<DesktopApp />);
 
     await waitFor(() => expect(getPersistenceSettings).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(setPersistenceTheme).not.toHaveBeenCalled());
@@ -961,7 +961,7 @@ describe("App desktop bridge", () => {
       setPersistenceTheme,
     });
 
-    render(<App />);
+    render(<DesktopApp />);
     await waitFor(() => expect(getPersistenceSettings).toHaveBeenCalledTimes(1));
     fireEvent.click(await screen.findByRole("button", { name: "Switch to day mode" }));
     fireEvent.click(screen.getByRole("button", { name: "Desktop settings" }));
@@ -993,7 +993,7 @@ describe("App desktop bridge", () => {
       setPersistenceTheme,
     });
 
-    render(<App />);
+    render(<DesktopApp />);
     await waitFor(() => expect(getPersistenceSettings).toHaveBeenCalledTimes(1));
     fireEvent.click(await screen.findByRole("button", { name: "Switch to day mode" }));
 
@@ -1012,7 +1012,7 @@ describe("App desktop bridge", () => {
       })),
     });
 
-    render(<App />);
+    render(<DesktopApp />);
 
     expect(await screen.findByText("Settings unavailable.")).toBeInTheDocument();
     expect(localStorage.length).toBe(0);
@@ -1036,7 +1036,7 @@ describe("App desktop bridge", () => {
       })),
     });
 
-    render(<App />);
+    render(<DesktopApp />);
     fireEvent.click(await screen.findByRole("button", { name: "Desktop settings" }));
     fireEvent.click(screen.getByLabelText("Persistence"));
 
@@ -1050,7 +1050,7 @@ describe("App desktop bridge", () => {
   it("keeps mode switcher save control and find replace usable when desktop settings opens and closes", async () => {
     const cleanupShell = installMockShell();
 
-    render(<App />);
+    render(<DesktopApp />);
 
     fireEvent.click(await screen.findByRole("button", { name: "Desktop settings" }));
     expect(screen.getByLabelText("Persistence")).toBeInTheDocument();
@@ -1104,7 +1104,7 @@ describe("App desktop bridge", () => {
       saveFile,
     });
 
-    render(<App />);
+    render(<DesktopApp />);
 
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
 
@@ -1149,7 +1149,7 @@ describe("App desktop bridge", () => {
       saveFile,
     });
 
-    render(<App />);
+    render(<DesktopApp />);
 
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
     await waitFor(() =>
@@ -1202,7 +1202,7 @@ describe("App desktop bridge", () => {
       saveFileAs,
     });
 
-    render(<App />);
+    render(<DesktopApp />);
 
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
 
@@ -1246,7 +1246,7 @@ describe("App desktop bridge", () => {
       ),
     });
 
-    render(<App />);
+    render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
 
     await waitFor(() =>
@@ -1285,7 +1285,7 @@ describe("App desktop bridge", () => {
       ),
     });
 
-    render(<App />);
+    render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
 
     expect(
@@ -1335,7 +1335,7 @@ describe("App desktop bridge", () => {
       saveFileAs,
     });
 
-    render(<App />);
+    render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
 
     await waitFor(() =>
@@ -1410,7 +1410,7 @@ describe("App desktop bridge", () => {
       saveFileAs,
     });
 
-    render(<App />);
+    render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
     await screen.findByText("Converting locally.");
 
@@ -1464,7 +1464,7 @@ describe("App desktop bridge", () => {
       saveFileAs,
     });
 
-    render(<App />);
+    render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
 
     expect(
@@ -1497,7 +1497,7 @@ describe("App desktop bridge", () => {
       ),
     });
 
-    render(<App />);
+    render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
 
     expect(
@@ -1517,7 +1517,7 @@ describe("App desktop bridge", () => {
     }));
     const cleanupShell = installMockShell({ saveFileAs });
 
-    render(<App />);
+    render(<DesktopApp />);
 
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
     await screen.findByRole("button", { name: /untitled\.md/i });
@@ -1553,7 +1553,7 @@ describe("App desktop bridge", () => {
       saveFileAs,
     });
 
-    render(<App />);
+    render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
     await waitFor(() =>
       expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
@@ -1588,7 +1588,7 @@ describe("App desktop bridge", () => {
       });
     const cleanupShell = installMockShell({ saveFileAs });
 
-    render(<App />);
+    render(<DesktopApp />);
 
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
     await screen.findByRole("button", { name: /untitled\.md/i });
@@ -1638,7 +1638,7 @@ describe("App desktop bridge", () => {
       saveFile,
     });
 
-    const { container } = render(<App />);
+    const { container } = render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
     await waitFor(() =>
       expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
@@ -1684,7 +1684,7 @@ describe("App desktop bridge", () => {
       })),
     });
 
-    render(<App />);
+    render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
     await screen.findByRole("button", { name: /conflict\.md/i });
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
@@ -1749,7 +1749,7 @@ describe("App desktop bridge", () => {
       saveFileAs,
     });
 
-    render(<App />);
+    render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
     await screen.findByRole("button", { name: /conflict\.md/i });
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
@@ -1802,7 +1802,7 @@ describe("App desktop bridge", () => {
         message: "Disk write failed.",
       })),
     });
-    const { container } = render(<App />);
+    const { container } = render(<DesktopApp />);
 
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
     await waitFor(() =>
@@ -1854,7 +1854,7 @@ describe("App desktop bridge", () => {
       });
     const cleanupShell = installMockShell({ openFile, saveFile });
 
-    render(<App />);
+    render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
     await screen.findByRole("button", { name: /alpha\.md/i });
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
@@ -1925,7 +1925,7 @@ describe("App desktop bridge", () => {
       })),
     });
 
-    render(<App />);
+    render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
     await waitFor(() =>
       expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
@@ -1975,7 +1975,7 @@ describe("App desktop bridge", () => {
       })),
     });
 
-    render(<App />);
+    render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
     await screen.findByRole("button", { name: /reload\.md/i });
 
@@ -2017,7 +2017,7 @@ describe("App desktop bridge", () => {
       saveFile,
     });
 
-    render(<App />);
+    render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
     await waitFor(() =>
       expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
@@ -2052,7 +2052,7 @@ describe("App desktop bridge", () => {
       revealInFinder,
     });
 
-    render(<App />);
+    render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
     await waitFor(() =>
       expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
@@ -2089,7 +2089,7 @@ describe("App desktop bridge", () => {
       revealInFinder,
     });
 
-    render(<App />);
+    render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.revealInFinder));
 
     expect(
