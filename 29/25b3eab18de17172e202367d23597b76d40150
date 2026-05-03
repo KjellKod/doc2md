@@ -1,0 +1,85 @@
+LICENSES/LicenseRef-doc2md-Desktop.txt
+  9927e0ed2a2fad42 9,11,15,23,29,37-38,47,49,57,85,101,105,107,129
+src/desktop/__tests__/bridgeClient.test.ts
+  9927e0ed2a2fad42 1-2
+src/desktop/bridgeClient.ts
+  9927e0ed2a2fad42 1-2
+src/types/doc2mdShell.d.ts
+  9927e0ed2a2fad42 1-2
+src/desktop/saveState.ts
+  9927e0ed2a2fad42 1-2
+src/hooks/useFileConversion.ts
+  9927e0ed2a2fad42 9-10
+README.md
+  9927e0ed2a2fad42 108,110
+docs/licensing.md
+  9927e0ed2a2fad42 14,17,22,26,30,32,43,51,55,65,69,71,93
+src/desktop/useNativeMenuEvents.ts
+  9927e0ed2a2fad42 1-2
+src/desktop/__tests__/bridgeFlows.test.ts
+  9927e0ed2a2fad42 1-2
+src/desktop/mockShellBridge.ts
+  9927e0ed2a2fad42 1-2
+src/desktop/useDesktopCapability.ts
+  9927e0ed2a2fad42 1-2
+apps/macos/LICENSE
+  9927e0ed2a2fad42 3,7
+apps/macos/THIRD_PARTY_NOTICES.md
+  9927e0ed2a2fad42 7-8
+src/App.tsx
+  9927e0ed2a2fad42 11-12
+src/desktop/__tests__/useDesktopCapability.test.tsx
+  9927e0ed2a2fad42 1-2
+src/__tests__/App.desktop.test.tsx
+  9927e0ed2a2fad42 1-2
+src/hooks/useFileConversion.helpers.ts
+  9927e0ed2a2fad42 5-6
+src/styles/global.css
+  9927e0ed2a2fad42 1-5
+docs/dexter-journal/README.md
+  9927e0ed2a2fad42 10
+src/desktop/__tests__/mockShellBridge.test.ts
+  9927e0ed2a2fad42 1-2
+src/desktop/__tests__/useNativeMenuEvents.test.tsx
+  9927e0ed2a2fad42 1-2
+docs/diary/2026-05-02.md
+  9927e0ed2a2fad42 1,10-11,13-14,21
+apps/macos/README.md
+  9927e0ed2a2fad42 107-108
+apps/macos/doc2md.xcodeproj/project.pbxproj
+  9927e0ed2a2fad42 28,59,122,226
+src/desktop/__tests__/macBuildAllowlist.test.ts
+  9927e0ed2a2fad42 1-2
+docs/quest-journal/dual-licensing-boundary_2026-05-02.md
+  9927e0ed2a2fad42 8,12,14,34-35,63,68
+src/desktop/__tests__/saveState.test.ts
+  9927e0ed2a2fad42 1-2
+src/desktop/useDesktopSaveState.ts
+  9927e0ed2a2fad42 1-2
+LICENSE
+  9927e0ed2a2fad42 7,10,17,19-21,36-39
+src/desktop/LICENSE
+  9927e0ed2a2fad42 1-7
+docs/dexter-journal/036-dual-licensing-boundary.md
+  9927e0ed2a2fad42 1-11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "2925b3eab18de17172e202367d23597b76d40150",
+  "prompts": {
+    "9927e0ed2a2fad42": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019de997-6fa6-7561-80e7-f8039e882c2a",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 124,
+      "total_deletions": 48,
+      "accepted_lines": 124,
+      "overriden_lines": 0
+    }
+  }
+}
