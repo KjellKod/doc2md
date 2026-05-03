@@ -1,0 +1,35 @@
+LICENSE
+  9927e0ed2a2fad42 12,20
+apps/macos/LICENSE
+  9927e0ed2a2fad42 7
+apps/macos/THIRD_PARTY_NOTICES.md
+  9927e0ed2a2fad42 11
+docs/licensing.md
+  9927e0ed2a2fad42 28,30,32-34,53
+LICENSES/LicenseRef-doc2md-Desktop.txt
+  9927e0ed2a2fad42 11,29,41,45,47,49-51,61-62,69-70,89
+docs/dexter-journal/036-dual-licensing-boundary.md
+  9927e0ed2a2fad42 5,11
+README.md
+  9927e0ed2a2fad42 110
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "536d9f439a64c200b74da7d61e2eb598f9fa8a7c",
+  "prompts": {
+    "9927e0ed2a2fad42": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019de997-6fa6-7561-80e7-f8039e882c2a",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 26,
+      "total_deletions": 17,
+      "accepted_lines": 36,
+      "overriden_lines": 0
+    }
+  }
+}
