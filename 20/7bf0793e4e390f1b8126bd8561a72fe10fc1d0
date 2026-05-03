@@ -1,0 +1,48 @@
+docs/journal/031-celebrate-desktop-license-boundary.md
+  9caa906dcbe2261f 1-108
+docs/dexter-journal/README.md
+  9caa906dcbe2261f 9
+docs/quest-journal/README.md
+  9caa906dcbe2261f 5
+docs/quest-journal/desktop-license-boundary_2026-05-03.md
+  9caa906dcbe2261f 1-176
+docs/dexter-journal/038-desktop-license-boundary-refactor.md
+  9caa906dcbe2261f 1-25
+docs/diary/2026-05-03.md
+  9caa906dcbe2261f 1-30
+docs/journal/README.md
+  9caa906dcbe2261f 9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "207bf0793e4e390f1b8126bd8561a72fe10fc1d0",
+  "prompts": {
+    "9caa906dcbe2261f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019dee8a-c3e9-70a2-bd1d-fe0f27423431",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 378,
+      "total_deletions": 0,
+      "accepted_lines": 378,
+      "overriden_lines": 0
+    },
+    "c941bbae1318abc1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019def5b-e9e0-7dc3-828a-a9e78268125d",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 4085,
+      "total_deletions": 0,
+      "accepted_lines": 4029,
+      "overriden_lines": 57
+    }
+  }
+}
