@@ -6,6 +6,8 @@ import {
   OVERSIZED_FILE_MESSAGE,
 } from "../converters/messages";
 import type { FileEntry } from "../types";
+// Desktop-specific bridge metadata handling in this shared hook is Covered Software
+// under LicenseRef-doc2md-Desktop. Hosted-web/shared conversion logic remains MIT.
 import type { ShellLineEnding, ShellOpenOk } from "../types/doc2mdShell";
 import { downloadRemoteDocument } from "../utils/remoteDocument";
 import {

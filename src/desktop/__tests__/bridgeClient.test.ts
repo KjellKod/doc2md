@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: LicenseRef-doc2md-Desktop
+
 import { afterEach, describe, expect, it } from "vitest";
 import type { Doc2mdShell } from "../../types/doc2mdShell";
 import { getShell, hasShell } from "../bridgeClient";

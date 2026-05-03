@@ -2,6 +2,8 @@ import { getFileExtension } from "../converters";
 import { CORRUPT_FILE_MESSAGE, TIMEOUT_MESSAGE } from "../converters/messages";
 import type { ConversionResult } from "../converters/types";
 import type { FileEntry } from "../types";
+// Desktop-specific entry helpers in this shared file are Covered Software under
+// LicenseRef-doc2md-Desktop. Hosted-web/shared conversion helpers remain MIT.
 import type { ShellOpenOk } from "../types/doc2mdShell";
 
 export function createEntryId(

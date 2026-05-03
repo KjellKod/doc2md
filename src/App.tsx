@@ -8,6 +8,8 @@ import InstallPage from "./components/InstallPage";
 import PreviewPanel from "./components/PreviewPanel";
 import ThemeProvider from "./components/ThemeProvider";
 import ThemeToggle from "./components/ThemeToggle";
+// Desktop-specific UI and bridge sections in this shared file are Covered Software
+// under LicenseRef-doc2md-Desktop. Hosted-web/shared sections remain MIT.
 import { useDesktopCapability } from "./desktop/useDesktopCapability";
 import type { DesktopSaveState } from "./desktop/saveState";
 import { useDesktopSaveState } from "./desktop/useDesktopSaveState";

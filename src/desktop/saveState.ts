@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: LicenseRef-doc2md-Desktop
+
 export type DesktopSaveState =
   | "saved"
   | "edited"

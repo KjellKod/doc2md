@@ -1,10 +1,10 @@
 # License for the doc2md Mac Desktop App
 
-The code and assets in this directory are not licensed under MIT.
+Except for bundled MIT Components and third-party dependencies that keep their own license terms, the app-specific code and assets in this directory are not licensed under MIT.
 
 The Mac desktop app in `apps/macos/` is source-visible shareware covered by the doc2md Desktop Shareware License.
 
-Written-permission requests may be sent to `kjell@candidtalentedge.com` or raised through `https://github.com/kjellkod/doc2md`.
+Written-permission requests may be sent to the project owner Kjell Hedström at `kjell@candidtalentedge.com` or raised through `https://github.com/kjellkod/doc2md`. GitHub issues, pull requests, comments, reviews, and discussions are request channels only. They are not written permission unless Kjell Hedström expressly identifies the response as written permission under the desktop license and signs or otherwise authenticates that grant.
 
 See:
 

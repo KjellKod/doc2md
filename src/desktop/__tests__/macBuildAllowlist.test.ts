@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: LicenseRef-doc2md-Desktop
+
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 

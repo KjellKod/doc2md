@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: LicenseRef-doc2md-Desktop
+
 import { useCallback, useState } from "react";
 import {
   initialSaveState,

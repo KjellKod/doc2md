@@ -1,3 +1,8 @@
+/*
+ * Shared MIT stylesheet. Desktop-specific selectors in this file are Covered
+ * Software under LicenseRef-doc2md-Desktop.
+ */
+
 :root {
   font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", sans-serif;
   line-height: 1.5;

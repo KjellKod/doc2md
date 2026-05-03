@@ -104,6 +104,8 @@ xcodebuild -project apps/macos/doc2md.xcodeproj -scheme doc2md -configuration Re
 
 Release-style builds run the Xcode `Build Desktop Web Bundle` phase before Copy Bundle Resources. That phase runs `npm run build:desktop` and copies `dist/` into `apps/macos/doc2md/Resources/Web/`, which is bundled as `Web/index.html` inside the app.
 
+The same target bundles `apps/macos/THIRD_PARTY_NOTICES.md` into `doc2md.app/Contents/Resources/THIRD_PARTY_NOTICES.md`. Public DMGs and other release artifacts must keep that notice file or a generated equivalent for the exact released artifact.
+
 `npm run build:desktop` runs `npm run generate:mac-supported-formats` first so the Swift open-panel extension list stays in sync with `SUPPORTED_FORMATS` from `src/types/index.ts`.
 
 If Xcode cannot find `npm` from its GUI environment, set `NPM_BIN` to an absolute npm executable path for the build.

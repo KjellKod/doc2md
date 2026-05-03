@@ -4,6 +4,8 @@ This file identifies notice sources for public `doc2md.app` distributions.
 
 The Mac desktop app is source-visible shareware, but it bundles code that remains under MIT or third-party dependency licenses. Required notices must travel with the app distribution where applicable.
 
+Public app releases must bundle this notice inventory, or a generated equivalent for the exact released artifact, inside the `.app` and any DMG or other installer distribution.
+
 ## Internal doc2md MIT Components
 
 The Mac app bundles a desktop web build generated from MIT-licensed doc2md code in the root `src/` tree and `packages/core/`.

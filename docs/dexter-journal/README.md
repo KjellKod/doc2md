@@ -7,7 +7,7 @@ For the other perspective, see [Jean-Claude's Journal](../journal/).
 | # | Title | Theme |
 |---|-------|-------|
 | 037 | [Requiem: Desktop License Polish](037-requiem-desktop-license-polish.md) | Burying implied open-source rights, jurisdiction placeholders, and broad commercial language before publication |
-| 036 | [Dual Licensing Boundary](034-dual-licensing-boundary.md) | Making the public-source trust boundary explicit without letting root MIT speak for the desktop app |
+| 036 | [Dual Licensing Boundary](036-dual-licensing-boundary.md) | Making the public-source trust boundary explicit without letting root MIT speak for the desktop app |
 | 035 | [Requiem: Playwright Browser Baseline](035-requiem-playwright-browser-baseline.md) | Burying jsdom-only confidence, retry-masked failures, and a download check that forgot to count |
 | 034 | [Playwright Browser Baseline](034-playwright-browser-baseline.md) | Giving the hosted app a real browser witness without letting the baseline become a framework |
 | 032 | [Opened Files Bulk Actions](032-opened-files-bulk-actions.md) | Making selection explicit and file state local before the active document could start lying |

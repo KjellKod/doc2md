@@ -5,13 +5,13 @@
 - Completed: 2026-05-02
 - Mode: workflow
 - Quality: Gold
-- Outcome: `$quest resolve this .claude/worktrees/license-improvements-dual-model/ideas/quest-briefs/dual-licensing-boundary.md` The user selected option 2 after preflight reported the Claude bridge unavailab...
+- Outcome: Completed a Codex-only Quest after the user selected the fallback path when Claude bridge preflight reported the Claude CLI usage limit. The Quest aligned repository licensing around a mixed MIT plus desktop shareware model.
 
 ## What Shipped
 
-**Problem**: The repository still presents itself as repo-wide MIT through the root `LICENSE`, root `package.json`, and `README.md`, but the repo now includes a Mac desktop app with source-visible shareware/commercial behavior, app branding, Sparkle/update/release plumbing, native Swift code, des...
+**Problem**: The repository still presented itself as repo-wide MIT through the root `LICENSE`, root package metadata, and `README.md`, but the repo now includes a Mac desktop app with source-visible shareware behavior, app branding, update and release plumbing, native Swift code, desktop bridge code, and app-specific assets.
 
-## Files Changed
+## Quest Artifacts
 
 - `.quest/dual-licensing-boundary_2026-05-01__2036/phase_01_plan/plan.md`
 - `.quest/dual-licensing-boundary_2026-05-01__2036/phase_01_plan/arbiter_verdict.md.next`
@@ -31,8 +31,8 @@
 
 ## Agents
 
-- **The Judge** (arbiter): 
-- **The Implementer** (builder): 
+- **The Judge** (arbiter): Codex
+- **The Implementer** (builder): Codex
 
 ## Quest Brief
 
@@ -60,12 +60,12 @@ This journal embeds the celebration payload used by `/celebrate`.
   "agents": [
     {
       "name": "arbiter",
-      "model": "",
+      "model": "Codex",
       "role": "The Judge"
     },
     {
       "name": "builder",
-      "model": "",
+      "model": "Codex",
       "role": "The Implementer"
     }
   ],

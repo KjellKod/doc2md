@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: LicenseRef-doc2md-Desktop
+
 import "@testing-library/jest-dom/vitest";
 import {
   act,
