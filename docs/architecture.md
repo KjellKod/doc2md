@@ -79,16 +79,18 @@ Plain-text view:
                     |                                           ^
                     | shared MIT code used by all surfaces      |
                     v                                           |
-        +-----------+-----------+       +-------------------+   |
-        | Hosted Web UI         |       | @doc2md/core CLI  |   |
-        +-----------------------+       +-------------------+   |
-                    |                                           |
-                    v                                           |
-        +-----------+-----------+                  license boundary
-        | Mac Desktop App       |<--------------------------------+
-        +-----------------------+       desktop-only UI, bridge,
-                                        persistence, save/open/reveal,
-                                        native menu, and CSS
+        consumers of shared MIT code:                    |
+        +-----------------------+                        |
+        | Hosted Web UI         |                        |
+        +-----------------------+                        |
+        +-----------------------+                        |
+        | @doc2md/core CLI      |                        |
+        +-----------------------+                        |
+        +-----------------------+           license boundary
+        | Mac Desktop App       |<-------------------------+
+        +-----------------------+   desktop-only UI, bridge,
+                                    persistence, save/open/reveal,
+                                    native menu, and CSS
 ```
 
 ## Shared Converter Layer
