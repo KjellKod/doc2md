@@ -1,0 +1,23 @@
+apps/macos/README.md
+  9caa906dcbe2261f 290
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "f42abd9b6b9b8cb324d2efa22edaf090417c483d",
+  "prompts": {
+    "9caa906dcbe2261f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019dee8a-c3e9-70a2-bd1d-fe0f27423431",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 37,
+      "overriden_lines": 0
+    }
+  }
+}
