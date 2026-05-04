@@ -1,0 +1,38 @@
+apps/macos/doc2md/Resources/Credits.rtf
+  65905c71be63ba2d 1-3
+src/__tests__/noticeInventoryDrift.test.ts
+  6685d12c18a6d487 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "13245ebb093deadbf4814494c1431248fd287841",
+  "prompts": {
+    "65905c71be63ba2d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019df3ec-7cf7-78c3-a890-e3c8e6b88c08",
+        "model": "gpt-5.2"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 254,
+      "total_deletions": 0,
+      "accepted_lines": 246,
+      "overriden_lines": 0
+    },
+    "6685d12c18a6d487": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019df402-2049-79c2-99aa-017aab32eec8",
+        "model": "gpt-5.2"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
