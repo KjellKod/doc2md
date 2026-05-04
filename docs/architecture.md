@@ -72,24 +72,28 @@ flowchart LR
 Plain-text view:
 
 ```text
-MIT region                                           LicenseRef-doc2md-Desktop region
-------------------------------------------------------------------------------------------------
-src/converters/                                     apps/macos/
-packages/core/ and @doc2md/core                     src/desktop/
-root src/ excluding src/desktop/                    src/types/doc2mdShell.d.ts
-src/components/
-MIT-marked files
-
-             shared MIT code used by all surfaces
-        +--------------------------------------------+
-        |                                            |
-        v                                            v
-Hosted Web UI      @doc2md/core package/CLI      Mac Desktop App
-                                                   ^
-                                                   |
-                         license boundary ---------+
-                         desktop-only UI, bridge, persistence,
-                         save/open/reveal, native menu, and CSS
++----------------------------------------+      +----------------------------------------+
+| MIT region                             |      | LicenseRef-doc2md-Desktop region      |
+|                                        |      |                                        |
+| src/converters/                        |      | apps/macos/                            |
+| packages/core/ and @doc2md/core        |      | src/desktop/                           |
+| root src/ excluding src/desktop/       |      | src/types/doc2mdShell.d.ts             |
+| src/components/                        |      |                                        |
+| MIT-marked files                       |      |                                        |
++-------------------+--------------------+      +-------------------+--------------------+
+                    |                                           ^
+                    | shared MIT code used by all surfaces      |
+                    v                                           |
+        +-----------+-----------+       +-------------------+   |
+        | Hosted Web UI         |       | @doc2md/core CLI  |   |
+        +-----------------------+       +-------------------+   |
+                    |                                           |
+                    v                                           |
+        +-----------+-----------+                  license boundary
+        | Mac Desktop App       |<--------------------------------+
+        +-----------------------+       desktop-only UI, bridge,
+                                        persistence, save/open/reveal,
+                                        native menu, and CSS
 ```
 
 ## Shared Converter Layer
