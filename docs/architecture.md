@@ -25,6 +25,50 @@ doc2md converts documents to Markdown through three surfaces: a hosted browser U
 
 `src/converters/` is the shared source of truth for CSV, DOCX, HTML, JSON, Markdown, PDF, PPTX, TSV, TXT, and XLSX conversion. It is imported by all three surfaces.
 
+## License Boundary Diagram
+
+```mermaid
+flowchart LR
+  subgraph MIT["MIT region"]
+    converters["src/converters/"]
+    core["packages/core/ and @doc2md/core"]
+    sharedSrc["root src/ excluding src/desktop/"]
+    components["src/components/"]
+    mitMarked["MIT-marked files"]
+  end
+
+  boundary["license boundary"]
+
+  subgraph Desktop["LicenseRef-doc2md-Desktop region"]
+    macos["apps/macos/"]
+    desktopReact["src/desktop/"]
+    shellTypes["src/types/doc2mdShell.d.ts"]
+  end
+
+  hosted["Hosted Web UI"]
+  desktopApp["Mac Desktop App"]
+  npmPackage["@doc2md/core package and CLI"]
+
+  converters --> hosted
+  sharedSrc --> hosted
+  components --> hosted
+  converters --> desktopApp
+  sharedSrc --> desktopApp
+  components --> desktopApp
+  converters --> npmPackage
+  core --> npmPackage
+  mitMarked --> hosted
+  mitMarked --> desktopApp
+  mitMarked --> npmPackage
+  core -. "bundled MIT components keep MIT terms" .-> boundary
+  boundary -. "desktop-only UI, bridge, persistence, save/open/reveal, native menu" .-> macos
+  boundary -. "desktop React/CSS" .-> desktopReact
+  boundary -. "desktop bridge types" .-> shellTypes
+  macos --> desktopApp
+  desktopReact --> desktopApp
+  shellTypes --> desktopApp
+```
+
 ## Shared Converter Layer
 
 All document conversion logic lives in `/src/converters/`. The hosted web UI, Mac desktop app, and npm package import from this directory as their single source of truth.
