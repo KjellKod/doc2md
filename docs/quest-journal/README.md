@@ -2,6 +2,8 @@
 
 | Date | Quest | Outcome |
 |------|-------|---------|
+| 2026-05-03 | [desktop-license-boundary](desktop-license-boundary_2026-05-03.md) | $quest in the existing branch, "Stronger desktop license boundary refactor for doc2md. Context: - Work on the existin... |
+| 2026-05-02 | [dual-licensing-boundary](dual-licensing-boundary_2026-05-02.md) | `$quest resolve this .claude/worktrees/license-improvements-dual-model/ideas/quest-briefs/dual-licensing-boundary.md`... |
 | 2026-05-02 | [playwright-browser-baseline](playwright-browser-baseline_2026-05-02.md) | Added a Chromium-only Playwright hosted-browser baseline and PR e2e job. |
 | 2026-04-30 | [opened-files-bulk-actions](opened-files-bulk-actions_2026-04-30.md) | Added opened-file multi-select Clear/Download behavior, active-file fallback, per-entry desktop save/conflict/notice state, metadata-only `statFile` refresh, and a clean re-review after one fix loop. |
 | 2026-04-28 | [mac-find-replace](mac-find-replace_2026-04-28.md) | Phase 6d Find / Replace: added compact shared React editor search/replace with regex/case options, shortcut handling, active selection, replace current/all, accessibility coverage, versioned Mac build success output, and one clean fix loop. |

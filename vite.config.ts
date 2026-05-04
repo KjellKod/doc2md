@@ -39,17 +39,38 @@ const displayVersion = (() => {
 // the attribute only for the desktop build; hosted browser output is unchanged.
 // It also injects a small inline error reporter that routes JS load/runtime errors
 // into the window title so desktop failures surface even without Web Inspector.
-const desktopShellAdjustments = () => ({
-  name: "doc2md-desktop-shell-adjustments",
-  transformIndexHtml(html: string) {
-    const stripped = html.replace(/\s+crossorigin(?:="[^"]*")?/g, "");
-    const errorReporter = `<script>(()=>{const set=(m)=>{try{document.title="doc2md [ERR] "+m}catch(e){}};window.addEventListener("error",(e)=>{set((e.filename||"")+":"+(e.lineno||"")+" "+(e.message||e.error))});window.addEventListener("unhandledrejection",(e)=>{set("promise: "+(e.reason&&(e.reason.stack||e.reason.message)||e.reason))});})();</script>`;
-    return stripped.replace("</head>", `  ${errorReporter}\n  </head>`);
+const buildRootHtml = (mode: string) => ({
+  name: "doc2md-build-root-html",
+  transformIndexHtml: {
+    order: "pre" as const,
+    handler(html: string) {
+      const buildRoot = mode === "desktop" ? "desktop" : "hosted";
+      const marker = `<meta name="doc2md-build-root" content="${buildRoot}" />`;
+
+      if (mode !== "desktop") {
+        return html.replace("</head>", `    ${marker}\n  </head>`);
+      }
+
+      const withDesktopEntry = html.replace(
+        "/src/main.tsx",
+        "/src/desktop/main.tsx",
+      );
+      const stripped = withDesktopEntry.replace(
+        /\s+crossorigin(?:="[^"]*")?/g,
+        "",
+      );
+      const errorReporter = `<script>(()=>{const set=(m)=>{try{document.title="doc2md [ERR] "+m}catch(e){}};window.addEventListener("error",(e)=>{set((e.filename||"")+":"+(e.lineno||"")+" "+(e.message||e.error))});window.addEventListener("unhandledrejection",(e)=>{set("promise: "+(e.reason&&(e.reason.stack||e.reason.message)||e.reason))});})();</script>`;
+
+      return stripped.replace(
+        "</head>",
+        `    ${marker}\n    ${errorReporter}\n  </head>`,
+      );
+    },
   },
 });
 
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), ...(mode === "desktop" ? [desktopShellAdjustments()] : [])],
+  plugins: [react(), buildRootHtml(mode)],
   base: mode === "desktop" ? "./" : "/doc2md/",
   server: {
     strictPort: true,

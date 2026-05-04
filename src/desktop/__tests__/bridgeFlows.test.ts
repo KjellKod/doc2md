@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: LicenseRef-doc2md-Desktop
+
 import { describe, expect, it, vi } from "vitest";
 import type { Doc2mdShell, ShellResult } from "../../types/doc2mdShell";
 import { createMockShell } from "../mockShellBridge";

@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { ThemeContext } from "../hooks/themeContext";
-import type { Theme } from "../types/doc2mdShell";
+import type { Theme } from "../types/theme";
 
 interface ThemeProviderProps {
   children: ReactNode;

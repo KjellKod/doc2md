@@ -21,7 +21,7 @@ The implementation adds a Swift `PersistenceStore`, version-2 bridge methods and
 - `apps/macos/doc2md/PersistenceStore.swift`
 - `apps/macos/doc2md/ShellBridge.swift`
 - `apps/macos/doc2mdTests/PersistenceStoreTests.swift`
-- `ideas/desktop-persistence-settings.md`
+- `ideas/archive/desktop-persistence-settings.md`
 - `scripts/build-mac-app.sh`
 - `src/App.tsx`
 - `src/App.test.tsx`

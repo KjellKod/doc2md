@@ -2,7 +2,6 @@ import { getFileExtension } from "../converters";
 import { CORRUPT_FILE_MESSAGE, TIMEOUT_MESSAGE } from "../converters/messages";
 import type { ConversionResult } from "../converters/types";
 import type { FileEntry } from "../types";
-import type { ShellOpenOk } from "../types/doc2mdShell";
 
 export function createEntryId(
   fileName: string,
@@ -68,38 +67,31 @@ function suggestedMarkdownName(name: string) {
     : `${safeBasename}.md`;
 }
 
-export function createDesktopMarkdownEntry(
-  openedFile: ShellOpenOk,
-): FileEntry {
-  const name = basename(openedFile.path);
+export function createMarkdownEntry(args: {
+  name: string;
+  content: string;
+  lastModified?: number;
+}): FileEntry {
+  const name = basename(args.name);
   const extension = getFileExtension(name) || "md";
 
   return {
     id: createEntryId(name, 0),
-    file: new File([openedFile.content], name, { type: "text/markdown" }),
+    file: new File([args.content], name, {
+      type: "text/markdown",
+      lastModified: args.lastModified,
+    }),
     name,
     format: extension,
     status: "success",
-    markdown: openedFile.content,
-    editedMarkdown: openedFile.content,
+    markdown: args.content,
+    editedMarkdown: args.content,
     warnings: [],
     selected: true,
-    desktopFile: {
-      path: openedFile.path,
-      mtimeMs: openedFile.mtimeMs,
-      lineEnding: openedFile.lineEnding,
-    },
   };
 }
 
-export function createImportedEntry(
-  file: File,
-  sourceMeta: {
-    path: string;
-    format: string;
-    mtimeMs: number;
-  },
-): FileEntry {
+export function createImportedEntry(file: File): FileEntry {
   const name = suggestedMarkdownName(file.name);
 
   return {
@@ -111,33 +103,47 @@ export function createImportedEntry(
     markdown: "",
     warnings: [],
     selected: true,
-    sourceMeta,
   };
 }
 
-export function replaceEntryWithDesktopMarkdown(
+export function replaceEntryWithMarkdown(
   entry: FileEntry,
-  openedFile: ShellOpenOk,
+  args: {
+    name: string;
+    content: string;
+    lastModified?: number;
+  },
 ): FileEntry {
-  const name = basename(openedFile.path);
+  const name = basename(args.name);
   const extension = getFileExtension(name) || "md";
 
   return {
     ...entry,
-    file: new File([openedFile.content], name, { type: "text/markdown" }),
+    file: new File([args.content], name, {
+      type: "text/markdown",
+      lastModified: args.lastModified,
+    }),
     name,
     format: extension,
     status: "success",
-    markdown: openedFile.content,
-    editedMarkdown: openedFile.content,
+    markdown: args.content,
+    editedMarkdown: args.content,
     warnings: [],
     quality: undefined,
     isScratch: false,
-    desktopFile: {
-      path: openedFile.path,
-      mtimeMs: openedFile.mtimeMs,
-      lineEnding: openedFile.lineEnding,
-    },
+  };
+}
+
+export function renameEntryFile(entry: FileEntry, name: string): FileEntry {
+  const content = entry.editedMarkdown ?? entry.markdown;
+  const nextName = basename(name);
+
+  return {
+    ...entry,
+    file: new File([content], nextName, { type: "text/markdown" }),
+    name: nextName,
+    format: getFileExtension(nextName) || entry.format,
+    isScratch: false,
   };
 }
 

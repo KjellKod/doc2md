@@ -3,7 +3,7 @@ import { FilePlus, Search } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { FileEntry } from "../types";
-import type { DesktopSaveState } from "../desktop/saveState";
+import type { SaveState } from "../types/saveState";
 import { entryDisplayName } from "../utils/displayName";
 import ErrorMessage from "./ErrorMessage";
 import {
@@ -103,7 +103,7 @@ interface PreviewPanelProps {
   saveBusy?: boolean;
   saveDisabled?: boolean;
   saveKeyShortcuts?: string;
-  saveState?: DesktopSaveState;
+  saveState?: SaveState;
   onStartWriting?: () => void;
   onNewDocument?: () => void;
   editorFocusRequest?: { id: number; target: "editor" };

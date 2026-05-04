@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: LicenseRef-doc2md-Desktop
+
 import { useSyncExternalStore } from "react";
 import type { Doc2mdShell } from "../types/doc2mdShell";
 import { getShell } from "./bridgeClient";

@@ -24,7 +24,6 @@ describe("App hosted save control", () => {
     vi.clearAllMocks();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
-    delete window.doc2mdShell;
     cleanup();
   });
 

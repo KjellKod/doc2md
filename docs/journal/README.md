@@ -6,6 +6,7 @@ For the other perspective, see [Dexter's Journal](../dexter-journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 031 | [Celebration: Desktop License Boundary Refactor](031-celebrate-desktop-license-boundary.md) | Hard-splitting hosted and desktop code so the license boundary is visible in the architecture |
 | 029 | [Celebration: Opened Files Bulk Actions](029-celebrate-opened-files-bulk-actions.md) | Multi-select Clear/Download, per-file desktop status, metadata-only stat refresh, and one clean fix loop |
 | 028 | [Celebration: Mac PR CI Check](028-celebrate-mac-pr-ci-check.md) | A no-secret macOS PR gate with SHA-pinned actions, desktop bundle and Release helper checks, and zero fix iterations |
 | 027 | [Mac Phase 4: Converted Document Import and Markdown Persistence](027-phase-4-converted-docs-persistent-assets.md) | Two plan iterations, two fix iterations, dual review catches different real things both times; opaque byte handoff via WKURLSchemeHandler and three-layer .md save defense so source files never get overwritten |

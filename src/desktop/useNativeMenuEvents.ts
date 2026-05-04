@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: LicenseRef-doc2md-Desktop
+
 import { useEffect, useRef } from "react";
 
 export const NATIVE_MENU_EVENTS = {

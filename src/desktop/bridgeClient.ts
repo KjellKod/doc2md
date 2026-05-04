@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: LicenseRef-doc2md-Desktop
+
 import type { Doc2mdShell } from "../types/doc2mdShell";
 
 type ShellCandidate = Partial<Record<keyof Doc2mdShell, unknown>>;

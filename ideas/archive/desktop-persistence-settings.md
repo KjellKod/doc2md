@@ -1,5 +1,9 @@
 # Desktop Persistence Settings
 
+## Status
+
+Completed in the `desktop-persistence-settings_2026-04-28__2040` quest. See `docs/quest-journal/desktop-persistence-settings_2026-04-30.md`.
+
 ## Problem
 
 The Mac desktop app currently behaves like the hosted web app in places where a native app should remember local preferences. Users reasonably expect the app to reopen with their last theme choice and to offer quick access to recently used files.

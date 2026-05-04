@@ -104,6 +104,8 @@ xcodebuild -project apps/macos/doc2md.xcodeproj -scheme doc2md -configuration Re
 
 Release-style builds run the Xcode `Build Desktop Web Bundle` phase before Copy Bundle Resources. That phase runs `npm run build:desktop` and copies `dist/` into `apps/macos/doc2md/Resources/Web/`, which is bundled as `Web/index.html` inside the app.
 
+The same target bundles `apps/macos/THIRD_PARTY_NOTICES.md` into `doc2md.app/Contents/Resources/THIRD_PARTY_NOTICES.md`. Public DMGs and other release artifacts must keep that notice file or a generated equivalent for the exact released artifact.
+
 `npm run build:desktop` runs `npm run generate:mac-supported-formats` first so the Swift open-panel extension list stays in sync with `SUPPORTED_FORMATS` from `src/types/index.ts`.
 
 If Xcode cannot find `npm` from its GUI environment, set `NPM_BIN` to an absolute npm executable path for the build.
@@ -284,6 +286,8 @@ Before tagging a release, manually bump both Xcode build settings in `apps/macos
 - `CURRENT_PROJECT_VERSION` must be numeric and strictly greater than the latest published appcast's `sparkle:version`.
 
 The initial `0.1.0` release may use `CURRENT_PROJECT_VERSION = 1`; later releases must not reuse build `1`.
+
+Before the first signed public release, verify that the notice file shipped inside the `.app` and DMG covers the exact released artifact. That means checking JavaScript dependencies from `package-lock.json`, native SwiftPM/Xcode dependencies such as Sparkle, bundled MIT doc2md components, and the final built app contents. Today this is a maintainer release checklist item; if a notice-generation script is added later, it should replace this manual check and write the generated notice file before packaging.
 
 Local unsigned DMG smoke:
 

@@ -1,13 +1,13 @@
 import { useEffect, useRef } from "react";
 import type { FileEntry } from "../types";
-import type { DesktopSaveState } from "../desktop/saveState";
+import type { SaveState } from "../types/saveState";
 import { isDownloadableEntry } from "../utils/download";
 import FileListItem from "./FileListItem";
 
 interface FileListProps {
   entries: FileEntry[];
   checkedIds: Set<string>;
-  desktopStatuses?: Record<string, DesktopSaveState>;
+  saveStatuses?: Record<string, SaveState>;
   onCheckedChange: (id: string, checked: boolean) => void;
   onClear: () => void;
   onDownload: () => void;
@@ -18,7 +18,7 @@ interface FileListProps {
 export default function FileList({
   entries,
   checkedIds,
-  desktopStatuses = {},
+  saveStatuses = {},
   onCheckedChange,
   onClear,
   onDownload,
@@ -97,7 +97,7 @@ export default function FileList({
             key={entry.id}
             entry={entry}
             checked={checkedIds.has(entry.id)}
-            desktopStatus={desktopStatuses[entry.id]}
+            saveStatus={saveStatuses[entry.id]}
             onCheckedChange={onCheckedChange}
             onSelect={onSelect}
           />

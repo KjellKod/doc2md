@@ -1,21 +1,40 @@
-MIT License
+# doc2md Licensing
 
-Copyright (c) 2026 Kjell Hedström, github.com/KjellKod/doc2md
+doc2md uses a mixed-license model. This file is a license map for the repository.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+## MIT-Licensed Components
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Unless a more specific license file or file-level notice says otherwise, these areas are licensed under the MIT License:
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+- `packages/core/`, including the `@doc2md/core` Node API and CLI package
+- hosted web app code, shared converters, and root `src/` files that are not marked or documented as desktop-specific desktop app code
+- tests, examples, scripts, and documentation related to the MIT-licensed components
+- repository documentation, journal entries, diary entries, and quest briefs that narrate the project, including `docs/` and `ideas/`, except where a more specific notice applies
+
+See `LICENSES/MIT.txt`.
+
+## Mac Desktop App
+
+The Mac desktop app and desktop-specific UI/bridge code are not licensed under MIT, except for bundled MIT Components that keep their own MIT terms.
+
+The Mac desktop app is source-visible shareware covered by the doc2md Desktop Shareware License. You may inspect the source, use the official app as an unregistered evaluation version with no fixed trial period for good-faith evaluation, and make private local evaluation builds under that license. Routine or ongoing productive use after evaluation, including paid employment, client, customer, consulting, contract, or business operations work, requires purchasing a license. License purchase information is published at `https://github.com/kjellkod/doc2md` or, before a public storefront is available, by request to `kjell@candidtalentedge.com`. A purchased license for the official app does not authorize productive use of self-built or modified copies; productive use of any copy other than the official app requires written permission. You may not redistribute, sell, sublicense, commercially repackage, publish derivative desktop apps, bundle the app into another product, offer a third-party conversion service with it, or reuse doc2md branding without written permission.
+
+Desktop-specific source covered by the desktop license includes `apps/macos/`, `src/desktop/`, `src/types/doc2mdShell.d.ts`, desktop-specific tests, and other files marked with `SPDX-License-Identifier: LicenseRef-doc2md-Desktop`.
+
+See:
+
+- `apps/macos/LICENSE`
+- `LICENSES/LicenseRef-doc2md-Desktop.txt`
+- `docs/licensing.md`
+
+## Branding
+
+The doc2md name, logo, app icons, screenshots, trade dress, domain names, and product branding are not licensed for reuse except where explicitly stated. Do not use them in a way that suggests endorsement or creates confusion with the official doc2md project.
+
+## Third-Party Dependencies
+
+Third-party dependencies remain under their own licenses. MIT-licensed code bundled into the Mac app keeps its MIT notice requirements. See `apps/macos/THIRD_PARTY_NOTICES.md` for Mac app notice guidance.
+
+## Prior MIT Versions
+
+Versions of doc2md released before `2.2.0` were published under the prior repo-wide MIT license. Those MIT permissions remain available for those earlier versions. The mixed-license model applies to Covered Software in releases tagged `2.2.0` and later, until a later release states a different license boundary in its release notes and license files.

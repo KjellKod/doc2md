@@ -1,5 +1,5 @@
 import type { FileEntry } from "../types";
-import type { DesktopSaveState } from "../desktop/saveState";
+import type { SaveState } from "../types/saveState";
 import { entryDisplayName } from "../utils/displayName";
 import FormatBadge from "./FormatBadge";
 import StatusIndicator from "./StatusIndicator";
@@ -7,12 +7,12 @@ import StatusIndicator from "./StatusIndicator";
 interface FileListItemProps {
   entry: FileEntry;
   checked: boolean;
-  desktopStatus?: DesktopSaveState;
+  saveStatus?: SaveState;
   onCheckedChange: (id: string, checked: boolean) => void;
   onSelect: (id: string) => void;
 }
 
-const DESKTOP_STATUS_LABELS: Record<DesktopSaveState, string> = {
+const SAVE_STATUS_LABELS: Record<SaveState, string> = {
   saved: "Saved",
   edited: "Edited",
   saving: "Saving",
@@ -24,7 +24,7 @@ const DESKTOP_STATUS_LABELS: Record<DesktopSaveState, string> = {
 export default function FileListItem({
   entry,
   checked,
-  desktopStatus,
+  saveStatus,
   onCheckedChange,
   onSelect,
 }: FileListItemProps) {
@@ -68,11 +68,11 @@ export default function FileListItem({
               <FormatBadge format={entry.format} />
             </div>
             <div className="file-list-item-statuses">
-              {desktopStatus ? (
+              {saveStatus ? (
                 <span
-                  className={`file-list-desktop-status file-list-desktop-status--${desktopStatus}`}
+                  className={`file-list-save-status file-list-save-status--${saveStatus}`}
                 >
-                  {DESKTOP_STATUS_LABELS[desktopStatus]}
+                  {SAVE_STATUS_LABELS[saveStatus]}
                 </span>
               ) : null}
               <StatusIndicator

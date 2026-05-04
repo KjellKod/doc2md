@@ -1,6 +1,6 @@
-import type { DesktopSaveState } from "../desktop/saveState";
+import type { SaveState } from "../types/saveState";
 
-const SAVE_STATE_LABELS: Record<DesktopSaveState, string> = {
+const SAVE_STATE_LABELS: Record<SaveState, string> = {
   saved: "Saved",
   edited: "Edited",
   saving: "Saving",
@@ -10,7 +10,7 @@ const SAVE_STATE_LABELS: Record<DesktopSaveState, string> = {
 };
 
 interface SaveStatePillProps {
-  state: DesktopSaveState;
+  state: SaveState;
 }
 
 export default function SaveStatePill({ state }: SaveStatePillProps) {
