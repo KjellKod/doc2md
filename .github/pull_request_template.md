@@ -13,6 +13,10 @@ Do not paste proprietary, client, or confidential content into this PR, comments
 
 If this PR touches desktop shareware components, I understand the project may require explicit contributor terms or written confirmation before accepting the contribution.
 
-## Release Notice Check
+## Mac Release Notices
 
-- [ ] Generate transitive license notices from the npm lockfile, SwiftPM/Xcode package metadata, and bundled app contents, then bundle them into the DMG before tagging the first signed release.
+- [ ] This PR does not tag or prepare a signed public Mac release.
+
+For a signed public Mac release PR only:
+
+- [ ] I verified the notice file bundled into the `.app` and DMG covers the exact released artifact, including JavaScript dependencies from `package-lock.json`, native SwiftPM/Xcode dependencies such as Sparkle, and any bundled MIT doc2md components.

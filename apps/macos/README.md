@@ -287,7 +287,7 @@ Before tagging a release, manually bump both Xcode build settings in `apps/macos
 
 The initial `0.1.0` release may use `CURRENT_PROJECT_VERSION = 1`; later releases must not reuse build `1`.
 
-Before the first signed public release, generate or verify the shipped third-party notice inventory from the npm lockfile, SwiftPM/Xcode package metadata, native bundled dependencies, and the built app contents. Bundle that notice inventory into both the `.app` and DMG, replacing `THIRD_PARTY_NOTICES.md` with a generated equivalent only if the generated file covers the exact released artifact.
+Before the first signed public release, verify that the notice file shipped inside the `.app` and DMG covers the exact released artifact. That means checking JavaScript dependencies from `package-lock.json`, native SwiftPM/Xcode dependencies such as Sparkle, bundled MIT doc2md components, and the final built app contents. Today this is a maintainer release checklist item; if a notice-generation script is added later, it should replace this manual check and write the generated notice file before packaging.
 
 Local unsigned DMG smoke:
 
