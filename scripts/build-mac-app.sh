@@ -9,6 +9,7 @@ NATIVE_API_ALLOWLIST=(
   "NSOpenPanel :: user-selected supported-document open panel"
   "NSSavePanel :: user-selected Markdown Save As target panel"
   "NSWorkspace :: Reveal in Finder for a saved user-selected file"
+  "NSWorkspace :: Help menu open of bundled THIRD_PARTY_NOTICES.md and LicenseRef-doc2md-Desktop.txt"
   "replaceItemAt :: atomic final replacement from a sibling temp file"
   "startAccessingSecurityScopedResource :: current-session scoped file access around selected URLs"
   "stopAccessingSecurityScopedResource :: balanced release of scoped file access"
@@ -216,6 +217,7 @@ while IFS= read -r match; do
   fi
 done < <(grep_matches_or_fail "$WATCHED_NATIVE_API_PATTERN" "${persistence_swift_sources[@]}")
 
+npm run generate:notices
 npm run build:desktop
 
 set +e
