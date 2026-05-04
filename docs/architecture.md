@@ -69,6 +69,29 @@ flowchart LR
   shellTypes --> desktopApp
 ```
 
+Plain-text view:
+
+```text
+MIT region                                           LicenseRef-doc2md-Desktop region
+------------------------------------------------------------------------------------------------
+src/converters/                                     apps/macos/
+packages/core/ and @doc2md/core                     src/desktop/
+root src/ excluding src/desktop/                    src/types/doc2mdShell.d.ts
+src/components/
+MIT-marked files
+
+             shared MIT code used by all surfaces
+        +--------------------------------------------+
+        |                                            |
+        v                                            v
+Hosted Web UI      @doc2md/core package/CLI      Mac Desktop App
+                                                   ^
+                                                   |
+                         license boundary ---------+
+                         desktop-only UI, bridge, persistence,
+                         save/open/reveal, native menu, and CSS
+```
+
 ## Shared Converter Layer
 
 All document conversion logic lives in `/src/converters/`. The hosted web UI, Mac desktop app, and npm package import from this directory as their single source of truth.
