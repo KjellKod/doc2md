@@ -9,7 +9,7 @@ const remediation =
 
 describe("notice inventory drift", () => {
   it("passes generator --check without writing to disk", () => {
-    const repoRoot = path.resolve(__dirname, "..", "..");
+    const repoRoot = path.resolve(import.meta.dirname, "..", "..");
     const noticesPath = path.join(repoRoot, "apps", "macos", "THIRD_PARTY_NOTICES.md");
 
     const beforeStat = fs.statSync(noticesPath);
