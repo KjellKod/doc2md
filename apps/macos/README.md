@@ -106,6 +106,17 @@ Release-style builds run the Xcode `Build Desktop Web Bundle` phase before Copy 
 
 The same target bundles `apps/macos/THIRD_PARTY_NOTICES.md` into `doc2md.app/Contents/Resources/THIRD_PARTY_NOTICES.md`. Public DMGs and other release artifacts must keep that notice file or a generated equivalent for the exact released artifact.
 
+The app also bundles:
+
+- `LICENSES/LicenseRef-doc2md-Desktop.txt` as `doc2md.app/Contents/Resources/LicenseRef-doc2md-Desktop.txt` (opened via `Help → License…`).
+- `apps/macos/doc2md/Resources/Credits.rtf` for the About panel Credits section (points users at `Help → Acknowledgments…` and `Help → License…`).
+
+Notice inventory maintenance:
+
+- Generate: `npm run generate:notices`
+- Verify drift: `npm run generate:notices:check` (also enforced by `npm test -- --run`)
+- npm algorithm note: the generator walks the production dependency closure (root + workspace `dependencies`, excluding `devDependencies`) via installed `node_modules/*/package.json` and follows transitive `dependencies`.
+
 `npm run build:desktop` runs `npm run generate:mac-supported-formats` first so the Swift open-panel extension list stays in sync with `SUPPORTED_FORMATS` from `src/types/index.ts`.
 
 If Xcode cannot find `npm` from its GUI environment, set `NPM_BIN` to an absolute npm executable path for the build.
@@ -130,7 +141,7 @@ Equivalent:
 bash scripts/build-mac-app.sh --configuration Release
 ```
 
-The script first checks that `apps/macos/doc2md/SupportedFormats.generated.swift` is up to date, then runs `npm run build:desktop`, invokes `xcodebuild` with `-derivedDataPath .build/mac`, and runs a positive native file API allowlist scan across `apps/macos/doc2md/*.swift`. It writes the app to:
+The script first checks that `apps/macos/doc2md/SupportedFormats.generated.swift` is up to date, then runs `npm run generate:notices`, runs `npm run build:desktop`, invokes `xcodebuild` with `-derivedDataPath .build/mac`, and runs a positive native file API allowlist scan across `apps/macos/doc2md/*.swift`. It writes the app to:
 
 ```text
 .build/mac/Build/Products/Release/doc2md.app
