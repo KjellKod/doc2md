@@ -76,21 +76,17 @@ Plain-text view:
 | src/App.tsx and shared hooks                 |      | src/types/doc2mdShell.d.ts: bridge types    |
 | packages/core/, @doc2md/core                 |      |                                              |
 +----------------------+-----------------------+      +----------------------+-----------------------+
-                    |                                           ^
-                    | shared MIT code used by all surfaces      |
-                    v                                           |
-        consumers of shared MIT code:                    |
-        +-----------------------+                        |
-        | Hosted Web UI         |                        |
-        +-----------------------+                        |
-        +-----------------------+                        |
-        | @doc2md/core CLI      |                        |
-        +-----------------------+                        |
-        +-----------------------+           license boundary
-        | Mac Desktop App       |<-------------------------+
-        +-----------------------+   desktop-only UI, bridge,
-                                    persistence, save/open/reveal,
-                                    native menu, and CSS
+           | shared MIT code used by all surfaces       license boundary       |
+           |                                                |                  |
+           v                                                |                  v
+  +-----------------------+                                 |        +-----------------------+
+  | Hosted Web UI         |                                 |        | Mac Desktop App       |
+  +-----------------------+                                 |        +-----------------------+
+  +-----------------------+                                 |                  ^
+  | @doc2md/core CLI      |                                 |                  |
+  +-----------------------+                                 |        desktop-only UI, bridge,
+                                                            |        persistence, save/open/reveal,
+                                                            |        native menu, and CSS
 ```
 
 ## Shared Converter Layer
