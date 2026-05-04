@@ -1,0 +1,23 @@
+src/__tests__/noticeInventoryDrift.test.ts
+  80d570f3adc3410b 12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "c547d43d886a640b38d8972d1909ea773e94ac0f",
+  "prompts": {
+    "80d570f3adc3410b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "55ec322d-fa36-4645-8ff1-e4c083976066",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
