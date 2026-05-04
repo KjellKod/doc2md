@@ -1,0 +1,25 @@
+ideas/README.md
+  10c9f53bfb99366e 9
+ideas/mac-app-license-and-notice-surfacing.md
+  10c9f53bfb99366e 1-80
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "506d7c673a28ed92f9be7cb1a10a6c2465d97e6d",
+  "prompts": {
+    "10c9f53bfb99366e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "15c4bba7-45a0-4590-a63e-d7788eb24eaf",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 81,
+      "total_deletions": 0,
+      "accepted_lines": 81,
+      "overriden_lines": 0
+    }
+  }
+}
