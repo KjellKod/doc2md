@@ -287,6 +287,8 @@ Before tagging a release, manually bump both Xcode build settings in `apps/macos
 
 The initial `0.1.0` release may use `CURRENT_PROJECT_VERSION = 1`; later releases must not reuse build `1`.
 
+Before the first signed public release, generate or verify the shipped third-party notice inventory from the npm lockfile, SwiftPM/Xcode package metadata, native bundled dependencies, and the built app contents. Bundle that notice inventory into both the `.app` and DMG, replacing `THIRD_PARTY_NOTICES.md` with a generated equivalent only if the generated file covers the exact released artifact.
+
 Local unsigned DMG smoke:
 
 ```bash

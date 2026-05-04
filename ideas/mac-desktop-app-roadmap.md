@@ -19,7 +19,7 @@ Commercial boundary:
 - Keep the hosted web app at `https://kjellkod.github.io/doc2md/`, npm packages, and shared conversion logic free.
 - Use `doc2md.dev` as the canonical Mac app commercial, download, support, licensing, and update domain once the distribution surface is live.
 - Do not promote, price, or download-link the Mac app from the hosted web app's main page until the commercial distribution plan is intentionally chosen.
-- Treat the Mac app as its own distribution surface: usable without payment, but eligible for a simple paid license with occasional reminders in the spirit of Sublime Text.
+- Treat the Mac app as its own distribution surface: the Official App is available as an unregistered evaluation version with no fixed trial period, and routine or ongoing productive use after evaluation requires purchasing a license.
 - Prefer a sales/distribution channel that acts as the merchant of record or otherwise handles tax collection/remittance for the maintainer.
 
 ## Phase Overview
@@ -36,7 +36,8 @@ Commercial boundary:
 | 5b. Sparkle Plumbing | done | PR #84 | Add Sparkle 2 to the Xcode project, wire `SUFeedURL` / `SUPublicEDKey` in Info.plist, define the appcast XML schema, and verify offline + test-appcast update detection. No signing, no release automation. | Phase 5c |
 | 5c. Release CI, Signing, Notarization, DMG, Appcast Publish | done | PR #85 (`mac-release-ci_2026-04-25__0010`) | Tag-triggered macOS release workflow with a protected `mac-release` Environment: Developer ID signing, notarization, stapling, DMG, Sparkle ZIP + `sign_update`, appcast publish. The only phase that touches Apple or Sparkle secrets. | MVP ship |
 | 6. Editor and UI Refresh (cross-surface) | active | Phase 6a PR #86; Phase 6b PR #88 (`persistent-mode-switcher_2026-04-27__2355`); Phase 6c PR #87 (`save-control-ui_2026-04-27__1212`); Phase 6d PR #89 (`mac-find-replace_2026-04-28__0032`) | Hosted-web + Mac editor polish: app icon, persistent mode switcher, explicit save control, find/replace, accessibility audit, keyboard-shortcut help. Runs in parallel with Phase 5b+ because it does not touch the Mac shell contract. | MVP polish |
-| 7. Mac Commercial Distribution and Licensing | planned | TBD | Decide whether the Mac app ships through the Mac App Store, direct DMG sales, or both; add a simple nag-based license model without changing the free hosted web/npm surfaces. | Paid app launch |
+| 7a. Desktop License Boundary | done | PR #103 (`dual-licensing-boundary_2026-05-01__2036`, `desktop-license-boundary_2026-05-03__0954`) | Keep `@doc2md/core`, hosted web, shared converters, and MIT-marked files MIT while making the Mac app and desktop-specific UI/bridge code source-visible shareware under `LicenseRef-doc2md-Desktop`. | Phase 7b |
+| 7b. Mac Commercial Distribution And License UX | planned | TBD | Choose direct DMG sales, Mac App Store, or both; add the purchase/registration UX without changing the MIT web/npm surfaces or the evaluation-only shareware model. | Paid app launch |
 
 ## Phase 0: Design And Roadmap
 
@@ -428,17 +429,46 @@ Reserved for items the maintainer adds on the fly. Candidates surfaced during sc
 - Optional: session-local scratch buffer so refresh / accidental navigation does not erase unsaved work in the hosted browser.
 - Optional: PWA install hint for mobile users of the hosted app.
 
-## Phase 7: Mac Commercial Distribution And Licensing
+## Phase 7a: Desktop License Boundary
 
 Goal:
 
-Keep the hosted web app and npm ecosystem free while making the Mac app a simple paid product. The Mac app should remain usable without payment, but unpaid users may see occasional license reminders. The tone should be practical and respectful: no document lock-in, no data hostage behavior, no artificial conversion limits.
+Keep the hosted web app, `@doc2md/core`, shared converters, and MIT-marked files independently usable under MIT while making the Mac desktop app and desktop-specific UI/bridge code source-visible shareware.
+
+Status note:
+
+- Completed in PR #103.
+- The root license map, desktop license, Mac app license pointer, licensing guide, README, package metadata, and contribution routing now document the mixed-license model.
+- Desktop-only React composition, bridge behavior, persistence, save/open/reveal/native-menu behavior, and desktop CSS now live in desktop-owned paths where practical.
+- The Official App is an unregistered evaluation version with no fixed trial period; routine or ongoing productive use after evaluation requires purchasing a license.
+- Productive use of self-built or modified copies remains evaluation-only unless written permission applies.
+- The release notice gate now covers npm dependencies, SwiftPM/Xcode package metadata, native bundled dependencies, and bundled app contents before the first signed public release.
+
+Acceptance criteria:
+
+- `@doc2md/core`, `packages/core/`, hosted web/shared converter code, and MIT-marked files remain MIT.
+- `apps/macos/`, `src/desktop/`, `src/types/doc2mdShell.d.ts`, desktop-specific tests, and desktop-license-marked files are covered by `LicenseRef-doc2md-Desktop`.
+- Shared root `src` files no longer carry desktop bridge/persistence/save/reveal/native-menu behavior.
+- Docs do not imply repo-wide MIT.
+- Contribution routing identifies MIT areas, desktop shareware areas, documentation-only changes, and unsure changes without turning the PR template into legal wall text.
+
+Remaining human validation:
+
+- Final human/legal review of the custom desktop shareware license wording.
+- Before the first signed public release, generate or verify the exact third-party notice inventory for the released artifact and bundle it into the `.app` and DMG.
+
+## Phase 7b: Mac Commercial Distribution And License UX
+
+Goal:
+
+Keep the hosted web app and npm ecosystem MIT/free while giving the Mac app a clear purchase and registration path. The Official App remains evaluation-friendly, but routine or ongoing productive use after evaluation requires purchasing a license. The tone should be practical and respectful: no document lock-in, no data hostage behavior, no artificial conversion limits.
 
 Distribution assumptions:
 
 - Do not put a Mac app upsell, pricing page, or download CTA on the hosted web app's main page until this phase explicitly chooses a distribution model.
-- `doc2md.dev` has been purchased and should become the canonical public domain for the Mac app's commercial distribution surface. Keep the hosted web app separate unless Phase 7 intentionally changes that boundary.
+- `doc2md.dev` has been purchased and should become the canonical public domain for the Mac app's commercial distribution surface. Keep the hosted web app separate unless a later phase intentionally changes that boundary.
 - Evaluate Mac App Store distribution, direct signed DMG sales, or both. The release pipeline already supports direct signed/notarized DMG + Sparkle updates; App Store distribution would need a separate packaging/review path.
+- Until a public storefront is available, license purchase information stays routed through `https://github.com/kjellkod/doc2md` or `kjell@candidtalentedge.com`.
 - Prefer a merchant-of-record style sales platform or store channel that handles tax collection/remittance, VAT/GST/sales-tax paperwork, invoices/receipts, and customer purchase records.
 - Keep pricing easy to understand. Working hypothesis, not a commitment: a low annual price around `$20/year`, plus an optional perpetual license that lasts until the next major paid upgrade.
 - Keep license enforcement offline-friendly. The app should not require network access to open, edit, convert, save, or export documents.
@@ -446,16 +476,16 @@ Distribution assumptions:
 Expected changes:
 
 - Add a lightweight licensing model for the Mac app only:
-  - `Licensed`, `Unlicensed`, `Trial/Grace`, and `License Check Failed` states.
+  - `Registered`, `Unregistered Evaluation`, and `License Check Failed` states.
   - A local license file or activation token stored in the user's Application Support directory or Keychain.
-  - Occasional nag reminder for unlicensed users after a simple trigger, such as every N launches or every N exports/saves.
+  - Occasional evaluation reminder for unregistered users after a simple trigger, such as every N launches or every N exports/saves.
   - A license entry window reachable from the app menu.
 - Add release-channel wording:
   - `doc2md.dev` is the canonical Mac app distribution/support/licensing domain.
   - Replace temporary maintainer contact emails in public docs with the final support address, expected to be `support@doc2md.dev` or the chosen support address/domain.
   - Hosted web and npm remain free.
   - Mac app license supports native packaging, signing, notarization, Sparkle updates, and ongoing maintenance.
-  - Unlicensed users may continue using the app if they accept reminders.
+  - Unregistered users may evaluate the Official App with reminders; routine or ongoing productive use after evaluation requires purchase.
 - Add privacy and trust guardrails:
   - No document contents are sent to a licensing provider.
   - License checks must not block local document access.
@@ -469,12 +499,13 @@ Expected changes:
 Acceptance criteria:
 
 - The hosted web app does not advertise or depend on the paid Mac app.
-- The Mac app can run unlicensed with occasional reminders.
+- The Mac app can run as an unregistered evaluation version with occasional reminders.
 - A licensed user can enter/restore a license without editing config files.
 - License state survives relaunch.
 - Offline launch and document editing still work.
 - Pricing copy is simple and non-deceptive.
 - Tax/sales operational ownership is documented before taking money.
+- Productive-use wording stays aligned with `LICENSES/LicenseRef-doc2md-Desktop.txt`, `docs/licensing.md`, and root `LICENSE`.
 
 Out of scope until the distribution decision is made:
 
@@ -490,7 +521,7 @@ MVP is ready when:
 
 - Phases 1, 2, 2.5, 3, 4, 5a, 5b, and 5c are complete.
 - Phase 6 items are tracked but NOT gating for MVP ship; they land opportunistically.
-- Phase 7 is tracked but NOT gating for the free/open MVP. It gates paid Mac app launch only.
+- Phase 7a is complete. Phase 7b is tracked but NOT gating for the evaluation-capable MVP; it gates paid Mac app launch only.
 - Hosted browser behavior is unchanged.
 - `doc2md.app` can open, edit, save, Save As, reveal in Finder, and handle conflicts.
 - Converted document Save As works for supported source formats.
@@ -498,12 +529,15 @@ MVP is ready when:
 - Desktop conversion output matches hosted web behavior for embedded assets: they are dropped unless the shared converter behavior changes in a later phase.
 - App can be signed, notarized, packaged as DMG, and updated through Sparkle ZIP updates.
 - The release CI workflow builds, signs, notarizes, and publishes without exposing Apple or Sparkle secrets to PRs, forks, or logs.
+- The license boundary is clear: MIT components remain independently usable under MIT, and desktop-owned code is covered by `LicenseRef-doc2md-Desktop`.
+- First signed public release has a bundled third-party notice inventory for the exact released artifact.
 
 ## Cross-Phase Rules
 
 - Do not move the hosted browser app into a new folder unless a phase proves it is necessary.
 - Keep `/src/converters/` as the shared conversion source of truth.
 - Keep Swift shell code focused on native trust boundaries; do not reimplement conversion in Swift.
+- Keep hosted/shared code MIT-clean. Desktop bridge, persistence, save/open/reveal, native menu, desktop metadata, and desktop CSS behavior belongs in `src/desktop/`, `apps/macos/`, `src/types/doc2mdShell.d.ts`, or another clearly desktop-owned path.
 - Keep hosted browser controls unchanged unless capability-gated for desktop.
 - Keep every PR reviewable with focused tests.
 - Avoid release/signing work until shell, bridge, and persistence behavior are stable.

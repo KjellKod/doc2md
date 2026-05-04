@@ -1,55 +1,33 @@
 ---
 title: System Architecture
-purpose: Technical reference for doc2md's dual-surface architecture — shared converter layer, web UI, and @doc2md/core npm package.
+purpose: Technical reference for doc2md's shared converter layer, hosted web UI, Mac desktop app, and @doc2md/core npm package.
 audience: Contributors, maintainers, and package consumers
 scope: Full system architecture covering shared code, build targets, runtime compatibility, and deployment
 status: active
 owner: maintainers
-last_updated: 2026-04-12
+last_updated: 2026-05-03
 related:
+  - apps/macos/README.md
+  - docs/licensing.md
   - docs/publishing-doc2md-core.md
   - docs/using-doc2md-core.md
 ---
 
 # System Architecture
 
-doc2md converts documents to Markdown through two surfaces — a browser-based web UI and a Node.js npm package — both powered by a single shared converter layer.
+doc2md converts documents to Markdown through three surfaces: a hosted browser UI, a Mac desktop app, and a Node.js npm package. All three use the shared converter layer, while desktop-only bridge, persistence, menu, save, reveal, and native shell behavior stays in desktop-owned paths.
 
-```
-                        ┌──────────────────────────┐
-                        │    /src/converters/       │
-                        │  (shared source of truth) │
-                        │                           │
-                        │  csv, docx, html, json,   │
-                        │  md, pdf, pptx, tsv,      │
-                        │  txt, xlsx                 │
-                        │                           │
-                        │  + runtime bridge          │
-                        │  + utility modules         │
-                        └─────────┬────────┬────────┘
-                                  │        │
-                    ┌─────────────┘        └──────────────┐
-                    │                                     │
-                    ▼                                     ▼
-     ┌──────────────────────────┐        ┌───────────────────────────┐
-     │   Web UI                 │        │   @doc2md/core            │
-     │                          │        │                           │
-     │   React + Vite           │        │   Vite SSR lib build      │
-     │   Static site build      │        │   Target: Node 22         │
-     │   → GitHub Pages         │        │   → npm tarball + CLI     │
-     │                          │        │                           │
-     │   /src/components/       │        │   /packages/core/src/     │
-     │   /src/App.tsx           │        │   index.ts (API)          │
-     │   vite.config.ts (root)  │        │   cli.ts (CLI entry)      │
-     │                          │        │   batch.ts, io.ts         │
-     │   DOMParser: native      │        │   node-compat.ts          │
-     │   (globalThis)           │        │   DOMParser: jsdom        │
-     └──────────────────────────┘        └───────────────────────────┘
-```
+| Surface | Runtime | Owned paths | Output |
+|---|---|---|---|
+| Hosted Web UI | React + Vite in the browser | `src/App.tsx`, shared `src/components/`, shared hooks, `src/converters/` | Static site for GitHub Pages |
+| Mac Desktop App | Swift `WKWebView` shell plus React desktop root | `apps/macos/`, `src/desktop/`, `src/types/doc2mdShell.d.ts` | Signed/notarized `.app`, DMG, and Sparkle ZIP |
+| `@doc2md/core` | Node 22, Vite SSR library build | `packages/core/src/`, shared `src/converters/` | npm tarball and CLI |
+
+`src/converters/` is the shared source of truth for CSV, DOCX, HTML, JSON, Markdown, PDF, PPTX, TSV, TXT, and XLSX conversion. It is imported by all three surfaces.
 
 ## Shared Converter Layer
 
-All document conversion logic lives in `/src/converters/`. Both the web UI and the npm package import from this directory as their single source of truth.
+All document conversion logic lives in `/src/converters/`. The hosted web UI, Mac desktop app, and npm package import from this directory as their single source of truth.
 
 ### Supported Formats
 
@@ -99,7 +77,7 @@ interface ConversionResult {
 
 ## Build Targets
 
-### Web UI (GitHub Pages)
+### Hosted Web UI (GitHub Pages)
 
 **Build config:** Root `vite.config.ts`
 
@@ -116,7 +94,26 @@ interface ConversionResult {
 4. The converter returns a `ConversionResult` with Markdown, warnings, and status
 5. The user reviews the result locally and downloads `.md` files
 
-**Web-only code:** React components in `/src/components/`, `App.tsx`, and UI state management.
+**Hosted/shared code:** React components in `/src/components/`, `src/App.tsx`, shared hooks, and UI state management. This surface must not import `src/desktop/`, `src/types/doc2mdShell.d.ts`, or desktop-only persistence/save/reveal/native-menu behavior.
+
+### Mac Desktop App
+
+**Build config:** Root `vite.config.ts` in desktop mode plus `apps/macos/doc2md.xcodeproj`
+
+- `npm run build:desktop` builds the desktop web bundle from `src/desktop/main.tsx`.
+- `npm run build:mac` builds the Release `.app` through the Mac build helper.
+- `apps/macos/` owns the Swift shell, `WKWebView`, custom scheme handler, file bridge, persistence store, native menus, Sparkle update plumbing, signing/notarization workflow, app icons, and bundled resources.
+- `src/desktop/` owns desktop-only React composition, bridge behavior, native save/open/reveal flows, desktop persistence, native-menu listeners, and desktop CSS.
+- `src/types/doc2mdShell.d.ts` describes the injected desktop bridge contract.
+
+**Data flow:**
+
+1. The Swift app loads the desktop Vite bundle into `WKWebView`.
+2. `window.doc2mdShell` is injected at document start for desktop file operations.
+3. Desktop React code calls the bridge for open, save, save-as, reveal, file metadata, persistence, and native menu events.
+4. Conversion still runs through the shared converter layer; Markdown persistence is desktop-owned.
+
+**License boundary:** desktop-specific app code is source-visible shareware under `LicenseRef-doc2md-Desktop`. Shared converters, hosted-web code, `@doc2md/core`, and MIT-marked files remain independently usable under MIT. See `docs/licensing.md`.
 
 ### @doc2md/core (npm package)
 
@@ -226,7 +223,7 @@ The web UI uses these client-side libraries for in-browser document processing:
 - **Browser URL limits:** direct browser URL fetches use a 30-second download timeout and the existing 50 MiB in-browser size cap before conversion continues.
 - **Shared browser URL contract:** remote URL imports use a browser-only fetch path after explicit user confirmation, so the same CORS, timeout, size, and privacy boundaries apply.
 
-The npm package follows the same principle at the Node level: conversion runs locally, no data leaves the machine.
+The Mac desktop app and npm package follow the same principle at their runtime layer: conversion runs locally, no document data is sent to a doc2md service.
 
 ## Limits and Boundaries
 
@@ -243,9 +240,12 @@ The npm package follows the same principle at the Node level: conversion runs lo
 ## Deployment
 
 - **Web UI:** Ships as a static Vite build and can be hosted on GitHub Pages or any equivalent static host.
+- **Mac desktop app:** Ships as a signed/notarized `.app` and DMG through the protected Mac release workflow. The release runbook lives in `apps/macos/README.md`.
 - **npm package:** Published as `@doc2md/core` to the npm registry. Requires Node >= 22. Includes a `bin/doc2md.js` CLI entry point.
 
 ## See Also
 
+- [Mac app runbook](../apps/macos/README.md) — local builds, release workflow, Sparkle, signing, and manual validation
+- [Licensing guide](licensing.md) — MIT/shareware boundary and contribution expectations
 - [Publishing @doc2md/core](publishing-doc2md-core.md) — release process and npm publishing workflow
 - [Using @doc2md/core](using-doc2md-core.md) — consumer guide for the npm package API and CLI
