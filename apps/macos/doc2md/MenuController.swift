@@ -1,8 +1,10 @@
 import AppKit
+import OSLog
 import SwiftUI
 import WebKit
 
 final class MenuController: NSObject {
+    private let logger = Logger(subsystem: "com.kjellkod.doc2md", category: "MenuController")
     weak var webView: WKWebView?
     var licenseController: LicenseController?
     var updatePreferences: UpdateCheckPreferences?
@@ -26,6 +28,14 @@ final class MenuController: NSObject {
 
     func revealInFinder() {
         dispatchNativeEvent("doc2md:native-reveal-in-finder")
+    }
+
+    func openAcknowledgments() {
+        openBundledResource(named: "THIRD_PARTY_NOTICES", withExtension: "md")
+    }
+
+    func openDesktopLicense() {
+        openBundledResource(named: "LicenseRef-doc2md-Desktop", withExtension: "txt")
     }
 
     func closeWindow() {
@@ -63,6 +73,17 @@ final class MenuController: NSObject {
 
     func setLicensedMonthlyUpdateChecksEnabled(_ enabled: Bool) {
         updatePreferences?.licensedMonthlyChecksEnabled = enabled
+    }
+
+    private func openBundledResource(named name: String, withExtension ext: String) {
+        guard let url = Bundle.main.url(forResource: name, withExtension: ext) else {
+            logger.error("missing bundled resource: \(name, privacy: .public).\(ext, privacy: .public)")
+            return
+        }
+
+        if !NSWorkspace.shared.open(url) {
+            logger.error("failed to open bundled resource: \(url.absoluteString, privacy: .public)")
+        }
     }
 
     private func dispatchNativeEvent(_ eventName: String, completion: (() -> Void)? = nil) {

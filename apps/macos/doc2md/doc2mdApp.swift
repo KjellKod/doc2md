@@ -90,6 +90,16 @@ struct Doc2mdApp: App {
                     sparkleController.checkForUpdates()
                 }
             }
+
+            CommandGroup(after: .help) {
+                Button("Acknowledgments…") {
+                    shellHost.menuController.openAcknowledgments()
+                }
+
+                Button("License…") {
+                    shellHost.menuController.openDesktopLicense()
+                }
+            }
         }
     }
 }
