@@ -29,12 +29,11 @@ doc2md converts documents to Markdown through three surfaces: a hosted browser U
 
 ```mermaid
 flowchart LR
-  subgraph MIT["MIT region"]
+  subgraph MIT["MIT region, including MIT-marked files"]
     converters["src/converters/ shared conversion code"]
     core["packages/core/ and @doc2md/core"]
     sharedSrc["src/App.tsx and shared hooks"]
     components["src/components/ shared UI components"]
-    mitMarked["MIT-marked files"]
   end
 
   boundary["license boundary"]
@@ -57,9 +56,6 @@ flowchart LR
   components --> desktopApp
   converters --> npmPackage
   core --> npmPackage
-  mitMarked --> hosted
-  mitMarked --> desktopApp
-  mitMarked --> npmPackage
   core -. "bundled MIT components keep MIT terms" .-> boundary
   boundary -. "desktop-only UI, bridge, persistence, save/open/reveal, native menu" .-> macos
   boundary -. "desktop React/CSS" .-> desktopReact
@@ -73,13 +69,12 @@ Plain-text view:
 
 ```text
 +----------------------------------------------+      +----------------------------------------------+
-| MIT region                                   |      | LicenseRef-doc2md-Desktop region            |
+| MIT region, including MIT-marked files       |      | LicenseRef-doc2md-Desktop region            |
 |                                              |      |                                              |
 | src/converters/: shared conversion code      |      | apps/macos/: Mac app shell                  |
 | src/components/: shared UI components        |      | src/desktop/: desktop UI and bridge         |
 | src/App.tsx and shared hooks                 |      | src/types/doc2mdShell.d.ts: bridge types    |
 | packages/core/, @doc2md/core                 |      |                                              |
-| MIT-marked files                             |      |                                              |
 +----------------------+-----------------------+      +----------------------+-----------------------+
                     |                                           ^
                     | shared MIT code used by all surfaces      |
