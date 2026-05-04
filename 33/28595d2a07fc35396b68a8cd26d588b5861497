@@ -1,0 +1,27 @@
+LICENSE
+  10c9f53bfb99366e 40
+docs/licensing.md
+  10c9f53bfb99366e 71,73
+LICENSES/LicenseRef-doc2md-Desktop.txt
+  10c9f53bfb99366e 37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "3328595d2a07fc35396b68a8cd26d588b5861497",
+  "prompts": {
+    "10c9f53bfb99366e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "15c4bba7-45a0-4590-a63e-d7788eb24eaf",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 4,
+      "total_deletions": 4,
+      "accepted_lines": 4,
+      "overriden_lines": 0
+    }
+  }
+}
