@@ -6,6 +6,7 @@
 | active | `paste-to-markdown-in-editor` | Convert pasted unicode formatting (LinkedIn) and rich text (HTML) to markdown in edit mode. |
 | active | `markdown-editing-and-rendering-stack` | Unimplemented markdown authoring/rendering unification idea. |
 | active | `mac-desktop-app-roadmap` | Mac-only Swift/WKWebView/Sparkle desktop app roadmap across multiple quests and PRs. |
+| active | `mac-app-license-and-notice-surfacing` | Surface bundled notices/license through Mac Help menu and About panel; generate notice inventory programmatically with a drift test. |
 | done | ~~`doc2md-dual-licensing`~~ | Mixed-license boundary shipped in PR #103. See [archived proposal](archive/doc2md-dual-licensing.md), [license guide](../docs/licensing.md), and [journal](../docs/quest-journal/dual-licensing-boundary_2026-05-02.md). |
 | done | ~~`desktop-persistence-settings`~~ | Desktop-only settings persistence shipped. See [archived proposal](archive/desktop-persistence-settings.md) and [journal](../docs/quest-journal/desktop-persistence-settings_2026-04-30.md). |
 | done | ~~`playwright-browser-baseline`~~ | Chromium-only hosted-browser baseline shipped. See [journal](../docs/quest-journal/playwright-browser-baseline_2026-05-02.md). |
