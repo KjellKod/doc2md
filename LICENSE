@@ -37,4 +37,4 @@ Third-party dependencies remain under their own licenses. MIT-licensed code bund
 
 ## Prior MIT Versions
 
-Versions of doc2md released before `2.2.0` were published under the prior repo-wide MIT license. Those MIT permissions remain available for those earlier versions. The mixed-license model applies to Covered Software in releases tagged `2.2.0`, beginning at commit `2291b8914f2457966e202ff88d87f93047e10a7f`, and later, until a later release states a different license boundary in its release notes and license files.
+Versions of doc2md released before `2.2.0` were published under the prior repo-wide MIT license. Those MIT permissions remain available for those earlier versions. The mixed-license model applies to Covered Software in releases tagged `2.2.0`, beginning at commit [`2291b89`](https://github.com/KjellKod/doc2md/commit/2291b8914f2457966e202ff88d87f93047e10a7f), and later, until a later release states a different license boundary in its release notes and license files.

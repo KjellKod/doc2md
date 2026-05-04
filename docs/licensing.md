@@ -70,7 +70,7 @@ The Mac app may bundle MIT-licensed internal doc2md code and third-party depende
 
 Versions of doc2md released before `2.2.0` were published under the prior repo-wide MIT license. Those prior MIT permissions remain available for those earlier versions. The project cannot claw back MIT rights already granted for those versions.
 
-The current mixed-license model applies to Covered Software in releases tagged `2.2.0`, beginning at commit `2291b8914f2457966e202ff88d87f93047e10a7f`, and later, until a later release states a different license boundary in its release notes and license files.
+The current mixed-license model applies to Covered Software in releases tagged `2.2.0`, beginning at commit [`2291b89`](https://github.com/KjellKod/doc2md/commit/2291b8914f2457966e202ff88d87f93047e10a7f), and later, until a later release states a different license boundary in its release notes and license files.
 
 ## SPDX (Software Package Data Exchange) Guidance
 
