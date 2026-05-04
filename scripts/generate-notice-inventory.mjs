@@ -9,7 +9,8 @@
  *   `package.json`, and recursively follow its `dependencies` (excluding `devDependencies`).
  *
  * Sort order is ASCII-stable on lowercased keys:
- * - npm table by package name
+ * - npm table by `name@version` (so parallel installs of the same package at different versions
+ *   are each represented deterministically rather than collapsed by name alone)
  * - swiftpm table by `identity`
  */
 
@@ -171,8 +172,9 @@ async function gatherNpmInventory() {
   }
 
   const inventory = new Map();
+  const inventoryKey = (name, version) => `${name}@${version}`;
   for (const workspacePkg of workspacePackages) {
-    inventory.set(workspacePkg.name, {
+    inventory.set(inventoryKey(workspacePkg.name, workspacePkg.version), {
       name: workspacePkg.name,
       version: workspacePkg.version,
       license: workspacePkg.license,
@@ -198,9 +200,10 @@ async function gatherNpmInventory() {
 
     const pkgName = typeof pkg.name === "string" ? pkg.name : name;
     const version = typeof pkg.version === "string" ? pkg.version : "UNSPECIFIED";
+    const inventoryEntryKey = inventoryKey(pkgName, version);
 
-    if (!inventory.has(pkgName)) {
-      inventory.set(pkgName, {
+    if (!inventory.has(inventoryEntryKey)) {
+      inventory.set(inventoryEntryKey, {
         name: pkgName,
         version,
         license: normalizeLicense(pkg),
@@ -212,7 +215,10 @@ async function gatherNpmInventory() {
     enqueueDeps(pkg.dependencies ?? {}, pkgDir);
   }
 
-  const rows = stableSortByLowerKey([...inventory.values()], (row) => row.name);
+  const rows = stableSortByLowerKey(
+    [...inventory.values()],
+    (row) => `${row.name}@${row.version}`
+  );
 
   const header = ["Dependency", "Version", "License", "Source"];
   const align = ["---", "---:", "---", "---"];
