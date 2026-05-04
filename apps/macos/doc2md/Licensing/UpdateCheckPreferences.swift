@@ -46,7 +46,7 @@ struct UpdateCheckPolicy {
         switch state {
         case .licensed:
             guard preferences.licensedMonthlyChecksEnabled else {
-                return false
+                return true
             }
             guard let lastCheck = preferences.lastLicensedMonthlyCheck else {
                 return true
@@ -58,7 +58,8 @@ struct UpdateCheckPolicy {
     }
 
     func recordAutomaticCheck(for state: LicenseState) {
-        if case .licensed = state {
+        if case .licensed = state,
+           preferences.licensedMonthlyChecksEnabled {
             preferences.lastLicensedMonthlyCheck = now()
         }
     }

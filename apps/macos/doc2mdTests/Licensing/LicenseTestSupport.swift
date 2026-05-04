@@ -5,6 +5,7 @@ final class InMemoryLicenseTokenStorage: LicenseTokenStorage {
     var candidate: StoredLicenseCandidate
     private(set) var savedTokens: [String] = []
     private(set) var clearCount = 0
+    var candidateAfterSave: StoredLicenseCandidate?
     var failSave = false
     var failClear = false
 
@@ -21,7 +22,7 @@ final class InMemoryLicenseTokenStorage: LicenseTokenStorage {
             throw LicenseStorageError.failed("save failed")
         }
         savedTokens.append(token)
-        candidate = .available(token)
+        candidate = candidateAfterSave ?? .available(token)
     }
 
     func clearToken() throws {
@@ -77,5 +78,15 @@ struct LicenseFixtureFactory {
 
     func verifier(now: Date? = nil) -> LicenseVerifier {
         LicenseVerifier(publicKeys: [publicKey], now: { now ?? self.now })
+    }
+
+    func verifiedLicense() throws -> VerifiedLicense {
+        let token = try token()
+        switch verifier().verify(token) {
+        case .success(let verified):
+            return verified
+        case .failure(let error):
+            throw error
+        }
     }
 }

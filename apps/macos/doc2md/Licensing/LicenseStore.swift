@@ -59,6 +59,10 @@ final class LicenseStore {
             } catch {
                 return LicenseStoreLoadResult(state: .licensed(verified), token: verified.token)
             }
+            if let repaired = verifiedKeychainRepair(matching: verified.token) {
+                try? fallbackStore.clearToken()
+                return LicenseStoreLoadResult(state: .licensed(repaired), token: repaired.token)
+            }
             return LicenseStoreLoadResult(state: .licensed(verified), token: verified.token)
         }
 
@@ -140,6 +144,17 @@ final class LicenseStore {
         if fallback.isInvalid {
             try? fallbackStore.clearToken()
         }
+    }
+
+    private func verifiedKeychainRepair(matching token: String) -> VerifiedLicense? {
+        let repairedCandidate = readCandidate(from: keychainStore)
+        let repairedClassification = classify(repairedCandidate)
+        guard case .valid(let repaired) = repairedClassification,
+              repaired.token == token
+        else {
+            return nil
+        }
+        return repaired
     }
 }
 
