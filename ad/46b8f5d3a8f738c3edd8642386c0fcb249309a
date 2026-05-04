@@ -1,0 +1,25 @@
+apps/macos/THIRD_PARTY_NOTICES.md
+  80d570f3adc3410b 36,40,49,53,110,125,145,160,181,193,198
+scripts/generate-notice-inventory.mjs
+  80d570f3adc3410b 12-13,175,177,203,205-206,218-221
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "ad46b8f5d3a8f738c3edd8642386c0fcb249309a",
+  "prompts": {
+    "80d570f3adc3410b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "55ec322d-fa36-4645-8ff1-e4c083976066",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 33,
+      "total_deletions": 23,
+      "accepted_lines": 33,
+      "overriden_lines": 0
+    }
+  }
+}
