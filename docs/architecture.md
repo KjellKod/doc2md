@@ -31,9 +31,9 @@ doc2md converts documents to Markdown through three surfaces: a hosted browser U
 flowchart LR
   subgraph MIT["MIT region, including MIT-marked files"]
     converters["src/converters/ shared conversion code"]
-    core["packages/core/ and @doc2md/core"]
-    sharedSrc["src/App.tsx and shared hooks"]
     components["src/components/ shared UI components"]
+    core["packages/core/ and @doc2md/core"]
+    hostedCode["shared hosted web code"]
   end
 
   boundary["license boundary"]
@@ -49,10 +49,9 @@ flowchart LR
   npmPackage["@doc2md/core package and CLI"]
 
   converters --> hosted
-  sharedSrc --> hosted
   components --> hosted
+  hostedCode --> hosted
   converters --> desktopApp
-  sharedSrc --> desktopApp
   components --> desktopApp
   converters --> npmPackage
   core --> npmPackage
@@ -68,26 +67,26 @@ flowchart LR
 Plain-text view:
 
 ```text
-+----------------------------------------------+      +----------------------------------------------+
-| MIT region, including MIT-marked files       |      | LicenseRef-doc2md-Desktop region            |
-|                                              |      |                                              |
-| src/converters/: shared conversion code      |      | apps/macos/: Mac app shell                  |
-| src/components/: shared UI components        |      | src/desktop/: desktop UI and bridge         |
-| src/App.tsx and shared hooks                 |      | src/types/doc2mdShell.d.ts: bridge types    |
-| packages/core/, @doc2md/core                 |      |                                              |
-+----------------------+-----------------------+      +----------------------+-----------------------+
-           | shared MIT code used by all surfaces       license boundary       |
-           |                                                |                  |
-           v                                                |                  v
-  +-----------------------+                                 |        +-----------------------+
-  | Hosted Web UI         |                                 |        | Mac Desktop App       |
-  +-----------------------+                                 |        +-----------------------+
-  +-----------------------+                                 |                  ^
-  | @doc2md/core CLI      |                                 |                  |
-  +-----------------------+                                 |        desktop-only UI, bridge,
-                                                            |        persistence, save/open/reveal,
-                                                            |        native menu, and CSS
++------------------------------------------------+      +------------------------------------------------+
+| MIT region, including MIT-marked files         |      | LicenseRef-doc2md-Desktop region               |
+|                                                |      |                                                |
+| src/converters/: shared conversion code        |      | apps/macos/: Mac app shell                     |
+| src/components/: shared UI components          |      | src/desktop/: desktop UI and bridge            |
+| packages/core/, @doc2md/core                   |      | src/types/doc2mdShell.d.ts: bridge types       |
+| shared hosted web code                         |      |                                                |
++------------------------+-----------------------+      +------------------------+-----------------------+
+           | shared MIT code used by all surfaces              | desktop-only code
+           |                                                    |
+           v                                                    v
+  +-----------------------+                         +-----------------------+
+  | Hosted Web UI         |                         | Mac Desktop App       |
+  +-----------------------+                         +-----------------------+
+  +-----------------------+
+  | @doc2md/core CLI      |
+  +-----------------------+
 ```
+
+The Mac Desktop App can bundle shared MIT components; those components keep their MIT terms. Desktop-only UI, bridge, persistence, save/open/reveal, native menu, and CSS behavior stays in the desktop-license region.
 
 ## Shared Converter Layer
 
