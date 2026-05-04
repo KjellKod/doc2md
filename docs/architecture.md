@@ -30,19 +30,19 @@ doc2md converts documents to Markdown through three surfaces: a hosted browser U
 ```mermaid
 flowchart LR
   subgraph MIT["MIT region"]
-    converters["src/converters/"]
+    converters["src/converters/ shared conversion code"]
     core["packages/core/ and @doc2md/core"]
-    sharedSrc["root src/ excluding src/desktop/"]
-    components["src/components/"]
+    sharedSrc["src/App.tsx and shared hooks"]
+    components["src/components/ shared UI components"]
     mitMarked["MIT-marked files"]
   end
 
   boundary["license boundary"]
 
   subgraph Desktop["LicenseRef-doc2md-Desktop region"]
-    macos["apps/macos/"]
-    desktopReact["src/desktop/"]
-    shellTypes["src/types/doc2mdShell.d.ts"]
+    macos["apps/macos/ Mac app shell"]
+    desktopReact["src/desktop/ desktop UI and bridge"]
+    shellTypes["src/types/doc2mdShell.d.ts bridge type declarations"]
   end
 
   hosted["Hosted Web UI"]
@@ -72,15 +72,15 @@ flowchart LR
 Plain-text view:
 
 ```text
-+----------------------------------------+      +----------------------------------------+
-| MIT region                             |      | LicenseRef-doc2md-Desktop region      |
-|                                        |      |                                        |
-| src/converters/                        |      | apps/macos/                            |
-| packages/core/ and @doc2md/core        |      | src/desktop/                           |
-| root src/ excluding src/desktop/       |      | src/types/doc2mdShell.d.ts             |
-| src/components/                        |      |                                        |
-| MIT-marked files                       |      |                                        |
-+-------------------+--------------------+      +-------------------+--------------------+
++----------------------------------------------+      +----------------------------------------------+
+| MIT region                                   |      | LicenseRef-doc2md-Desktop region            |
+|                                              |      |                                              |
+| src/converters/: shared conversion code      |      | apps/macos/: Mac app shell                  |
+| src/components/: shared UI components        |      | src/desktop/: desktop UI and bridge         |
+| src/App.tsx and shared hooks                 |      | src/types/doc2mdShell.d.ts: bridge types    |
+| packages/core/, @doc2md/core                 |      |                                              |
+| MIT-marked files                             |      |                                              |
++----------------------+-----------------------+      +----------------------+-----------------------+
                     |                                           ^
                     | shared MIT code used by all surfaces      |
                     v                                           |
