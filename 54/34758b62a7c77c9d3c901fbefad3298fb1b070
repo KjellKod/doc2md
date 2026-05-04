@@ -1,0 +1,23 @@
+docs/architecture.md
+  9caa906dcbe2261f 28-71
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "5434758b62a7c77c9d3c901fbefad3298fb1b070",
+  "prompts": {
+    "9caa906dcbe2261f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019dee8a-c3e9-70a2-bd1d-fe0f27423431",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 44,
+      "total_deletions": 0,
+      "accepted_lines": 80,
+      "overriden_lines": 0
+    }
+  }
+}
