@@ -9,14 +9,14 @@ Date: 2026-05-01
 
 Would a Sublime-style paid license with occasional reminders work for `doc2md.app`, and how does it compare with the Phase 7 roadmap suggestion?
 
-Short answer: yes. The right fit is a direct-DMG, offline-verifiable, Sublime-style license for the Mac app only, sold through a merchant-of-record checkout. The verifier should live in the Swift Mac shell, and the issuer should be private server-side infrastructure. Do not make hosted web or npm depend on licensing.
+Short answer: yes. The right fit is a direct-DMG, offline-verifiable, Sublime-style license for the Mac app only, sold through a merchant-of-record checkout once operations are ready. The verifier should live in the Swift Mac shell, and the issuer should be private server-side infrastructure. Do not make hosted web or npm depend on licensing.
 
 ## Reference Model
 
 A practical reference model for this kind of desktop-app licensing is:
 
 - Open-core split: a future public engine crate, a private proprietary app, and a private license issuer.
-- Commercial behavior: free indefinitely, periodic nag, paid license removes nag, no feature crippling, no time bomb.
+- Commercial behavior: free indefinitely, periodic reminders, paid license removes reminders, no feature crippling, no time bomb.
 - Distribution: direct notarized DMG and optionally Homebrew Cask; Mac App Store handled only as a separate distribution track.
 - License crypto: Ed25519-signed offline tokens with an embedded public key and `key_id` for rotation.
 - Payment vendor: Lemon Squeezy as merchant of record, with Paddle as fallback.
@@ -55,6 +55,10 @@ Proposed public endpoints:
 
 The `.dev` TLD is HTTPS-only in modern browsers because it is HSTS-preloaded. That is a useful trust property, but it means every public endpoint must have valid TLS from day one.
 
+Purchases are not live in the Phase 7 MVP. Any Mac-only `Buy License` affordance must stay disabled with plain copy such as "Purchases are not live yet" and must not navigate to checkout. Hosted web remains at `https://kjellkod.github.io/doc2md/`, free, stateless, and independent from Mac licensing, checkout, and the issuer API.
+
+Before taking money, maintainers must assign operational ownership for the merchant account, tax/sales responsibility, refund and support workflow, license delivery, and final go-live approval. Lemon Squeezy remains the first-choice merchant of record because it can own much of the tax/payment compliance surface; Paddle remains a fallback only, not a second integration built for the MVP.
+
 ## Fit Against The Roadmap
 
 This model matches Phase 7 well:
@@ -72,7 +76,7 @@ The main mismatch is repository/licensing structure. `doc2md` currently contains
 2. Split the Mac app shell/licensing into a private repo while keeping hosted web and `@doc2md/core` open/free.
 3. Keep source public but move only the issuer, private signing key, and commercial operations private.
 
-Option 3 is the simplest and probably enough for honest-user licensing. Option 2 is stronger commercially but adds repo, build, and release coordination overhead. Option 1 is transparent but makes nag removal trivial from source builds.
+Option 3 is the simplest and probably enough for honest-user licensing. Option 2 is stronger commercially but adds repo, build, and release coordination overhead. Option 1 is transparent but makes reminder removal trivial from source builds.
 
 ## Recommendation
 
@@ -91,17 +95,24 @@ Use the smallest practical version for Phase 7:
    - Paste token support.
    - Optional `doc2md://activate?key=...` deep link later.
    - Optional drag/drop license file later.
-8. Nag cadence:
-   - no nag for first several launches,
-   - at launch only,
-   - dismissible,
-   - no interruptions during conversion/edit/save,
-   - paid license suppresses nag.
+8. Reminder cadence:
+   - no reminder at launch,
+   - first reminder after successful save number 10 in the current startup session,
+   - repeat every 25 successful saves after that in the same startup session,
+   - only count completed saves, not edits, opens, imports, conversions, exports, cancelled saves, failed saves, or conflicts,
+   - dismissible and shown only after save completion returns control to the app,
+   - paid license suppresses reminders.
 9. Revocation:
    - skip hard revocation for MVP,
    - optionally add a best-effort public revocation list later,
    - never block document access because a revocation check fails.
-10. Keep hosted web unchanged: no license UI, no checkout UI, no localStorage licensing.
+10. Keep hosted web unchanged: no license UI, no checkout UI, no localStorage/sessionStorage licensing, no license issuer calls.
+
+The MVP state model is deliberately small: `Unlicensed`, `Licensed`, `Invalid`, and `License Check Failed`. There is no time-limited access state. The product remains free forever with reminders for unlicensed or invalid/check-failed local state; a valid paid license removes reminders.
+
+Local storage resolution is validity-first, then storage-priority. A valid Keychain token wins over fallback storage, but invalid Keychain data must never delete the only valid Application Support fallback. If Keychain is unavailable and Application Support has a valid token, the app stays licensed and usable.
+
+Sparkle update checks are independent from licensing enforcement. Unlicensed, invalid, and check-failed users get automatic update checks without an opt-out. Licensed users get a positive monthly-check toggle that defaults off and persists locally outside license/token storage; manual Check for Updates remains available.
 
 This satisfies the roadmap's "simple paid license with occasional reminders in the spirit of Sublime Text" without adding account login, server-side document handling, subscription lock-in, or hard activation dependencies.
 
@@ -109,14 +120,14 @@ This satisfies the roadmap's "simple paid license with occasional reminders in t
 
 This licensing design is compatible with a public repository as long as the commercial trust boundary is explicit:
 
-- The public repo may contain the license verifier, token parser, public verification keys, tests, and nag UI.
+- The public repo may contain the license verifier, token parser, public verification keys, tests, and reminder UI.
 - The public repo must not contain the private license-signing key, merchant credentials, webhook secrets, customer/license database credentials, Apple signing credentials, or Sparkle private update keys.
 - The Mac app binary must contain only public verification keys. Public keys can be extracted with tools like `strings`, and that is acceptable because they cannot create valid licenses.
 - The private license-signing key should live only in the private issuer environment that creates licenses after verified purchases.
 - Release CI should not need the private license-signing key unless release CI is also issuing licenses. Prefer keeping license issuance separate from app release builds.
 - PR CI must never receive production secrets. Pull request workflows should run without protected environment secrets, matching the existing release-safety posture.
 
-An attacker reading the public repo can learn the token format, verifier logic, public key, and nag behavior. That is acceptable. They still cannot forge valid licenses unless they compromise the private signing key, issuer credentials, merchant webhook secret, customer/license database write access, or the private issuer environment.
+An attacker reading the public repo can learn the token format, verifier logic, public key, and reminder behavior. That is acceptable. They still cannot forge valid licenses unless they compromise the private signing key, issuer credentials, merchant webhook secret, customer/license database write access, or the private issuer environment.
 
 The key distinction is signing versus verification:
 
@@ -140,13 +151,13 @@ The pragmatic initial structure is:
 
 - Keep hosted web, npm package, converters, shared editor code, and the Mac shell in this public repo.
 - Keep only the issuer service, private signing key, merchant credentials, customer/license records, and commercial operations private.
-- Treat the public verifier and nag UI as reviewable product code, not as the commercial control boundary.
+- Treat the public verifier and reminder UI as reviewable product code, not as the commercial control boundary.
 
 A private Mac wrapper or app repo may become worthwhile later if:
 
 - the official Mac shell itself needs to be proprietary,
 - paid-only functionality is added,
-- public nag/verifier code materially hurts conversion,
+- public reminder/verifier code materially hurts conversion,
 - commercial copy, licensing UI, vendor integration code, or release packaging should be hidden,
 - or the public repo starts constraining product decisions.
 
@@ -155,7 +166,7 @@ Splitting earlier has real cost: duplicated build coordination, harder CI, versi
 If a split becomes necessary later, avoid a broad open-core restructure at first. The clean split would be:
 
 - Public repo: hosted web, converters, npm package, and shared React/editor code.
-- Private repo: Mac packaging/licensing wrapper, license UI/nag glue, proprietary release configuration, and issuer integration docs.
+- Private repo: Mac packaging/licensing wrapper, license UI/reminder glue, proprietary release configuration, and issuer integration docs.
 - Separate private service/repo: license issuer, signing keys, merchant credentials, and customer/license records.
 
 ## Implementation Work Packages
@@ -173,10 +184,10 @@ Keep Phase 7 split into reviewable quests:
    - trusted public-key array with `key_id`,
    - local token storage,
    - tests for valid, invalid, expired, wrong key, malformed, and rotated-key cases.
-3. License UI and nag:
+3. License UI and reminders:
    - Mac-only menu/dialog,
    - paste activation,
-   - launch-count/snooze state,
+   - save-count reminder state,
    - no hosted-web exposure.
 4. Issuer:
    - private repo/service,
@@ -212,11 +223,12 @@ Adopt this licensing type in principle, but implement the smallest doc2md-specif
 
 - direct DMG first,
 - Lemon Squeezy merchant of record,
+- purchases disabled until operational ownership and go-live approval are assigned,
 - private issuer,
 - offline signed license token,
 - Swift verifier,
-- local Application Support or Keychain storage,
-- dismissible launch-time nags,
+- local Keychain storage with Application Support fallback,
+- dismissible save-count reminders,
 - no functional lockout,
 - no hosted-web dependency,
 - no App Store path until direct sales are proven.

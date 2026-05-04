@@ -1,8 +1,12 @@
 import AppKit
+import SwiftUI
 import WebKit
 
 final class MenuController: NSObject {
     weak var webView: WKWebView?
+    var licenseController: LicenseController?
+    var updatePreferences: UpdateCheckPreferences?
+    private var licenseWindowController: NSWindowController?
 
     func newDocument() {
         dispatchNativeEvent("doc2md:native-new")
@@ -28,6 +32,37 @@ final class MenuController: NSObject {
         dispatchNativeEvent("doc2md:native-close-window") {
             NSApp.keyWindow?.performClose(nil)
         }
+    }
+
+    func showLicenseWindow() {
+        guard let licenseController else {
+            return
+        }
+
+        if let licenseWindowController {
+            licenseWindowController.showWindow(nil)
+            licenseWindowController.window?.makeKeyAndOrderFront(nil)
+            return
+        }
+
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 520, height: 360),
+            styleMask: [.titled, .closable, .miniaturizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "License"
+        window.center()
+        window.contentView = NSHostingView(rootView: LicenseWindow(licenseController: licenseController))
+
+        let controller = NSWindowController(window: window)
+        licenseWindowController = controller
+        controller.showWindow(nil)
+        window.makeKeyAndOrderFront(nil)
+    }
+
+    func setLicensedMonthlyUpdateChecksEnabled(_ enabled: Bool) {
+        updatePreferences?.licensedMonthlyChecksEnabled = enabled
     }
 
     private func dispatchNativeEvent(_ eventName: String, completion: (() -> Void)? = nil) {

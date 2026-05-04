@@ -2,8 +2,25 @@ import SwiftUI
 
 @main
 struct Doc2mdApp: App {
-    @StateObject private var shellHost = ShellHost()
-    private let sparkleController = SparkleController()
+    @StateObject private var licenseController: LicenseController
+    @StateObject private var shellHost: ShellHost
+    private let sparkleController: SparkleController
+
+    init() {
+        let sharedLicenseController = LicenseController()
+        let sharedUpdatePreferences = UpdateCheckPreferences()
+        _licenseController = StateObject(wrappedValue: sharedLicenseController)
+        _shellHost = StateObject(
+            wrappedValue: ShellHost(
+                licenseController: sharedLicenseController,
+                updatePreferences: sharedUpdatePreferences
+            )
+        )
+        sparkleController = SparkleController(
+            licenseController: sharedLicenseController,
+            updatePreferences: sharedUpdatePreferences
+        )
+    }
 
     // Multi-window is explicitly out of scope for the MVP (see
     // ideas/mac-desktop-app-roadmap.md). Using `Window` instead of `WindowGroup`
@@ -54,6 +71,21 @@ struct Doc2mdApp: App {
             }
 
             CommandGroup(after: .appInfo) {
+                Button("Enter License...") {
+                    shellHost.menuController.showLicenseWindow()
+                }
+
+                Toggle(
+                    "Monthly Update Checks",
+                    isOn: Binding(
+                        get: { sparkleController.licensedMonthlyChecksEnabled },
+                        set: { sparkleController.licensedMonthlyChecksEnabled = $0 }
+                    )
+                )
+                .disabled(licenseController.state.allowsReminders)
+
+                Divider()
+
                 Button("Check for Updates...") {
                     sparkleController.checkForUpdates()
                 }

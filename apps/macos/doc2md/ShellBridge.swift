@@ -61,8 +61,13 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
 
     private let fileStore = FileStore()
     private let persistenceStore = PersistenceStore()
+    private let licenseReminderController: LicenseReminderController?
     private var knownURLsByPath: [String: URL] = [:]
     private var lastDirectoryURL: URL?
+
+    init(licenseReminderController: LicenseReminderController? = nil) {
+        self.licenseReminderController = licenseReminderController
+    }
 
     func install(on userContentController: WKUserContentController) {
         let script = WKUserScript(
@@ -210,7 +215,9 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
 
             remember(url: knownURL)
             recordRecentFileIfEnabled(url: knownURL)
-            resolve(id: message.id, result: ShellCallResult.save(result))
+            resolve(id: message.id, result: ShellCallResult.save(result)) { [weak self] in
+                self?.licenseReminderController?.recordSuccessfulSave()
+            }
         } catch {
             resolve(id: message.id, result: Self.response(for: error))
         }
@@ -241,7 +248,9 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
 
             remember(url: url)
             recordRecentFileIfEnabled(url: url)
-            resolve(id: message.id, result: ShellCallResult.save(result))
+            resolve(id: message.id, result: ShellCallResult.save(result)) { [weak self] in
+                self?.licenseReminderController?.recordSuccessfulSave()
+            }
         } catch {
             resolve(id: message.id, result: Self.response(for: error))
         }
@@ -349,7 +358,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
         rememberLastDirectory(from: firstURL.standardizedFileURL)
     }
 
-    private func resolve<T: Encodable>(id: String, result: T) {
+    private func resolve<T: Encodable>(id: String, result: T, completion: (() -> Void)? = nil) {
         do {
             let encoder = JSONEncoder()
             let idData = try encoder.encode(id)
@@ -363,7 +372,14 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
             let script = "window.__doc2mdShellResolve(\(idJSON), \(resultJSON));"
 
             DispatchQueue.main.async { [weak self] in
-                self?.webView?.evaluateJavaScript(script)
+                guard let webView = self?.webView else {
+                    return
+                }
+                webView.evaluateJavaScript(script) { _, error in
+                    if error == nil {
+                        completion?()
+                    }
+                }
             }
         } catch {
             #if DEBUG

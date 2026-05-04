@@ -6,6 +6,7 @@ For the other perspective, see [Jean-Claude's Journal](../journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 039 | [Phase 7 Licensing MVP](039-phase-7-licensing-mvp.md) | Keeping money away from document workflows, killing subtle license-boundary bugs, and leaving the production-key gate inconvenient on purpose |
 | 038 | [Desktop License Boundary Refactor](038-desktop-license-boundary-refactor.md) | Moving desktop code out of shared paths so the license boundary does not depend on memory |
 | 037 | [Requiem: Desktop License Polish](037-requiem-desktop-license-polish.md) | Burying implied open-source rights, jurisdiction placeholders, and broad commercial language before publication |
 | 036 | [Dual Licensing Boundary](036-dual-licensing-boundary.md) | Making the public-source trust boundary explicit without letting root MIT speak for the desktop app |

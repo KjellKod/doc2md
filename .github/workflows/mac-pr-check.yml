@@ -35,7 +35,7 @@ jobs:
         run: chmod +x scripts/build-mac-app.sh
 
       - name: Build unsigned Mac app (Release) + allowlist scan
-        run: bash scripts/build-mac-app.sh --configuration Release
+        run: bash scripts/build-mac-app.sh --configuration Release --allow-development-license-key-for-pr
 
       - name: Upload unsigned .app artifact
         if: success()
