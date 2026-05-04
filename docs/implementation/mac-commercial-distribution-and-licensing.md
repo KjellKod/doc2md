@@ -110,9 +110,9 @@ Use the smallest practical version for Phase 7:
 
 The MVP state model is deliberately small: `Unlicensed`, `Licensed`, `Invalid`, and `License Check Failed`. There is no time-limited access state. The product remains free forever with reminders for unlicensed or invalid/check-failed local state; a valid paid license removes reminders.
 
-Local storage resolution is validity-first, then storage-priority. A valid Keychain token wins over fallback storage, but invalid Keychain data must never delete the only valid Application Support fallback. If Keychain is unavailable and Application Support has a valid token, the app stays licensed and usable.
+Local storage resolution is validity-first, then storage-priority. A valid Keychain token wins over fallback storage, but invalid Keychain data must never delete the only valid Application Support fallback. If Keychain has invalid, expired, or corrupt data and Application Support has a valid token, the app promotes the fallback into Keychain and deletes the fallback only after verifying Keychain can be read back as the same valid token. If the Keychain write or read-back verification fails, including a different valid token after the repair attempt, the app stays licensed from the fallback and keeps the fallback token.
 
-Sparkle update checks are independent from licensing enforcement. Unlicensed, invalid, and check-failed users get automatic update checks without an opt-out. Licensed users get a positive monthly-check toggle that defaults off and persists locally outside license/token storage; manual Check for Updates remains available.
+Sparkle update checks are independent from licensing enforcement. Unlicensed, invalid, and check-failed users get automatic update checks without an opt-out. Licensed users get frequent automatic checks by default and can enable a persisted monthly-check toggle to use a no-more-than-monthly cadence; manual Check for Updates remains available.
 
 This satisfies the roadmap's "simple paid license with occasional reminders in the spirit of Sublime Text" without adding account login, server-side document handling, subscription lock-in, or hard activation dependencies.
 

@@ -507,7 +507,7 @@ Expected changes:
   - No document contents are sent to a licensing provider.
   - License checks must not block local document access.
   - Failed network checks degrade to a reminder, not data loss.
-  - Sparkle update checks remain independent from licensing. Unlicensed users have no automatic-update opt-out; licensed users can enable a persisted monthly-check toggle.
+  - Sparkle update checks remain independent from licensing. Unlicensed users have no automatic-update opt-out; licensed users get frequent automatic checks by default and can enable a persisted monthly-check toggle to use a no-more-than-monthly cadence.
   - No license secrets, signing keys, or vendor API keys are committed.
 - Add a distribution decision record comparing:
   - Mac App Store only.
