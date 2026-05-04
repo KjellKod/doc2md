@@ -34,7 +34,7 @@ This license applies only to the Covered Software.
 
 This license does not apply to MIT Components. MIT Components remain governed by their own MIT or other stated license terms, even when they are used by, referenced from, or bundled with the Covered Software. Nothing in this license limits your independent rights to use, copy, modify, merge, publish, distribute, sublicense, or sell MIT Components under the MIT License.
 
-Versions of doc2md released before `2.2.0` were published under the prior repo-wide MIT license. Those prior MIT permissions remain available for those earlier versions. This license applies to Covered Software in releases tagged `2.2.0` and later, until a later release states a different license boundary in its release notes and license files.
+Versions of doc2md released before `2.2.0` were published under the prior repo-wide MIT license. Those prior MIT permissions remain available for those earlier versions. This license applies to Covered Software in releases tagged `2.2.0`, beginning at commit [`2291b89`](https://github.com/KjellKod/doc2md/commit/2291b8914f2457966e202ff88d87f93047e10a7f), and later, until a later release states a different license boundary in its release notes and license files.
 
 If a file has both desktop-specific content and MIT-covered content, the file's stated license notice controls that file. If there is no clear notice, do not assume this license grants open-source rights to desktop-specific Mac app code.
 
