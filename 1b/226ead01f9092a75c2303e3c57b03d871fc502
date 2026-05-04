@@ -1,0 +1,23 @@
+ideas/mac-desktop-app-roadmap.md
+  9edd8593c593eadc 42-56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "1b226ead01f9092a75c2303e3c57b03d871fc502",
+  "prompts": {
+    "9edd8593c593eadc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019de4e0-98ef-7461-8778-c6c9dd86cf91",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 3393,
+      "total_deletions": 0,
+      "accepted_lines": 3393,
+      "overriden_lines": 0
+    }
+  }
+}
