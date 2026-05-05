@@ -1,0 +1,94 @@
+apps/macos/doc2md/Licensing/LicenseWindow.swift
+  fcfd247ba424932c 9,26,51,59-67
+.gitignore
+  86836d634bb80857 31
+scripts/build-mac-app.sh
+  fcfd247ba424932c 183,231
+  86836d634bb80857 12,185
+apps/macos/doc2md.xcodeproj/project.pbxproj
+  86836d634bb80857 60-63,114-117,160-163,366-369
+apps/macos/doc2md/doc2mdApp.swift
+  86836d634bb80857 35-40,79
+apps/macos/README.md
+  fcfd247ba424932c 322
+  86836d634bb80857 111-126
+apps/macos/THIRD_PARTY_NOTICES.md
+  fcfd247ba424932c 15-16,216-217,235-239,245
+scripts/generate-release-commit.mjs
+  86836d634bb80857 1-23,32-66
+  91c1f06e17f8a9a4 24-31
+ideas/README.md
+  fcfd247ba424932c 5
+docs/journal/034-celebrate-mac-license-notice-surface-correction.md
+  fcfd247ba424932c 1-92
+apps/macos/doc2md/ThirdPartyLicensesWindow.swift
+  86836d634bb80857 1-11,13-14,16-24,26-34,36-93
+  91c1f06e17f8a9a4 12,15,25,35
+src/__tests__/noticeInventoryDrift.test.ts
+  fcfd247ba424932c 42-50
+src/__tests__/noCmuxInProductUi.test.ts
+  91c1f06e17f8a9a4 9
+  86836d634bb80857 1-8,10-70
+apps/macos/__tests__/spdxHeaderDrift.test.ts
+  86836d634bb80857 1-34
+apps/macos/doc2md/MenuController.swift
+  86836d634bb80857 10-11,66-77,82-84,87-89
+src/__tests__/releaseCommitDrift.test.ts
+  86836d634bb80857 1-34,49
+  91c1f06e17f8a9a4 35-48
+apps/macos/doc2md/AboutWindowController.swift
+  86836d634bb80857 1-39
+apps/macos/doc2md/AboutWindow.swift
+  86836d634bb80857 1-19,21-86
+  fcfd247ba424932c 20
+ideas/release-pinned-notice-links.md
+  fcfd247ba424932c 1-60
+docs/journal/README.md
+  fcfd247ba424932c 9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "f0e154e9c12488bec952d4528b825d766a8d9ebc",
+  "prompts": {
+    "86836d634bb80857": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0a465f71-b453-44ce-bfb3-c8afda072dfe",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 481,
+      "total_deletions": 33,
+      "accepted_lines": 472,
+      "overriden_lines": 0
+    },
+    "91c1f06e17f8a9a4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8a33fffc-3ce5-4381-a61d-0aca2384ca77",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 27,
+      "total_deletions": 6,
+      "accepted_lines": 27,
+      "overriden_lines": 0
+    },
+    "fcfd247ba424932c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019df666-c257-79c3-bcde-c02f1ceb5703",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 2034,
+      "total_deletions": 27,
+      "accepted_lines": 1992,
+      "overriden_lines": 8
+    }
+  }
+}
