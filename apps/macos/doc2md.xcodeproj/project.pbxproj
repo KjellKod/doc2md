@@ -57,6 +57,10 @@
 		9A0200000000000000000042 /* LicenseStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000032 /* LicenseStoreTests.swift */; };
 		9A0200000000000000000043 /* LicenseReminderControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000033 /* LicenseReminderControllerTests.swift */; };
 		9A0200000000000000000044 /* SparkleUpdatePreferenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000034 /* SparkleUpdatePreferenceTests.swift */; };
+		9A0200000000000000000050 /* AboutWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000050 /* AboutWindow.swift */; };
+		9A0200000000000000000051 /* AboutWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000051 /* AboutWindowController.swift */; };
+		9A0200000000000000000052 /* ThirdPartyLicensesWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000052 /* ThirdPartyLicensesWindow.swift */; };
+		9A0200000000000000000053 /* ReleaseCommit.generated.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000053 /* ReleaseCommit.generated.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -107,6 +111,10 @@
 		9A0100000000000000000032 /* LicenseStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseStoreTests.swift; sourceTree = "<group>"; };
 		9A0100000000000000000033 /* LicenseReminderControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseReminderControllerTests.swift; sourceTree = "<group>"; };
 		9A0100000000000000000034 /* SparkleUpdatePreferenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparkleUpdatePreferenceTests.swift; sourceTree = "<group>"; };
+		9A0100000000000000000050 /* AboutWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutWindow.swift; sourceTree = "<group>"; };
+		9A0100000000000000000051 /* AboutWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutWindowController.swift; sourceTree = "<group>"; };
+		9A0100000000000000000052 /* ThirdPartyLicensesWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThirdPartyLicensesWindow.swift; sourceTree = "<group>"; };
+		9A0100000000000000000053 /* ReleaseCommit.generated.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseCommit.generated.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -149,6 +157,10 @@
 				9A0100000000000000000007 /* FileStore.swift */,
 				9A010000000000000000000F /* PersistenceStore.swift */,
 				9A010000000000000000000A /* SupportedFormats.generated.swift */,
+				9A0100000000000000000053 /* ReleaseCommit.generated.swift */,
+				9A0100000000000000000050 /* AboutWindow.swift */,
+				9A0100000000000000000051 /* AboutWindowController.swift */,
+				9A0100000000000000000052 /* ThirdPartyLicensesWindow.swift */,
 				9A0000000000000000000005 /* Licensing */,
 				9A0000000000000000000003 /* Resources */,
 				9A010000000000000000000D /* Info.plist */,
@@ -351,6 +363,10 @@
 				9A0200000000000000000006 /* FileStore.swift in Sources */,
 				9A0200000000000000000015 /* PersistenceStore.swift in Sources */,
 				9A0200000000000000000009 /* SupportedFormats.generated.swift in Sources */,
+				9A0200000000000000000053 /* ReleaseCommit.generated.swift in Sources */,
+				9A0200000000000000000050 /* AboutWindow.swift in Sources */,
+				9A0200000000000000000051 /* AboutWindowController.swift in Sources */,
+				9A0200000000000000000052 /* ThirdPartyLicensesWindow.swift in Sources */,
 				9A0200000000000000000012 /* SparkleController.swift in Sources */,
 				9A0200000000000000000020 /* LicenseClaims.swift in Sources */,
 				9A0200000000000000000021 /* LicenseToken.swift in Sources */,

@@ -39,4 +39,13 @@ describe("notice inventory drift", () => {
     expect(afterStat.mtimeMs).toBe(beforeStat.mtimeMs);
     expect(afterContents).toBe(beforeContents);
   });
+
+  it("uses absolute GitHub URLs for repository paths in Mac notices", () => {
+    const repoRoot = path.resolve(import.meta.dirname, "..", "..");
+    const noticesPath = path.join(repoRoot, "apps", "macos", "THIRD_PARTY_NOTICES.md");
+    const notices = fs.readFileSync(noticesPath, "utf8");
+
+    expect(notices).not.toContain("../../");
+    expect(notices).not.toContain("`doc2md.xcodeproj/");
+  });
 });

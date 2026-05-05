@@ -32,6 +32,12 @@ struct Doc2mdApp: App {
             WebShellView(shellHost: shellHost)
         }
         .commands {
+            CommandGroup(replacing: .appInfo) {
+                Button("About doc2md") {
+                    shellHost.menuController.showAboutWindow()
+                }
+            }
+
             CommandGroup(replacing: .newItem) {
                 Button("New") {
                     shellHost.menuController.newDocument()
@@ -70,7 +76,7 @@ struct Doc2mdApp: App {
                 .keyboardShortcut("r", modifiers: [.command, .shift])
             }
 
-            CommandGroup(after: .appInfo) {
+            CommandGroup(after: .help) {
                 Button("Enter License...") {
                     shellHost.menuController.showLicenseWindow()
                 }
@@ -88,16 +94,6 @@ struct Doc2mdApp: App {
 
                 Button("Check for Updates...") {
                     sparkleController.checkForUpdates()
-                }
-            }
-
-            CommandGroup(after: .help) {
-                Button("Acknowledgments…") {
-                    shellHost.menuController.openAcknowledgments()
-                }
-
-                Button("License…") {
-                    shellHost.menuController.openDesktopLicense()
                 }
             }
         }

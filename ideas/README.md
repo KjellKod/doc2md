@@ -2,6 +2,7 @@
 
 | Status | Idea | Notes |
 |--------|------|-------|
+| active | `release-pinned-notice-links` | Generate bundled Mac notice links with `DOC2MD_RELEASE_REF=vX.Y.Z` during release builds so GitHub URLs are tag-pinned without manual edits. |
 | active | `mac-license-menu-and-about-source-visible-terms` | Move `Enter License…` to Help with state-driven `View License…`; add a cmux-style custom About panel with `Docs`, `GitHub`, and `Licenses`, where `Licenses` opens an app-owned `Third-Party Licenses` page. Follow-up to PR #106. |
 | active | `ci-trustworthiness` | Decompose CI, make Codex review outcomes visible, and separate advisory vs required signals. |
 | active | `paste-to-markdown-in-editor` | Convert pasted unicode formatting (LinkedIn) and rich text (HTML) to markdown in edit mode. |

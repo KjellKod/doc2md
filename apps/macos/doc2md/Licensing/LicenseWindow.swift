@@ -6,7 +6,7 @@ struct LicenseWindow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(licenseController.state.displayTitle)
+            Text(title)
                 .font(.title2)
                 .fontWeight(.semibold)
 
@@ -23,7 +23,7 @@ struct LicenseWindow: View {
                 )
 
             HStack {
-                Button("Enter License") {
+                Button("Save License") {
                     _ = licenseController.enterLicense(token)
                     token = ""
                 }
@@ -48,12 +48,20 @@ struct LicenseWindow: View {
         case .licensed(let license):
             return "Licensed to \(license.claims.purchaser) for \(license.claims.tier)."
         case .unlicensed:
-            return "The Mac app remains free to use. A paid license removes occasional reminders."
+            return "Enter your license key below. You can purchase one through doc2md.dev/store."
         case .invalid(let reason):
             return reason
         case .licenseCheckFailed(let reason):
             return "\(reason) The app remains usable."
         }
     }
-}
 
+    private var title: String {
+        switch licenseController.state {
+        case .unlicensed:
+            return "License"
+        default:
+            return licenseController.state.displayTitle
+        }
+    }
+}

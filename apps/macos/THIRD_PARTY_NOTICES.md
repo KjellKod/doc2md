@@ -12,8 +12,8 @@ The Mac app bundles a desktop web build generated from MIT-licensed portions of 
 
 When distributing the Mac app, preserve the MIT notice for bundled MIT doc2md code. See:
 
-- `../../LICENSES/MIT.txt`
-- `../../packages/core/LICENSE`
+- `https://github.com/KjellKod/doc2md/blob/main/LICENSES/MIT.txt`
+- `https://github.com/KjellKod/doc2md/blob/main/packages/core/LICENSE`
 
 ## Direct Runtime Dependencies
 
@@ -213,8 +213,8 @@ The current app build can include these direct runtime dependencies from the roo
 
 The Mac app also links native SwiftPM/Xcode dependencies. Current native package metadata lives in:
 
-- `doc2md.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`
-- `doc2md.xcodeproj/project.pbxproj`
+- `https://github.com/KjellKod/doc2md/blob/main/apps/macos/doc2md.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`
+- `https://github.com/KjellKod/doc2md/blob/main/apps/macos/doc2md.xcodeproj/project.pbxproj`
 
 The current native app build links Sparkle 2 through Swift Package Manager. Public app release notices should include required notices for Sparkle and any other native packages included in the exact released artifact.
 
@@ -232,14 +232,14 @@ Public app distributions should include notices for the exact JavaScript and nat
 
 Relevant dependency metadata lives in:
 
-- `../../package-lock.json`
-- `../../package.json`
-- `../../packages/core/package.json`
-- `doc2md.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`
-- `doc2md.xcodeproj/project.pbxproj`
+- `https://github.com/KjellKod/doc2md/blob/main/package-lock.json`
+- `https://github.com/KjellKod/doc2md/blob/main/package.json`
+- `https://github.com/KjellKod/doc2md/blob/main/packages/core/package.json`
+- `https://github.com/KjellKod/doc2md/blob/main/apps/macos/doc2md.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`
+- `https://github.com/KjellKod/doc2md/blob/main/apps/macos/doc2md.xcodeproj/project.pbxproj`
 
 The release notice inventory should preserve license text required by bundled MIT, Apache-2.0, BSD, ISC, and other third-party packages.
 
 ## Mac App Assets And Branding
 
-The doc2md app name, icons, screenshots, trade dress, domain names, and product branding are not MIT-licensed. They are reserved except where explicitly stated in `../../LICENSE` and `../../LICENSES/LicenseRef-doc2md-Desktop.txt`.
+The doc2md app name, icons, screenshots, trade dress, domain names, and product branding are not MIT-licensed. They are reserved except where explicitly stated in `https://github.com/KjellKod/doc2md/blob/main/LICENSE` and `https://github.com/KjellKod/doc2md/blob/main/LICENSES/LicenseRef-doc2md-Desktop.txt`.
