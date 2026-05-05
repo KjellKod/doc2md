@@ -20,20 +20,78 @@ final class SparkleUpdatePreferenceTests: XCTestCase {
         let defaults = UserDefaults(suiteName: suiteName)!
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let preferences = UpdateCheckPreferences(defaults: defaults)
-        preferences.licensedMonthlyChecksEnabled = false
-        let controller = LicenseController(
-            store: LicenseStore(
-                keychainStore: InMemoryLicenseTokenStorage(),
-                fallbackStore: InMemoryLicenseTokenStorage(),
-                verifier: LicenseVerifier(publicKeys: [])
-            )
-        )
+        preferences.licensedMonthlyChecksEnabled = true
+        preferences.lastLicensedMonthlyCheck = Date(timeIntervalSince1970: 1_799_999_999)
         let policy = UpdateCheckPolicy(
             preferences: preferences,
             now: { Date(timeIntervalSince1970: 1_800_000_000) }
         )
 
-        XCTAssertTrue(policy.shouldRunAutomaticCheck(for: controller.state))
+        XCTAssertTrue(policy.shouldRunAutomaticCheck(for: .unlicensed))
+        XCTAssertTrue(policy.shouldRunAutomaticCheck(for: .invalid(reason: "bad token")))
+        XCTAssertTrue(policy.shouldRunAutomaticCheck(for: .licenseCheckFailed(reason: "storage unavailable")))
+    }
+
+    func testLicensedAutomaticChecksRunByDefaultWhenMonthlyToggleIsOff() throws {
+        let suiteName = "doc2md.update.test.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferences = UpdateCheckPreferences(defaults: defaults)
+        preferences.licensedMonthlyChecksEnabled = false
+        preferences.lastLicensedMonthlyCheck = Date(timeIntervalSince1970: 1_799_999_999)
+        let policy = UpdateCheckPolicy(
+            preferences: preferences,
+            now: { Date(timeIntervalSince1970: 1_800_000_000) }
+        )
+
+        XCTAssertTrue(policy.shouldRunAutomaticCheck(for: .licensed(try LicenseFixtureFactory().verifiedLicense())))
+    }
+
+    func testLicensedMonthlyToggleUsesMonthlyCadence() throws {
+        let suiteName = "doc2md.update.test.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferences = UpdateCheckPreferences(defaults: defaults)
+        preferences.licensedMonthlyChecksEnabled = true
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let policy = UpdateCheckPolicy(preferences: preferences, now: { now })
+        let licenseState = LicenseState.licensed(try LicenseFixtureFactory().verifiedLicense())
+
+        XCTAssertTrue(policy.shouldRunAutomaticCheck(for: licenseState))
+
+        preferences.lastLicensedMonthlyCheck = now.addingTimeInterval(-29 * 24 * 60 * 60)
+        XCTAssertFalse(policy.shouldRunAutomaticCheck(for: licenseState))
+
+        preferences.lastLicensedMonthlyCheck = now.addingTimeInterval(-31 * 24 * 60 * 60)
+        XCTAssertTrue(policy.shouldRunAutomaticCheck(for: licenseState))
+    }
+
+    func testRecordAutomaticCheckDoesNotWriteMonthlyTimestampWhenToggleIsOff() throws {
+        let suiteName = "doc2md.update.test.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferences = UpdateCheckPreferences(defaults: defaults)
+        preferences.licensedMonthlyChecksEnabled = false
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let policy = UpdateCheckPolicy(preferences: preferences, now: { now })
+
+        policy.recordAutomaticCheck(for: .licensed(try LicenseFixtureFactory().verifiedLicense()))
+
+        XCTAssertNil(preferences.lastLicensedMonthlyCheck)
+    }
+
+    func testRecordAutomaticCheckWritesMonthlyTimestampWhenToggleIsOn() throws {
+        let suiteName = "doc2md.update.test.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferences = UpdateCheckPreferences(defaults: defaults)
+        preferences.licensedMonthlyChecksEnabled = true
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let policy = UpdateCheckPolicy(preferences: preferences, now: { now })
+
+        policy.recordAutomaticCheck(for: .licensed(try LicenseFixtureFactory().verifiedLicense()))
+
+        XCTAssertEqual(preferences.lastLicensedMonthlyCheck, now)
     }
 
     func testLicensedMonthlyToggleDoesNotMutateLicenseState() throws {

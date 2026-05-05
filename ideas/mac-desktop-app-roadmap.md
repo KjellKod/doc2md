@@ -39,6 +39,21 @@ Commercial boundary:
 | 7a. Desktop License Boundary | done | PR #103 (`dual-licensing-boundary_2026-05-01__2036`, `desktop-license-boundary_2026-05-03__0954`) | Keep `@doc2md/core`, hosted web, shared converters, and MIT-marked files MIT while making the Mac app and desktop-specific UI/bridge code source-visible shareware under `LicenseRef-doc2md-Desktop`. | Phase 7b |
 | 7b. Mac Commercial Distribution And License UX | planned | TBD | Choose direct DMG sales, Mac App Store, or both; add the purchase/registration UX without changing the MIT web/npm surfaces or the evaluation-only shareware model. | Paid app launch |
 
+## Next Work Candidates
+
+The next work should split into two small, reviewable candidates:
+
+1. **Phase 7b licensing MVP behavior follow-up**
+   - Status: planned.
+   - Scope: fix the post-MVP behavior mismatches found during self-review:
+     - when a valid Application Support fallback token is promoted into Keychain, delete the fallback only after verifying the Keychain write;
+     - licensed users should use frequent automatic update checks by default, with the persisted toggle changing them to monthly checks.
+   - This is the immediate next implementation candidate because it tightens already-shipped licensing behavior without expanding the commercial launch surface.
+2. **Mac app license and notice surfacing**
+   - Status: planned; may already be in flight on `quest/mac-license-notice-surface`.
+   - Scope: surface bundled acknowledgments and the desktop license from the Mac Help/About UI, bundle the desktop license resource, and add generated notice inventory drift checks.
+   - Tracked in [mac-app-license-and-notice-surfacing](mac-app-license-and-notice-surfacing.md). This can proceed independently from the licensing behavior follow-up as long as both branches stay rebased on current `main` before review.
+
 ## Phase 0: Design And Roadmap
 
 Scope:
@@ -492,7 +507,7 @@ Expected changes:
   - No document contents are sent to a licensing provider.
   - License checks must not block local document access.
   - Failed network checks degrade to a reminder, not data loss.
-  - Sparkle update checks remain independent from licensing. Unlicensed users have no automatic-update opt-out; licensed users can enable a persisted monthly-check toggle.
+  - Sparkle update checks remain independent from licensing. Unlicensed users have no automatic-update opt-out; licensed users get frequent automatic checks by default and can enable a persisted monthly-check toggle to use a no-more-than-monthly cadence.
   - No license secrets, signing keys, or vendor API keys are committed.
 - Add a distribution decision record comparing:
   - Mac App Store only.

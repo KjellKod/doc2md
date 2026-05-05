@@ -227,7 +227,7 @@ Then launch the app with the environment override above and choose `doc2md > Che
 
 Offline launch validation: stop the fixture server, launch the app normally, and confirm the window appears without Sparkle errors. Sparkle should not block launch, document operations, or license state changes if an update check fails.
 
-Unlicensed, invalid, and license-check-failed users get discreet automatic checks with no opt-out. Licensed users can enable a persisted `Monthly Update Checks` menu toggle; it defaults off, checks no more than monthly when enabled, and does not mutate license state. Manual `Check for Updates...` remains available.
+Unlicensed, invalid, and license-check-failed users get discreet automatic checks with no opt-out. Licensed users get frequent automatic checks by default and can enable a persisted `Monthly Update Checks` menu toggle to use a no-more-than-monthly cadence. The toggle does not mutate license state. Manual `Check for Updates...` remains available.
 
 Production update hosting target: `updates.doc2md.dev` should be the stable public Sparkle appcast host once DNS and release hosting are configured. GitHub Releases can continue storing versioned DMG/ZIP/appcast artifacts behind that public domain.
 
@@ -288,7 +288,7 @@ Phase 7 adds Mac-only honest-user licensing. The app remains free to keep using 
 
 The MVP license states are `Unlicensed`, `Licensed`, `Invalid`, and `License Check Failed`. There is no time-limited access state. License verification is local Ed25519 public-key verification over `doc2md-license-v1.<base64url-json-claims>`. The private signing key, merchant credentials, webhook secrets, customer records, Apple secrets, and Sparkle private key must not be committed or exposed to PR CI.
 
-License storage is local and non-syncing: Keychain is primary and Application Support is fallback. Conflict resolution verifies candidates first, then applies storage priority, so invalid Keychain data never deletes the only valid Application Support fallback.
+License storage is local and non-syncing: Keychain is primary and Application Support is fallback. Conflict resolution verifies candidates first, then applies storage priority, so invalid Keychain data never deletes the only valid Application Support fallback. When a valid fallback repairs invalid Keychain data, doc2md deletes the fallback only after verifying Keychain can be read back as the same valid token. If Keychain write or read-back verification fails, including a different valid token after the repair attempt, the app stays licensed from the fallback and keeps it in place.
 
 The `Enter License...` menu item opens local paste-token activation. The Mac-only `Buy License` affordance is disabled and says purchases are not live yet; it must not open `doc2md.dev/buy` or any checkout until a later launch change enables purchases. Before taking money, maintainers must assign merchant account ownership, tax/sales responsibility, refund/support workflow ownership, license delivery ownership, and explicit go-live approval.
 

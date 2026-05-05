@@ -37,7 +37,7 @@ final class LicenseStoreTests: XCTestCase {
         XCTAssertEqual(fallback.clearCount, 1)
     }
 
-    func testInvalidKeychainValidFallbackRepairsKeychainWithoutDeletingFallback() throws {
+    func testInvalidKeychainValidFallbackRepairsKeychainAndDeletesFallbackAfterVerifiedWrite() throws {
         let fixture = LicenseFixtureFactory()
         let fallbackToken = try fixture.token()
         let keychain = InMemoryLicenseTokenStorage(candidate: .available("invalid"))
@@ -48,7 +48,72 @@ final class LicenseStoreTests: XCTestCase {
 
         XCTAssertEqual(result.token, fallbackToken)
         XCTAssertEqual(keychain.savedTokens, [fallbackToken])
+        XCTAssertEqual(fallback.clearCount, 1)
+    }
+
+    func testInvalidKeychainValidFallbackKeepsFallbackWhenKeychainSaveFails() throws {
+        let fixture = LicenseFixtureFactory()
+        let fallbackToken = try fixture.token()
+        let keychain = InMemoryLicenseTokenStorage(candidate: .available("invalid"))
+        keychain.failSave = true
+        let fallback = InMemoryLicenseTokenStorage(candidate: .available(fallbackToken))
+        let store = LicenseStore(keychainStore: keychain, fallbackStore: fallback, verifier: fixture.verifier())
+
+        let result = store.loadToken()
+
+        XCTAssertEqual(result.token, fallbackToken)
+        XCTAssertEqual(keychain.savedTokens, [])
         XCTAssertEqual(fallback.clearCount, 0)
+        XCTAssertEqual(fallback.candidate, .available(fallbackToken))
+    }
+
+    func testInvalidKeychainValidFallbackKeepsFallbackWhenKeychainReadBackIsMissing() throws {
+        let fixture = LicenseFixtureFactory()
+        let fallbackToken = try fixture.token()
+        let keychain = InMemoryLicenseTokenStorage(candidate: .available("invalid"))
+        keychain.candidateAfterSave = .missing
+        let fallback = InMemoryLicenseTokenStorage(candidate: .available(fallbackToken))
+        let store = LicenseStore(keychainStore: keychain, fallbackStore: fallback, verifier: fixture.verifier())
+
+        let result = store.loadToken()
+
+        XCTAssertEqual(result.token, fallbackToken)
+        XCTAssertEqual(keychain.savedTokens, [fallbackToken])
+        XCTAssertEqual(fallback.clearCount, 0)
+        XCTAssertEqual(fallback.candidate, .available(fallbackToken))
+    }
+
+    func testInvalidKeychainValidFallbackKeepsFallbackWhenKeychainReadBackIsInvalid() throws {
+        let fixture = LicenseFixtureFactory()
+        let fallbackToken = try fixture.token()
+        let keychain = InMemoryLicenseTokenStorage(candidate: .available("invalid"))
+        keychain.candidateAfterSave = .available("still-invalid")
+        let fallback = InMemoryLicenseTokenStorage(candidate: .available(fallbackToken))
+        let store = LicenseStore(keychainStore: keychain, fallbackStore: fallback, verifier: fixture.verifier())
+
+        let result = store.loadToken()
+
+        XCTAssertEqual(result.token, fallbackToken)
+        XCTAssertEqual(keychain.savedTokens, [fallbackToken])
+        XCTAssertEqual(fallback.clearCount, 0)
+        XCTAssertEqual(fallback.candidate, .available(fallbackToken))
+    }
+
+    func testInvalidKeychainValidFallbackKeepsFallbackWhenKeychainReadBackIsDifferentValidToken() throws {
+        let fixture = LicenseFixtureFactory()
+        let fallbackToken = try fixture.token(purchaser: "fallback@example.com")
+        let differentToken = try fixture.token(purchaser: "different@example.com")
+        let keychain = InMemoryLicenseTokenStorage(candidate: .available("invalid"))
+        keychain.candidateAfterSave = .available(differentToken)
+        let fallback = InMemoryLicenseTokenStorage(candidate: .available(fallbackToken))
+        let store = LicenseStore(keychainStore: keychain, fallbackStore: fallback, verifier: fixture.verifier())
+
+        let result = store.loadToken()
+
+        XCTAssertEqual(result.token, fallbackToken)
+        XCTAssertEqual(keychain.savedTokens, [fallbackToken])
+        XCTAssertEqual(fallback.clearCount, 0)
+        XCTAssertEqual(fallback.candidate, .available(fallbackToken))
     }
 
     func testUnavailableKeychainValidFallbackReturnsFallback() throws {
