@@ -1,0 +1,21 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "0f963d2b823eab9819d14c9a810d9f31112e7f25",
+  "prompts": {
+    "fcfd247ba424932c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019df666-c257-79c3-bcde-c02f1ceb5703",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 1803,
+      "overriden_lines": 8
+    }
+  }
+}
