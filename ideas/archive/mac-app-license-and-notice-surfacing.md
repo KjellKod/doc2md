@@ -6,23 +6,24 @@ The Mac desktop app already bundles `apps/macos/THIRD_PARTY_NOTICES.md` into `do
 
 Two gaps remain:
 
-1. The bundled notices and the desktop license are not discoverable from inside the running app. There is no `Help → Acknowledgments…`, no `Help → License…`, and no `Credits` content in the standard About panel.
+1. The bundled notices and the desktop license are not discoverable from inside the running app. There is no `Help → Acknowledgments…`, no `Help → License…`, and no concise credits pointer in the standard About panel.
 2. `apps/macos/THIRD_PARTY_NOTICES.md` is hand-maintained. The direct dependency table can drift from `package.json`, `package-lock.json`, and `Package.resolved` between releases without anything failing. The release-notice checkbox in `.github/pull_request_template.md` is the only current safeguard, and a checkbox is a human reminder, not a build gate.
 
 ## Expected Behavior
 
 **In-app surfacing**
 
-1. `Help → Acknowledgments…` opens the bundled `THIRD_PARTY_NOTICES.md` in the user's default Markdown app via `NSWorkspace.shared.open`.
-2. `Help → License…` opens the bundled `LicenseRef-doc2md-Desktop.txt` in the user's default text app the same way.
-3. `doc2md → About doc2md` (`NSApplication.orderFrontStandardAboutPanel`) shows a `Credits` section that names the third-party components in one paragraph and points the reader at the two `Help` menu items for the full bundled inventories.
+1. `Help → Acknowledgments…` is the authoritative third-party notice surface. For v1, it opens the bundled `THIRD_PARTY_NOTICES.md` in the user's default Markdown app via `NSWorkspace.shared.open`.
+2. `Help → License…` is the authoritative desktop product license surface. For v1, it opens the bundled `LicenseRef-doc2md-Desktop.txt` in the user's default text app the same way.
+3. `doc2md → About doc2md` (`NSApplication.orderFrontStandardAboutPanel`) shows only a concise `Credits` pointer. It should not be treated as the same thing as `Help → Acknowledgments…`; the About panel is a short product/credits summary, while the Help items are where users find the full bundled inventories.
+4. Follow-up UX correction: replace external-open behavior with a native readable window for acknowledgments/license content. The native viewer should preserve the same bundled-resource source of truth and avoid sending users to Xcode or another default editor on development machines.
 
 **Programmatic notice generation**
 
-4. A repo script generates the notice inventory from authoritative sources, not by hand.
+5. A repo script generates the notice inventory from authoritative sources, not by hand.
    - Inputs: `package.json`, `package-lock.json`, `packages/core/package.json`, `apps/macos/doc2md.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`, and the bundled `dist/` after `npm run build:desktop`.
    - Output: a checked-in `apps/macos/THIRD_PARTY_NOTICES.generated.md` (or refreshed `apps/macos/THIRD_PARTY_NOTICES.md`) with direct dependencies and licenses for the npm and SwiftPM dependency sets actually included in the released artifact.
-5. A failing test catches drift: if the generated notice inventory and the committed file disagree, the test fails with a clear instruction to rerun the generator. This converts the human PR-template checkbox into a build-time gate.
+6. A failing test catches drift: if the generated notice inventory and the committed file disagree, the test fails with a clear instruction to rerun the generator. This converts the human PR-template checkbox into a build-time gate.
 
 ## Implementation Notes
 
@@ -35,8 +36,8 @@ Two gaps remain:
       NSWorkspace.shared.open(url)
   }
   ```
-  No WKWebView modal for v1; external open is the macOS convention.
-- Add `apps/macos/doc2md/Resources/Credits.rtf` (or `.html`) and include it in Copy Bundle Resources. The standard About panel picks up `Credits.rtf` automatically. Do not put an SPDX comment inside RTF or HTML; the file is desktop-license-covered by location and `apps/macos/LICENSE`. Adding a comment will render as visible text.
+  External open is acceptable for v1, but it is not the ideal final user experience. Track a follow-up native window so the Help items show readable content inside doc2md instead of delegating to the user's default editor.
+- Add `apps/macos/doc2md/Resources/Credits.rtf` (or `.html`) and include it in Copy Bundle Resources. The standard About panel picks up `Credits.rtf` automatically. Keep this text intentionally short: it should point users to `Help → Acknowledgments…` and `Help → License…`, not duplicate the notice inventory. Do not put an SPDX comment inside RTF or HTML; the file is desktop-license-covered by location and `apps/macos/LICENSE`. Adding a comment will render as visible text.
 - New Swift files start with `// SPDX-License-Identifier: LicenseRef-doc2md-Desktop`.
 - Update `apps/macos/README.md` to mention the new menu items and the `Credits` resource so docs match the build.
 
@@ -55,22 +56,26 @@ Two gaps remain:
 **Validation for the eventual PR**
 
 - `npm test -- --run` passes including the new drift test.
-- `npm run build:mac` succeeds and the resulting `.app` contains:
+- The PR-validation Release build uses the explicit development-key override; plain `npm run build:mac` is allowed to fail when production license key material is not embedded:
+  ```bash
+  DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer bash scripts/build-mac-app.sh --configuration Release --allow-development-license-key-for-pr
+  ```
+- The resulting `.app` contains:
   - `Contents/Resources/THIRD_PARTY_NOTICES.md`
   - `Contents/Resources/LicenseRef-doc2md-Desktop.txt`
   - `Contents/Resources/Credits.*`
-- Manual Mac smoke (`npm run build:mac && open .build/mac/Build/Products/Release/doc2md.app`):
-  - `Help → Acknowledgments…` opens the notices file.
-  - `Help → License…` opens the desktop license file.
-  - `doc2md → About doc2md` shows the `Credits` section.
+- Manual Mac smoke opens `.build/mac/Build/Products/Release/doc2md.app` after the PR-validation build:
+  - `Help → Acknowledgments…` opens the full bundled third-party notices file.
+  - `Help → License…` opens the full bundled desktop license file.
+  - `doc2md → About doc2md` shows only a compact credits pointer to those Help menu items. It is not expected to duplicate the full notice/license content.
 - Stale-language and forbidden-license-family scans (with `.github` in the target list) still pass.
 - `git diff --check main...HEAD` clean.
 
 ## Scope
 
-- IN: `Help → Acknowledgments…`, `Help → License…`, `Credits.rtf`/`.html`, bundle the desktop license file, `scripts/generate-notice-inventory.mjs`, drift test, package script wiring.
+- IN: `Help → Acknowledgments…`, `Help → License…`, a compact `Credits.rtf`/`.html` About pointer, bundle the desktop license file, `scripts/generate-notice-inventory.mjs`, drift test, package script wiring.
 - IN: Update `apps/macos/README.md` to match.
-- OUT: WKWebView modal for in-app rendering of the notices/license. External open is the v1 contract.
+- OUT for v1, but desired follow-up: native in-app rendering of the notices/license. External open is the v1 minimum, not the ideal final UX.
 - OUT: In-app contribution flow. The `.github/pull_request_template.md` is the contribution surface.
 - OUT: Changes to `LICENSES/LicenseRef-doc2md-Desktop.txt` or `apps/macos/THIRD_PARTY_NOTICES.md` content beyond what the generator emits.
 - OUT: Changes to the protected release workflow `.github/workflows/release-mac.yml`. Resource-bundling changes are picked up by the existing build path.
