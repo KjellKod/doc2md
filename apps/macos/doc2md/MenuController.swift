@@ -7,6 +7,8 @@ final class MenuController: NSObject {
     var licenseController: LicenseController?
     var updatePreferences: UpdateCheckPreferences?
     private var licenseWindowController: NSWindowController?
+    private var aboutWindowController: AboutWindowController?
+    private var thirdPartyLicensesWindowController: ThirdPartyLicensesWindowController?
 
     func newDocument() {
         dispatchNativeEvent("doc2md:native-new")
@@ -61,8 +63,30 @@ final class MenuController: NSObject {
         window.makeKeyAndOrderFront(nil)
     }
 
+    func showAboutWindow() {
+        if let aboutWindowController {
+            aboutWindowController.show()
+            return
+        }
+
+        let licenses = thirdPartyLicensesController()
+        let controller = AboutWindowController(licensesController: licenses)
+        aboutWindowController = controller
+        controller.show()
+    }
+
     func setLicensedMonthlyUpdateChecksEnabled(_ enabled: Bool) {
         updatePreferences?.licensedMonthlyChecksEnabled = enabled
+    }
+
+    private func thirdPartyLicensesController() -> ThirdPartyLicensesWindowController {
+        if let thirdPartyLicensesWindowController {
+            return thirdPartyLicensesWindowController
+        }
+
+        let controller = ThirdPartyLicensesWindowController()
+        thirdPartyLicensesWindowController = controller
+        return controller
     }
 
     private func dispatchNativeEvent(_ eventName: String, completion: (() -> Void)? = nil) {

@@ -26,6 +26,8 @@
 		9A0200000000000000000016 /* PersistenceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A010000000000000000000F /* PersistenceStore.swift */; };
 		9A0200000000000000000017 /* PersistenceStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000010 /* PersistenceStoreTests.swift */; };
 		9A0200000000000000000018 /* THIRD_PARTY_NOTICES.md in Resources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000011 /* THIRD_PARTY_NOTICES.md */; };
+		9A0200000000000000000019 /* LicenseRef-doc2md-Desktop.txt in Resources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000012 /* LicenseRef-doc2md-Desktop.txt */; };
+		9A020000000000000000001A /* Credits.rtf in Resources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000013 /* Credits.rtf */; };
 		9A0200000000000000000020 /* LicenseClaims.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000020 /* LicenseClaims.swift */; };
 		9A0200000000000000000021 /* LicenseToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000021 /* LicenseToken.swift */; };
 		9A0200000000000000000022 /* LicensePublicKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000022 /* LicensePublicKeys.swift */; };
@@ -55,6 +57,10 @@
 		9A0200000000000000000042 /* LicenseStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000032 /* LicenseStoreTests.swift */; };
 		9A0200000000000000000043 /* LicenseReminderControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000033 /* LicenseReminderControllerTests.swift */; };
 		9A0200000000000000000044 /* SparkleUpdatePreferenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000034 /* SparkleUpdatePreferenceTests.swift */; };
+		9A0200000000000000000050 /* AboutWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000050 /* AboutWindow.swift */; };
+		9A0200000000000000000051 /* AboutWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000051 /* AboutWindowController.swift */; };
+		9A0200000000000000000052 /* ThirdPartyLicensesWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000052 /* ThirdPartyLicensesWindow.swift */; };
+		9A0200000000000000000053 /* ReleaseCommit.generated.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000053 /* ReleaseCommit.generated.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -86,6 +92,8 @@
 		9A010000000000000000000F /* PersistenceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceStore.swift; sourceTree = "<group>"; };
 		9A0100000000000000000010 /* PersistenceStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceStoreTests.swift; sourceTree = "<group>"; };
 		9A0100000000000000000011 /* THIRD_PARTY_NOTICES.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ../../THIRD_PARTY_NOTICES.md; sourceTree = "<group>"; };
+		9A0100000000000000000012 /* LicenseRef-doc2md-Desktop.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = ../../../../LICENSES/LicenseRef-doc2md-Desktop.txt; sourceTree = "<group>"; };
+		9A0100000000000000000013 /* Credits.rtf */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; path = Credits.rtf; sourceTree = "<group>"; };
 		9A0100000000000000000020 /* LicenseClaims.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseClaims.swift; sourceTree = "<group>"; };
 		9A0100000000000000000021 /* LicenseToken.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseToken.swift; sourceTree = "<group>"; };
 		9A0100000000000000000022 /* LicensePublicKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicensePublicKeys.swift; sourceTree = "<group>"; };
@@ -103,6 +111,10 @@
 		9A0100000000000000000032 /* LicenseStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseStoreTests.swift; sourceTree = "<group>"; };
 		9A0100000000000000000033 /* LicenseReminderControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseReminderControllerTests.swift; sourceTree = "<group>"; };
 		9A0100000000000000000034 /* SparkleUpdatePreferenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SparkleUpdatePreferenceTests.swift; sourceTree = "<group>"; };
+		9A0100000000000000000050 /* AboutWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutWindow.swift; sourceTree = "<group>"; };
+		9A0100000000000000000051 /* AboutWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutWindowController.swift; sourceTree = "<group>"; };
+		9A0100000000000000000052 /* ThirdPartyLicensesWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThirdPartyLicensesWindow.swift; sourceTree = "<group>"; };
+		9A0100000000000000000053 /* ReleaseCommit.generated.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseCommit.generated.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -145,6 +157,10 @@
 				9A0100000000000000000007 /* FileStore.swift */,
 				9A010000000000000000000F /* PersistenceStore.swift */,
 				9A010000000000000000000A /* SupportedFormats.generated.swift */,
+				9A0100000000000000000053 /* ReleaseCommit.generated.swift */,
+				9A0100000000000000000050 /* AboutWindow.swift */,
+				9A0100000000000000000051 /* AboutWindowController.swift */,
+				9A0100000000000000000052 /* ThirdPartyLicensesWindow.swift */,
 				9A0000000000000000000005 /* Licensing */,
 				9A0000000000000000000003 /* Resources */,
 				9A010000000000000000000D /* Info.plist */,
@@ -186,6 +202,8 @@
 				9A0100000000000000000002 /* Web */,
 				9A010000000000000000000E /* Assets.xcassets */,
 				9A0100000000000000000011 /* THIRD_PARTY_NOTICES.md */,
+				9A0100000000000000000012 /* LicenseRef-doc2md-Desktop.txt */,
+				9A0100000000000000000013 /* Credits.rtf */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -220,6 +238,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 9A3000000000000000000002 /* Build configuration list for PBXNativeTarget "doc2md" */;
 			buildPhases = (
+				9A0300000000000000000006 /* Generate Release Commit */,
 				9A0300000000000000000000 /* Sources */,
 				9A0300000000000000000005 /* Frameworks */,
 				9A0300000000000000000001 /* Build Desktop Web Bundle */,
@@ -303,6 +322,8 @@
 				9A0200000000000000000002 /* Web in Resources */,
 				9A0200000000000000000014 /* Assets.xcassets in Resources */,
 				9A0200000000000000000018 /* THIRD_PARTY_NOTICES.md in Resources */,
+				9A0200000000000000000019 /* LicenseRef-doc2md-Desktop.txt in Resources */,
+				9A020000000000000000001A /* Credits.rtf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -328,6 +349,22 @@
 			shellPath = /bin/sh;
 			shellScript = "set -euo pipefail\n\nREPO_ROOT=\"${SRCROOT}/../..\"\nWEB_RESOURCE_DIR=\"${SRCROOT}/doc2md/Resources/Web\"\n\nif [ \"${CONFIGURATION:-Debug}\" = \"Debug\" ]; then\n  echo \"Skipping desktop web bundle for Debug; WKWebView loads http://localhost:5173.\"\n  exit 0\nfi\n\nexport PATH=\"/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH:-}\"\nNPM_EXECUTABLE=\"${NPM_BIN:-$(command -v npm || true)}\"\nif [ -z \"$NPM_EXECUTABLE\" ]; then\n  echo \"error: npm not found. Install Node.js/npm or set NPM_BIN to the npm executable path for Xcode builds.\" >&2\n  exit 1\nfi\n\ncd \"$REPO_ROOT\"\n\"$NPM_EXECUTABLE\" run build:desktop\nmkdir -p \"$WEB_RESOURCE_DIR\"\nfind \"$WEB_RESOURCE_DIR\" -mindepth 1 -maxdepth 1 ! -name .gitkeep -exec rm -rf {} +\nditto dist \"$WEB_RESOURCE_DIR\"\ntouch \"$WEB_RESOURCE_DIR/.gitkeep\"\n";
 		};
+		9A0300000000000000000006 /* Generate Release Commit */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Generate Release Commit";
+			outputPaths = (
+				"$(SRCROOT)/doc2md/ReleaseCommit.generated.swift",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -euo pipefail\n\nREPO_ROOT=\"${SRCROOT}/../..\"\nexport PATH=\"/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH:-}\"\nNODE_EXECUTABLE=\"${NODE_BIN:-$(command -v node || true)}\"\nif [ -z \"$NODE_EXECUTABLE\" ]; then\n  echo \"error: node not found. Install Node.js or set NODE_BIN to the node executable path for Xcode builds.\" >&2\n  exit 1\nfi\n\ncd \"$REPO_ROOT\"\n\"$NODE_EXECUTABLE\" scripts/generate-release-commit.mjs\n";
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -343,6 +380,10 @@
 				9A0200000000000000000006 /* FileStore.swift in Sources */,
 				9A0200000000000000000015 /* PersistenceStore.swift in Sources */,
 				9A0200000000000000000009 /* SupportedFormats.generated.swift in Sources */,
+				9A0200000000000000000053 /* ReleaseCommit.generated.swift in Sources */,
+				9A0200000000000000000050 /* AboutWindow.swift in Sources */,
+				9A0200000000000000000051 /* AboutWindowController.swift in Sources */,
+				9A0200000000000000000052 /* ThirdPartyLicensesWindow.swift in Sources */,
 				9A0200000000000000000012 /* SparkleController.swift in Sources */,
 				9A0200000000000000000020 /* LicenseClaims.swift in Sources */,
 				9A0200000000000000000021 /* LicenseToken.swift in Sources */,

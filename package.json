@@ -11,6 +11,8 @@
     "dev": "vite",
     "build": "vite build",
     "generate:mac-supported-formats": "node scripts/generate-supported-formats.mjs",
+    "generate:notices": "node scripts/generate-notice-inventory.mjs",
+    "generate:notices:check": "node scripts/generate-notice-inventory.mjs --check",
     "prebuild:desktop": "npm run generate:mac-supported-formats",
     "build:desktop": "vite build --mode desktop",
     "build:core": "npm run build --workspace=@doc2md/core",

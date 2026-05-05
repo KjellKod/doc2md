@@ -9,6 +9,7 @@ NATIVE_API_ALLOWLIST=(
   "NSOpenPanel :: user-selected supported-document open panel"
   "NSSavePanel :: user-selected Markdown Save As target panel"
   "NSWorkspace :: Reveal in Finder for a saved user-selected file"
+  "NSWorkspace :: About panel Docs and GitHub button opens of the doc2md GitHub repository"
   "replaceItemAt :: atomic final replacement from a sibling temp file"
   "startAccessingSecurityScopedResource :: current-session scoped file access around selected URLs"
   "stopAccessingSecurityScopedResource :: balanced release of scoped file access"
@@ -179,7 +180,9 @@ fi
 cd "$REPO_ROOT"
 
 BUILD_VERSION="$(display_build_version)"
+MARKETING_VERSION_OVERRIDE="${BUILD_VERSION%-dev}"
 
+node scripts/generate-release-commit.mjs
 node scripts/generate-supported-formats.mjs --check
 
 if [[ "$CONFIGURATION" = "Release" && "$ALLOW_DEVELOPMENT_LICENSE_KEY_FOR_PR" != "1" ]]; then
@@ -216,6 +219,7 @@ while IFS= read -r match; do
   fi
 done < <(grep_matches_or_fail "$WATCHED_NATIVE_API_PATTERN" "${persistence_swift_sources[@]}")
 
+npm run generate:notices
 npm run build:desktop
 
 set +e
@@ -224,6 +228,7 @@ set +e
   -scheme doc2md \
   -configuration "$CONFIGURATION" \
   -derivedDataPath .build/mac \
+  MARKETING_VERSION="$MARKETING_VERSION_OVERRIDE" \
   build 2>&1 | sed "s/^\\*\\* BUILD SUCCEEDED \\*\\*$/** $BUILD_VERSION BUILD SUCCEEDED **/"
 pipeline_status=("${PIPESTATUS[@]}")
 set -e
