@@ -6,6 +6,7 @@ For the other perspective, see [Dexter's Journal](../dexter-journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 033 | [Celebration: Mac App License & Notice Surfacing](033-celebrate-mac-license-notice-surface.md) | Help menu Acknowledgments and License, About panel Credits, deterministic notice generator with a Vitest drift gate, and Reviewer B catching the four-dot bug everyone above missed |
 | 032 | [Celebration: Phase 7 Licensing MVP](032-celebrate-phase-7-licensing-mvp.md) | Mac-only honest-user licensing, save-count reminders, public-key trust boundaries, and a release gate that learned the difference between PR compile and distribution |
 | 031 | [Celebration: Desktop License Boundary Refactor](031-celebrate-desktop-license-boundary.md) | Hard-splitting hosted and desktop code so the license boundary is visible in the architecture |
 | 029 | [Celebration: Opened Files Bulk Actions](029-celebrate-opened-files-bulk-actions.md) | Multi-select Clear/Download, per-file desktop status, metadata-only stat refresh, and one clean fix loop |

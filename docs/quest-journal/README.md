@@ -2,6 +2,7 @@
 
 | Date | Quest | Outcome |
 |------|-------|---------|
+| 2026-05-04 | [mac-license-notice-surface](mac-license-notice-surface_2026-05-04.md) | $quest in a new worktree branch based off of main implement ideas/mac-app-license-and-notice-surfacing.md The user re... |
 | 2026-05-03 | [desktop-license-boundary](desktop-license-boundary_2026-05-03.md) | $quest in the existing branch, "Stronger desktop license boundary refactor for doc2md. Context: - Work on the existin... |
 | 2026-05-02 | [dual-licensing-boundary](dual-licensing-boundary_2026-05-02.md) | `$quest resolve this .claude/worktrees/license-improvements-dual-model/ideas/quest-briefs/dual-licensing-boundary.md`... |
 | 2026-05-02 | [phase-7-licensing-mvp](phase-7-licensing-mvp_2026-05-02.md) | Added Mac-only licensing MVP with offline signed-token verification, Keychain-first storage, save-count reminders, update-check policy, hosted-web guards, release key gates, and docs. |
