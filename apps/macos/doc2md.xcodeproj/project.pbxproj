@@ -238,6 +238,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 9A3000000000000000000002 /* Build configuration list for PBXNativeTarget "doc2md" */;
 			buildPhases = (
+				9A0300000000000000000006 /* Generate Release Commit */,
 				9A0300000000000000000000 /* Sources */,
 				9A0300000000000000000005 /* Frameworks */,
 				9A0300000000000000000001 /* Build Desktop Web Bundle */,
@@ -347,6 +348,22 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "set -euo pipefail\n\nREPO_ROOT=\"${SRCROOT}/../..\"\nWEB_RESOURCE_DIR=\"${SRCROOT}/doc2md/Resources/Web\"\n\nif [ \"${CONFIGURATION:-Debug}\" = \"Debug\" ]; then\n  echo \"Skipping desktop web bundle for Debug; WKWebView loads http://localhost:5173.\"\n  exit 0\nfi\n\nexport PATH=\"/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH:-}\"\nNPM_EXECUTABLE=\"${NPM_BIN:-$(command -v npm || true)}\"\nif [ -z \"$NPM_EXECUTABLE\" ]; then\n  echo \"error: npm not found. Install Node.js/npm or set NPM_BIN to the npm executable path for Xcode builds.\" >&2\n  exit 1\nfi\n\ncd \"$REPO_ROOT\"\n\"$NPM_EXECUTABLE\" run build:desktop\nmkdir -p \"$WEB_RESOURCE_DIR\"\nfind \"$WEB_RESOURCE_DIR\" -mindepth 1 -maxdepth 1 ! -name .gitkeep -exec rm -rf {} +\nditto dist \"$WEB_RESOURCE_DIR\"\ntouch \"$WEB_RESOURCE_DIR/.gitkeep\"\n";
+		};
+		9A0300000000000000000006 /* Generate Release Commit */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Generate Release Commit";
+			outputPaths = (
+				"$(SRCROOT)/doc2md/ReleaseCommit.generated.swift",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -euo pipefail\n\nREPO_ROOT=\"${SRCROOT}/../..\"\nexport PATH=\"/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH:-}\"\nNODE_EXECUTABLE=\"${NODE_BIN:-$(command -v node || true)}\"\nif [ -z \"$NODE_EXECUTABLE\" ]; then\n  echo \"error: node not found. Install Node.js or set NODE_BIN to the node executable path for Xcode builds.\" >&2\n  exit 1\nfi\n\ncd \"$REPO_ROOT\"\n\"$NODE_EXECUTABLE\" scripts/generate-release-commit.mjs\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

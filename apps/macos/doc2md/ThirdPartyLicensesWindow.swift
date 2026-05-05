@@ -10,9 +10,11 @@ struct ThirdPartyLicensesWindow: View {
     )
 
     let noticeText: String
+    let onShowDesktopLicense: () -> Void
 
-    init() {
+    init(onShowDesktopLicense: @escaping () -> Void) {
         noticeText = Self.loadNoticeText()
+        self.onShowDesktopLicense = onShowDesktopLicense
     }
 
     var body: some View {
@@ -28,6 +30,13 @@ struct ThirdPartyLicensesWindow: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             .frame(minWidth: 640, minHeight: 420)
+
+            HStack {
+                Spacer()
+                Button("doc2md Desktop License") {
+                    onShowDesktopLicense()
+                }
+            }
         }
         .padding(20)
     }
@@ -65,6 +74,8 @@ struct ThirdPartyLicensesWindow: View {
 }
 
 final class ThirdPartyLicensesWindowController: NSWindowController {
+    private lazy var desktopLicenseWindowController = DesktopLicenseWindowController()
+
     init() {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 720, height: 520),
@@ -75,7 +86,89 @@ final class ThirdPartyLicensesWindowController: NSWindowController {
         window.title = "Third-Party Licenses"
         window.center()
         window.isReleasedWhenClosed = false
-        window.contentView = NSHostingView(rootView: ThirdPartyLicensesWindow())
+
+        super.init(window: window)
+
+        window.contentView = NSHostingView(
+            rootView: ThirdPartyLicensesWindow(onShowDesktopLicense: { [weak self] in
+                self?.desktopLicenseWindowController.show()
+            })
+        )
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) is not supported")
+    }
+
+    func show() {
+        showWindow(nil)
+        window?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+}
+
+struct DesktopLicenseWindow: View {
+    private static let logger = Logger(
+        subsystem: "com.kjellkod.doc2md",
+        category: "DesktopLicenseWindow"
+    )
+
+    let licenseText: String
+
+    init() {
+        licenseText = Self.loadLicenseText()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("doc2md Desktop License")
+                .font(.title)
+                .fontWeight(.semibold)
+
+            ScrollView {
+                Text(licenseText)
+                    .font(.system(.body, design: .monospaced))
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(minWidth: 640, minHeight: 420)
+        }
+        .padding(20)
+    }
+
+    private static func loadLicenseText() -> String {
+        guard let url = Bundle.main.url(
+            forResource: "LicenseRef-doc2md-Desktop",
+            withExtension: "txt"
+        ) else {
+            logger.error("missing bundled resource: LicenseRef-doc2md-Desktop.txt")
+            return ""
+        }
+
+        do {
+            return try String(contentsOf: url, encoding: .utf8)
+        } catch {
+            logger.error(
+                "failed to read LicenseRef-doc2md-Desktop.txt: \(error.localizedDescription, privacy: .public)"
+            )
+            return ""
+        }
+    }
+}
+
+final class DesktopLicenseWindowController: NSWindowController {
+    init() {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 720, height: 520),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "doc2md Desktop License"
+        window.center()
+        window.isReleasedWhenClosed = false
+        window.contentView = NSHostingView(rootView: DesktopLicenseWindow())
 
         super.init(window: window)
     }

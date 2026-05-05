@@ -40,10 +40,12 @@ describe("no cmux references in product UI", () => {
   });
 });
 
-describe("desktop product license is not surfaced in product UI", () => {
-  it("LicenseRef-doc2md-Desktop is not referenced from any Swift source", () => {
+describe("desktop product license surfacing stays scoped", () => {
+  it("LicenseRef-doc2md-Desktop is only referenced from the app-owned licensing surface", () => {
     const swiftFiles = listSwiftFiles(SWIFT_ROOT);
     const offenders: string[] = [];
+    const allowedFiles = new Set(["apps/macos/doc2md/ThirdPartyLicensesWindow.swift"]);
+
     for (const file of swiftFiles) {
       const contents = fs.readFileSync(file, "utf8");
       const lines = contents.split("\n");
@@ -58,13 +60,14 @@ describe("desktop product license is not surfaced in product UI", () => {
         }
         return true;
       });
-      if (hasNonHeaderReference) {
-        offenders.push(path.relative(REPO_ROOT, file));
+      const relativePath = path.relative(REPO_ROOT, file);
+      if (hasNonHeaderReference && !allowedFiles.has(relativePath)) {
+        offenders.push(relativePath);
       }
     }
     expect(
       offenders,
-      `LicenseRef-doc2md-Desktop must not be surfaced in product UI: ${offenders.join(", ")}`,
+      `LicenseRef-doc2md-Desktop must only be surfaced from the app-owned licensing surface: ${offenders.join(", ")}`,
     ).toEqual([]);
   });
 });
