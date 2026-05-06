@@ -1,7 +1,8 @@
 # Release-Pinned Notice Links
 
-Status: active
+Status: complete
 Owner: maintainers
+Completed: PR #107
 
 ## Problem
 

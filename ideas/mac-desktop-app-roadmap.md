@@ -37,22 +37,16 @@ Commercial boundary:
 | 5c. Release CI, Signing, Notarization, DMG, Appcast Publish | done | PR #85 (`mac-release-ci_2026-04-25__0010`) | Tag-triggered macOS release workflow with a protected `mac-release` Environment: Developer ID signing, notarization, stapling, DMG, Sparkle ZIP + `sign_update`, appcast publish. The only phase that touches Apple or Sparkle secrets. | MVP ship |
 | 6. Editor and UI Refresh (cross-surface) | active | Phase 6a PR #86; Phase 6b PR #88 (`persistent-mode-switcher_2026-04-27__2355`); Phase 6c PR #87 (`save-control-ui_2026-04-27__1212`); Phase 6d PR #89 (`mac-find-replace_2026-04-28__0032`) | Hosted-web + Mac editor polish: app icon, persistent mode switcher, explicit save control, find/replace, accessibility audit, keyboard-shortcut help. Runs in parallel with Phase 5b+ because it does not touch the Mac shell contract. | MVP polish |
 | 7a. Desktop License Boundary | done | PR #103 (`dual-licensing-boundary_2026-05-01__2036`, `desktop-license-boundary_2026-05-03__0954`) | Keep `@doc2md/core`, hosted web, shared converters, and MIT-marked files MIT while making the Mac app and desktop-specific UI/bridge code source-visible shareware under `LicenseRef-doc2md-Desktop`. | Phase 7b |
-| 7b. Mac Commercial Distribution And License UX | planned | TBD | Choose direct DMG sales, Mac App Store, or both; add the purchase/registration UX without changing the MIT web/npm surfaces or the evaluation-only shareware model. | Paid app launch |
+| 7b. Mac Commercial Distribution And License UX | active | `quest/phase-7b-distribution-decision` | Decide the direct-DMG commercial launch shape, document operational ownership, and then add purchase/registration UX without changing the MIT web/npm surfaces or the evaluation-only shareware model. | Paid app launch |
 
 ## Next Work Candidates
 
-The next work should split into two small, reviewable candidates:
+The next work should start Phase 7b with one small, reviewable decision-record quest:
 
-1. **Phase 7b licensing MVP behavior follow-up**
-   - Status: planned.
-   - Scope: fix the post-MVP behavior mismatches found during self-review:
-     - when a valid Application Support fallback token is promoted into Keychain, delete the fallback only after verifying the Keychain write;
-     - licensed users should use frequent automatic update checks by default, with the persisted toggle changing them to monthly checks.
-   - This is the immediate next implementation candidate because it tightens already-shipped licensing behavior without expanding the commercial launch surface.
-2. **Mac app license and notice surfacing**
-   - Status: planned; may already be in flight on `quest/mac-license-notice-surface`.
-   - Scope: surface bundled acknowledgments and the desktop license from the Mac Help/About UI, bundle the desktop license resource, and add generated notice inventory drift checks.
-   - Tracked in [mac-app-license-and-notice-surfacing](mac-app-license-and-notice-surfacing.md). This can proceed independently from the licensing behavior follow-up as long as both branches stay rebased on current `main` before review.
+1. **Phase 7b distribution decision record**
+   - Status: active on `quest/phase-7b-distribution-decision`.
+   - Scope: document the direct-DMG-first commercial launch decision, `doc2md.dev` public surface, Lemon Squeezy merchant-of-record preference, Paddle fallback, disabled purchase affordances until go-live approval, operational ownership, privacy/support/refund requirements, and the implementation sequence for license issuer work.
+   - This is the immediate next candidate because it turns the Phase 7b research into an explicit product/release contract before adding more purchase or issuer behavior.
 
 ## Phase 0: Design And Roadmap
 
@@ -470,7 +464,7 @@ Acceptance criteria:
 Remaining human validation:
 
 - Final human/legal review of the custom desktop shareware license wording.
-- Before the first signed public release, generate or verify the exact third-party notice inventory for the released artifact and bundle it into the `.app` and DMG.
+- Before each signed public release, generate or verify the exact third-party notice inventory for that released artifact and bundle it into the `.app` and DMG. PR #107 made release-pinned bundled notice links automatic through `DOC2MD_RELEASE_REF`.
 
 ## Phase 7b: Mac Commercial Distribution And License UX
 

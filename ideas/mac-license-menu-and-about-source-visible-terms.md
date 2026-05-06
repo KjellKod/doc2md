@@ -1,5 +1,8 @@
 # Mac License Menu And About Licenses Surface
 
+Status: complete
+Completed: PR #106
+
 ## Problem
 
 Two artifacts in the running Mac app are conflated today, and end users see the wrong one in the wrong slot:
@@ -80,4 +83,4 @@ Two artifacts in the running Mac app are conflated today, and end users see the 
 
 ## Priority
 
-Medium. PR #106 ships a correct technical foundation (bundling + drift gate). This follow-up is the UX correction that makes the menu surface match user expectations: the user license is the user license, third-party notices live behind a polished About-panel `Licenses` button, and Help is reserved for purchased/missing license state.
+Medium. Completed in PR #106. This UX correction makes the menu surface match user expectations: the user license is the user license, third-party notices live behind a polished About-panel `Licenses` button, and Help is reserved for purchased/missing license state.
