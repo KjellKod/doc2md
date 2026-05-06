@@ -4,6 +4,7 @@ Status: Research
 Owner: maintainers
 Roadmap: `ideas/mac-desktop-app-roadmap.md` Phase 7
 Date: 2026-05-01
+Decision record: [Mac commercial distribution decision record](mac-commercial-distribution-decision-record.md)
 
 ## Question
 
@@ -50,8 +51,7 @@ Proposed public endpoints:
 - `doc2md.dev` for the Mac product, download, docs, pricing, privacy, terms, and support entry point.
 - `updates.doc2md.dev` for Sparkle appcasts.
 - `license.doc2md.dev` for the private issuer API.
-- `support@doc2md.dev` for user support.
-- `licenses@doc2md.dev` for license delivery.
+- `support@doc2md.dev` for user support and license-delivery support.
 
 The `.dev` TLD is HTTPS-only in modern browsers because it is HSTS-preloaded. That is a useful trust property, but it means every public endpoint must have valid TLS from day one.
 

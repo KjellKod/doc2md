@@ -37,22 +37,16 @@ Commercial boundary:
 | 5c. Release CI, Signing, Notarization, DMG, Appcast Publish | done | PR #85 (`mac-release-ci_2026-04-25__0010`) | Tag-triggered macOS release workflow with a protected `mac-release` Environment: Developer ID signing, notarization, stapling, DMG, Sparkle ZIP + `sign_update`, appcast publish. The only phase that touches Apple or Sparkle secrets. | MVP ship |
 | 6. Editor and UI Refresh (cross-surface) | active | Phase 6a PR #86; Phase 6b PR #88 (`persistent-mode-switcher_2026-04-27__2355`); Phase 6c PR #87 (`save-control-ui_2026-04-27__1212`); Phase 6d PR #89 (`mac-find-replace_2026-04-28__0032`) | Hosted-web + Mac editor polish: app icon, persistent mode switcher, explicit save control, find/replace, accessibility audit, keyboard-shortcut help. Runs in parallel with Phase 5b+ because it does not touch the Mac shell contract. | MVP polish |
 | 7a. Desktop License Boundary | done | PR #103 (`dual-licensing-boundary_2026-05-01__2036`, `desktop-license-boundary_2026-05-03__0954`) | Keep `@doc2md/core`, hosted web, shared converters, and MIT-marked files MIT while making the Mac app and desktop-specific UI/bridge code source-visible shareware under `LicenseRef-doc2md-Desktop`. | Phase 7b |
-| 7b. Mac Commercial Distribution And License UX | planned | TBD | Choose direct DMG sales, Mac App Store, or both; add the purchase/registration UX without changing the MIT web/npm surfaces or the evaluation-only shareware model. | Paid app launch |
+| 7b. Mac Commercial Distribution And License UX | active | `quest/phase-7b-distribution-decision`; [decision record](../docs/implementation/mac-commercial-distribution-decision-record.md) | Use a direct-DMG-first commercial launch, document operational ownership, and then add purchase/registration UX without changing the MIT web/npm surfaces or the evaluation-only shareware model. | Paid app launch |
 
 ## Next Work Candidates
 
-The next work should split into two small, reviewable candidates:
+With the Phase 7b decision record in place, the next work should stay split into small, reviewable implementation quests:
 
-1. **Phase 7b licensing MVP behavior follow-up**
-   - Status: planned.
-   - Scope: fix the post-MVP behavior mismatches found during self-review:
-     - when a valid Application Support fallback token is promoted into Keychain, delete the fallback only after verifying the Keychain write;
-     - licensed users should use frequent automatic update checks by default, with the persisted toggle changing them to monthly checks.
-   - This is the immediate next implementation candidate because it tightens already-shipped licensing behavior without expanding the commercial launch surface.
-2. **Mac app license and notice surfacing**
-   - Status: planned; may already be in flight on `quest/mac-license-notice-surface`.
-   - Scope: surface bundled acknowledgments and the desktop license from the Mac Help/About UI, bundle the desktop license resource, and add generated notice inventory drift checks.
-   - Tracked in [mac-app-license-and-notice-surfacing](mac-app-license-and-notice-surfacing.md). This can proceed independently from the licensing behavior follow-up as long as both branches stay rebased on current `main` before review.
+1. **Phase 7b license issuer and purchase UX sequencing**
+   - Status: planned after the [Phase 7b decision record](../docs/implementation/mac-commercial-distribution-decision-record.md).
+   - Scope: define the private issuer work, then add Mac-only purchase/registration UX that follows the decision record's go-live gate, hosted-web boundary, operational ownership, and evaluation-shareware constraints.
+   - This is the next candidate because the distribution decision is now explicit; implementation should proceed in small issuer, commercial-docs, and Mac-only UX quests without expanding the hosted web or npm surfaces.
 
 ## Phase 0: Design And Roadmap
 
@@ -470,7 +464,7 @@ Acceptance criteria:
 Remaining human validation:
 
 - Final human/legal review of the custom desktop shareware license wording.
-- Before the first signed public release, generate or verify the exact third-party notice inventory for the released artifact and bundle it into the `.app` and DMG.
+- Before each signed public release, generate or verify the exact third-party notice inventory for that released artifact and bundle it into the `.app` and DMG. PR #107 made release-pinned bundled notice links automatic through `DOC2MD_RELEASE_REF`.
 
 ## Phase 7b: Mac Commercial Distribution And License UX
 
@@ -480,12 +474,13 @@ Keep the hosted web app and npm ecosystem MIT/free while giving the Mac app a cl
 
 Distribution assumptions:
 
-- Do not put a Mac app upsell, pricing page, or download CTA on the hosted web app's main page until this phase explicitly chooses a distribution model.
+- The [Phase 7b decision record](../docs/implementation/mac-commercial-distribution-decision-record.md) is the binding commercial launch reference.
+- Do not put a Mac app upsell, pricing page, registration link, purchase link, or download CTA on the hosted web app until explicit commercial go-live approval.
 - `doc2md.dev` has been purchased and should become the canonical public domain for the Mac app's commercial distribution surface. Keep the hosted web app separate unless a later phase intentionally changes that boundary.
 - Use direct signed/notarized DMG distribution first. Defer Mac App Store distribution unless future constraints justify the operational cost; a hybrid direct-DMG plus App Store path remains a future option.
 - Use Lemon Squeezy as the first-choice merchant of record and Paddle as fallback only. Do not build both for the MVP.
-- Purchases are not live in the MVP. Mac-only purchase affordances must be disabled with plain "Purchases are not live yet" copy and no external checkout navigation until a later enabling change.
-- Before taking money, assign merchant account ownership, tax/sales responsibility, refund/support workflow ownership, license delivery ownership, and explicit go-live approval.
+- Purchases are not live in the MVP. Mac-only purchase affordances must be disabled, visibly unavailable, non-promotional, and unable to navigate or collect payment/license data until a later enabling change.
+- Before taking money, `KjellKod <kjell@candidtalentedge.com>` owns merchant account setup, tax/sales responsibility through the selected merchant path, refund/support workflow, license delivery, issuer secrets, customer/license records, and explicit go-live approval. `support@doc2md.dev` is the intended public customer-facing go-live support/contact alias.
 - Prefer a merchant-of-record style sales platform or store channel that handles tax collection/remittance, VAT/GST/sales-tax paperwork, invoices/receipts, and customer purchase records.
 - Keep pricing easy to understand. Working hypothesis, not a commitment: a low annual price around `$20/year`, plus an optional perpetual license that lasts until the next major paid upgrade.
 - Keep license enforcement offline-friendly. The app should not require network access to open, edit, convert, save, or export documents.
