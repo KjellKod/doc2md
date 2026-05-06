@@ -42,6 +42,9 @@ const SWIFTPM_END = "<!-- END GENERATED swiftpm -->";
 
 const REMEDIATION =
   "Notice inventory drift. Run `npm run generate:notices` and commit the result.";
+const DEFAULT_REPOSITORY_REF = "main";
+const DOC2MD_BLOB_URL_PATTERN =
+  /https:\/\/github\.com\/KjellKod\/doc2md\/blob\/[A-Za-z0-9._-]+\//g;
 
 function asciiLowerKey(value) {
   return String(value).toLowerCase();
@@ -304,6 +307,68 @@ function normalizeLf(text) {
   return text.replace(/\r\n/g, "\n");
 }
 
+export function resolveReleaseRef({ env = process.env, check = false } = {}) {
+  if (check) {
+    return DEFAULT_REPOSITORY_REF;
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(env, "DOC2MD_RELEASE_REF")) {
+    return DEFAULT_REPOSITORY_REF;
+  }
+
+  const rawRef = env.DOC2MD_RELEASE_REF;
+  if (typeof rawRef !== "string") {
+    return DEFAULT_REPOSITORY_REF;
+  }
+
+  const releaseRef = rawRef.trim();
+  if (!/^[A-Za-z0-9._-]+$/.test(releaseRef) || releaseRef.includes("..")) {
+    throw new Error(
+      "Invalid DOC2MD_RELEASE_REF: expected letters, numbers, dot, underscore, or hyphen"
+    );
+  }
+
+  return releaseRef;
+}
+
+export function githubBlobUrl(relativePath, releaseRef = DEFAULT_REPOSITORY_REF) {
+  return `https://github.com/KjellKod/doc2md/blob/${releaseRef}/${relativePath}`;
+}
+
+function rewriteDoc2mdBlobUrls(content, releaseRef) {
+  const baseUrl = githubBlobUrl("", releaseRef);
+  return content.replace(DOC2MD_BLOB_URL_PATTERN, baseUrl);
+}
+
+function parseArgs(argv) {
+  const parsed = {
+    check: false,
+    outputPath: null,
+  };
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (arg === "--check") {
+      parsed.check = true;
+      continue;
+    }
+
+    if (arg === "--output") {
+      const outputPath = argv[index + 1];
+      if (!outputPath || outputPath.startsWith("--")) {
+        throw new Error("--output requires a path");
+      }
+      parsed.outputPath = outputPath;
+      index += 1;
+      continue;
+    }
+
+    throw new Error(`Unknown argument: ${arg}`);
+  }
+
+  return parsed;
+}
+
 function ensureMarkers(content) {
   let updated = content;
 
@@ -356,8 +421,15 @@ function insertMarkersAfterHeading(content, heading, beginMarker, endMarker) {
 }
 
 async function main() {
-  const args = new Set(process.argv.slice(2));
-  const check = args.has("--check");
+  let args;
+  let releaseRef;
+  try {
+    args = parseArgs(process.argv.slice(2));
+    releaseRef = resolveReleaseRef({ env: process.env, check: args.check });
+  } catch (error) {
+    console.error(String(error?.message ?? error));
+    return 1;
+  }
 
   const originalRaw = normalizeLf(await fs.readFile(THIRD_PARTY_NOTICES_PATH, "utf8"));
   const original = ensureMarkers(originalRaw);
@@ -386,11 +458,11 @@ async function main() {
     return 1;
   }
 
-  const updated = normalizeLf(swiftUpdated);
+  const updated = normalizeLf(rewriteDoc2mdBlobUrls(swiftUpdated, releaseRef));
 
   const finalText = updated.endsWith("\n") ? updated : `${updated}\n`;
 
-  if (check) {
+  if (args.check) {
     if (finalText !== originalRaw) {
       console.error(REMEDIATION);
       return 1;
@@ -398,8 +470,10 @@ async function main() {
     return 0;
   }
 
-  await fs.writeFile(THIRD_PARTY_NOTICES_PATH, finalText, "utf8");
+  await fs.writeFile(args.outputPath ?? THIRD_PARTY_NOTICES_PATH, finalText, "utf8");
   return 0;
 }
 
-process.exitCode = await main();
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  process.exitCode = await main();
+}

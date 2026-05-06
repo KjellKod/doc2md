@@ -3,6 +3,7 @@ set -euo pipefail
 
 CONFIGURATION="Release"
 VERSION=""
+VERSION_PROVIDED=0
 OUTPUT_DIR=".build/release"
 SIGNED=0
 
@@ -50,6 +51,7 @@ while (($#)); do
     --version)
       [[ $# -ge 2 ]] || fail "--version requires a value"
       VERSION="$2"
+      VERSION_PROVIDED=1
       shift 2
       ;;
     --output-dir)
@@ -85,7 +87,11 @@ if [[ -z "$VERSION" ]]; then
   VERSION="$(display_build_version)"
 fi
 
-bash scripts/build-mac-app.sh --configuration "$CONFIGURATION"
+if [[ "${DOC2MD_RELEASE_REF+x}" = "x" || "$VERSION_PROVIDED" != "1" ]]; then
+  bash scripts/build-mac-app.sh --configuration "$CONFIGURATION"
+else
+  DOC2MD_RELEASE_REF="$VERSION" bash scripts/build-mac-app.sh --configuration "$CONFIGURATION"
+fi
 
 APP_PATH=".build/mac/Build/Products/$CONFIGURATION/doc2md.app"
 

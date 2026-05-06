@@ -4,6 +4,10 @@ set -euo pipefail
 CONFIGURATION="Release"
 ALLOW_DEVELOPMENT_LICENSE_KEY_FOR_PR=0
 PERSISTENCE_SWIFT_SOURCE_ROOT="apps/macos/doc2md"
+NOTICE_SOURCE_PATH="apps/macos/THIRD_PARTY_NOTICES.md"
+NOTICE_STAGE_DIR=""
+NOTICE_BACKUP_PATH=""
+NOTICE_STAGED_PATH=""
 NATIVE_API_ALLOWLIST=(
   "FileManager :: stat/read/temp-file creation/atomic replacement staging for user-selected Markdown files"
   "NSOpenPanel :: user-selected supported-document open panel"
@@ -29,6 +33,20 @@ usage() {
 fail() {
   printf 'Error: %s\n' "$*" >&2
   exit 1
+}
+
+restore_staged_notices() {
+  local status=$?
+
+  if [[ -n "$NOTICE_BACKUP_PATH" && -f "$NOTICE_BACKUP_PATH" ]]; then
+    cp "$NOTICE_BACKUP_PATH" "$NOTICE_SOURCE_PATH" || status=$?
+  fi
+
+  if [[ -n "$NOTICE_STAGE_DIR" && -d "$NOTICE_STAGE_DIR" ]]; then
+    rm -rf "$NOTICE_STAGE_DIR" || status=$?
+  fi
+
+  return "$status"
 }
 
 grep_matches_or_fail() {
@@ -106,6 +124,33 @@ absolute_path() {
 
 display_build_version() {
   node --input-type=module -e "import { getDisplayVersionInfo } from './packages/core/scripts/release-version.mjs'; console.log(getDisplayVersionInfo().version);"
+}
+
+prepare_notice_resource() {
+  if [[ "${DOC2MD_RELEASE_REF+x}" != "x" ]]; then
+    npm run generate:notices
+    return
+  fi
+
+  NOTICE_STAGE_DIR="$(mktemp -d)"
+  NOTICE_BACKUP_PATH="$NOTICE_STAGE_DIR/THIRD_PARTY_NOTICES.md.default"
+  NOTICE_STAGED_PATH="$NOTICE_STAGE_DIR/THIRD_PARTY_NOTICES.md.release"
+
+  cp "$NOTICE_SOURCE_PATH" "$NOTICE_BACKUP_PATH"
+  trap restore_staged_notices EXIT
+
+  npm run generate:notices -- --output "$NOTICE_STAGED_PATH"
+  cp "$NOTICE_STAGED_PATH" "$NOTICE_SOURCE_PATH"
+}
+
+verify_notice_resource_restored() {
+  if [[ -z "$NOTICE_BACKUP_PATH" ]]; then
+    return
+  fi
+
+  cp "$NOTICE_BACKUP_PATH" "$NOTICE_SOURCE_PATH"
+  cmp "$NOTICE_BACKUP_PATH" "$NOTICE_SOURCE_PATH" >/dev/null
+  git diff --exit-code -- "$NOTICE_SOURCE_PATH" >/dev/null
 }
 
 verify_release_license_public_key() {
@@ -219,7 +264,7 @@ while IFS= read -r match; do
   fi
 done < <(grep_matches_or_fail "$WATCHED_NATIVE_API_PATTERN" "${persistence_swift_sources[@]}")
 
-npm run generate:notices
+prepare_notice_resource
 npm run build:desktop
 
 set +e
@@ -240,6 +285,8 @@ fi
 if ((pipeline_status[1] != 0)); then
   fail "failed to rewrite xcodebuild success output"
 fi
+
+verify_notice_resource_restored
 
 APP_PATH="$REPO_ROOT/.build/mac/Build/Products/$CONFIGURATION/doc2md.app"
 if [[ ! -d "$APP_PATH" ]]; then
