@@ -1,0 +1,27 @@
+docs/journal/035-celebrate-phase-7b-issuer-spec.md
+  0f58e1f6655d65dd 1-73
+docs/journal/README.md
+  0f58e1f6655d65dd 9
+docs/implementation/mac-private-license-issuer-spec.md
+  0f58e1f6655d65dd 106
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "7169b2b2232d6f766fcf9cfdb35e4a9278221771",
+  "prompts": {
+    "0f58e1f6655d65dd": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019dfda7-982b-7e52-8c19-93cbdc26d14c",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 75,
+      "total_deletions": 1,
+      "accepted_lines": 75,
+      "overriden_lines": 0
+    }
+  }
+}
