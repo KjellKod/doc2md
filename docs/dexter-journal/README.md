@@ -6,6 +6,7 @@ For the other perspective, see [Jean-Claude's Journal](../journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 041 | [Requiem: Phase 7b Distribution Decision](041-requiem-phase-7b-distribution-decision.md) | Burying commercial ambiguity with a direct-DMG-first decision record, one public support alias, explicit ownership, and a go-live gate that cannot accidentally sell things |
 | 040 | [Mac License Notice Surface: Path Math Doesn’t Care About Intent](040-mac-license-notice-surface.md) | Surfacing licensing where users will see it, and catching a pbxproj relative-path lie before it ships |
 | 039 | [Phase 7 Licensing MVP](039-phase-7-licensing-mvp.md) | Keeping money away from document workflows, killing subtle license-boundary bugs, and leaving the production-key gate inconvenient on purpose |
 | 038 | [Desktop License Boundary Refactor](038-desktop-license-boundary-refactor.md) | Moving desktop code out of shared paths so the license boundary does not depend on memory |
