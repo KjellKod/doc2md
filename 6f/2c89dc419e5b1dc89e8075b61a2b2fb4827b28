@@ -1,0 +1,25 @@
+scripts/build-mac-app.sh
+  f566ca491e637c24 153
+apps/macos/README.md
+  f566ca491e637c24 134
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "6f2c89dc419e5b1dc89e8075b61a2b2fb4827b28",
+  "prompts": {
+    "f566ca491e637c24": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019dfa53-88f0-79b1-8fb8-575e7f6a2a25",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod",
+      "messages": [],
+      "total_additions": 3,
+      "total_deletions": 3,
+      "accepted_lines": 283,
+      "overriden_lines": 0
+    }
+  }
+}
