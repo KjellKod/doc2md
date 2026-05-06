@@ -150,7 +150,7 @@ verify_notice_resource_restored() {
 
   cp "$NOTICE_BACKUP_PATH" "$NOTICE_SOURCE_PATH"
   cmp "$NOTICE_BACKUP_PATH" "$NOTICE_SOURCE_PATH" >/dev/null
-  git diff -- "$NOTICE_SOURCE_PATH" --exit-code >/dev/null
+  git diff --exit-code -- "$NOTICE_SOURCE_PATH" >/dev/null
 }
 
 verify_release_license_public_key() {

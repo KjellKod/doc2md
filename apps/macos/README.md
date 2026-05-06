@@ -131,7 +131,7 @@ Notice inventory maintenance:
 - Verify drift: `npm run generate:notices:check` (also enforced by `npm test -- --run`)
 - Dev/default output keeps repository links pinned to `https://github.com/KjellKod/doc2md/blob/main/...`.
 - Release output can pin repository links to a tag or ref without editing the committed notice file:
-  `DOC2MD_RELEASE_REF=v2.2.2 npm run generate:notices -- --output "$tmp/THIRD_PARTY_NOTICES.md"`.
+  `DOC2MD_RELEASE_REF=v2.2.2 npm run generate:notices -- --output "$(mktemp -d)/THIRD_PARTY_NOTICES.md"`.
 - Drift checks always compare the committed default `main` output, even if `DOC2MD_RELEASE_REF` is present in the shell.
 - npm algorithm note: the generator walks the production dependency closure (root + workspace `dependencies`, excluding `devDependencies`) via installed `node_modules/*/package.json` and follows transitive `dependencies`.
 
