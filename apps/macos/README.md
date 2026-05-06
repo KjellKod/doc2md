@@ -129,6 +129,10 @@ Notice inventory maintenance:
 
 - Generate: `npm run generate:notices`
 - Verify drift: `npm run generate:notices:check` (also enforced by `npm test -- --run`)
+- Dev/default output keeps repository links pinned to `https://github.com/KjellKod/doc2md/blob/main/...`.
+- Release output can pin repository links to a tag or ref without editing the committed notice file:
+  `DOC2MD_RELEASE_REF=v2.2.2 npm run generate:notices -- --output "$tmp/THIRD_PARTY_NOTICES.md"`.
+- Drift checks always compare the committed default `main` output, even if `DOC2MD_RELEASE_REF` is present in the shell.
 - npm algorithm note: the generator walks the production dependency closure (root + workspace `dependencies`, excluding `devDependencies`) via installed `node_modules/*/package.json` and follows transitive `dependencies`.
 
 `npm run build:desktop` runs `npm run generate:mac-supported-formats` first so the Swift open-panel extension list stays in sync with `SUPPORTED_FORMATS` from `src/types/index.ts`.
@@ -155,7 +159,7 @@ Equivalent:
 bash scripts/build-mac-app.sh --configuration Release
 ```
 
-The script first checks that `apps/macos/doc2md/SupportedFormats.generated.swift` is up to date, then runs `npm run generate:notices`, runs `npm run build:desktop`, invokes `xcodebuild` with `-derivedDataPath .build/mac`, and runs a positive native file API allowlist scan across `apps/macos/doc2md/*.swift`. It writes the app to:
+The script first checks that `apps/macos/doc2md/SupportedFormats.generated.swift` is up to date, then runs `npm run generate:notices`, runs `npm run build:desktop`, invokes `xcodebuild` with `-derivedDataPath .build/mac`, and runs a positive native file API allowlist scan across `apps/macos/doc2md/*.swift`. When `DOC2MD_RELEASE_REF` is set, the script generates a release-pinned notice file to a temporary path, stages it only for Xcode's resource copy, then restores and verifies the committed `apps/macos/THIRD_PARTY_NOTICES.md` before exiting. It writes the app to:
 
 ```text
 .build/mac/Build/Products/Release/doc2md.app
@@ -325,7 +329,13 @@ The Mac build helper passes the release helper's computed marketing version into
 
 The initial `0.1.0` release may use `CURRENT_PROJECT_VERSION = 1`; later releases must not reuse build `1`.
 
-Before the first signed public release, verify that the notice file shipped inside the `.app` and DMG covers the exact released artifact. That means checking JavaScript dependencies from `package-lock.json`, native SwiftPM/Xcode dependencies such as Sparkle, bundled MIT doc2md components, and the final built app contents. Today this is a maintainer release checklist item; if a notice-generation script is added later, it should replace this manual check and write the generated notice file before packaging.
+Before a signed public release, verify that the notice file shipped inside the `.app` and DMG covers the exact released artifact. JavaScript dependencies come from `package-lock.json`, native SwiftPM/Xcode dependencies come from Package.resolved/project metadata, and doc2md repository links are pinned automatically when the build receives a release ref. For example:
+
+```bash
+DOC2MD_RELEASE_REF=v2.2.2 bash scripts/build-mac-app.sh --configuration Release
+```
+
+`scripts/build-mac-dmg.sh --version v2.2.2` passes that version through as `DOC2MD_RELEASE_REF` when the environment variable is not already set. No release process should manually edit `apps/macos/THIRD_PARTY_NOTICES.md` from `main` to a tag.
 
 Local unsigned DMG smoke:
 
