@@ -52,6 +52,7 @@
   color: var(--error);
 }
 
+.desktop-reload-button,
 .desktop-reveal-button {
   min-height: 36px;
   padding: 7px 12px;

@@ -70,6 +70,11 @@ struct Doc2mdApp: App {
 
                 Divider()
 
+                Button("Reload from Disk") {
+                    shellHost.menuController.reloadDocument()
+                }
+                .keyboardShortcut("r", modifiers: [.command])
+
                 Button("Reveal in Finder") {
                     shellHost.menuController.revealInFinder()
                 }

@@ -26,6 +26,10 @@ final class MenuController: NSObject {
         dispatchNativeEvent("doc2md:native-save-as")
     }
 
+    func reloadDocument() {
+        dispatchNativeEvent("doc2md:native-reload")
+    }
+
     func revealInFinder() {
         dispatchNativeEvent("doc2md:native-reveal-in-finder")
     }

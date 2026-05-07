@@ -18,6 +18,7 @@ import type {
   ShellConflict,
   ShellError,
   ShellLineEnding,
+  ShellOpenMarkdownOk,
   ShellPermissionNeeded,
   ShellResult,
 } from "../types/doc2mdShell";
@@ -1510,6 +1511,127 @@ function AppContent() {
     shell,
   ]);
 
+  const applyReloadedMarkdownFile = useCallback(
+    (entry: FileEntry, result: ShellOpenMarkdownOk) => {
+      replaceEntryWithMarkdownFile(entry.id, {
+        name: basenameForPath(result.path),
+        content: result.content,
+        lastModified: result.mtimeMs,
+      });
+      setDesktopFiles((current) => ({
+        ...current,
+        [entry.id]: {
+          path: result.path,
+          mtimeMs: result.mtimeMs,
+          lineEnding: result.lineEnding,
+        },
+      }));
+      setEntryDesktopSaveState(entry.id, "saved");
+      clearDocumentProblem(entry.id);
+      clearDesktopProblem();
+      void refreshPersistenceSettings();
+    },
+    [
+      clearDesktopProblem,
+      clearDocumentProblem,
+      refreshPersistenceSettings,
+      replaceEntryWithMarkdownFile,
+      setEntryDesktopSaveState,
+    ],
+  );
+
+  const handleReloadSelectedDocument = useCallback(async () => {
+    if (!selectedEntry) {
+      setDesktopNotice({
+        kind: "info",
+        message: "Select a saved document before reloading it.",
+      });
+      return;
+    }
+
+    const entry = selectedEntry;
+    const path = selectedPath;
+
+    if (!shell || !path) {
+      setDocumentNotice(entry.id, {
+        kind: "info",
+        message: "Open or save the document before reloading it from disk.",
+      });
+      return;
+    }
+
+    if (entry.status === "pending" || entry.status === "converting") {
+      setDocumentNotice(entry.id, {
+        kind: "info",
+        message: "Finishing conversion. Try reloading again in a moment.",
+      });
+      return;
+    }
+
+    if (activeSaveState === "saving") {
+      setDocumentNotice(entry.id, {
+        kind: "info",
+        message: "Wait for the current save to finish before reloading.",
+      });
+      return;
+    }
+
+    if (
+      activeSaveState !== "saved" &&
+      !window.confirm("Reload from disk and discard unsaved changes?")
+    ) {
+      return;
+    }
+
+    try {
+      const result = await shell.openFile({ path });
+      if (result.ok) {
+        if (result.kind !== "markdown") {
+          console.error("reload received non-markdown kind");
+          setEntryDesktopSaveState(entry.id, "error");
+          setDocumentNotice(entry.id, {
+            kind: "error",
+            message: "Reload failed: file is no longer a Markdown target.",
+          });
+          return;
+        }
+
+        applyReloadedMarkdownFile(entry, result);
+        return;
+      }
+
+      if (result.code === "cancelled") {
+        return;
+      }
+
+      if (result.code === "permission-needed") {
+        setEntryDesktopSaveState(entry.id, "permission-needed");
+        setDocumentNotice(entry.id, noticeFromPermission(result));
+        return;
+      }
+
+      if (result.code === "error") {
+        setEntryDesktopSaveState(entry.id, "error");
+        setDocumentNotice(entry.id, noticeFromError(result));
+      }
+    } catch (error) {
+      setEntryDesktopSaveState(entry.id, "error");
+      setDocumentNotice(entry.id, {
+        kind: "error",
+        message: "Reload failed before the app received a native result.",
+      });
+      console.error("doc2md desktop reload transport failure", error);
+    }
+  }, [
+    activeSaveState,
+    applyReloadedMarkdownFile,
+    selectedEntry,
+    selectedPath,
+    setDocumentNotice,
+    setEntryDesktopSaveState,
+    shell,
+  ]);
+
   const handleReloadConflict = useCallback(async () => {
     if (!shell || !activePendingConflict) {
       return;
@@ -1547,22 +1669,7 @@ function AppContent() {
           return;
         }
 
-        replaceEntryWithMarkdownFile(entry.id, {
-          name: basenameForPath(result.path),
-          content: result.content,
-          lastModified: result.mtimeMs,
-        });
-        setDesktopFiles((current) => ({
-          ...current,
-          [entry.id]: {
-            path: result.path,
-            mtimeMs: result.mtimeMs,
-            lineEnding: result.lineEnding,
-          },
-        }));
-        setEntryDesktopSaveState(entry.id, "saved");
-        clearDocumentProblem(entry.id);
-        void refreshPersistenceSettings();
+        applyReloadedMarkdownFile(entry, result);
         return;
       }
 
@@ -1590,10 +1697,8 @@ function AppContent() {
     }
   }, [
     activePendingConflict,
-    clearDocumentProblem,
+    applyReloadedMarkdownFile,
     entries,
-    replaceEntryWithMarkdownFile,
-    refreshPersistenceSettings,
     selectEntry,
     setDocumentNotice,
     setEntryDesktopSaveState,
@@ -1640,6 +1745,9 @@ function AppContent() {
     onSave: handleSave,
     onSaveAs: () => {
       void handleSaveAs();
+    },
+    onReload: () => {
+      void handleReloadSelectedDocument();
     },
     onRevealInFinder: () => {
       void handleRevealInFinder();
@@ -1833,6 +1941,18 @@ function AppContent() {
                         <span className="desktop-save-pill">
                           {saveStateLabel}
                         </span>
+                        {!activePendingConflict ? (
+                          <button
+                            type="button"
+                            className="ghost-button desktop-reload-button"
+                            onClick={() => void handleReloadSelectedDocument()}
+                            disabled={!selectedPath || activeSaveState === "saving"}
+                            aria-label="Reload from disk"
+                            title="Reload from disk"
+                          >
+                            Reload
+                          </button>
+                        ) : null}
                         <button
                           type="button"
                           className="ghost-button desktop-reveal-button"

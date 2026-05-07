@@ -33,8 +33,8 @@ The Mac app already has a local licensing module under `apps/macos/doc2md/Licens
 
 ## Agents
 
-- **The Judge** (arbiter): 
-- **The Implementer** (builder): 
+- **The Judge** (arbiter):
+- **The Implementer** (builder):
 
 ## Quest Brief
 
