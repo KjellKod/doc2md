@@ -1747,6 +1747,23 @@ body.is-page-resizing * {
   vertical-align: -0.15em;
 }
 
+.markdown-rendered-find-highlight {
+  border-radius: 4px;
+  background: rgba(255, 198, 41, 0.72);
+  box-shadow:
+    0 0 0 2px rgba(128, 83, 0, 0.28),
+    0 0 14px rgba(255, 198, 41, 0.5);
+  color: inherit;
+}
+
+.markdown-rendered-find-highlight-zero {
+  display: inline-block;
+  width: 2px;
+  min-height: 1.15em;
+  padding: 0;
+  vertical-align: -0.15em;
+}
+
 .markdown-surface {
   flex: 1;
   min-height: 0;

@@ -598,7 +598,7 @@ describe("PreviewPanel", () => {
     await waitFor(() => expect(document.activeElement).toBe(editor));
   });
 
-  it("opens find from the visible control and highlights the active editor match", () => {
+  it("opens find from the visible control and highlights the active preview match", async () => {
     const { container } = render(
       <PreviewPanel
         entry={createEntry({
@@ -610,9 +610,37 @@ describe("PreviewPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Find and replace" }));
 
     expect(
-      screen.getByRole("textbox", { name: "Edit markdown" }),
-    ).toBeInTheDocument();
+      screen.queryByRole("textbox", { name: "Edit markdown" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Preview" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
 
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Find markdown text" }),
+      {
+        target: { value: "alpha" },
+      },
+    );
+
+    await screen.findByText("1 of 2");
+    const highlight = container.querySelector(".markdown-rendered-find-highlight");
+    expect(highlight).toHaveTextContent("Alpha");
+    expect(highlight?.closest(".markdown-surface")).toBeInTheDocument();
+  });
+
+  it("highlights editor matches when find is opened from edit mode", () => {
+    const { container } = render(
+      <PreviewPanel
+        entry={createEntry({
+          markdown: "Alpha\nBeta\nAlpha",
+        })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    fireEvent.click(screen.getByRole("button", { name: "Find and replace" }));
     fireEvent.change(
       screen.getByRole("textbox", { name: "Find markdown text" }),
       {
@@ -629,7 +657,101 @@ describe("PreviewPanel", () => {
     );
   });
 
-  it("opens find with Cmd+F and auto-switches to edit mode", async () => {
+  it("opens edit mode near the active preview search match", async () => {
+    render(
+      <PreviewPanel
+        entry={createEntry({
+          markdown: "Alpha\nBeta\nGamma",
+        })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Find and replace" }));
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Find markdown text" }),
+      {
+        target: { value: "Beta" },
+      },
+    );
+
+    await screen.findByText("1 of 1");
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+    const editor = screen.getByRole("textbox", {
+      name: "Edit markdown",
+    }) as HTMLTextAreaElement;
+    await waitFor(() => {
+      expect(editor.selectionStart).toBe(6);
+      expect(editor.selectionEnd).toBe(10);
+    });
+  });
+
+  it("preserves approximate scroll position when switching between preview and edit", () => {
+    const scrollHeightDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      "scrollHeight",
+    );
+    const clientHeightDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      "clientHeight",
+    );
+
+    Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
+      configurable: true,
+      get: () => 1000,
+    });
+    Object.defineProperty(HTMLElement.prototype, "clientHeight", {
+      configurable: true,
+      get: () => 100,
+    });
+
+    try {
+      const { container } = render(
+        <PreviewPanel
+          entry={createEntry({
+            markdown: Array.from({ length: 80 }, (_, index) => `Line ${index}`).join(
+              "\n",
+            ),
+          })}
+        />,
+      );
+
+      const previewSurface = container.querySelector(
+        ".markdown-surface",
+      ) as HTMLElement;
+      previewSurface.scrollTop = 450;
+
+      fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+      const editor = screen.getByRole("textbox", { name: "Edit markdown" });
+      expect(editor.scrollTop).toBe(450);
+
+      editor.scrollTop = 720;
+      fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+
+      const nextPreviewSurface = container.querySelector(
+        ".markdown-surface",
+      ) as HTMLElement;
+      expect(nextPreviewSurface.scrollTop).toBe(720);
+    } finally {
+      if (scrollHeightDescriptor) {
+        Object.defineProperty(
+          HTMLElement.prototype,
+          "scrollHeight",
+          scrollHeightDescriptor,
+        );
+      }
+      if (clientHeightDescriptor) {
+        Object.defineProperty(
+          HTMLElement.prototype,
+          "clientHeight",
+          clientHeightDescriptor,
+        );
+      }
+    }
+  });
+
+  it("opens find with Cmd+F without leaving preview mode", async () => {
     render(<PreviewPanel entry={createEntry({ markdown: "Alpha" })} />);
 
     const event = new KeyboardEvent("keydown", {
@@ -647,7 +769,7 @@ describe("PreviewPanel", () => {
         screen.getByRole("textbox", { name: "Find markdown text" }),
       ).toBeInTheDocument();
     });
-    expect(screen.getByRole("button", { name: "Edit" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Preview" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
@@ -683,6 +805,7 @@ describe("PreviewPanel", () => {
 
   it("opens replace controls with Cmd+Option+F", async () => {
     render(<PreviewPanel entry={createEntry({ markdown: "Alpha" })} />);
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
 
     window.dispatchEvent(
       new KeyboardEvent("keydown", {
@@ -704,6 +827,7 @@ describe("PreviewPanel", () => {
   it("refocuses an already-open find UI from keyboard shortcuts", async () => {
     render(<PreviewPanel entry={createEntry({ markdown: "Alpha Beta" })} />);
 
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     fireEvent.click(screen.getByRole("button", { name: "Find and replace" }));
     const findInput = screen.getByRole("textbox", {
       name: "Find markdown text",
@@ -761,6 +885,7 @@ describe("PreviewPanel", () => {
 
   it("keeps replace visible while plain Cmd+F refocuses find", async () => {
     render(<PreviewPanel entry={createEntry({ markdown: "Alpha Beta" })} />);
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
 
     window.dispatchEvent(
       new KeyboardEvent("keydown", {
@@ -809,6 +934,7 @@ describe("PreviewPanel", () => {
       />,
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     fireEvent.click(screen.getByRole("button", { name: "Find and replace" }));
     fireEvent.change(
       screen.getByRole("textbox", { name: "Find markdown text" }),
@@ -838,6 +964,7 @@ describe("PreviewPanel", () => {
       />,
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     fireEvent.click(screen.getByRole("button", { name: "Find and replace" }));
     fireEvent.change(
       screen.getByRole("textbox", { name: "Find markdown text" }),
@@ -855,23 +982,23 @@ describe("PreviewPanel", () => {
     expect(onChange).toHaveBeenCalledWith("b".repeat(12_000));
   });
 
-  it("closes find when switching out of edit mode", () => {
+  it("keeps find open while switching view modes", () => {
     render(<PreviewPanel entry={createEntry({ markdown: "Alpha" })} />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Find and replace" }));
-    expect(screen.getByRole("search")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
-
-    expect(screen.queryByRole("search")).not.toBeInTheDocument();
-    expect(screen.getByText("Alpha")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     fireEvent.click(screen.getByRole("button", { name: "Find and replace" }));
     expect(screen.getByRole("search")).toBeInTheDocument();
 
+    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+
+    expect(screen.getByRole("search")).toBeInTheDocument();
+    expect(screen.getByText("Alpha")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    expect(screen.getByRole("search")).toBeInTheDocument();
+
     fireEvent.click(screen.getByRole("button", { name: "LinkedIn" }));
 
-    expect(screen.queryByRole("search")).not.toBeInTheDocument();
+    expect(screen.getByRole("search")).toBeInTheDocument();
   });
 });

@@ -13,10 +13,11 @@ import type { FindMatch } from "./useFindReplace";
 interface FindReplaceBarProps {
   source: string;
   onSourceChange: (next: string) => void;
-  textareaRef: RefObject<HTMLTextAreaElement>;
+  textareaRef?: RefObject<HTMLTextAreaElement>;
   onClose: () => void;
   showReplace: boolean;
   onShowReplaceChange: (showReplace: boolean) => void;
+  allowReplace?: boolean;
   focusRequest: {
     id: number;
     target: "find" | "replace";
@@ -31,6 +32,7 @@ export default function FindReplaceBar({
   onClose,
   showReplace,
   onShowReplaceChange,
+  allowReplace = true,
   focusRequest,
   onActiveMatchChange,
 }: FindReplaceBarProps) {
@@ -47,26 +49,26 @@ export default function FindReplaceBar({
   const statusLabel = findReplace.replaceStatus || countLabel;
 
   useEffect(() => {
-    const focusTarget = focusRequest.target === "replace"
+    const focusTarget = focusRequest.target === "replace" && allowReplace
       ? replaceInputRef.current
       : findInputRef.current;
 
     focusTarget?.focus();
     focusTarget?.select();
-  }, [focusRequest.id, focusRequest.target]);
+  }, [allowReplace, focusRequest.id, focusRequest.target]);
 
   useEffect(() => {
-    if (!showReplace) {
+    if (!showReplace || !allowReplace) {
       return;
     }
 
     replaceInputRef.current?.focus();
     replaceInputRef.current?.select();
-  }, [showReplace]);
+  }, [allowReplace, showReplace]);
 
   useEffect(() => {
     onActiveMatchChange(activeMatch);
-    setActiveSelection(textareaRef.current);
+    setActiveSelection(textareaRef?.current ?? null);
   }, [
     activeMatch?.start,
     activeMatch?.end,
@@ -78,7 +80,7 @@ export default function FindReplaceBar({
 
   function close() {
     onClose();
-    window.setTimeout(() => textareaRef.current?.focus(), 0);
+    window.setTimeout(() => textareaRef?.current?.focus(), 0);
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
@@ -209,26 +211,32 @@ export default function FindReplaceBar({
           </span>
         ) : null}
         <span className="find-replace-tooltip-wrap">
-          <button
-            type="button"
-            className={`find-replace-option${showReplace ? " is-active" : ""}`}
-            onClick={() => onShowReplaceChange(!showReplace)}
-            aria-label={showReplace ? "Hide replace controls" : "Show replace controls"}
-            aria-pressed={showReplace}
-            aria-describedby="replace-toggle-tooltip"
-          >
-            <Replace aria-hidden="true" />
-          </button>
-          <span
-            id="replace-toggle-tooltip"
-            role="tooltip"
-            className="find-replace-tooltip"
-          >
-            {showReplace ? "Hide replace" : "Show replace"}
-          </span>
+          {allowReplace ? (
+            <>
+              <button
+                type="button"
+                className={`find-replace-option${showReplace ? " is-active" : ""}`}
+                onClick={() => onShowReplaceChange(!showReplace)}
+                aria-label={
+                  showReplace ? "Hide replace controls" : "Show replace controls"
+                }
+                aria-pressed={showReplace}
+                aria-describedby="replace-toggle-tooltip"
+              >
+                <Replace aria-hidden="true" />
+              </button>
+              <span
+                id="replace-toggle-tooltip"
+                role="tooltip"
+                className="find-replace-tooltip"
+              >
+                {showReplace ? "Hide replace" : "Show replace"}
+              </span>
+            </>
+          ) : null}
         </span>
       </div>
-      {showReplace ? (
+      {allowReplace && showReplace ? (
         <div className="find-replace-replace-row">
           <label className="find-replace-input-wrap">
             <span className="visually-hidden">Replacement text</span>
