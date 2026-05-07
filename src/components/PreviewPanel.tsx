@@ -259,7 +259,11 @@ function findTextPosition(root: HTMLElement, offset: number) {
   return null;
 }
 
-function applyRenderedFindHighlight(root: HTMLElement, match: FindMatch) {
+function applyRenderedFindHighlight(
+  root: HTMLElement,
+  match: FindMatch,
+  centerMatch: boolean,
+) {
   const start = findTextPosition(root, match.start);
   const end = findTextPosition(root, match.end);
 
@@ -284,7 +288,9 @@ function applyRenderedFindHighlight(root: HTMLElement, match: FindMatch) {
   }
 
   removeEmptyRenderedInlineElements(root);
-  centerElementInScrollContainer(root, highlight);
+  if (centerMatch) {
+    centerElementInScrollContainer(root, highlight);
+  }
 }
 
 export default function PreviewPanel({
@@ -316,6 +322,7 @@ export default function PreviewPanel({
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const findHighlightRef = useRef<HTMLPreElement | null>(null);
   const pendingModeScrollRatioRef = useRef<number | null>(null);
+  const suppressMatchCenteringForModeSwitchRef = useRef(false);
   const findCapable =
     entry !== null &&
     (entry.status === "success" || entry.status === "warning") &&
@@ -329,6 +336,7 @@ export default function PreviewPanel({
     setActiveFindMatch(null);
     setRenderedViewText("");
     pendingModeScrollRatioRef.current = null;
+    suppressMatchCenteringForModeSwitchRef.current = false;
   }, [entry?.id, entry?.isScratch]);
 
   useEffect(() => {
@@ -448,6 +456,10 @@ export default function PreviewPanel({
   const activeFindSource =
     mode === "edit" ? effectiveMarkdown : renderedViewText;
 
+  function shouldCenterActiveMatch() {
+    return !suppressMatchCenteringForModeSwitchRef.current;
+  }
+
   useLayoutEffect(() => {
     const element = renderedViewRef.current;
 
@@ -470,7 +482,12 @@ export default function PreviewPanel({
     clearRenderedFindHighlight(element);
 
     if (isFindOpen && activeFindMatch) {
-      applyRenderedFindHighlight(element, activeFindMatch);
+      applyRenderedFindHighlight(
+        element,
+        activeFindMatch,
+        pendingModeScrollRatioRef.current === null &&
+          shouldCenterActiveMatch(),
+      );
     }
   }, [
     activeFindMatch?.end,
@@ -482,30 +499,13 @@ export default function PreviewPanel({
   ]);
 
   useLayoutEffect(() => {
-    const ratio = pendingModeScrollRatioRef.current;
-
-    if (ratio === null) {
-      return;
-    }
-
-    if (mode === "edit" && textareaRef.current) {
-      applyScrollRatio(textareaRef.current, ratio);
-      pendingModeScrollRatioRef.current = null;
-      return;
-    }
-
-    if (mode !== "edit" && renderedViewRef.current) {
-      applyScrollRatio(renderedViewRef.current, ratio);
-      pendingModeScrollRatioRef.current = null;
-    }
-  }, [activeFindMatch, mode]);
-
-  useLayoutEffect(() => {
     if (
       mode === "edit" &&
       isFindOpen &&
       activeFindMatch &&
-      textareaRef.current
+      textareaRef.current &&
+      pendingModeScrollRatioRef.current === null &&
+      shouldCenterActiveMatch()
     ) {
       scrollTextareaToMatch(textareaRef.current, effectiveMarkdown, activeFindMatch);
       syncFindHighlightScroll();
@@ -518,6 +518,31 @@ export default function PreviewPanel({
     isFindOpen,
     mode,
   ]);
+
+  useLayoutEffect(() => {
+    const ratio = pendingModeScrollRatioRef.current;
+
+    if (ratio === null) {
+      return;
+    }
+
+    if (mode === "edit" && textareaRef.current) {
+      applyScrollRatio(textareaRef.current, ratio);
+      pendingModeScrollRatioRef.current = null;
+      window.setTimeout(() => {
+        suppressMatchCenteringForModeSwitchRef.current = false;
+      }, 0);
+      return;
+    }
+
+    if (mode !== "edit" && renderedViewRef.current) {
+      applyScrollRatio(renderedViewRef.current, ratio);
+      pendingModeScrollRatioRef.current = null;
+      window.setTimeout(() => {
+        suppressMatchCenteringForModeSwitchRef.current = false;
+      }, 0);
+    }
+  }, [activeFindMatch, mode]);
 
   if (!entry) {
     return (
@@ -595,6 +620,7 @@ export default function PreviewPanel({
     }
 
     rememberModeScrollPosition();
+    suppressMatchCenteringForModeSwitchRef.current = activeFindMatch !== null;
     setMode(nextMode);
   }
 
