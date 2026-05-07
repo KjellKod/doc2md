@@ -1,0 +1,35 @@
+apps/macos/doc2md/doc2mdApp.swift
+  s_69787eeda189de::t_472fee7853d242 73-77
+apps/macos/doc2md/MenuController.swift
+  s_69787eeda189de::t_2d0a6b338d90a5 29-32
+src/desktop/useNativeMenuEvents.ts
+  s_69787eeda189de::t_b3f0e5adbcb731 10,20,35
+src/desktop/desktop.css
+  s_69787eeda189de::t_144ed47c420d88 55
+src/desktop/DesktopApp.tsx
+  s_69787eeda189de::t_056ac3e64c3c3e 1531,1535
+  s_69787eeda189de::t_dff2ef2666ef85 21,1514-1530,1532-1534,1536-1634,1672,1700,1749-1751,1944-1955
+src/__tests__/App.desktop.test.tsx
+  s_69787eeda189de::t_4403129a8a9577 190-273,275-278
+  s_69787eeda189de::t_1d01d2563c0f8f 274
+src/desktop/__tests__/useNativeMenuEvents.test.tsx
+  s_69787eeda189de::t_94dcb729b401cd 28,39,47
+docs/quest-journal/mac-license-verifier_2026-05-07.md
+  s_69787eeda189de::t_ac1af861544ce3 36-37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "d6e43da13ea7474269035eacc424d37bedd5ac17",
+  "prompts": {},
+  "sessions": {
+    "s_69787eeda189de": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019dffe9-9f33-7b23-baac-9beb7865ab20",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
