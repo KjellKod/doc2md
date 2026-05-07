@@ -1,0 +1,21 @@
+src/components/PreviewPanel.tsx
+  s_69787eeda189de::t_d1e151b768b959 445
+src/components/PreviewPanel.test.tsx
+  s_69787eeda189de::t_06a24aea67baf8 754-826
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "167565d1095604227b4d3d2f27feebe8dc7968ea",
+  "prompts": {},
+  "sessions": {
+    "s_69787eeda189de": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019dffe9-9f33-7b23-baac-9beb7865ab20",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
