@@ -442,7 +442,7 @@ export default function PreviewPanel({
   useLayoutEffect(() => {
     const ratio = pendingModeScrollRatioRef.current;
 
-    if (ratio === null || activeFindMatch) {
+    if (ratio === null) {
       return;
     }
 

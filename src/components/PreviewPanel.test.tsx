@@ -751,6 +751,79 @@ describe("PreviewPanel", () => {
     }
   });
 
+  it("preserves scroll position while switching modes with an active search match", async () => {
+    const scrollHeightDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      "scrollHeight",
+    );
+    const clientHeightDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      "clientHeight",
+    );
+
+    Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
+      configurable: true,
+      get: () => 1000,
+    });
+    Object.defineProperty(HTMLElement.prototype, "clientHeight", {
+      configurable: true,
+      get: () => 100,
+    });
+
+    try {
+      const { container } = render(
+        <PreviewPanel
+          entry={createEntry({
+            markdown: Array.from({ length: 80 }, (_, index) => `Line ${index}`).join(
+              "\n",
+            ),
+          })}
+        />,
+      );
+
+      const previewSurface = container.querySelector(
+        ".markdown-surface",
+      ) as HTMLElement;
+      previewSurface.scrollTop = 450;
+      fireEvent.click(screen.getByRole("button", { name: "Find and replace" }));
+      fireEvent.change(
+        screen.getByRole("textbox", { name: "Find markdown text" }),
+        {
+          target: { value: "Line 40" },
+        },
+      );
+
+      await screen.findByText("1 of 1");
+      fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+      const editor = screen.getByRole("textbox", { name: "Edit markdown" });
+      expect(editor.scrollTop).not.toBe(0);
+
+      editor.scrollTop = 720;
+      fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+
+      const nextPreviewSurface = container.querySelector(
+        ".markdown-surface",
+      ) as HTMLElement;
+      expect(nextPreviewSurface.scrollTop).not.toBe(0);
+    } finally {
+      if (scrollHeightDescriptor) {
+        Object.defineProperty(
+          HTMLElement.prototype,
+          "scrollHeight",
+          scrollHeightDescriptor,
+        );
+      }
+      if (clientHeightDescriptor) {
+        Object.defineProperty(
+          HTMLElement.prototype,
+          "clientHeight",
+          clientHeightDescriptor,
+        );
+      }
+    }
+  });
+
   it("opens find with Cmd+F without leaving preview mode", async () => {
     render(<PreviewPanel entry={createEntry({ markdown: "Alpha" })} />);
 
