@@ -187,6 +187,95 @@ describe("App desktop bridge", () => {
     cleanupShell();
   });
 
+  it("reloads the active saved desktop file from disk", async () => {
+    const openFile = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Reload.md",
+        content: "# Local",
+        mtimeMs: 40,
+        lineEnding: "lf" as const,
+      })
+      .mockResolvedValueOnce({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Reload.md",
+        content: "# Disk",
+        mtimeMs: 41,
+        lineEnding: "lf" as const,
+      });
+    const cleanupShell = installMockShell({ openFile });
+
+    render(<DesktopApp />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await screen.findByRole("heading", { name: "Local" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Reload from disk" }));
+
+    await waitFor(() =>
+      expect(openFile).toHaveBeenLastCalledWith({ path: "/Users/me/Reload.md" }),
+    );
+    expect(await screen.findByRole("heading", { name: "Disk" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
+      "Saved",
+    );
+
+    cleanupShell();
+  });
+
+  it("confirms before reloading an edited desktop file", async () => {
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValueOnce(false);
+    const openFile = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Edited.md",
+        content: "# Original",
+        mtimeMs: 20,
+        lineEnding: "lf" as const,
+      })
+      .mockResolvedValueOnce({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Edited.md",
+        content: "# Disk",
+        mtimeMs: 21,
+        lineEnding: "lf" as const,
+      });
+    const cleanupShell = installMockShell({ openFile });
+
+    render(<DesktopApp />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await screen.findByRole("heading", { name: "Original" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Edit markdown" }), {
+      target: { value: "# Local edit" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Reload from disk" }));
+
+    expect(confirmSpy).toHaveBeenCalledWith(
+      "Reload from disk and discard unsaved changes?",
+    );
+    expect(openFile).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("textbox", { name: "Edit markdown" })).toHaveValue(
+      "# Local edit",
+    );
+
+    confirmSpy.mockReturnValueOnce(true);
+    fireEvent.click(screen.getByRole("button", { name: "Reload from disk" }));
+
+    await waitFor(() =>
+      expect(openFile).toHaveBeenLastCalledWith({ path: "/Users/me/Edited.md" }),
+    );
+    expect(await screen.findByRole("heading", { name: "Disk" })).toBeInTheDocument();
+
+    cleanupShell();
+  });
+
   it.each([
     {
       label: "permission-needed",

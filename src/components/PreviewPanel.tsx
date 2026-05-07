@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { FilePlus, Search } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -149,6 +149,102 @@ function renderFindHighlight(source: string, match: FindMatch | null) {
   );
 }
 
+function scrollRatio(element: HTMLElement) {
+  const maxScroll = element.scrollHeight - element.clientHeight;
+
+  if (maxScroll <= 0) {
+    return 0;
+  }
+
+  return element.scrollTop / maxScroll;
+}
+
+function applyScrollRatio(element: HTMLElement, ratio: number) {
+  const maxScroll = element.scrollHeight - element.clientHeight;
+  element.scrollTop = Math.max(maxScroll * ratio, 0);
+}
+
+function scrollTextareaToMatch(
+  textarea: HTMLTextAreaElement,
+  source: string,
+  match: FindMatch,
+) {
+  textarea.setSelectionRange(match.start, match.end);
+
+  const linesBeforeMatch = source.slice(0, match.start).split("\n").length;
+  const lineHeight = Number.parseFloat(getComputedStyle(textarea).lineHeight);
+  const estimatedLineHeight = Number.isFinite(lineHeight) ? lineHeight : 20;
+  textarea.scrollTop = Math.max((linesBeforeMatch - 3) * estimatedLineHeight, 0);
+}
+
+function clearRenderedFindHighlight(root: HTMLElement) {
+  const highlights = Array.from(
+    root.querySelectorAll("mark.markdown-rendered-find-highlight"),
+  );
+
+  for (const highlight of highlights) {
+    highlight.replaceWith(document.createTextNode(highlight.textContent ?? ""));
+  }
+
+  root.normalize();
+}
+
+function textNodesFor(root: HTMLElement) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const nodes: Text[] = [];
+  let current = walker.nextNode();
+
+  while (current) {
+    nodes.push(current as Text);
+    current = walker.nextNode();
+  }
+
+  return nodes;
+}
+
+function findTextPosition(root: HTMLElement, offset: number) {
+  let cursor = 0;
+
+  for (const node of textNodesFor(root)) {
+    const nextCursor = cursor + node.data.length;
+
+    if (offset >= cursor && offset <= nextCursor) {
+      return { node, offset: offset - cursor };
+    }
+
+    cursor = nextCursor;
+  }
+
+  return null;
+}
+
+function applyRenderedFindHighlight(root: HTMLElement, match: FindMatch) {
+  const start = findTextPosition(root, match.start);
+  const end = findTextPosition(root, match.end);
+
+  if (!start || !end) {
+    return;
+  }
+
+  const highlight = document.createElement("mark");
+  highlight.className = "markdown-rendered-find-highlight";
+
+  const range = document.createRange();
+  range.setStart(start.node, start.offset);
+  range.setEnd(end.node, end.offset);
+
+  if (match.start === match.end) {
+    highlight.classList.add("markdown-rendered-find-highlight-zero");
+    highlight.textContent = "\u200b";
+    range.insertNode(highlight);
+  } else {
+    highlight.append(range.extractContents());
+    range.insertNode(highlight);
+  }
+
+  highlight.scrollIntoView?.({ block: "center", inline: "nearest" });
+}
+
 export default function PreviewPanel({
   entry,
   onMarkdownChange,
@@ -166,6 +262,7 @@ export default function PreviewPanel({
   const [isFindOpen, setIsFindOpen] = useState(false);
   const [showReplace, setShowReplace] = useState(false);
   const [activeFindMatch, setActiveFindMatch] = useState<FindMatch | null>(null);
+  const [renderedViewText, setRenderedViewText] = useState("");
   const [findFocusRequest, setFindFocusRequest] = useState<{
     id: number;
     target: "find" | "replace";
@@ -173,8 +270,10 @@ export default function PreviewPanel({
   const editorFocusRequestId = editorFocusRequest?.id;
   const editorFocusRequestTarget = editorFocusRequest?.target;
   const previewRef = useRef<HTMLDivElement | null>(null);
+  const renderedViewRef = useRef<HTMLElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const findHighlightRef = useRef<HTMLPreElement | null>(null);
+  const pendingModeScrollRatioRef = useRef<number | null>(null);
   const findCapable =
     entry !== null &&
     (entry.status === "success" || entry.status === "warning") &&
@@ -186,6 +285,8 @@ export default function PreviewPanel({
     setMode(entry?.isScratch ? "edit" : "preview");
     setIsFindOpen(false);
     setActiveFindMatch(null);
+    setRenderedViewText("");
+    pendingModeScrollRatioRef.current = null;
   }, [entry?.id, entry?.isScratch]);
 
   useEffect(() => {
@@ -196,11 +297,10 @@ export default function PreviewPanel({
   }, [findCapable, isFindOpen]);
 
   useEffect(() => {
-    if (mode !== "edit" && isFindOpen) {
-      setIsFindOpen(false);
-      setActiveFindMatch(null);
+    if (mode !== "edit" && showReplace) {
+      setShowReplace(false);
     }
-  }, [isFindOpen, mode]);
+  }, [mode, showReplace]);
 
   useEffect(() => {
     if (copyState !== "copied") {
@@ -260,23 +360,121 @@ export default function PreviewPanel({
       }
 
       event.preventDefault();
-      setMode("edit");
       setIsFindOpen(true);
-      if (isReplaceShortcut) {
+      if (isReplaceShortcut && mode === "edit") {
         setShowReplace(true);
       } else if (!isFindOpen) {
         setShowReplace(false);
       }
       setFindFocusRequest(({ id }) => ({
         id: id + 1,
-        target: isReplaceShortcut ? "replace" : "find",
+        target: isReplaceShortcut && mode === "edit" ? "replace" : "find",
       }));
     }
 
     window.addEventListener("keydown", handleFindShortcut);
 
     return () => window.removeEventListener("keydown", handleFindShortcut);
-  }, [findCapable, isFindOpen]);
+  }, [findCapable, isFindOpen, mode]);
+
+  const effectiveMarkdown = entry?.editedMarkdown ?? entry?.markdown ?? "";
+  const canEditFromEmptyState = Boolean(
+    entry && (entry.isScratch || entry.editedMarkdown !== undefined),
+  );
+  const previewMarkdown = formatPreviewMarkdown(effectiveMarkdown);
+  const linkedinRefusal =
+    mode === "linkedin"
+      ? detectUnsupportedConstructs(effectiveMarkdown)
+      : null;
+  const linkedinPreview = linkedinRefusal
+    ? null
+    : mode === "linkedin"
+      ? formatLinkedInUnicode(effectiveMarkdown)
+      : null;
+  const showToggle = Boolean(
+    entry &&
+      (entry.status === "success" || entry.status === "warning") &&
+      (entry.markdown.length > 0 || canEditFromEmptyState),
+  );
+  const copyText =
+    mode === "linkedin"
+      ? linkedinRefusal
+        ? null
+        : linkedinPreview
+      : effectiveMarkdown;
+  const showCopyButton = showToggle && typeof copyText === "string";
+  const activeFindSource =
+    mode === "edit" ? effectiveMarkdown : renderedViewText;
+
+  useLayoutEffect(() => {
+    const element = renderedViewRef.current;
+
+    if (!element || mode === "edit") {
+      setRenderedViewText("");
+      return;
+    }
+
+    const nextText = element.textContent ?? "";
+    setRenderedViewText((current) => (current === nextText ? current : nextText));
+  }, [effectiveMarkdown, isFindOpen, linkedinPreview, mode, previewMarkdown]);
+
+  useLayoutEffect(() => {
+    const element = renderedViewRef.current;
+
+    if (!element || mode === "edit") {
+      return;
+    }
+
+    clearRenderedFindHighlight(element);
+
+    if (isFindOpen && activeFindMatch) {
+      applyRenderedFindHighlight(element, activeFindMatch);
+    }
+  }, [
+    activeFindMatch?.end,
+    activeFindMatch?.start,
+    activeFindMatch,
+    isFindOpen,
+    mode,
+    renderedViewText,
+  ]);
+
+  useLayoutEffect(() => {
+    const ratio = pendingModeScrollRatioRef.current;
+
+    if (ratio === null || activeFindMatch) {
+      return;
+    }
+
+    if (mode === "edit" && textareaRef.current) {
+      applyScrollRatio(textareaRef.current, ratio);
+      pendingModeScrollRatioRef.current = null;
+      return;
+    }
+
+    if (mode !== "edit" && renderedViewRef.current) {
+      applyScrollRatio(renderedViewRef.current, ratio);
+      pendingModeScrollRatioRef.current = null;
+    }
+  }, [activeFindMatch, mode]);
+
+  useLayoutEffect(() => {
+    if (
+      mode === "edit" &&
+      isFindOpen &&
+      activeFindMatch &&
+      textareaRef.current
+    ) {
+      scrollTextareaToMatch(textareaRef.current, effectiveMarkdown, activeFindMatch);
+    }
+  }, [
+    activeFindMatch?.end,
+    activeFindMatch?.start,
+    activeFindMatch,
+    effectiveMarkdown,
+    isFindOpen,
+    mode,
+  ]);
 
   if (!entry) {
     return (
@@ -326,10 +524,6 @@ export default function PreviewPanel({
     return <ErrorMessage message={entry.warnings[0] ?? "Conversion failed."} />;
   }
 
-  const effectiveMarkdown = entry.editedMarkdown ?? entry.markdown;
-  const canEditFromEmptyState =
-    entry.isScratch || entry.editedMarkdown !== undefined;
-
   if (entry.markdown.length === 0 && !canEditFromEmptyState) {
     return (
       <div className="preview-empty-state">
@@ -341,34 +535,32 @@ export default function PreviewPanel({
     );
   }
 
-  const previewMarkdown = formatPreviewMarkdown(effectiveMarkdown);
-  const linkedinRefusal =
-    mode === "linkedin"
-      ? detectUnsupportedConstructs(effectiveMarkdown)
-      : null;
-  const linkedinPreview = linkedinRefusal
-    ? null
-    : mode === "linkedin"
-      ? formatLinkedInUnicode(effectiveMarkdown)
-      : null;
-  const showToggle =
-    (entry.status === "success" || entry.status === "warning") &&
-    (entry.markdown.length > 0 || canEditFromEmptyState);
-  const copyText =
-    mode === "linkedin"
-      ? linkedinRefusal
-        ? null
-        : linkedinPreview
-      : effectiveMarkdown;
-  const showCopyButton = showToggle && typeof copyText === "string";
+  function rememberModeScrollPosition() {
+    if (mode === "edit" && textareaRef.current) {
+      pendingModeScrollRatioRef.current = scrollRatio(textareaRef.current);
+      return;
+    }
+
+    if (renderedViewRef.current) {
+      pendingModeScrollRatioRef.current = scrollRatio(renderedViewRef.current);
+    }
+  }
+
+  function switchMode(nextMode: "edit" | "preview" | "linkedin") {
+    if (nextMode === mode) {
+      return;
+    }
+
+    rememberModeScrollPosition();
+    setMode(nextMode);
+  }
 
   function openFind(replace = false) {
-    setMode("edit");
     setIsFindOpen(true);
-    setShowReplace(replace);
+    setShowReplace(replace && mode === "edit");
     setFindFocusRequest(({ id }) => ({
       id: id + 1,
-      target: replace ? "replace" : "find",
+      target: replace && mode === "edit" ? "replace" : "find",
     }));
   }
 
@@ -482,7 +674,13 @@ export default function PreviewPanel({
           </p>
         </div>
       ) : (
-        <pre className="linkedin-surface" aria-label="LinkedIn preview">
+        <pre
+          ref={(element) => {
+            renderedViewRef.current = element;
+          }}
+          className="linkedin-surface"
+          aria-label="LinkedIn preview"
+        >
           {segmentLinkedInPreview(linkedinPreview ?? "").map(
             ({ text, tone }, index) =>
               tone ? (
@@ -499,7 +697,13 @@ export default function PreviewPanel({
         </pre>
       )
     ) : (
-      <div className="markdown-surface" ref={previewRef}>
+      <div
+        className="markdown-surface"
+        ref={(element) => {
+          previewRef.current = element;
+          renderedViewRef.current = element;
+        }}
+      >
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{previewMarkdown}</ReactMarkdown>
       </div>
     );
@@ -517,7 +721,7 @@ export default function PreviewPanel({
               <button
                 type="button"
                 className={`preview-toggle-button${mode === "edit" ? " is-active" : ""}`}
-                onClick={() => setMode("edit")}
+                onClick={() => switchMode("edit")}
                 aria-pressed={mode === "edit"}
               >
                 Edit
@@ -525,7 +729,7 @@ export default function PreviewPanel({
               <button
                 type="button"
                 className={`preview-toggle-button${mode === "preview" ? " is-active" : ""}`}
-                onClick={() => setMode("preview")}
+                onClick={() => switchMode("preview")}
                 aria-pressed={mode === "preview"}
               >
                 Preview
@@ -534,7 +738,7 @@ export default function PreviewPanel({
                 <button
                   type="button"
                   className={`preview-toggle-button${mode === "linkedin" ? " is-active" : ""}`}
-                  onClick={() => setMode("linkedin")}
+                  onClick={() => switchMode("linkedin")}
                   aria-pressed={mode === "linkedin"}
                   aria-describedby="linkedin-toggle-tooltip"
                 >
@@ -622,14 +826,15 @@ export default function PreviewPanel({
         </div>
       ) : null}
 
-          {isFindOpen && mode === "edit" ? (
+          {isFindOpen ? (
             <FindReplaceBar
-              source={effectiveMarkdown}
+              source={activeFindSource}
               onSourceChange={(nextMarkdown) => onMarkdownChange?.(nextMarkdown)}
-              textareaRef={textareaRef}
+              textareaRef={mode === "edit" ? textareaRef : undefined}
               onClose={closeFind}
               showReplace={showReplace}
               onShowReplaceChange={setShowReplace}
+              allowReplace={mode === "edit"}
               focusRequest={findFocusRequest}
               onActiveMatchChange={setActiveFindMatch}
             />

@@ -6,6 +6,7 @@ For the other perspective, see [Dexter's Journal](../dexter-journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 036 | [Celebration: Mac License Verifier](036-celebrate-mac-license-verifier.md) | Offline verifier only, empty release trust by default, integer-second token dates, no issuer or checkout drift |
 | 035 | [Celebration: Phase 7b Issuer Spec](035-celebrate-phase-7b-issuer-spec.md) | Public/private issuer boundary, offline-first Mac verification, support/admin lookup, lifecycle-ready token claims, and one clean naming fix |
 | 034 | [Celebration: Mac License Notice Surface Correction](034-celebrate-mac-license-notice-surface-correction.md) | Custom About panel, native Third-Party Licenses window, release commit metadata, Help-menu cleanup, and one clean fixer pass |
 | 033 | [Celebration: Mac App License & Notice Surfacing](033-celebrate-mac-license-notice-surface.md) | Help menu Acknowledgments and License, About panel Credits, deterministic notice generator with a Vitest drift gate, and Reviewer B catching the four-dot bug everyone above missed |
