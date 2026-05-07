@@ -792,6 +792,7 @@ body.is-page-resizing * {
 }
 
 .file-list-item {
+  position: relative;
   flex: 1;
   min-width: 0;
   width: 100%;
@@ -843,6 +844,32 @@ body.is-page-resizing * {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.file-list-item-name-tooltip {
+  position: absolute;
+  top: 48px;
+  right: 18px;
+  left: 18px;
+  z-index: 2;
+  max-height: 9rem;
+  padding: 8px 10px;
+  overflow: auto;
+  border-radius: 8px;
+  background: rgba(20, 25, 31, 0.96);
+  box-shadow: 0 14px 30px rgba(27, 39, 49, 0.16);
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.25;
+  opacity: 0;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+
+.file-list-item:hover .file-list-item-name-tooltip,
+.file-list-item:focus-visible .file-list-item-name-tooltip {
+  opacity: 1;
 }
 
 .file-list-item-statuses {

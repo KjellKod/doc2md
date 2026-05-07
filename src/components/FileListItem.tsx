@@ -1,3 +1,4 @@
+import { useId } from "react";
 import type { FileEntry } from "../types";
 import type { SaveState } from "../types/saveState";
 import { entryDisplayName } from "../utils/displayName";
@@ -28,6 +29,8 @@ export default function FileListItem({
   onCheckedChange,
   onSelect,
 }: FileListItemProps) {
+  const fullNameTooltipId = useId();
+  const displayName = entryDisplayName(entry);
   const hasScratchContent =
     entry.isScratch &&
     (entry.editedMarkdown ?? entry.markdown).trim().length > 0;
@@ -48,7 +51,7 @@ export default function FileListItem({
           <input
             type="checkbox"
             checked={checked}
-            aria-label={`Select ${entryDisplayName(entry)}`}
+            aria-label={`Select ${displayName}`}
             onChange={(event) =>
               onCheckedChange(entry.id, event.currentTarget.checked)
             }
@@ -57,13 +60,21 @@ export default function FileListItem({
         <button
           type="button"
           className={`file-list-item${entry.selected ? " is-selected" : ""}`}
-          aria-label={`Open ${entryDisplayName(entry)}`}
+          aria-label={`Open ${displayName}`}
+          aria-describedby={fullNameTooltipId}
           onClick={() => onSelect(entry.id)}
         >
           <div className="file-list-item-top">
             <div className="file-list-item-name-group">
               <span className="file-list-item-name">
-                {entryDisplayName(entry)}
+                {displayName}
+              </span>
+              <span
+                id={fullNameTooltipId}
+                role="tooltip"
+                className="file-list-item-name-tooltip"
+              >
+                {displayName}
               </span>
               <FormatBadge format={entry.format} />
             </div>
