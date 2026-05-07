@@ -1,0 +1,23 @@
+src/components/PreviewPanel.test.tsx
+  s_69787eeda189de::t_f6b8f6d1317f27 661-663,665-667,670-677,679-688,690-725,823-825,827-829,831,833-854,856-871,873-926
+src/components/useFindReplace.ts
+  s_69787eeda189de::t_cc9dc2c0230e0e 347-350,352
+src/components/PreviewPanel.tsx
+  s_69787eeda189de::t_6af346077b256c 177-202,287
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "dd4945133d8c2dfe7e5cda2d6fbbbcb64a4195cc",
+  "prompts": {},
+  "sessions": {
+    "s_69787eeda189de": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019dffe9-9f33-7b23-baac-9beb7865ab20",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
