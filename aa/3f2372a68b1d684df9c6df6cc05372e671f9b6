@@ -1,0 +1,32 @@
+src/components/PreviewPanel.test.tsx
+  s_69787eeda189de::t_8072025f32f5d6 601,613-640,642-643,754,772,808,830,888,937,967,985,988,994,1002
+  s_69787eeda189de::t_ed0d09fa438057 660-679,683-753
+  s_69787eeda189de::t_c683ba5e9ffbb7 680-682
+src/components/PreviewPanel.tsx
+  s_69787eeda189de::t_281247c02ee41b 677,681-683,700-706,724,732,741,829,831,833,837
+  s_69787eeda189de::t_791a5568a920b5 380-477
+  s_69787eeda189de::t_6a6e02553aee8b 678-680
+  s_69787eeda189de::t_d9547d064cdda8 1,152-245
+  s_69787eeda189de::t_05786f662b68e2 538-556,560,563
+  s_69787eeda189de::t_39535df960a19e 265,273,276,288-289,300-301,303,364,371,378
+src/components/FindReplaceBar.tsx
+  s_69787eeda189de::t_e72e8e75360639 16,20,35,52,58,61,67,71,83,214-236,239
+src/styles/global.css
+  s_69787eeda189de::t_9e8853032a4b83 1750-1766
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "aa3f2372a68b1d684df9c6df6cc05372e671f9b6",
+  "prompts": {},
+  "sessions": {
+    "s_69787eeda189de": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019dffe9-9f33-7b23-baac-9beb7865ab20",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
