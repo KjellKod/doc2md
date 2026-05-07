@@ -657,6 +657,39 @@ describe("PreviewPanel", () => {
     );
   });
 
+  it("keeps the editor find highlight overlay aligned with the active match", async () => {
+    const { container } = render(
+      <PreviewPanel
+        entry={createEntry({
+          markdown: Array.from({ length: 80 }, (_, index) => `Line ${index}`).join(
+            "\n",
+          ),
+        })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    fireEvent.click(screen.getByRole("button", { name: "Find and replace" }));
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Find markdown text" }),
+      {
+        target: { value: "Line 40" },
+      },
+    );
+
+    await screen.findByText("1 of 1");
+
+    const editor = screen.getByRole("textbox", { name: "Edit markdown" });
+    const overlay = container.querySelector(
+      ".markdown-find-overlay",
+    ) as HTMLElement;
+    const highlight = container.querySelector(".markdown-find-highlight");
+
+    expect(highlight).toHaveTextContent("Line 40");
+    expect(editor.scrollTop).toBeGreaterThan(0);
+    expect(overlay.scrollTop).toBe(editor.scrollTop);
+  });
+
   it("opens edit mode near the active preview search match", async () => {
     render(
       <PreviewPanel
@@ -749,6 +782,37 @@ describe("PreviewPanel", () => {
         );
       }
     }
+  });
+
+  it("keeps preview highlighting visible when navigating rendered matches", async () => {
+    const { container } = render(
+      <PreviewPanel
+        entry={createEntry({
+          markdown: "**Beta** Gamma\n\n**Beta** Gamma",
+        })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Find and replace" }));
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Find markdown text" }),
+      {
+        target: { value: "Beta Gamma" },
+      },
+    );
+
+    await screen.findByText("1 of 2");
+    expect(
+      container.querySelector(".markdown-rendered-find-highlight"),
+    ).toHaveTextContent("Beta Gamma");
+
+    fireEvent.click(screen.getByRole("button", { name: "Next match" }));
+
+    await screen.findByText("2 of 2");
+    expect(
+      container.querySelector(".markdown-rendered-find-highlight"),
+    ).toHaveTextContent("Beta Gamma");
+    expect(container.querySelectorAll(".markdown-surface strong")).toHaveLength(2);
   });
 
   it("preserves scroll position while switching modes with an active search match", async () => {

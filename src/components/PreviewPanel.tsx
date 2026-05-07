@@ -183,10 +183,26 @@ function clearRenderedFindHighlight(root: HTMLElement) {
   );
 
   for (const highlight of highlights) {
-    highlight.replaceWith(document.createTextNode(highlight.textContent ?? ""));
+    if (highlight.classList.contains("markdown-rendered-find-highlight-zero")) {
+      highlight.remove();
+      continue;
+    }
+
+    highlight.replaceWith(...Array.from(highlight.childNodes));
   }
 
   root.normalize();
+  removeEmptyRenderedInlineElements(root);
+}
+
+function removeEmptyRenderedInlineElements(root: HTMLElement) {
+  const elements = Array.from(root.querySelectorAll("strong, em, span"));
+
+  for (const element of elements) {
+    if (element.textContent === "" && element.children.length === 0) {
+      element.remove();
+    }
+  }
 }
 
 function textNodesFor(root: HTMLElement) {
@@ -242,6 +258,7 @@ function applyRenderedFindHighlight(root: HTMLElement, match: FindMatch) {
     range.insertNode(highlight);
   }
 
+  removeEmptyRenderedInlineElements(root);
   highlight.scrollIntoView?.({ block: "center", inline: "nearest" });
 }
 
@@ -466,6 +483,7 @@ export default function PreviewPanel({
       textareaRef.current
     ) {
       scrollTextareaToMatch(textareaRef.current, effectiveMarkdown, activeFindMatch);
+      syncFindHighlightScroll();
     }
   }, [
     activeFindMatch?.end,
