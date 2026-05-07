@@ -1,0 +1,23 @@
+src/components/__tests__/FileListItem.test.tsx
+  s_69787eeda189de::t_6245e87cc6fc6d 1-43
+src/styles/global.css
+  s_69787eeda189de::t_45fc0e6c7a7c04 795,849-872
+src/components/FileListItem.tsx
+  s_69787eeda189de::t_bc769e86bc1996 1,32-33,54,63-64,70-77
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "45c2a20242892214e6df5399dcf73032385ff4ab",
+  "prompts": {},
+  "sessions": {
+    "s_69787eeda189de": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019dffe9-9f33-7b23-baac-9beb7865ab20",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
