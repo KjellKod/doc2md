@@ -29,13 +29,6 @@ struct LicenseWindow: View {
                 }
                 .disabled(token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
-                Button("Buy License") {}
-                    .disabled(true)
-                    .help("Purchases are not live yet.")
-
-                Text("Purchases are not live yet.")
-                    .foregroundStyle(.secondary)
-
                 Spacer()
             }
         }
@@ -46,14 +39,22 @@ struct LicenseWindow: View {
     private var stateDetails: String {
         switch licenseController.state {
         case .licensed(let license):
-            return "Licensed to \(license.claims.purchaser) for \(license.claims.tier)."
+            return "Licensed to \(licensedDisplayName(for: license)) for \(license.claims.tier)."
         case .unlicensed:
-            return "Enter your license key below. You can purchase one through doc2md.dev/store."
+            return "Enter your license token below. The app remains usable without a license."
         case .invalid(let reason):
             return reason
         case .licenseCheckFailed(let reason):
             return "\(reason) The app remains usable."
         }
+    }
+
+    private func licensedDisplayName(for license: VerifiedLicense) -> String {
+        let purchaser = license.claims.purchaser
+        guard let displayName = purchaser.displayName, !displayName.isEmpty else {
+            return purchaser.email
+        }
+        return "\(displayName) <\(purchaser.email)>"
     }
 
     private var title: String {

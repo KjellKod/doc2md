@@ -480,7 +480,7 @@ Distribution assumptions:
 - `doc2md.dev` has been purchased and should become the canonical public domain for the Mac app's commercial distribution surface. Keep the hosted web app separate unless a later phase intentionally changes that boundary.
 - Use direct signed/notarized DMG distribution first. Defer Mac App Store distribution unless future constraints justify the operational cost; a hybrid direct-DMG plus App Store path remains a future option.
 - Use Lemon Squeezy as the first-choice merchant of record and Paddle as fallback only. Do not build both for the MVP.
-- Purchases are not live in the MVP. Mac-only purchase affordances must be disabled, visibly unavailable, non-promotional, and unable to navigate or collect payment/license data until a later enabling change.
+- Purchases are not live in the MVP. Mac-only purchase affordances must be omitted or disabled, visibly unavailable, non-promotional, and unable to navigate or collect payment/license data until a later enabling change.
 - Before taking money, `KjellKod <kjell@candidtalentedge.com>` owns merchant account setup, tax/sales responsibility through the selected merchant path, refund/support workflow, license delivery, issuer secrets, customer/license records, and explicit go-live approval. `support@doc2md.dev` is the intended public customer-facing go-live support/contact alias.
 - Prefer a merchant-of-record style sales platform or store channel that handles tax collection/remittance, VAT/GST/sales-tax paperwork, invoices/receipts, and customer purchase records.
 - Keep pricing easy to understand. Working hypothesis, not a commitment: a low annual price around `$20/year`, plus an optional perpetual license that lasts until the next major paid upgrade.
@@ -491,6 +491,7 @@ Expected changes:
 - Add a lightweight licensing model for the Mac app only:
   - `Licensed`, `Unlicensed`, `Invalid`, and `License Check Failed` states. The MVP has no time-limited access state.
   - A local signed license token stored in non-syncing Keychain, with non-syncing Application Support fallback.
+  - Offline token parsing and signature verification happen in the Mac app with public verification keys only; issuer code, signing keys, merchant credentials, customer/license records, and network entitlement checks stay outside this public repo.
   - Occasional reminder for unlicensed users after successful save number 10 in a startup session, then every 25 successful saves in that same session.
   - A license entry window reachable from the app menu.
 - Add release-channel wording:
