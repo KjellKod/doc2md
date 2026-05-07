@@ -51,7 +51,8 @@ struct LicenseWindow: View {
 
     private func licensedDisplayName(for license: VerifiedLicense) -> String {
         let purchaser = license.claims.purchaser
-        guard let displayName = purchaser.displayName, !displayName.isEmpty else {
+        guard let displayName = purchaser.displayName?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !displayName.isEmpty else {
             return purchaser.email
         }
         return "\(displayName) <\(purchaser.email)>"
