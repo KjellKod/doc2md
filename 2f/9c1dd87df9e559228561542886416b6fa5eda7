@@ -1,0 +1,57 @@
+apps/macos/doc2mdTests/Licensing/LicenseVerifierTests.swift
+  s_69787eeda189de::t_ff35684bd0052b 95-96
+  s_69787eeda189de::t_24c90ca92509c0 6,8,15,17,21,36-38,71,74-79,81-83,94,97-105,131-196,218-224
+  s_69787eeda189de::t_334b13c3b94eee 197-217
+apps/macos/doc2md/Licensing/LicenseClaims.swift
+  s_69787eeda189de::t_8c5971ed6fed5d 3-24,29,32-33,35-37,46-47,49-51
+  s_69787eeda189de::t_28287e0fa901f7 53-79,82-136
+apps/macos/doc2md/Licensing/LicenseWindow.swift
+  s_69787eeda189de::t_716a7be9acddfd 42
+  s_69787eeda189de::t_8c5971ed6fed5d 44,52-57
+docs/dexter-journal/README.md
+  s_69787eeda189de::t_a6ec720a253053 9
+docs/quest-journal/mac-license-verifier_2026-05-07.md
+  s_69787eeda189de::t_c60acc13489b66 1-201
+docs/journal/README.md
+  s_69787eeda189de::t_2ecc3fde7a9473 9
+docs/dexter-journal/042-mac-license-verifier.md
+  s_69787eeda189de::t_af3f93990626ca 1-22
+apps/macos/doc2md/Licensing/LicensePublicKeys.swift
+  s_69787eeda189de::t_8c5971ed6fed5d 10
+docs/diary/2026-05-06.md
+  s_69787eeda189de::t_85c5bf1dda2b04 1-43
+docs/journal/036-celebrate-mac-license-verifier.md
+  s_cea333047735e9::t_c9219a3a26cb8a 1-79
+docs/quest-journal/README.md
+  s_69787eeda189de::t_c60acc13489b66 5
+apps/macos/doc2mdTests/Licensing/LicenseTestSupport.swift
+  s_69787eeda189de::t_35fb5a79b20a4c 77-78,114-115
+  s_69787eeda189de::t_ff35684bd0052b 42-45,48
+  s_69787eeda189de::t_edbe02c6662f13 59-65,71,74-76,79,81-83,85-88,92-113,116-149
+ideas/mac-desktop-app-roadmap.md
+  s_69787eeda189de::t_f2e0c3c39e4988 483,494
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "2f9c1dd87df9e559228561542886416b6fa5eda7",
+  "prompts": {},
+  "sessions": {
+    "s_69787eeda189de": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019dffe9-9f33-7b23-baac-9beb7865ab20",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_cea333047735e9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "678c1550-9c45-445c-ad4e-906d03a5d439",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
