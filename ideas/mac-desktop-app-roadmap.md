@@ -37,7 +37,7 @@ Commercial boundary:
 | 5c. Release CI, Signing, Notarization, DMG, Appcast Publish | done | PR #85 (`mac-release-ci_2026-04-25__0010`) | Tag-triggered macOS release workflow with a protected `mac-release` Environment: Developer ID signing, notarization, stapling, DMG, Sparkle ZIP + `sign_update`, appcast publish. The only phase that touches Apple or Sparkle secrets. | MVP ship |
 | 6. Editor and UI Refresh (cross-surface) | active | Phase 6a PR #86; Phase 6b PR #88 (`persistent-mode-switcher_2026-04-27__2355`); Phase 6c PR #87 (`save-control-ui_2026-04-27__1212`); Phase 6d PR #89 (`mac-find-replace_2026-04-28__0032`) | Hosted-web + Mac editor polish: app icon, persistent mode switcher, explicit save control, find/replace, accessibility audit, keyboard-shortcut help. Runs in parallel with Phase 5b+ because it does not touch the Mac shell contract. | MVP polish |
 | 7a. Desktop License Boundary | done | PR #103 (`dual-licensing-boundary_2026-05-01__2036`, `desktop-license-boundary_2026-05-03__0954`) | Keep `@doc2md/core`, hosted web, shared converters, and MIT-marked files MIT while making the Mac app and desktop-specific UI/bridge code source-visible shareware under `LicenseRef-doc2md-Desktop`. | Phase 7b |
-| 7b. Mac Commercial Distribution And License UX | active | `quest/phase-7b-distribution-decision`; [decision record](../docs/implementation/mac-commercial-distribution-decision-record.md) | Use a direct-DMG-first commercial launch, document operational ownership, and then add purchase/registration UX without changing the MIT web/npm surfaces or the evaluation-only shareware model. | Paid app launch |
+| 7b. Mac Commercial Distribution And License UX | active | `quest/phase-7b-distribution-decision`; [decision record](../docs/implementation/mac-commercial-distribution-decision-record.md); [issuer spec](../docs/implementation/mac-private-license-issuer-spec.md) | Use a direct-DMG-first commercial launch, document operational ownership, define the private issuer contract, and then add purchase/registration UX without changing the MIT web/npm surfaces or the evaluation-only shareware model. | Paid app launch |
 
 ## Next Work Candidates
 
@@ -45,7 +45,7 @@ With the Phase 7b decision record in place, the next work should stay split into
 
 1. **Phase 7b license issuer and purchase UX sequencing**
    - Status: planned after the [Phase 7b decision record](../docs/implementation/mac-commercial-distribution-decision-record.md).
-   - Scope: define the private issuer work, then add Mac-only purchase/registration UX that follows the decision record's go-live gate, hosted-web boundary, operational ownership, and evaluation-shareware constraints.
+   - Scope: use the [Phase 7b private issuer spec](../docs/implementation/mac-private-license-issuer-spec.md) as the public contract for later private issuer work, then add Mac-only purchase/registration UX that follows the decision record's go-live gate, hosted-web boundary, operational ownership, and evaluation-shareware constraints.
    - This is the next candidate because the distribution decision is now explicit; implementation should proceed in small issuer, commercial-docs, and Mac-only UX quests without expanding the hosted web or npm surfaces.
 
 ## Phase 0: Design And Roadmap
@@ -475,6 +475,7 @@ Keep the hosted web app and npm ecosystem MIT/free while giving the Mac app a cl
 Distribution assumptions:
 
 - The [Phase 7b decision record](../docs/implementation/mac-commercial-distribution-decision-record.md) is the binding commercial launch reference.
+- The [Phase 7b private issuer spec](../docs/implementation/mac-private-license-issuer-spec.md) is the public contract for issuer responsibilities, token claims, support/admin lookup boundaries, and offline-first Mac verification.
 - Do not put a Mac app upsell, pricing page, registration link, purchase link, or download CTA on the hosted web app until explicit commercial go-live approval.
 - `doc2md.dev` has been purchased and should become the canonical public domain for the Mac app's commercial distribution surface. Keep the hosted web app separate unless a later phase intentionally changes that boundary.
 - Use direct signed/notarized DMG distribution first. Defer Mac App Store distribution unless future constraints justify the operational cost; a hybrid direct-DMG plus App Store path remains a future option.

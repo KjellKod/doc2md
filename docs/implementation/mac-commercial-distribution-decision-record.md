@@ -4,7 +4,7 @@ Status: Accepted
 Owner: KjellKod <kjell@candidtalentedge.com>
 Date: 2026-05-06
 Roadmap: `ideas/mac-desktop-app-roadmap.md` Phase 7b
-Related: [Mac commercial distribution and licensing research](mac-commercial-distribution-and-licensing.md), [Mac desktop app roadmap](../../ideas/mac-desktop-app-roadmap.md)
+Related: [Mac commercial distribution and licensing research](mac-commercial-distribution-and-licensing.md), [Mac private license issuer spec](mac-private-license-issuer-spec.md), [Mac desktop app roadmap](../../ideas/mac-desktop-app-roadmap.md)
 
 ## Decision
 
@@ -80,7 +80,7 @@ Use the full name `Kjell Hedstrom` only if a person/legal name is required by a 
 ## Implementation Sequence
 
 1. Land this decision record as the binding Phase 7b reference.
-2. Define the private issuer outside this public repo: merchant webhook verification, license-token signing, customer/license support records, email or support delivery, restore behavior, and secret ownership.
+2. Define the private issuer outside this public repo using the [Mac private license issuer spec](mac-private-license-issuer-spec.md): merchant webhook verification, license-token signing, customer/license support records, email/support license recovery, key rotation, and secret ownership.
 3. Add Mac-only purchase/registration UX. Disabled scaffolding may land before go-live only when it visibly reads as unavailable and remains inert. Live navigation or purchase behavior waits for go-live approval.
 4. Publish commercial docs on `doc2md.dev`: privacy, terms, refund, support, restore, and license-delivery pages.
 5. Coordinate release go-live: public download/update links, release-pinned notices, merchant readiness, issuer readiness, and support readiness. Do not add ad hoc manual release edits.
@@ -89,6 +89,7 @@ Use the full name `Kjell Hedstrom` only if a person/legal name is required by a 
 
 Issuer follow-up acceptance criteria:
 
+- Future issuer work follows the [Mac private license issuer spec](mac-private-license-issuer-spec.md).
 - Issuer code, signing keys, merchant credentials, webhook secrets, customer/license records, and issuer data stay outside this public repo.
 - The issuer verifies merchant webhook signatures.
 - The issuer rejects unsigned or malformed webhook payloads.
