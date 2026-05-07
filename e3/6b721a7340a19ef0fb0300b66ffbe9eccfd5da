@@ -1,0 +1,28 @@
+src/components/FindReplaceBar.tsx
+  s_69787eeda189de::t_0bb6cf029036a8 42
+src/components/PreviewPanel.test.tsx
+  s_69787eeda189de::t_996ac4765461c6 728-731,733-735,738-740,742-772,774-789,1019
+  s_69787eeda189de::t_505e52b6fc1cf6 708
+  s_69787eeda189de::t_21e2919f5787d6 773,1007,1011
+src/components/PreviewPanel.tsx
+  s_69787eeda189de::t_b2d2d6630813ea 461,488,507
+  s_69787eeda189de::t_0fb43b07ed73a0 262-266,291-293,485-487,490,501-506,509-519
+  s_69787eeda189de::t_170aaaffb9f2ac 623
+  s_69787eeda189de::t_1df827825801b6 325,339,459-460,489,508,532-534,541-543
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "e36b721a7340a19ef0fb0300b66ffbe9eccfd5da",
+  "prompts": {},
+  "sessions": {
+    "s_69787eeda189de": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019dffe9-9f33-7b23-baac-9beb7865ab20",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
