@@ -323,6 +323,11 @@ export default function PreviewPanel({
   const findHighlightRef = useRef<HTMLPreElement | null>(null);
   const pendingModeScrollRatioRef = useRef<number | null>(null);
   const suppressMatchCenteringForModeSwitchRef = useRef(false);
+  const modeScrollRatiosRef = useRef({
+    edit: 0,
+    preview: 0,
+    linkedin: 0,
+  });
   const findCapable =
     entry !== null &&
     (entry.status === "success" || entry.status === "warning") &&
@@ -337,7 +342,30 @@ export default function PreviewPanel({
     setRenderedViewText("");
     pendingModeScrollRatioRef.current = null;
     suppressMatchCenteringForModeSwitchRef.current = false;
+    modeScrollRatiosRef.current = {
+      edit: 0,
+      preview: 0,
+      linkedin: 0,
+    };
   }, [entry?.id, entry?.isScratch]);
+
+  function rememberScrollRatioForMode(
+    viewMode: "edit" | "preview" | "linkedin",
+    element: HTMLElement,
+  ) {
+    modeScrollRatiosRef.current[viewMode] = scrollRatio(element);
+  }
+
+  function rememberLiveScrollRatioForMode(
+    viewMode: "edit" | "preview" | "linkedin",
+    element: HTMLElement,
+  ) {
+    const liveRatio = scrollRatio(element);
+
+    if (liveRatio !== 0 || modeScrollRatiosRef.current[viewMode] === 0) {
+      modeScrollRatiosRef.current[viewMode] = liveRatio;
+    }
+  }
 
   useEffect(() => {
     if (!findCapable && isFindOpen) {
@@ -605,13 +633,16 @@ export default function PreviewPanel({
 
   function rememberModeScrollPosition() {
     if (mode === "edit" && textareaRef.current) {
-      pendingModeScrollRatioRef.current = scrollRatio(textareaRef.current);
+      rememberLiveScrollRatioForMode("edit", textareaRef.current);
+      pendingModeScrollRatioRef.current = modeScrollRatiosRef.current.edit;
       return;
     }
 
     if (renderedViewRef.current) {
-      pendingModeScrollRatioRef.current = scrollRatio(renderedViewRef.current);
+      rememberLiveScrollRatioForMode(mode, renderedViewRef.current);
     }
+
+    pendingModeScrollRatioRef.current = modeScrollRatiosRef.current[mode];
   }
 
   function switchMode(nextMode: "edit" | "preview" | "linkedin") {
@@ -645,6 +676,26 @@ export default function PreviewPanel({
 
     findHighlightRef.current.scrollTop = textareaRef.current.scrollTop;
     findHighlightRef.current.scrollLeft = textareaRef.current.scrollLeft;
+  }
+
+  function handleEditorScroll() {
+    if (!textareaRef.current) {
+      return;
+    }
+
+    rememberScrollRatioForMode("edit", textareaRef.current);
+    syncFindHighlightScroll();
+  }
+
+  function handleRenderedViewScroll(
+    viewMode: "preview" | "linkedin",
+    element: HTMLElement | null,
+  ) {
+    if (!element) {
+      return;
+    }
+
+    rememberScrollRatioForMode(viewMode, element);
   }
 
   async function copyRenderedContent() {
@@ -729,7 +780,7 @@ export default function PreviewPanel({
           className="markdown-edit-area"
           value={effectiveMarkdown}
           onChange={(event) => onMarkdownChange?.(event.target.value)}
-          onScroll={syncFindHighlightScroll}
+          onScroll={handleEditorScroll}
           aria-label="Edit markdown"
         />
       </div>
@@ -749,6 +800,9 @@ export default function PreviewPanel({
           }}
           className="linkedin-surface"
           aria-label="LinkedIn preview"
+          onScroll={(event) =>
+            handleRenderedViewScroll("linkedin", event.currentTarget)
+          }
         >
           {segmentLinkedInPreview(linkedinPreview ?? "").map(
             ({ text, tone }, index) =>
@@ -772,6 +826,9 @@ export default function PreviewPanel({
           previewRef.current = element;
           renderedViewRef.current = element;
         }}
+        onScroll={(event) =>
+          handleRenderedViewScroll("preview", event.currentTarget)
+        }
       >
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{previewMarkdown}</ReactMarkdown>
       </div>
