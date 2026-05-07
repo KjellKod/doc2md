@@ -1,0 +1,19 @@
+apps/macos/doc2md/Licensing/LicenseWindow.swift
+  s_69787eeda189de::t_fefbdfbd0ad440 54-55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.1",
+  "base_commit_sha": "c8dc68726efa5e97adb9c20e52b55bd36ef4aed7",
+  "prompts": {},
+  "sessions": {
+    "s_69787eeda189de": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019dffe9-9f33-7b23-baac-9beb7865ab20",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
