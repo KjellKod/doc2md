@@ -174,7 +174,32 @@ function scrollTextareaToMatch(
   const linesBeforeMatch = source.slice(0, match.start).split("\n").length;
   const lineHeight = Number.parseFloat(getComputedStyle(textarea).lineHeight);
   const estimatedLineHeight = Number.isFinite(lineHeight) ? lineHeight : 20;
-  textarea.scrollTop = Math.max((linesBeforeMatch - 3) * estimatedLineHeight, 0);
+  const lineTop = (linesBeforeMatch - 1) * estimatedLineHeight;
+  const targetScroll =
+    lineTop - (textarea.clientHeight - estimatedLineHeight) / 2;
+
+  textarea.scrollTop = clampScrollTop(textarea, targetScroll);
+}
+
+function clampScrollTop(element: HTMLElement, scrollTop: number) {
+  const maxScroll = Math.max(element.scrollHeight - element.clientHeight, 0);
+
+  return Math.min(Math.max(scrollTop, 0), maxScroll);
+}
+
+function centerElementInScrollContainer(
+  container: HTMLElement,
+  element: HTMLElement,
+) {
+  const containerRect = container.getBoundingClientRect();
+  const elementRect = element.getBoundingClientRect();
+  const targetScroll =
+    container.scrollTop +
+    elementRect.top -
+    containerRect.top -
+    (container.clientHeight - elementRect.height) / 2;
+
+  container.scrollTop = clampScrollTop(container, targetScroll);
 }
 
 function clearRenderedFindHighlight(root: HTMLElement) {
@@ -259,7 +284,7 @@ function applyRenderedFindHighlight(root: HTMLElement, match: FindMatch) {
   }
 
   removeEmptyRenderedInlineElements(root);
-  highlight.scrollIntoView?.({ block: "center", inline: "nearest" });
+  centerElementInScrollContainer(root, highlight);
 }
 
 export default function PreviewPanel({

@@ -344,9 +344,12 @@ export function useFindReplace(
     const linesBeforeMatch = source.slice(0, activeMatch.start).split("\n").length;
     const lineHeight = Number.parseFloat(getComputedStyle(textarea).lineHeight);
     const estimatedLineHeight = Number.isFinite(lineHeight) ? lineHeight : 20;
-    const targetScroll = Math.max((linesBeforeMatch - 3) * estimatedLineHeight, 0);
+    const lineTop = (linesBeforeMatch - 1) * estimatedLineHeight;
+    const targetScroll =
+      lineTop - (textarea.clientHeight - estimatedLineHeight) / 2;
+    const maxScroll = Math.max(textarea.scrollHeight - textarea.clientHeight, 0);
 
-    textarea.scrollTop = targetScroll;
+    textarea.scrollTop = Math.min(Math.max(targetScroll, 0), maxScroll);
   }, [activeMatch, source]);
 
   return {

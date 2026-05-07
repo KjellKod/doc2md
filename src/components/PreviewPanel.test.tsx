@@ -658,36 +658,71 @@ describe("PreviewPanel", () => {
   });
 
   it("keeps the editor find highlight overlay aligned with the active match", async () => {
-    const { container } = render(
-      <PreviewPanel
-        entry={createEntry({
-          markdown: Array.from({ length: 80 }, (_, index) => `Line ${index}`).join(
-            "\n",
-          ),
-        })}
-      />,
+    const scrollHeightDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      "scrollHeight",
+    );
+    const clientHeightDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      "clientHeight",
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
-    fireEvent.click(screen.getByRole("button", { name: "Find and replace" }));
-    fireEvent.change(
-      screen.getByRole("textbox", { name: "Find markdown text" }),
-      {
-        target: { value: "Line 40" },
-      },
-    );
+    Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
+      configurable: true,
+      get: () => 1000,
+    });
+    Object.defineProperty(HTMLElement.prototype, "clientHeight", {
+      configurable: true,
+      get: () => 100,
+    });
 
-    await screen.findByText("1 of 1");
+    try {
+      const { container } = render(
+        <PreviewPanel
+          entry={createEntry({
+            markdown: Array.from({ length: 80 }, (_, index) => `Line ${index}`).join(
+              "\n",
+            ),
+          })}
+        />,
+      );
 
-    const editor = screen.getByRole("textbox", { name: "Edit markdown" });
-    const overlay = container.querySelector(
-      ".markdown-find-overlay",
-    ) as HTMLElement;
-    const highlight = container.querySelector(".markdown-find-highlight");
+      fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+      fireEvent.click(screen.getByRole("button", { name: "Find and replace" }));
+      fireEvent.change(
+        screen.getByRole("textbox", { name: "Find markdown text" }),
+        {
+          target: { value: "Line 40" },
+        },
+      );
 
-    expect(highlight).toHaveTextContent("Line 40");
-    expect(editor.scrollTop).toBeGreaterThan(0);
-    expect(overlay.scrollTop).toBe(editor.scrollTop);
+      await screen.findByText("1 of 1");
+
+      const editor = screen.getByRole("textbox", { name: "Edit markdown" });
+      const overlay = container.querySelector(
+        ".markdown-find-overlay",
+      ) as HTMLElement;
+      const highlight = container.querySelector(".markdown-find-highlight");
+
+      expect(highlight).toHaveTextContent("Line 40");
+      expect(editor.scrollTop).toBe(760);
+      expect(overlay.scrollTop).toBe(editor.scrollTop);
+    } finally {
+      if (scrollHeightDescriptor) {
+        Object.defineProperty(
+          HTMLElement.prototype,
+          "scrollHeight",
+          scrollHeightDescriptor,
+        );
+      }
+      if (clientHeightDescriptor) {
+        Object.defineProperty(
+          HTMLElement.prototype,
+          "clientHeight",
+          clientHeightDescriptor,
+        );
+      }
+    }
   });
 
   it("opens edit mode near the active preview search match", async () => {
@@ -785,34 +820,110 @@ describe("PreviewPanel", () => {
   });
 
   it("keeps preview highlighting visible when navigating rendered matches", async () => {
-    const { container } = render(
-      <PreviewPanel
-        entry={createEntry({
-          markdown: "**Beta** Gamma\n\n**Beta** Gamma",
-        })}
-      />,
+    const scrollHeightDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      "scrollHeight",
     );
-
-    fireEvent.click(screen.getByRole("button", { name: "Find and replace" }));
-    fireEvent.change(
-      screen.getByRole("textbox", { name: "Find markdown text" }),
-      {
-        target: { value: "Beta Gamma" },
-      },
+    const clientHeightDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      "clientHeight",
     );
+    const getBoundingClientRect = Element.prototype.getBoundingClientRect;
 
-    await screen.findByText("1 of 2");
-    expect(
-      container.querySelector(".markdown-rendered-find-highlight"),
-    ).toHaveTextContent("Beta Gamma");
+    Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
+      configurable: true,
+      get: () => 1000,
+    });
+    Object.defineProperty(HTMLElement.prototype, "clientHeight", {
+      configurable: true,
+      get: () => 100,
+    });
+    Element.prototype.getBoundingClientRect = function () {
+      if (this instanceof Element && this.classList.contains("markdown-surface")) {
+        return {
+          x: 0,
+          y: 100,
+          width: 100,
+          height: 100,
+          top: 100,
+          right: 100,
+          bottom: 200,
+          left: 0,
+          toJSON: () => ({}),
+        };
+      }
 
-    fireEvent.click(screen.getByRole("button", { name: "Next match" }));
+      if (
+        this instanceof Element &&
+        this.classList.contains("markdown-rendered-find-highlight")
+      ) {
+        return {
+          x: 0,
+          y: 260,
+          width: 80,
+          height: 20,
+          top: 260,
+          right: 80,
+          bottom: 280,
+          left: 0,
+          toJSON: () => ({}),
+        };
+      }
 
-    await screen.findByText("2 of 2");
-    expect(
-      container.querySelector(".markdown-rendered-find-highlight"),
-    ).toHaveTextContent("Beta Gamma");
-    expect(container.querySelectorAll(".markdown-surface strong")).toHaveLength(2);
+      return getBoundingClientRect.call(this);
+    };
+
+    try {
+      const { container } = render(
+        <PreviewPanel
+          entry={createEntry({
+            markdown: "**Beta** Gamma\n\n**Beta** Gamma",
+          })}
+        />,
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Find and replace" }));
+      fireEvent.change(
+        screen.getByRole("textbox", { name: "Find markdown text" }),
+        {
+          target: { value: "Beta Gamma" },
+        },
+      );
+
+      await screen.findByText("1 of 2");
+      const previewSurface = container.querySelector(
+        ".markdown-surface",
+      ) as HTMLElement;
+      expect(
+        container.querySelector(".markdown-rendered-find-highlight"),
+      ).toHaveTextContent("Beta Gamma");
+      expect(previewSurface.scrollTop).toBe(120);
+
+      fireEvent.click(screen.getByRole("button", { name: "Next match" }));
+
+      await screen.findByText("2 of 2");
+      expect(
+        container.querySelector(".markdown-rendered-find-highlight"),
+      ).toHaveTextContent("Beta Gamma");
+      expect(previewSurface.scrollTop).toBe(240);
+      expect(container.querySelectorAll(".markdown-surface strong")).toHaveLength(2);
+    } finally {
+      Element.prototype.getBoundingClientRect = getBoundingClientRect;
+      if (scrollHeightDescriptor) {
+        Object.defineProperty(
+          HTMLElement.prototype,
+          "scrollHeight",
+          scrollHeightDescriptor,
+        );
+      }
+      if (clientHeightDescriptor) {
+        Object.defineProperty(
+          HTMLElement.prototype,
+          "clientHeight",
+          clientHeightDescriptor,
+        );
+      }
+    }
   });
 
   it("preserves scroll position while switching modes with an active search match", async () => {
