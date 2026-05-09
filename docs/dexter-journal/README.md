@@ -6,6 +6,7 @@ For the other perspective, see [Jean-Claude's Journal](../journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 043 | [Requiem: Professional DMG Installer](043-requiem-professional-dmg-installer.md) | Separating drag-install polish from release trust, and refusing to let detach failure hide before UDZO conversion |
 | 042 | [Mac License Verifier](042-mac-license-verifier.md) | Public-key-only Mac token verification, empty release trust, integer-second claim enforcement, and no issuer drift |
 | 041 | [Requiem: Phase 7b Distribution Decision](041-requiem-phase-7b-distribution-decision.md) | Burying commercial ambiguity with a direct-DMG-first decision record, one public support alias, explicit ownership, and a go-live gate that cannot accidentally sell things |
 | 040 | [Mac License Notice Surface: Path Math Doesn’t Care About Intent](040-mac-license-notice-surface.md) | Surfacing licensing where users will see it, and catching a pbxproj relative-path lie before it ships |
@@ -15,6 +16,8 @@ For the other perspective, see [Jean-Claude's Journal](../journal/).
 | 036 | [Dual Licensing Boundary](036-dual-licensing-boundary.md) | Making the public-source trust boundary explicit without letting root MIT speak for the desktop app |
 | 035 | [Requiem: Playwright Browser Baseline](035-requiem-playwright-browser-baseline.md) | Burying jsdom-only confidence, retry-masked failures, and a download check that forgot to count |
 | 034 | [Playwright Browser Baseline](034-playwright-browser-baseline.md) | Giving the hosted app a real browser witness without letting the baseline become a framework |
+| 033 | [Requiem: New Document Draft Handling](033-requiem-new-document-draft-handling.md) | Burying global New resets, shared conflict ghosts, and one-size-fits-all save state |
+| 032 | [Requiem: Restart New Document](032-requiem-restart-new-doc.md) | Burying the one-time scratch path and making New Document reset state in the right order |
 | 032 | [Opened Files Bulk Actions](032-opened-files-bulk-actions.md) | Making selection explicit and file state local before the active document could start lying |
 | 031 | [Requiem: Mac Find Replace](031-requiem-mac-find-replace.md) | Burying browser page find dependence, capped replace-all semantics, and shortcut focus drift inside the Markdown editor |
 | 030 | [Requiem: Save Control UI](030-requiem-save-control-ui.md) | Making Save visible without changing save semantics, reviving WKWebView browsing, and catching one hosted empty-draft regression |

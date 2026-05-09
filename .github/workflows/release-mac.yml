@@ -194,7 +194,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/release-work"
           tar -C "$RUNNER_TEMP/release-work" -xzf "$RUNNER_TEMP/doc2md-build/doc2md-app.tar.gz"
 
-      - name: Sign app, notarize, staple, package DMG, and build Sparkle ZIP
+      - name: Sign app, notarize, package DMG, notarize DMG, and build Sparkle ZIP
         env:
           APP_PATH: ${{ runner.temp }}/release-work/doc2md.app
           VERSION: ${{ needs.build.outputs.version }}
@@ -220,6 +220,7 @@ jobs:
           fi
           bash scripts/release/notarize_mac_app.sh
           bash scripts/release/package_mac_dmg.sh
+          bash scripts/release/notarize_mac_dmg.sh
           bash scripts/release/package_sparkle_zip.sh
 
       - name: Upload signed package artifact
