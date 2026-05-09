@@ -1,0 +1,23 @@
+docs/journal/README.md
+  s_2ebef8d1285e5b::t_adfdcdc8edd17a 9
+docs/diary/2026-05-09.md
+  s_2ebef8d1285e5b::t_1b4166fd75536f 1-63
+docs/journal/037-celebrate-professional-dmg-installer.md
+  s_2ebef8d1285e5b::t_956ec7d9c0556c 1-88
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "4d335fb2612e61917f43b027578f6a6a08812462",
+  "prompts": {},
+  "sessions": {
+    "s_2ebef8d1285e5b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d33c79c9-fa5d-4926-874e-2a30e658c6f7",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
