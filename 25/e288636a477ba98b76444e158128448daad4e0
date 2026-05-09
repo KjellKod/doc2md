@@ -1,0 +1,68 @@
+src/components/__tests__/linkedinFormatting.lineMap.test.ts
+  s_a512ddf03d46a9::t_73b7b51421c846 1-59
+docs/dexter-journal/README.md
+  s_a512ddf03d46a9::t_68ee6d3608fa6b 9
+src/components/previewFormatting.ts
+  s_a512ddf03d46a9::t_45f0108bce4fc9 8-12,70-72,75-80,82,85,88-91,93-95,97-98,100-103,109-119,126,129-143,145,152-159,161-162,167,172-174,184,190,194,199,205,211,217,221,226,229-236,240-241,252,257,262,264,268,272-275
+tests/e2e/view-anchor-mode-switch.spec.ts
+  s_a512ddf03d46a9::t_f1cf21f67ad9d5 1-24,41-42,44-113,121,136,140,142-147,156,158-159,164-165,198-201,203-221,228-229,231-239,241-244,250-252,254-262,264-267,274-293,300-311,313-355,357-424
+  s_a512ddf03d46a9::t_40e148aad80140 148-155,157,160-163,166-197,202,222-227,240,248,263,271,294-299,312
+  s_a512ddf03d46a9::t_58aabeadfd3ac0 356
+  s_a512ddf03d46a9::t_12958eb56abacc 230,245-247,249,253,268-270,272-273
+  s_a512ddf03d46a9::t_a13d5f9bd5c3a2 25-40,43
+  s_a512ddf03d46a9::t_ffedf2351d7936 114-120,122-135,137-139,141
+src/components/linkedinFormatting.ts
+  s_a512ddf03d46a9::t_81ecc7ab422bce 285-295,300,303-309,315-320,324-325,328-329,333,336,342,346-349,353,356-359,361-362,365-367,388,394,401-404,414-419,425-426,433-436,444-447,455-458,462,467-475
+src/components/PreviewPanel.tsx
+  s_a512ddf03d46a9::t_026918d613d305 483
+  s_a512ddf03d46a9::t_0a251c8cc0cacb 426-428,433-435,437-438
+  s_a512ddf03d46a9::t_db7a0b2d1b35a6 330
+  s_a512ddf03d46a9::t_717d1f09bd300d 316
+  s_a512ddf03d46a9::t_2ce30bcad0758c 502
+  s_a512ddf03d46a9::t_22608f61140a30 518,520,525-532,540-541,546
+  s_a512ddf03d46a9::t_69643aefd790cd 607,616,620,628-634
+  s_a512ddf03d46a9::t_e67d2529512b05 609-613,617
+  s_a512ddf03d46a9::t_70fc2ceed5006c 11,14-21
+  s_a512ddf03d46a9::t_a22bf130279cad 773-778,780-781,783-794,796-799,810-815
+package.json
+  s_a512ddf03d46a9::t_72098714d08a69 22
+docs/diary/2026-05-09.md
+  s_a512ddf03d46a9::t_e4cbaf0a623645 1-125
+src/components/sourceLineRehype.ts
+  s_a512ddf03d46a9::t_221c37d6d6448c 1-52
+src/components/PreviewPanel.test.tsx
+  s_a512ddf03d46a9::t_8e8527227d19d5 729-738,742,745-748,753,755-785,789,791-798,800-801,805-811,814,817,823,825-826,828-830,832-833,837-843,846,849,854-860,862,865-869,871-872,876-887
+  s_a512ddf03d46a9::t_0cc5df04f2f4da 7
+  s_a512ddf03d46a9::t_fb50213738f5d6 352
+  s_a512ddf03d46a9::t_05fd9e670e5c7e 997-1003,1006-1009,1012,1015-1018,1026-1029,1031-1032
+src/components/__tests__/viewportAnchor.test.ts
+  s_a512ddf03d46a9::t_962a2df17e4fc0 1-374,378-380,397-423,439-579
+  s_a512ddf03d46a9::t_e7c958860efd71 375-377,381-396
+  s_a512ddf03d46a9::t_fc0bfcc4359885 424-438
+src/styles/global.css
+  s_a512ddf03d46a9::t_3faf9c6cd2fb4f 1822-1825
+src/components/__tests__/previewFormatting.lineMap.test.ts
+  s_a512ddf03d46a9::t_280b3cce61f110 1-100
+docs/dexter-journal/043-requiem-view-anchor-mode-switch.md
+  s_a512ddf03d46a9::t_8c39571dc1eaf5 1-160
+src/components/viewportAnchor.ts
+  s_a512ddf03d46a9::t_0066aa0d462a28 42-48,67,69-72
+  s_a512ddf03d46a9::t_c88cf8f62ae802 1-41,49-66,68,73-269,271,273-308
+  s_a512ddf03d46a9::t_2c08bca521d388 270,272
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "25e288636a477ba98b76444e158128448daad4e0",
+  "prompts": {},
+  "sessions": {
+    "s_a512ddf03d46a9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6a18c350-2d69-4a65-85de-7e4bf448394a",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
