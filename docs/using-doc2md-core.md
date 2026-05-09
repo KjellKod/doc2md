@@ -4,7 +4,7 @@
 
 - the live browser app at `https://kjellkod.github.io/doc2md/` for private, local-first conversion in the browser
 - the `@doc2md/core` package for Node, batch jobs, MCP tools, and automation
-- the portable `.skills/doc-to-markdown/` wrapper for repos that want an agent-friendly entrypoint backed by the same package
+- the portable `.skills/doc2md/` wrapper for repos that want an agent-friendly entrypoint backed by the same package
 
 ## Start Here
 
@@ -69,7 +69,7 @@ doc2md /absolute/path/resume.pdf -o ./out
 Skill-driven helper-script flow:
 
 ```bash
-node .skills/doc-to-markdown/scripts/convert-documents.mjs \
+node .skills/doc2md/scripts/convert-documents.mjs \
   --output-dir ./out \
   ./docs/resume.pdf
 ```
@@ -223,19 +223,19 @@ Remote URL handling:
 
 ## Portable Skill
 
-This repo also ships a portable skill wrapper at `.skills/doc-to-markdown/`.
+This repo also ships a portable skill wrapper at `.skills/doc2md/`.
 
 Suggested external-repo flow:
 
 1. Install `@doc2md/core` from the tarball in the target repo
-2. Copy `.skills/doc-to-markdown/` into your repo
+2. Copy `.skills/doc2md/` into your repo
 3. Review the portable skill section in [INSTALL.md](../INSTALL.md#portable-skill-wrapper) for host-specific setup notes
 4. Run the helper script or register the skill with your agent runtime
 
 Example helper-script invocation:
 
 ```bash
-node .skills/doc-to-markdown/scripts/convert-documents.mjs \
+node .skills/doc2md/scripts/convert-documents.mjs \
   --output-dir ./markdown-output \
   ./docs/resume.pdf \
   ./docs/notes.docx

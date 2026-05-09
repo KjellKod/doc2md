@@ -47,7 +47,7 @@ const result = await convertDocuments(
 );
 ```
 
-The package writes markdown files to disk and returns structured metadata about each document. If you want a copyable agent wrapper, use `.skills/doc-to-markdown/`, which delegates to the same package contract.
+The package writes markdown files to disk and returns structured metadata about each document. If you want a copyable agent wrapper, use `.skills/doc2md/`, which delegates to the same package contract.
 
 See [INSTALL.md](INSTALL.md) for global and project-local tarball install steps, and [Using `@doc2md/core`](docs/using-doc2md-core.md) for API examples, CLI usage, output behavior, and skill setup.
 
