@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ConversionQuality } from "../converters/types";
 import type { FileEntry } from "../types";
 import PreviewPanel from "./PreviewPanel";
+import * as viewportAnchor from "./viewportAnchor";
 
 class MockClipboardItem {
   readonly types: string[];
@@ -348,7 +349,7 @@ describe("PreviewPanel", () => {
     const plainBlob = await clipboardItem.getType("text/plain");
 
     expect(clipboardItem.types).toEqual(["text/html", "text/plain"]);
-    await expect(htmlBlob.text()).resolves.toContain("<h1>Hello World</h1>");
+    await expect(htmlBlob.text()).resolves.toContain("Hello World</h1>");
     await expect(plainBlob.text()).resolves.toBe("Hello World");
     expect(screen.getByText("Copied")).toBeInTheDocument();
   });
@@ -725,38 +726,130 @@ describe("PreviewPanel", () => {
     }
   });
 
-  it("opens edit mode at the current preview scroll location during search", async () => {
-    const scrollHeightDescriptor = Object.getOwnPropertyDescriptor(
-      HTMLElement.prototype,
-      "scrollHeight",
+  it("captures preview anchor and applies it to the editor on preview->edit", () => {
+    const topLineFromRendered = vi
+      .spyOn(viewportAnchor, "topLineFromRendered")
+      .mockReturnValue(42);
+    const scrollTextareaToLine = vi
+      .spyOn(viewportAnchor, "scrollTextareaToLine")
+      .mockImplementation(() => undefined);
+    const topLineFromTextareaMirror = vi.spyOn(
+      viewportAnchor,
+      "topLineFromTextareaMirror",
     );
-    const clientHeightDescriptor = Object.getOwnPropertyDescriptor(
-      HTMLElement.prototype,
-      "clientHeight",
-    );
-
-    Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
-      configurable: true,
-      get: () => 1000,
-    });
-    Object.defineProperty(HTMLElement.prototype, "clientHeight", {
-      configurable: true,
-      get: () => 100,
-    });
 
     try {
-      const { container } = render(
+      render(
+        <PreviewPanel
+          entry={createEntry({
+            markdown: Array.from(
+              { length: 80 },
+              (_, index) => `Line ${index}`,
+            ).join("\n"),
+          })}
+        />,
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+      expect(topLineFromRendered).toHaveBeenCalledTimes(1);
+      expect(topLineFromTextareaMirror).not.toHaveBeenCalled();
+      expect(scrollTextareaToLine).toHaveBeenCalledTimes(1);
+
+      const args = scrollTextareaToLine.mock.calls[0];
+      expect(args[3]).toBe(42);
+    } finally {
+      topLineFromRendered.mockRestore();
+      scrollTextareaToLine.mockRestore();
+      topLineFromTextareaMirror.mockRestore();
+    }
+  });
+
+  it("captures editor anchor and applies it to the preview surface on edit->preview", () => {
+    const topLineFromTextareaMirror = vi
+      .spyOn(viewportAnchor, "topLineFromTextareaMirror")
+      .mockReturnValue(17);
+    const scrollRenderedToLine = vi
+      .spyOn(viewportAnchor, "scrollRenderedToLine")
+      .mockImplementation(() => undefined);
+
+    try {
+      render(
+        <PreviewPanel
+          entry={createEntry({
+            markdown: Array.from(
+              { length: 80 },
+              (_, index) => `Line ${index}`,
+            ).join("\n"),
+          })}
+        />,
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+      fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+
+      // First call captures preview-mode (covered above). Editor capture
+      // happens on the edit→preview switch.
+      expect(topLineFromTextareaMirror).toHaveBeenCalledTimes(1);
+      expect(scrollRenderedToLine).toHaveBeenCalled();
+
+      const lastCall =
+        scrollRenderedToLine.mock.calls[scrollRenderedToLine.mock.calls.length - 1];
+      expect(lastCall[1]).toBe(17);
+    } finally {
+      topLineFromTextareaMirror.mockRestore();
+      scrollRenderedToLine.mockRestore();
+    }
+  });
+
+  it("captures editor anchor and applies it to the LinkedIn surface on edit->linkedin", () => {
+    const topLineFromTextareaMirror = vi
+      .spyOn(viewportAnchor, "topLineFromTextareaMirror")
+      .mockReturnValue(9);
+    const scrollRenderedToLine = vi
+      .spyOn(viewportAnchor, "scrollRenderedToLine")
+      .mockImplementation(() => undefined);
+
+    try {
+      render(
+        <PreviewPanel
+          entry={createEntry({
+            markdown: "# Hello World\n\n- First item\n- Second item",
+          })}
+        />,
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+      fireEvent.click(screen.getByRole("button", { name: "LinkedIn" }));
+
+      expect(topLineFromTextareaMirror).toHaveBeenCalledTimes(1);
+      expect(scrollRenderedToLine).toHaveBeenCalled();
+
+      const lastCall =
+        scrollRenderedToLine.mock.calls[scrollRenderedToLine.mock.calls.length - 1];
+      expect(lastCall[1]).toBe(9);
+    } finally {
+      topLineFromTextareaMirror.mockRestore();
+      scrollRenderedToLine.mockRestore();
+    }
+  });
+
+  it("still calls anchor helpers when a find match is active during a mode switch", async () => {
+    const topLineFromRendered = vi
+      .spyOn(viewportAnchor, "topLineFromRendered")
+      .mockReturnValue(3);
+    const scrollTextareaToLine = vi
+      .spyOn(viewportAnchor, "scrollTextareaToLine")
+      .mockImplementation(() => undefined);
+
+    try {
+      render(
         <PreviewPanel
           entry={createEntry({
             markdown: "Alpha\nBeta\nGamma",
           })}
         />,
       );
-
-      const previewSurface = container.querySelector(
-        ".markdown-surface",
-      ) as HTMLElement;
-      previewSurface.scrollTop = 450;
 
       fireEvent.click(screen.getByRole("button", { name: "Find and replace" }));
       fireEvent.change(
@@ -769,148 +862,29 @@ describe("PreviewPanel", () => {
       await screen.findByText("1 of 1");
       fireEvent.click(screen.getByRole("button", { name: "Edit" }));
 
-      const editor = screen.getByRole("textbox", { name: "Edit markdown" });
-      expect(editor.scrollTop).toBe(previewSurface.scrollTop);
+      expect(topLineFromRendered).toHaveBeenCalled();
+      expect(scrollTextareaToLine).toHaveBeenCalled();
+      const lastCall =
+        scrollTextareaToLine.mock.calls[scrollTextareaToLine.mock.calls.length - 1];
+      expect(lastCall[3]).toBe(3);
     } finally {
-      if (scrollHeightDescriptor) {
-        Object.defineProperty(
-          HTMLElement.prototype,
-          "scrollHeight",
-          scrollHeightDescriptor,
-        );
-      }
-      if (clientHeightDescriptor) {
-        Object.defineProperty(
-          HTMLElement.prototype,
-          "clientHeight",
-          clientHeightDescriptor,
-        );
-      }
+      topLineFromRendered.mockRestore();
+      scrollTextareaToLine.mockRestore();
     }
   });
 
-  it("preserves approximate scroll position when switching between preview and edit", () => {
-    const scrollHeightDescriptor = Object.getOwnPropertyDescriptor(
-      HTMLElement.prototype,
-      "scrollHeight",
-    );
-    const clientHeightDescriptor = Object.getOwnPropertyDescriptor(
-      HTMLElement.prototype,
-      "clientHeight",
-    );
-
-    Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
-      configurable: true,
-      get: () => 1000,
-    });
-    Object.defineProperty(HTMLElement.prototype, "clientHeight", {
-      configurable: true,
-      get: () => 100,
-    });
-
-    try {
-      const { container } = render(
-        <PreviewPanel
-          entry={createEntry({
-            markdown: Array.from({ length: 80 }, (_, index) => `Line ${index}`).join(
-              "\n",
-            ),
-          })}
-        />,
-      );
-
-      const previewSurface = container.querySelector(
-        ".markdown-surface",
-      ) as HTMLElement;
-      previewSurface.scrollTop = 450;
-
-      fireEvent.click(screen.getByRole("button", { name: "Edit" }));
-
-      const editor = screen.getByRole("textbox", { name: "Edit markdown" });
-      expect(editor.scrollTop).toBe(450);
-
-      editor.scrollTop = 720;
-      fireEvent.click(screen.getByRole("button", { name: "Preview" }));
-
-      const nextPreviewSurface = container.querySelector(
-        ".markdown-surface",
-      ) as HTMLElement;
-      expect(nextPreviewSurface.scrollTop).toBe(720);
-    } finally {
-      if (scrollHeightDescriptor) {
-        Object.defineProperty(
-          HTMLElement.prototype,
-          "scrollHeight",
-          scrollHeightDescriptor,
-        );
-      }
-      if (clientHeightDescriptor) {
-        Object.defineProperty(
-          HTMLElement.prototype,
-          "clientHeight",
-          clientHeightDescriptor,
-        );
-      }
-    }
-  });
-
-  it("uses remembered scroll position if the live view reads as top during a mode switch", () => {
-    const scrollHeightDescriptor = Object.getOwnPropertyDescriptor(
-      HTMLElement.prototype,
-      "scrollHeight",
-    );
-    const clientHeightDescriptor = Object.getOwnPropertyDescriptor(
-      HTMLElement.prototype,
-      "clientHeight",
+  it("renders preview blocks with data-source-line attributes", () => {
+    const { container } = render(
+      <PreviewPanel
+        entry={createEntry({
+          markdown: "# Title\n\nParagraph",
+        })}
+      />,
     );
 
-    Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
-      configurable: true,
-      get: () => 1000,
-    });
-    Object.defineProperty(HTMLElement.prototype, "clientHeight", {
-      configurable: true,
-      get: () => 100,
-    });
-
-    try {
-      const { container } = render(
-        <PreviewPanel
-          entry={createEntry({
-            markdown: Array.from({ length: 80 }, (_, index) => `Line ${index}`).join(
-              "\n",
-            ),
-          })}
-        />,
-      );
-
-      const previewSurface = container.querySelector(
-        ".markdown-surface",
-      ) as HTMLElement;
-      previewSurface.scrollTop = 450;
-      fireEvent.scroll(previewSurface);
-      previewSurface.scrollTop = 0;
-
-      fireEvent.click(screen.getByRole("button", { name: "Edit" }));
-
-      const editor = screen.getByRole("textbox", { name: "Edit markdown" });
-      expect(editor.scrollTop).toBe(450);
-    } finally {
-      if (scrollHeightDescriptor) {
-        Object.defineProperty(
-          HTMLElement.prototype,
-          "scrollHeight",
-          scrollHeightDescriptor,
-        );
-      }
-      if (clientHeightDescriptor) {
-        Object.defineProperty(
-          HTMLElement.prototype,
-          "clientHeight",
-          clientHeightDescriptor,
-        );
-      }
-    }
+    expect(
+      container.querySelector('[data-source-line="1"]'),
+    ).not.toBeNull();
   });
 
   it("keeps preview highlighting visible when navigating rendered matches", async () => {
@@ -1020,77 +994,42 @@ describe("PreviewPanel", () => {
     }
   });
 
-  it("preserves scroll position while switching modes with an active search match", async () => {
-    const scrollHeightDescriptor = Object.getOwnPropertyDescriptor(
-      HTMLElement.prototype,
-      "scrollHeight",
-    );
-    const clientHeightDescriptor = Object.getOwnPropertyDescriptor(
-      HTMLElement.prototype,
-      "clientHeight",
+  it("re-resolves anchor at apply time so a resize between switches still lands on the same source line", () => {
+    const topLineFromTextareaMirror = vi
+      .spyOn(viewportAnchor, "topLineFromTextareaMirror")
+      .mockReturnValue(50);
+    const scrollRenderedToLine = vi.spyOn(
+      viewportAnchor,
+      "scrollRenderedToLine",
     );
 
-    Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
-      configurable: true,
-      get: () => 1000,
-    });
-    Object.defineProperty(HTMLElement.prototype, "clientHeight", {
-      configurable: true,
-      get: () => 100,
-    });
+    // The destination container's actual layout may shift between capture
+    // and apply (e.g. window resize) — the anchor is a line, so the apply
+    // call still passes the captured source-line through unchanged.
+    scrollRenderedToLine.mockImplementation(() => undefined);
 
     try {
-      const { container } = render(
+      render(
         <PreviewPanel
           entry={createEntry({
-            markdown: Array.from({ length: 80 }, (_, index) => `Line ${index}`).join(
-              "\n",
-            ),
+            markdown: Array.from(
+              { length: 80 },
+              (_, index) => `Line ${index}`,
+            ).join("\n"),
           })}
         />,
       );
 
-      const previewSurface = container.querySelector(
-        ".markdown-surface",
-      ) as HTMLElement;
-      previewSurface.scrollTop = 450;
-      fireEvent.click(screen.getByRole("button", { name: "Find and replace" }));
-      fireEvent.change(
-        screen.getByRole("textbox", { name: "Find markdown text" }),
-        {
-          target: { value: "Line 40" },
-        },
-      );
-
-      await screen.findByText("1 of 1");
-      const expectedPreviewLocation = previewSurface.scrollTop;
       fireEvent.click(screen.getByRole("button", { name: "Edit" }));
-
-      const editor = screen.getByRole("textbox", { name: "Edit markdown" });
-      expect(editor.scrollTop).toBe(expectedPreviewLocation);
-
-      editor.scrollTop = 720;
       fireEvent.click(screen.getByRole("button", { name: "Preview" }));
 
-      const nextPreviewSurface = container.querySelector(
-        ".markdown-surface",
-      ) as HTMLElement;
-      expect(nextPreviewSurface.scrollTop).toBe(720);
+      expect(topLineFromTextareaMirror).toHaveBeenCalledTimes(1);
+      const callArgs =
+        scrollRenderedToLine.mock.calls[scrollRenderedToLine.mock.calls.length - 1];
+      expect(callArgs[1]).toBe(50);
     } finally {
-      if (scrollHeightDescriptor) {
-        Object.defineProperty(
-          HTMLElement.prototype,
-          "scrollHeight",
-          scrollHeightDescriptor,
-        );
-      }
-      if (clientHeightDescriptor) {
-        Object.defineProperty(
-          HTMLElement.prototype,
-          "clientHeight",
-          clientHeightDescriptor,
-        );
-      }
+      topLineFromTextareaMirror.mockRestore();
+      scrollRenderedToLine.mockRestore();
     }
   });
 

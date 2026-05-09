@@ -282,62 +282,89 @@ function bulletForLevel(level: number) {
   return BULLETS[Math.min(level, BULLETS.length - 1)];
 }
 
-function flushParagraph(buffer: string[], output: string[]) {
+interface ParagraphEntry {
+  text: string;
+  source: number;
+}
+
+interface OutputEntry {
+  text: string;
+  source: number;
+}
+
+function flushParagraph(buffer: ParagraphEntry[], output: OutputEntry[]) {
   if (buffer.length === 0) {
     return;
   }
 
-  const metadataMatches = buffer.map((line) => line.match(METADATA_LINE));
+  const metadataMatches = buffer.map((entry) => entry.text.match(METADATA_LINE));
 
   if (buffer.length >= 2 && metadataMatches.every(Boolean)) {
-    for (const match of metadataMatches) {
-      const [, label, value] = match!;
-      output.push(`• ${label.trim()}: ${renderInlineFormatting(value)}`);
+    for (let index = 0; index < metadataMatches.length; index += 1) {
+      const match = metadataMatches[index]!;
+      const [, label, value] = match;
+      output.push({
+        text: `• ${label.trim()}: ${renderInlineFormatting(value)}`,
+        source: buffer[index].source,
+      });
     }
     buffer.length = 0;
     return;
   }
 
-  output.push(renderInlineFormatting(buffer.join(" ")));
+  // Plain paragraph: combine all buffered lines into one output line.
+  // Source line is the first non-blank line in the buffer (buffer entries
+  // are already non-blank because blank lines flush the buffer in the
+  // caller).
+  const text = renderInlineFormatting(buffer.map((entry) => entry.text).join(" "));
+  output.push({ text, source: buffer[0].source });
   buffer.length = 0;
 }
 
-function collapseBlankLines(lines: string[]) {
-  const collapsed: string[] = [];
+function collapseOutputBlankLines(entries: OutputEntry[]): OutputEntry[] {
+  const collapsed: OutputEntry[] = [];
   let lastBlank = false;
 
-  for (const line of lines) {
-    const isBlank = line.trim().length === 0;
+  for (const entry of entries) {
+    const isBlank = entry.text.trim().length === 0;
 
     if (isBlank) {
       if (!lastBlank) {
-        collapsed.push("");
+        collapsed.push(entry);
       }
     } else {
-      collapsed.push(line);
+      collapsed.push(entry);
     }
 
     lastBlank = isBlank;
   }
 
-  while (collapsed[0]?.trim().length === 0) {
+  while (collapsed.length > 0 && collapsed[0].text.trim().length === 0) {
     collapsed.shift();
   }
 
-  while (collapsed.length > 0 && collapsed[collapsed.length - 1]?.trim().length === 0) {
+  while (
+    collapsed.length > 0 &&
+    collapsed[collapsed.length - 1].text.trim().length === 0
+  ) {
     collapsed.pop();
   }
 
-  return collapsed.join("\n");
+  return collapsed;
 }
 
-export function formatLinkedInUnicode(markdown: string) {
+export function formatLinkedInUnicodeWithLineMap(markdown: string): {
+  text: string;
+  originalLineFor: number[];
+} {
   const lines = markdown.split(/\r?\n/);
-  const output: string[] = [];
-  const paragraph: string[] = [];
+  const output: OutputEntry[] = [];
+  const paragraph: ParagraphEntry[] = [];
   let fenceChar: string | null = null;
 
-  for (const line of lines) {
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    const sourceLine = index + 1;
     const trimmed = line.trim();
     const fenceMatch = trimmed.match(FENCE_LINE);
 
@@ -358,20 +385,23 @@ export function formatLinkedInUnicode(markdown: string) {
     }
 
     if (fenceChar !== null) {
-      output.push(`  ${line}`);
+      output.push({ text: `  ${line}`, source: sourceLine });
       continue;
     }
 
     if (trimmed.length === 0) {
       flushParagraph(paragraph, output);
-      output.push("");
+      output.push({ text: "", source: sourceLine });
       continue;
     }
 
     const indentedCodeMatch = line.match(INDENTED_CODE_LINE);
     if (indentedCodeMatch) {
       flushParagraph(paragraph, output);
-      output.push(`  ${indentedCodeMatch[1]}`);
+      output.push({
+        text: `  ${indentedCodeMatch[1]}`,
+        source: sourceLine,
+      });
       continue;
     }
 
@@ -381,23 +411,29 @@ export function formatLinkedInUnicode(markdown: string) {
       const level = headingMatch[1].length;
       const text = renderInlineFormatting(headingMatch[2]);
 
-      output.push(text);
-      output.push(headingUnderline(text, level));
-      output.push("");
+      output.push({ text, source: sourceLine });
+      output.push({
+        text: headingUnderline(text, level),
+        source: sourceLine,
+      });
+      output.push({ text: "", source: sourceLine });
       continue;
     }
 
     if (HORIZONTAL_RULE_LINE.test(trimmed)) {
       flushParagraph(paragraph, output);
-      output.push("──────");
-      output.push("");
+      output.push({ text: "──────", source: sourceLine });
+      output.push({ text: "", source: sourceLine });
       continue;
     }
 
     const blockquoteMatch = line.match(BLOCKQUOTE_LINE);
     if (blockquoteMatch) {
       flushParagraph(paragraph, output);
-      output.push(`│ ${renderInlineFormatting(blockquoteMatch[1])}`);
+      output.push({
+        text: `│ ${renderInlineFormatting(blockquoteMatch[1])}`,
+        source: sourceLine,
+      });
       continue;
     }
 
@@ -405,9 +441,10 @@ export function formatLinkedInUnicode(markdown: string) {
     if (unorderedMatch) {
       flushParagraph(paragraph, output);
       const level = Math.floor(unorderedMatch[1].length / 2);
-      output.push(
-        `${"  ".repeat(level)}${bulletForLevel(level)} ${renderInlineFormatting(unorderedMatch[2])}`,
-      );
+      output.push({
+        text: `${"  ".repeat(level)}${bulletForLevel(level)} ${renderInlineFormatting(unorderedMatch[2])}`,
+        source: sourceLine,
+      });
       continue;
     }
 
@@ -415,16 +452,25 @@ export function formatLinkedInUnicode(markdown: string) {
     if (orderedMatch) {
       flushParagraph(paragraph, output);
       const level = Math.floor(orderedMatch[1].length / 2);
-      output.push(
-        `${"  ".repeat(level)}${orderedMatch[2]}. ${renderInlineFormatting(orderedMatch[3])}`,
-      );
+      output.push({
+        text: `${"  ".repeat(level)}${orderedMatch[2]}. ${renderInlineFormatting(orderedMatch[3])}`,
+        source: sourceLine,
+      });
       continue;
     }
 
-    paragraph.push(trimmed);
+    paragraph.push({ text: trimmed, source: sourceLine });
   }
 
   flushParagraph(paragraph, output);
 
-  return collapseBlankLines(output);
+  const collapsed = collapseOutputBlankLines(output);
+  const text = collapsed.map((entry) => entry.text).join("\n");
+  const originalLineFor = collapsed.map((entry) => entry.source);
+
+  return { text, originalLineFor };
+}
+
+export function formatLinkedInUnicode(markdown: string): string {
+  return formatLinkedInUnicodeWithLineMap(markdown).text;
 }
