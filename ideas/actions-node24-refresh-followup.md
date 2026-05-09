@@ -2,6 +2,8 @@
 
 ## Status
 
+Completed on the current branch. The remaining `actions/upload-artifact@v4` usage in `.github/workflows/ci.yml` was updated to the repo-standard artifact action version, and the stale root quest directory was moved under `.quest/archive/`.
+
 Quest: `actions-node24-refresh_2026-03-30__1255`
 
 Last recorded quest state:
@@ -23,19 +25,16 @@ Most workflow actions are already on newer major versions:
 - `actions/deploy-pages@v5`
 - `actions/upload-artifact@v7` in most places
 
-One remaining root CI usage still references `actions/upload-artifact@v4` for Playwright failure artifacts.
+The root CI Playwright artifact upload now uses the same current artifact action major as the rest of the repo.
 
 ## What Should Be Done
 
-1. Update the remaining `actions/upload-artifact@v4` usage in `.github/workflows/ci.yml` to the current repo-standard artifact action version.
-2. Run `python3 scripts/security_ci_guard.py`.
-3. Run or observe the next PR CI workflow and confirm the Node.js 20 action-runtime warning is gone.
-4. Archive `actions-node24-refresh_2026-03-30__1255` after that verification.
+Run or observe the next PR CI workflow and confirm the Node.js 20 action-runtime warning is gone.
 
 ## Why
 
-This is not product-facing, but it is worth closing because CI warnings hide real signal. The remaining work is small and keeps the workflow surface consistent with the rest of the repo. It also lets the old quest be archived based on current evidence instead of stale state.
+This is not product-facing, but it was worth closing because CI warnings hide real signal. The cleanup keeps the workflow surface consistent with the rest of the repo.
 
 ## Priority
 
-Low. This is a cleanup and CI hygiene item, not a release blocker unless GitHub starts failing older action runtimes.
+Closed as a cleanup and CI hygiene item.
