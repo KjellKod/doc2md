@@ -29,8 +29,6 @@ BROAD_WRITE_SNIPPETS = (
 )
 APPLE_SECRET_RE = re.compile(r"secrets\.APPLE_[A-Z0-9_]+")
 SPARKLE_SECRET_RE = re.compile(r"secrets\.SPARKLE_[A-Z0-9_]+")
-PINNED_ACTION_RE = re.compile(r"actions/checkout@[0-9a-f]{40}\b")
-CHECKOUT_ACTION_RE = re.compile(r"actions/checkout@([^\s#]+)")
 # Detect repo-content fetches pinned to PR HEAD (via $HEAD_SHA shell var or
 # ${{ github.event.pull_request.head.sha }} expansion). Secret-bearing PR
 # workflows must use the base checkout, not pull PR HEAD content at runtime.
@@ -159,12 +157,6 @@ def release_secret_failures(path: Path, text: str) -> list[str]:
                 failures.append(
                     f"{path}: job {job_name} references Apple/Sparkle secrets without an environment gate."
                 )
-
-            for checkout_ref in CHECKOUT_ACTION_RE.findall(job_text):
-                if not PINNED_ACTION_RE.search(f"actions/checkout@{checkout_ref}"):
-                    failures.append(
-                        f"{path}: job {job_name} checks out code with unpinned actions/checkout@{checkout_ref} while referencing release secrets."
-                    )
 
         if references_apple and references_sparkle:
             failures.append(

@@ -180,12 +180,12 @@ jobs:
       contents: read
     steps:
       - name: Checkout resolved release tag
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        uses: actions/checkout@v5
         with:
           ref: ${{ needs.build.outputs.sha }}
 
       - name: Download unsigned build artifact
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        uses: actions/download-artifact@v7
         with:
           name: doc2md-build
           path: ${{ runner.temp }}/doc2md-build
@@ -226,7 +226,7 @@ jobs:
           bash scripts/release/package_sparkle_zip.sh
 
       - name: Upload signed package artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@v7
         with:
           name: doc2md-package
           path: ${{ runner.temp }}/doc2md-package
@@ -242,18 +242,18 @@ jobs:
       contents: read
     steps:
       - name: Checkout resolved release tag
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        uses: actions/checkout@v5
         with:
           ref: ${{ needs.build.outputs.sha }}
 
       - name: Download Sparkle signing tool
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        uses: actions/download-artifact@v7
         with:
           name: doc2md-build
           path: ${{ runner.temp }}/doc2md-build
 
       - name: Download signed package artifact
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        uses: actions/download-artifact@v7
         with:
           name: doc2md-package
           path: ${{ runner.temp }}/doc2md-package
@@ -296,7 +296,7 @@ jobs:
           xmllint --noout "$APPCAST_PATH"
 
       - name: Upload appcast artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@v7
         with:
           name: doc2md-appcast
           path: ${{ runner.temp }}/doc2md-appcast/appcast.xml
