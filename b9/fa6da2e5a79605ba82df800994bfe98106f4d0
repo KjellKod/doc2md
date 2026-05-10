@@ -1,0 +1,31 @@
+.github/workflows/deploy-pages.yml
+  s_bf20507410f396::t_d6c48f79ddf2ba 3-4
+.github/workflows/release-mac.yml
+  s_bf20507410f396::t_22abf7ba9c2aa7 167
+  s_bf20507410f396::t_c464613b0df387 85
+  s_bf20507410f396::t_f88601c672f8f0 80,315
+  s_bf20507410f396::t_64ba8393eb5bb0 3-4
+  s_bf20507410f396::t_dbc9a1fa29f679 320,326
+.github/workflows/mac-pr-check.yml
+  s_bf20507410f396::t_499d816e355418 42
+  s_bf20507410f396::t_32d9e4089c731a 23
+  s_bf20507410f396::t_fbe473d2a0bce9 20
+.github/workflows/ci.yml
+  s_bf20507410f396::t_dd0fa6237f41a3 102
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "b9fa6da2e5a79605ba82df800994bfe98106f4d0",
+  "prompts": {},
+  "sessions": {
+    "s_bf20507410f396": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "50b10fff-7bc7-4d70-9b20-4f92a0dd1051",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
