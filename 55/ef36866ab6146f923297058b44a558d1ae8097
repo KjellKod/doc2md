@@ -1,0 +1,19 @@
+src/components/viewportAnchor.ts
+  s_a512ddf03d46a9::t_a8fdb6a222804d 17-37,137-139,141-145,170,218-223,244-264,293-304,306-315
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "55ef36866ab6146f923297058b44a558d1ae8097",
+  "prompts": {},
+  "sessions": {
+    "s_a512ddf03d46a9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6a18c350-2d69-4a65-85de-7e4bf448394a",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
