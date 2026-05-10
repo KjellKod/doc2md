@@ -284,9 +284,13 @@ rm -P sparkle-private.pem
 
 Only the public key is committed. To rotate the key, generate a new Sparkle key pair with `generate_keys` on a fresh maintainer machine, ship a transition release that can trust the new public key, update `SUPublicEDKey`, push the new private key to the `mac-release` Environment secret, and retire the old private key after the transition is complete. Back up the private key (e.g., to a password manager) so it is recoverable if the Keychain is lost.
 
+## Local Signed Release (Maintainer Only)
+
+For end-to-end validation of the signing/notarization pipeline before tagging, maintainers can run [`scripts/release/release_mac_local.sh`](../../scripts/release/release_mac_local.sh). The full procedure, prerequisites, environment variables, and licensing constraints live in [`docs/runbooks/release-mac-local.md`](../../docs/runbooks/release-mac-local.md). Locally signed builds are for evaluation and debugging only; distribution requires using the protected release workflow below.
+
 ## Protected Release Workflow
 
-Phase 5c adds [`.github/workflows/release-mac.yml`](../../.github/workflows/release-mac.yml). It runs only for canonical semver tags (`vX.Y.Z`) or a manual `workflow_dispatch` that names an existing canonical tag in `KjellKod/doc2md`. Secret-bearing jobs use the protected `mac-release` Environment.
+Phase 5c adds [`.github/workflows/release-mac.yml`](../../.github/workflows/release-mac.yml). It runs only for canonical semver tags (`X.Y.Z`) or a manual `workflow_dispatch` that names an existing canonical tag in `KjellKod/doc2md`. Secret-bearing jobs use the protected `mac-release` Environment.
 
 Required `mac-release` Environment secrets:
 
