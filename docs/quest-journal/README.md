@@ -2,6 +2,7 @@
 
 | Date | Quest | Outcome |
 |------|-------|---------|
+| 2026-05-09 | [professional-dmg-installer](professional-dmg-installer_2026-05-09.md) | Make the Mac DMG installer professional and release-ready. Current state: - `npm run build:dmg` builds an unsigned lo... |
 | 2026-05-07 | [mac-license-verifier](mac-license-verifier_2026-05-07.md) | The Mac app already has a local licensing module under `apps/macos/doc2md/Licensing`, including token parsing, Curve2... |
 | 2026-05-06 | [phase-7b-distribution-decision](phase-7b-distribution-decision_2026-05-06.md) | Added an accepted Phase 7b direct-DMG-first commercial distribution decision record, `doc2md.dev` public-surface contract, ownership/go-live gates, and follow-up issuer/UX acceptance criteria. |
 | 2026-05-04 | [mac-license-notice-surface](mac-license-notice-surface_2026-05-04.md) | $quest in a new worktree branch based off of main implement ideas/mac-app-license-and-notice-surfacing.md The user re... |
