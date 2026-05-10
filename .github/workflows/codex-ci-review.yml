@@ -16,11 +16,14 @@ jobs:
   codex-review:
     # Trusted execution rules:
     # - non-draft only: avoid running review on work in progress
-    # - trusted author only: restrict the write-capable flow to the maintainer account
+    # - trusted author AND trusted sender: PR creator must be the maintainer,
+    #   and so must whoever triggered THIS run (catches a non-author force-push
+    #   on synchronize events when a future co-maintainer exists)
     # - same-repo heads only: never run this secret-bearing workflow for forked PRs
     if: >-
       github.event.pull_request.draft == false &&
       github.event.pull_request.user.login == 'KjellKod' &&
+      github.event.sender.login == 'KjellKod' &&
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     environment: codex-ci-review
@@ -51,25 +54,21 @@ jobs:
             echo "skip_reason=" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Fetch review helpers from PR head
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      # SECURITY: Helper scripts come from the BASE checkout (already on disk),
+      # NOT from PR HEAD. Reason: a PR that modified scripts/codex_review_*.py
+      # or scripts/build_pr_head_files.py would otherwise have the modified
+      # version executed by this workflow with OPENAI_API_KEY available and
+      # GITHUB_TOKEN holding pull-requests: write. The same applies to the
+      # prompt template. Enforced by scripts/security_ci_guard.py — do not
+      # change this to fetch from $HEAD_SHA / pull_request.head.sha without
+      # also relaxing that gate, and do not relax that gate.
+      - name: Stage review helpers from base ref
         run: |
           mkdir -p /tmp/codex-review
-          gh api -H "Accept: application/vnd.github.raw" \
-            "repos/$REPO/contents/scripts/build_pr_head_files.py?ref=$HEAD_SHA" \
-            > /tmp/codex-review/build_pr_head_files.py
-          gh api -H "Accept: application/vnd.github.raw" \
-            "repos/$REPO/contents/scripts/codex_review_prepare.py?ref=$HEAD_SHA" \
-            > /tmp/codex-review/codex_review_prepare.py
-          gh api -H "Accept: application/vnd.github.raw" \
-            "repos/$REPO/contents/scripts/codex_review_post.py?ref=$HEAD_SHA" \
-            > /tmp/codex-review/codex_review_post.py
-          # Prompt template sourced from base ref (already checked out), not HEAD,
-          # so a PR cannot modify the reviewer instructions it will be judged by.
-          cp .github/codex-review-prompt.md /tmp/codex-review/codex-review-prompt.md
+          cp scripts/build_pr_head_files.py  /tmp/codex-review/
+          cp scripts/codex_review_prepare.py /tmp/codex-review/
+          cp scripts/codex_review_post.py    /tmp/codex-review/
+          cp .github/codex-review-prompt.md  /tmp/codex-review/codex-review-prompt.md
           chmod +x /tmp/codex-review/*.py
 
       - name: Prepare review context
