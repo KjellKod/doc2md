@@ -224,7 +224,10 @@ run_final_check() {
     printf '  \033[1;32m[PASS]\033[0m %s\n' "$label"
   else
     printf '  \033[1;31m[FAIL]\033[0m %s (exit %s)\n' "$label" "$status"
-    printf '         %s\n' "$output" | head -5 | sed 's/^/         /'
+    # `|| true` prevents set -o pipefail from converting head's SIGPIPE
+    # close into a non-zero pipeline status that set -e would honor and
+    # abort the script during failure-report formatting.
+    printf '%s\n' "$output" | head -n 5 | sed 's/^/         /' || true
   fi
   return "$status"
 }

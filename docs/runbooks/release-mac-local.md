@@ -29,9 +29,15 @@ Use the GitHub `release-mac` workflow (`gh workflow run release-mac.yml --ref ma
 | macOS with full Xcode | `xcodebuild -version` |
 | Node.js + npm + project dependencies installed | `npm ci` from repo root |
 | `gh` authenticated as you | `gh auth status` |
-| Apple Developer ID Application certificate **in your login Keychain** | `security find-identity -v -p codesigning \| grep "Developer ID Application"` |
+| Apple Developer ID Application certificate **in your login Keychain** | see code block below |
 | App Store Connect API key (`.p8` file) saved on disk | `ls -l "$APPLE_NOTARY_API_KEY_PATH"` |
 | App Store Connect Key ID and Issuer ID at hand | https://appstoreconnect.apple.com/access/api |
+
+To verify the Developer ID Application certificate is present in your login Keychain (the table cell above cannot hold this command unescaped because of the embedded pipe):
+
+```bash
+security find-identity -v -p codesigning | grep "Developer ID Application"
+```
 
 If the Developer ID certificate is not in your Keychain yet, import it from Apple Developer (Certificates → Developer ID Application → Download → double-click the `.cer` to install). The `.p8` notary key can only be downloaded once at creation time; if you have lost it, generate a new one in App Store Connect.
 
