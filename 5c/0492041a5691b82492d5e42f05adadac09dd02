@@ -1,0 +1,19 @@
+docs/diary/2026-05-10.md
+  s_bf20507410f396::t_1bdbf61584ca6c 1-57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "5c0492041a5691b82492d5e42f05adadac09dd02",
+  "prompts": {},
+  "sessions": {
+    "s_bf20507410f396": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "50b10fff-7bc7-4d70-9b20-4f92a0dd1051",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
