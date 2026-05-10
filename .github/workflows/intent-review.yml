@@ -30,16 +30,17 @@ jobs:
     timeout-minutes: 5
 
     steps:
-      - name: Fetch intent review helper from PR head
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      # Check out the BASE ref so the helper script comes from trusted code,
+      # not from the PR's HEAD. See SECURITY note in codex-ci-review.yml and
+      # the matching gate in scripts/security_ci_guard.py.
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+
+      - name: Stage intent review helper from base ref
         run: |
           mkdir -p /tmp/intent-review
-          gh api -H "Accept: application/vnd.github.raw" \
-            "repos/$REPO/contents/scripts/intent_review.py?ref=$HEAD_SHA" \
-            > /tmp/intent-review/intent_review.py
+          cp scripts/intent_review.py /tmp/intent-review/
           chmod +x /tmp/intent-review/intent_review.py
 
       - name: Run intent review

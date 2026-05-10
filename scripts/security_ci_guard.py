@@ -31,6 +31,13 @@ APPLE_SECRET_RE = re.compile(r"secrets\.APPLE_[A-Z0-9_]+")
 SPARKLE_SECRET_RE = re.compile(r"secrets\.SPARKLE_[A-Z0-9_]+")
 PINNED_ACTION_RE = re.compile(r"actions/checkout@[0-9a-f]{40}\b")
 CHECKOUT_ACTION_RE = re.compile(r"actions/checkout@([^\s#]+)")
+# Detect repo-content fetches pinned to PR HEAD (via $HEAD_SHA shell var or
+# ${{ github.event.pull_request.head.sha }} expansion). Secret-bearing PR
+# workflows must use the base checkout, not pull PR HEAD content at runtime.
+HEAD_SHA_REF_RE = re.compile(
+    r"\?ref=(?:\$HEAD_SHA"
+    r"|\$\{\{\s*github\.event\.pull_request\.head\.sha\s*\}\})"
+)
 JOB_HEADER_RE = re.compile(r"^  ([A-Za-z0-9_-]+):\s*(?:#.*)?$")
 JOB_ENVIRONMENT_RE = re.compile(r"^    environment\s*:", re.MULTILINE)
 SECRET_MATERIAL_MARKERS = (
@@ -209,6 +216,13 @@ def scan_workflow(path: Path) -> list[str]:
     if uses_checkout(text) and BASE_SHA_SNIPPET not in text:
         failures.append(
             f"{path}: secret-bearing PR workflow must checkout the trusted base SHA, not PR head code."
+        )
+
+    if HEAD_SHA_REF_RE.search(text):
+        failures.append(
+            f"{path}: secret-bearing PR workflow must not fetch repo content from PR HEAD "
+            f"(?ref=$HEAD_SHA / ?ref=${{{{ github.event.pull_request.head.sha }}}}). "
+            f"Use the base checkout instead."
         )
 
     return failures

@@ -189,7 +189,7 @@ Build a local unsigned DMG from the repo root:
 npm run build:dmg
 ```
 
-The command builds the Release `.app`, derives the version automatically from the repo's release-version helper, and writes:
+This is the local smoke path. The command builds the Release `.app`, derives the version automatically from the repo's release-version helper, applies the drag-to-Applications Finder layout, runs a mandatory DMG mount self-test for `doc2md.app` and `Applications`, and writes:
 
 ```text
 .build/release/doc2md-<version>.dmg
@@ -201,7 +201,7 @@ Dirty or unreleased local builds use a `-dev` version suffix. To force a specifi
 npm run build:dmg -- --version 0.1.0
 ```
 
-This local DMG is unsigned unless you pass `--signed` with a valid `CODESIGN_IDENTITY` already available. Public release DMGs should still come from the protected release workflow so signing, notarization, stapling, Sparkle ZIP signing, appcast generation, and asset upload happen together.
+This local DMG is unsigned and unnotarized unless you pass `--signed` with a valid `CODESIGN_IDENTITY` already available. Local dry-run packaging may fall back to an icon-only DMG after bounded Finder AppleScript exhaustion; release packaging treats the same failure as blocking. Public release DMGs should come from the protected release workflow so signing, notarization, stapling, Sparkle ZIP signing, appcast generation, and asset upload happen together.
 
 ## Launch Smoke
 
@@ -263,25 +263,34 @@ Production update hosting target: `updates.doc2md.dev` should be the stable publ
 The committed Sparkle public key is:
 
 ```text
-J7tl4vxYjEBbgB7HtuEteKnmv8rENwZnd7J1ThklvBs=
+cPKRRdnlQyTV2KNbvVoXz/Y6gZZDFr6WTbo2loWNWB8=
 ```
 
-This is the production `SUPublicEDKey`. The matching private EdDSA key must be stored only as the `SPARKLE_EDDSA_PRIVATE_KEY` secret in the protected `mac-release` GitHub Environment. It must not be committed, logged, or passed on a command line.
+This is the production `SUPublicEDKey`. The matching private EdDSA key is stored only as the `SPARKLE_EDDSA_PRIVATE_KEY` secret in the protected `mac-release` GitHub Environment. It must not be committed, logged, or passed on a command line.
 
-It was generated as an Ed25519 public key by extracting the raw 32-byte public key and base64-encoding it:
+The keypair was generated with Sparkle's own `generate_keys` tool, which stores the private Ed25519 key in the macOS Keychain on the maintainer's machine and prints the public key for embedding:
 
 ```bash
-tmpdir="$(mktemp -d)"
-openssl genpkey -algorithm Ed25519 -out "$tmpdir/doc2md-sparkle-test-private.pem"
-openssl pkey -in "$tmpdir/doc2md-sparkle-test-private.pem" -pubout -outform DER | tail -c 32 | openssl base64 -A
-rm -rf "$tmpdir"
+.build/mac/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_keys
+# Prints the public key. Private key is now in your login Keychain.
+
+# Export the private key once to send to the GitHub Environment secret.
+# Use stdin redirection so the key is never passed as a command-line
+# argument (process arguments are visible in `ps` output).
+.build/mac/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_keys -x sparkle-private.pem
+gh secret set SPARKLE_EDDSA_PRIVATE_KEY --env mac-release < sparkle-private.pem
+rm -P sparkle-private.pem
 ```
 
-Only the public key is committed. To rotate the key, generate a new Sparkle key pair with Sparkle's `generate_keys`, ship a transition release that can trust the new public key, update `SUPublicEDKey`, and retire the old private key from the protected Environment after the transition is complete.
+Only the public key is committed. To rotate the key, generate a new Sparkle key pair with `generate_keys` on a fresh maintainer machine, ship a transition release that can trust the new public key, update `SUPublicEDKey`, push the new private key to the `mac-release` Environment secret, and retire the old private key after the transition is complete. Back up the private key (e.g., to a password manager) so it is recoverable if the Keychain is lost.
+
+## Local Signed Release (Maintainer Only)
+
+For end-to-end validation of the signing/notarization pipeline before tagging, maintainers can run [`scripts/release/release_mac_local.sh`](../../scripts/release/release_mac_local.sh). The full procedure, prerequisites, environment variables, and licensing constraints live in [`docs/runbooks/release-mac-local.md`](../../docs/runbooks/release-mac-local.md). Locally signed builds are for evaluation and debugging only; distribution requires using the protected release workflow below.
 
 ## Protected Release Workflow
 
-Phase 5c adds [`.github/workflows/release-mac.yml`](../../.github/workflows/release-mac.yml). It runs only for canonical semver tags (`vX.Y.Z`) or a manual `workflow_dispatch` that names an existing canonical tag in `KjellKod/doc2md`. Secret-bearing jobs use the protected `mac-release` Environment.
+Phase 5c adds [`.github/workflows/release-mac.yml`](../../.github/workflows/release-mac.yml). It runs only for canonical semver tags (`X.Y.Z`) or a manual `workflow_dispatch` that names an existing canonical tag in `KjellKod/doc2md`. Secret-bearing jobs use the protected `mac-release` Environment.
 
 Required `mac-release` Environment secrets:
 
@@ -351,7 +360,26 @@ Protected release dispatch:
 gh workflow run release-mac.yml -f tag=v0.1.0
 ```
 
-Approve the `mac-release` Environment gate in GitHub Actions. The workflow signs and notarizes `doc2md.app`, staples the ticket, creates `doc2md-<version>.dmg`, creates and EdDSA-signs `doc2md-<version>.zip`, generates `appcast.xml`, creates the GitHub Release if needed, and uploads all three assets with `--clobber` for idempotent reruns.
+Approve the `mac-release` Environment gate in GitHub Actions. The workflow signs and notarizes `doc2md.app`, staples the app ticket, packages the polished `doc2md-<version>.dmg`, signs and notarizes the DMG, staples and validates the DMG ticket, creates and EdDSA-signs `doc2md-<version>.zip`, generates `appcast.xml`, creates the GitHub Release if needed, and uploads all three assets with `--clobber` for idempotent reruns. If Finder layout automation fails, use the [DMG AppleScript failure runbook](../../docs/runbooks/dmg-applescript-failure.md).
+
+Release artifact validation commands:
+
+```bash
+codesign --verify --deep --strict --verbose=2 /Applications/doc2md.app
+spctl --assess --type execute --verbose=4 /Applications/doc2md.app
+xcrun stapler validate /Applications/doc2md.app
+codesign --verify --strict --verbose=2 .build/release/doc2md-<version>.dmg
+xcrun stapler validate .build/release/doc2md-<version>.dmg
+spctl --assess --type open --context context:primary-signature --verbose=4 .build/release/doc2md-<version>.dmg
+hdiutil attach .build/release/doc2md-<version>.dmg
+hdiutil detach /Volumes/doc2md\ <version>
+```
+
+The DMG background source lives at `apps/macos/dmg/doc2md-dmg-background.png`. It is copied into the temporary DMG staging tree, not into the Xcode target, and should not exist at:
+
+```text
+.build/mac/Build/Products/Release/doc2md.app/Contents/Resources/doc2md-dmg-background.png
+```
 
 ## Manual Validation
 
@@ -367,5 +395,7 @@ Use these checks for this phase:
 8. Open a supported non-Markdown source file, confirm it converts into Markdown, Save As to `.md`, and verify subsequent saves update only the chosen Markdown target.
 9. Serve `apps/macos/doc2mdTests/Fixtures/Sparkle/appcast.xml`, launch with `DOC2MD_SPARKLE_FEED_URL`, and confirm `Check for Updates...` detects the fixture update.
 10. Stop the fixture server, launch again, and confirm offline launch is not blocked by Sparkle.
+11. `npm run build:dmg` creates `.build/release/doc2md-<version>.dmg`; the package script reports the mandatory self-test passed for `doc2md.app` and `Applications`.
+12. `test -f apps/macos/dmg/doc2md-dmg-background.png && test ! -e .build/mac/Build/Products/Release/doc2md.app/Contents/Resources/doc2md-dmg-background.png` passes after a Release build.
 
 If full Xcode is not available, record that the Mac app build and launch checks were not run. The command line tools package alone is not enough; `xcodebuild` must point at a full Xcode developer directory.
