@@ -263,21 +263,24 @@ Production update hosting target: `updates.doc2md.dev` should be the stable publ
 The committed Sparkle public key is:
 
 ```text
-J7tl4vxYjEBbgB7HtuEteKnmv8rENwZnd7J1ThklvBs=
+cPKRRdnlQyTV2KNbvVoXz/Y6gZZDFr6WTbo2loWNWB8=
 ```
 
-This is the production `SUPublicEDKey`. The matching private EdDSA key must be stored only as the `SPARKLE_EDDSA_PRIVATE_KEY` secret in the protected `mac-release` GitHub Environment. It must not be committed, logged, or passed on a command line.
+This is the production `SUPublicEDKey`. The matching private EdDSA key is stored only as the `SPARKLE_EDDSA_PRIVATE_KEY` secret in the protected `mac-release` GitHub Environment. It must not be committed, logged, or passed on a command line.
 
-It was generated as an Ed25519 public key by extracting the raw 32-byte public key and base64-encoding it:
+The keypair was generated with Sparkle's own `generate_keys` tool, which stores the private Ed25519 key in the macOS Keychain on the maintainer's machine and prints the public key for embedding:
 
 ```bash
-tmpdir="$(mktemp -d)"
-openssl genpkey -algorithm Ed25519 -out "$tmpdir/doc2md-sparkle-test-private.pem"
-openssl pkey -in "$tmpdir/doc2md-sparkle-test-private.pem" -pubout -outform DER | tail -c 32 | openssl base64 -A
-rm -rf "$tmpdir"
+.build/mac/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_keys
+# Prints the public key. Private key is now in your login Keychain.
+
+# Export the private key once to send to the GitHub Environment secret:
+.build/mac/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_keys -x sparkle-private.pem
+gh secret set SPARKLE_EDDSA_PRIVATE_KEY --env mac-release --body "$(cat sparkle-private.pem)"
+rm -P sparkle-private.pem
 ```
 
-Only the public key is committed. To rotate the key, generate a new Sparkle key pair with Sparkle's `generate_keys`, ship a transition release that can trust the new public key, update `SUPublicEDKey`, and retire the old private key from the protected Environment after the transition is complete.
+Only the public key is committed. To rotate the key, generate a new Sparkle key pair with `generate_keys` on a fresh maintainer machine, ship a transition release that can trust the new public key, update `SUPublicEDKey`, push the new private key to the `mac-release` Environment secret, and retire the old private key after the transition is complete. Back up the private key (e.g., to a password manager) so it is recoverable if the Keychain is lost.
 
 ## Protected Release Workflow
 
