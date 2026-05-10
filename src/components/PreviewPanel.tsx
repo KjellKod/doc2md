@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { FilePlus, Search } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -8,10 +8,17 @@ import { entryDisplayName } from "../utils/displayName";
 import ErrorMessage from "./ErrorMessage";
 import {
   detectUnsupportedConstructs,
-  formatLinkedInUnicode,
+  formatLinkedInUnicodeWithLineMap,
 } from "./linkedinFormatting";
 import PdfQualityIndicator from "./PdfQualityIndicator";
-import { formatPreviewMarkdown } from "./previewFormatting";
+import { formatPreviewMarkdownWithLineMap } from "./previewFormatting";
+import { sourceLineRehype } from "./sourceLineRehype";
+import {
+  scrollRenderedToLine,
+  scrollTextareaToLine,
+  topLineFromRendered,
+  topLineFromTextareaMirror,
+} from "./viewportAnchor";
 import SaveButton from "./SaveButton";
 import SaveStatePill from "./SaveStatePill";
 import FindReplaceBar from "./FindReplaceBar";
@@ -149,32 +156,47 @@ function renderFindHighlight(source: string, match: FindMatch | null) {
   );
 }
 
-function scrollRatio(element: HTMLElement) {
-  const maxScroll = element.scrollHeight - element.clientHeight;
-
-  if (maxScroll <= 0) {
-    return 0;
-  }
-
-  return element.scrollTop / maxScroll;
-}
-
-function applyScrollRatio(element: HTMLElement, ratio: number) {
-  const maxScroll = element.scrollHeight - element.clientHeight;
-  element.scrollTop = Math.max(maxScroll * ratio, 0);
-}
-
 function scrollTextareaToMatch(
   textarea: HTMLTextAreaElement,
   source: string,
   match: FindMatch,
 ) {
-  textarea.setSelectionRange(match.start, match.end);
+  // Place the caret at the end of the match with no selection so that
+  // when focus lands on the textarea (Escape from find, Tab, click) the
+  // user's next keystroke inserts after the match instead of replacing
+  // it. The visible highlight is painted by the find-overlay <mark>;
+  // it does not depend on the textarea's selection.
+  textarea.setSelectionRange(match.end, match.end);
 
   const linesBeforeMatch = source.slice(0, match.start).split("\n").length;
   const lineHeight = Number.parseFloat(getComputedStyle(textarea).lineHeight);
   const estimatedLineHeight = Number.isFinite(lineHeight) ? lineHeight : 20;
-  textarea.scrollTop = Math.max((linesBeforeMatch - 3) * estimatedLineHeight, 0);
+  const lineTop = (linesBeforeMatch - 1) * estimatedLineHeight;
+  const targetScroll =
+    lineTop - (textarea.clientHeight - estimatedLineHeight) / 2;
+
+  textarea.scrollTop = clampScrollTop(textarea, targetScroll);
+}
+
+function clampScrollTop(element: HTMLElement, scrollTop: number) {
+  const maxScroll = Math.max(element.scrollHeight - element.clientHeight, 0);
+
+  return Math.min(Math.max(scrollTop, 0), maxScroll);
+}
+
+function centerElementInScrollContainer(
+  container: HTMLElement,
+  element: HTMLElement,
+) {
+  const containerRect = container.getBoundingClientRect();
+  const elementRect = element.getBoundingClientRect();
+  const targetScroll =
+    container.scrollTop +
+    elementRect.top -
+    containerRect.top -
+    (container.clientHeight - elementRect.height) / 2;
+
+  container.scrollTop = clampScrollTop(container, targetScroll);
 }
 
 function clearRenderedFindHighlight(root: HTMLElement) {
@@ -183,10 +205,26 @@ function clearRenderedFindHighlight(root: HTMLElement) {
   );
 
   for (const highlight of highlights) {
-    highlight.replaceWith(document.createTextNode(highlight.textContent ?? ""));
+    if (highlight.classList.contains("markdown-rendered-find-highlight-zero")) {
+      highlight.remove();
+      continue;
+    }
+
+    highlight.replaceWith(...Array.from(highlight.childNodes));
   }
 
   root.normalize();
+  removeEmptyRenderedInlineElements(root);
+}
+
+function removeEmptyRenderedInlineElements(root: HTMLElement) {
+  const elements = Array.from(root.querySelectorAll("strong, em, span"));
+
+  for (const element of elements) {
+    if (element.textContent === "" && element.children.length === 0) {
+      element.remove();
+    }
+  }
 }
 
 function textNodesFor(root: HTMLElement) {
@@ -218,7 +256,11 @@ function findTextPosition(root: HTMLElement, offset: number) {
   return null;
 }
 
-function applyRenderedFindHighlight(root: HTMLElement, match: FindMatch) {
+function applyRenderedFindHighlight(
+  root: HTMLElement,
+  match: FindMatch,
+  centerMatch: boolean,
+) {
   const start = findTextPosition(root, match.start);
   const end = findTextPosition(root, match.end);
 
@@ -242,7 +284,10 @@ function applyRenderedFindHighlight(root: HTMLElement, match: FindMatch) {
     range.insertNode(highlight);
   }
 
-  highlight.scrollIntoView?.({ block: "center", inline: "nearest" });
+  removeEmptyRenderedInlineElements(root);
+  if (centerMatch) {
+    centerElementInScrollContainer(root, highlight);
+  }
 }
 
 export default function PreviewPanel({
@@ -273,7 +318,9 @@ export default function PreviewPanel({
   const renderedViewRef = useRef<HTMLElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const findHighlightRef = useRef<HTMLPreElement | null>(null);
-  const pendingModeScrollRatioRef = useRef<number | null>(null);
+  const toolbarRef = useRef<HTMLDivElement | null>(null);
+  const pendingAnchorLineRef = useRef<number | null>(null);
+  const suppressMatchCenteringForModeSwitchRef = useRef(false);
   const findCapable =
     entry !== null &&
     (entry.status === "success" || entry.status === "warning") &&
@@ -286,7 +333,8 @@ export default function PreviewPanel({
     setIsFindOpen(false);
     setActiveFindMatch(null);
     setRenderedViewText("");
-    pendingModeScrollRatioRef.current = null;
+    pendingAnchorLineRef.current = null;
+    suppressMatchCenteringForModeSwitchRef.current = false;
   }, [entry?.id, entry?.isScratch]);
 
   useEffect(() => {
@@ -381,16 +429,38 @@ export default function PreviewPanel({
   const canEditFromEmptyState = Boolean(
     entry && (entry.isScratch || entry.editedMarkdown !== undefined),
   );
-  const previewMarkdown = formatPreviewMarkdown(effectiveMarkdown);
-  const linkedinRefusal =
-    mode === "linkedin"
-      ? detectUnsupportedConstructs(effectiveMarkdown)
-      : null;
-  const linkedinPreview = linkedinRefusal
-    ? null
-    : mode === "linkedin"
-      ? formatLinkedInUnicode(effectiveMarkdown)
-      : null;
+  // Heavy work: full-document parsing, line-mapping, refusal scanning,
+  // and rehype plugin instantiation. Memoize on `effectiveMarkdown`
+  // (and mode where applicable) so a parent re-render — including a
+  // mode switch that doesn't change the source — does not re-parse
+  // the whole document. Without these memos a multi-thousand-line
+  // doc takes several seconds to switch into preview because every
+  // render builds a fresh rehype plugin reference, which busts
+  // ReactMarkdown's internal parse cache.
+  const previewWithLineMap = useMemo(
+    () => formatPreviewMarkdownWithLineMap(effectiveMarkdown),
+    [effectiveMarkdown],
+  );
+  const previewMarkdown = previewWithLineMap.markdown;
+  const previewOriginalLineFor = previewWithLineMap.originalLineFor;
+  const previewRehypePlugins = useMemo(
+    () => [sourceLineRehype(previewOriginalLineFor)],
+    [previewOriginalLineFor],
+  );
+  const linkedinRefusal = useMemo(
+    () =>
+      mode === "linkedin" ? detectUnsupportedConstructs(effectiveMarkdown) : null,
+    [effectiveMarkdown, mode],
+  );
+  const linkedinWithLineMap = useMemo(
+    () =>
+      linkedinRefusal === null && mode === "linkedin"
+        ? formatLinkedInUnicodeWithLineMap(effectiveMarkdown)
+        : null,
+    [effectiveMarkdown, linkedinRefusal, mode],
+  );
+  const linkedinPreview = linkedinWithLineMap?.text ?? null;
+  const linkedinOriginalLineFor = linkedinWithLineMap?.originalLineFor ?? [];
   const showToggle = Boolean(
     entry &&
       (entry.status === "success" || entry.status === "warning") &&
@@ -405,6 +475,10 @@ export default function PreviewPanel({
   const showCopyButton = showToggle && typeof copyText === "string";
   const activeFindSource =
     mode === "edit" ? effectiveMarkdown : renderedViewText;
+
+  function shouldCenterActiveMatch() {
+    return !suppressMatchCenteringForModeSwitchRef.current;
+  }
 
   useLayoutEffect(() => {
     const element = renderedViewRef.current;
@@ -428,7 +502,12 @@ export default function PreviewPanel({
     clearRenderedFindHighlight(element);
 
     if (isFindOpen && activeFindMatch) {
-      applyRenderedFindHighlight(element, activeFindMatch);
+      applyRenderedFindHighlight(
+        element,
+        activeFindMatch,
+        pendingAnchorLineRef.current === null &&
+          shouldCenterActiveMatch(),
+      );
     }
   }, [
     activeFindMatch?.end,
@@ -440,32 +519,16 @@ export default function PreviewPanel({
   ]);
 
   useLayoutEffect(() => {
-    const ratio = pendingModeScrollRatioRef.current;
-
-    if (ratio === null || activeFindMatch) {
-      return;
-    }
-
-    if (mode === "edit" && textareaRef.current) {
-      applyScrollRatio(textareaRef.current, ratio);
-      pendingModeScrollRatioRef.current = null;
-      return;
-    }
-
-    if (mode !== "edit" && renderedViewRef.current) {
-      applyScrollRatio(renderedViewRef.current, ratio);
-      pendingModeScrollRatioRef.current = null;
-    }
-  }, [activeFindMatch, mode]);
-
-  useLayoutEffect(() => {
     if (
       mode === "edit" &&
       isFindOpen &&
       activeFindMatch &&
-      textareaRef.current
+      textareaRef.current &&
+      pendingAnchorLineRef.current === null &&
+      shouldCenterActiveMatch()
     ) {
       scrollTextareaToMatch(textareaRef.current, effectiveMarkdown, activeFindMatch);
+      syncFindHighlightScroll();
     }
   }, [
     activeFindMatch?.end,
@@ -475,6 +538,40 @@ export default function PreviewPanel({
     isFindOpen,
     mode,
   ]);
+
+  useLayoutEffect(() => {
+    const anchorLine = pendingAnchorLineRef.current;
+
+    if (anchorLine === null) {
+      return;
+    }
+
+    const floor = viewportTopFloor();
+
+    if (mode === "edit" && textareaRef.current) {
+      scrollTextareaToLine(
+        textareaRef.current,
+        findHighlightRef.current,
+        effectiveMarkdown,
+        anchorLine,
+        floor,
+      );
+      syncFindHighlightScroll();
+      pendingAnchorLineRef.current = null;
+      window.setTimeout(() => {
+        suppressMatchCenteringForModeSwitchRef.current = false;
+      }, 0);
+      return;
+    }
+
+    if (mode !== "edit" && renderedViewRef.current) {
+      scrollRenderedToLine(renderedViewRef.current, anchorLine, floor);
+      pendingAnchorLineRef.current = null;
+      window.setTimeout(() => {
+        suppressMatchCenteringForModeSwitchRef.current = false;
+      }, 0);
+    }
+  }, [activeFindMatch, effectiveMarkdown, mode]);
 
   if (!entry) {
     return (
@@ -535,15 +632,27 @@ export default function PreviewPanel({
     );
   }
 
-  function rememberModeScrollPosition() {
+  function viewportTopFloor(): number {
+    return toolbarRef.current?.getBoundingClientRect().bottom ?? 0;
+  }
+
+  function captureAnchorLine(): number | null {
+    const floor = viewportTopFloor();
+
     if (mode === "edit" && textareaRef.current) {
-      pendingModeScrollRatioRef.current = scrollRatio(textareaRef.current);
-      return;
+      return topLineFromTextareaMirror(
+        textareaRef.current,
+        findHighlightRef.current,
+        effectiveMarkdown,
+        floor,
+      );
     }
 
-    if (renderedViewRef.current) {
-      pendingModeScrollRatioRef.current = scrollRatio(renderedViewRef.current);
+    if (mode !== "edit" && renderedViewRef.current) {
+      return topLineFromRendered(renderedViewRef.current, floor);
     }
+
+    return null;
   }
 
   function switchMode(nextMode: "edit" | "preview" | "linkedin") {
@@ -551,7 +660,14 @@ export default function PreviewPanel({
       return;
     }
 
-    rememberModeScrollPosition();
+    const captured = captureAnchorLine();
+    if (captured !== null) {
+      pendingAnchorLineRef.current = captured;
+    }
+    // If we can't capture (e.g. linkedin refusal screen has no rendered
+    // ref), preserve any existing pending anchor so the user lands back
+    // at where they were before the refusal interlude.
+    suppressMatchCenteringForModeSwitchRef.current = activeFindMatch !== null;
     setMode(nextMode);
   }
 
@@ -576,6 +692,14 @@ export default function PreviewPanel({
 
     findHighlightRef.current.scrollTop = textareaRef.current.scrollTop;
     findHighlightRef.current.scrollLeft = textareaRef.current.scrollLeft;
+  }
+
+  function handleEditorScroll() {
+    if (!textareaRef.current) {
+      return;
+    }
+
+    syncFindHighlightScroll();
   }
 
   async function copyRenderedContent() {
@@ -660,7 +784,7 @@ export default function PreviewPanel({
           className="markdown-edit-area"
           value={effectiveMarkdown}
           onChange={(event) => onMarkdownChange?.(event.target.value)}
-          onScroll={syncFindHighlightScroll}
+          onScroll={handleEditorScroll}
           aria-label="Edit markdown"
         />
       </div>
@@ -681,19 +805,33 @@ export default function PreviewPanel({
           className="linkedin-surface"
           aria-label="LinkedIn preview"
         >
-          {segmentLinkedInPreview(linkedinPreview ?? "").map(
-            ({ text, tone }, index) =>
-              tone ? (
+          {(linkedinPreview ?? "").split("\n").map((line, lineIndex, all) => {
+            const sourceLine =
+              linkedinOriginalLineFor[lineIndex] ?? lineIndex + 1;
+            const segments = segmentLinkedInPreview(line);
+            return (
+              <span key={`linkedin-line-${lineIndex}`}>
                 <span
-                  key={`${tone}-${index}`}
-                  className={`linkedin-emphasis linkedin-emphasis-${tone}`}
+                  className="linkedin-line"
+                  data-source-line={String(sourceLine)}
                 >
-                  {text}
+                  {segments.map(({ text, tone }, segmentIndex) =>
+                    tone ? (
+                      <span
+                        key={`${tone}-${segmentIndex}`}
+                        className={`linkedin-emphasis linkedin-emphasis-${tone}`}
+                      >
+                        {text}
+                      </span>
+                    ) : (
+                      <span key={`plain-${segmentIndex}`}>{text}</span>
+                    ),
+                  )}
                 </span>
-              ) : (
-                <span key={`plain-${index}`}>{text}</span>
-              ),
-          )}
+                {lineIndex < all.length - 1 ? "\n" : null}
+              </span>
+            );
+          })}
         </pre>
       )
     ) : (
@@ -704,14 +842,19 @@ export default function PreviewPanel({
           renderedViewRef.current = element;
         }}
       >
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{previewMarkdown}</ReactMarkdown>
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          rehypePlugins={previewRehypePlugins}
+        >
+          {previewMarkdown}
+        </ReactMarkdown>
       </div>
     );
 
   return (
     <div className="preview-body">
       {showToggle || showCopyButton || onSave ? (
-        <div className="preview-toolbar">
+        <div ref={toolbarRef} className="preview-toolbar">
           {showToggle ? (
             <div
               className="preview-toggle"

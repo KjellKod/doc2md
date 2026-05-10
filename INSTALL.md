@@ -125,8 +125,8 @@ same `@doc2md/core` package contract.
 ### Repo-local setup
 
 1. Install `@doc2md/core` in the target repo from the tarball
-2. Copy `.skills/doc-to-markdown/` into that repo
-3. Point your agent or repo instructions at `.skills/doc-to-markdown/SKILL.md`
+2. Copy `.skills/doc2md/` into that repo
+3. Point your agent or repo instructions at `.skills/doc2md/SKILL.md`
 
 Project-local install:
 
@@ -137,7 +137,7 @@ npm install /absolute/path/to/doc2md-core-<derived-version>.tgz
 Direct helper invocation:
 
 ```bash
-node .skills/doc-to-markdown/scripts/convert-documents.mjs \
+node .skills/doc2md/scripts/convert-documents.mjs \
   --output-dir ./markdown-output \
   ./docs/resume.pdf
 ```
@@ -145,7 +145,7 @@ node .skills/doc-to-markdown/scripts/convert-documents.mjs \
 ### Claude app custom skill
 
 If your Claude host supports uploaded custom skills, package the
-`.skills/doc-to-markdown/` folder as a `.skill` file. In practice, that means a
+`.skills/doc2md/` folder as a `.skill` file. In practice, that means a
 ZIP-format bundle using Anthropic's `.skill` extension rather than a plain
 `.zip` filename. Keep the package contract the same: the helper still expects
 `@doc2md/core` to be available where the command runs.
@@ -153,7 +153,7 @@ ZIP-format bundle using Anthropic's `.skill` extension rather than a plain
 ### Claude CLI and Codex
 
 For repo-local agent flows, keep the skill in the repo and reference
-`.skills/doc-to-markdown/SKILL.md` from your repo instructions or prompt. The
+`.skills/doc2md/SKILL.md` from your repo instructions or prompt. The
 helper script above remains the exact fallback when you want deterministic JSON
 output and written markdown files.
 

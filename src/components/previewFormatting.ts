@@ -5,6 +5,11 @@ const METADATA_LABEL = /^([A-Za-z][A-Za-z0-9/&()' -]{1,42}):\s+(.+)$/;
 const LINKISH_VALUE = /(https?:\/\/|www\.|@|(?:\+?\d[\d()\s-]{6,}\d))/i;
 const INDENTED_CODE_LINE = /^(?: {4}|\t)/;
 
+interface SourceLine {
+  text: string;
+  source: number; // 1-based line number in the original markdown
+}
+
 function isStructuralLine(line: string) {
   return MARKDOWN_STRUCTURAL_LINE.test(line) || MARKDOWN_TABLE_LINE.test(line);
 }
@@ -62,69 +67,111 @@ function normalizeCompactListLine(line: string) {
   return `- ${line.trim()}`;
 }
 
-function formatDenseBlock(lines: string[]) {
-  if (lines.length < 2) {
-    return lines;
+function formatDenseBlockWithSources(block: SourceLine[]): SourceLine[] {
+  if (block.length < 2) {
+    return block;
   }
 
-  const trimmedLines = lines.map((line) => line.trim()).filter(Boolean);
+  // Filter out blank lines (mirroring the original `trim()` + filter Boolean)
+  // but keep their original-line references with the kept entries.
+  const trimmedLines = block
+    .map((entry) => ({ text: entry.text.trim(), source: entry.source }))
+    .filter((entry) => entry.text.length > 0);
+
   if (trimmedLines.length < 2) {
-    return lines;
+    return block;
   }
 
-  let heading: string | null = null;
+  let heading: SourceLine | null = null;
   let content = trimmedLines;
 
-  if (trimmedLines.length >= 3 && looksLikeHeadingCandidate(trimmedLines[0])) {
+  if (
+    trimmedLines.length >= 3 &&
+    looksLikeHeadingCandidate(trimmedLines[0].text)
+  ) {
     const remainingLines = trimmedLines.slice(1);
-    const remainingMetadataCount = remainingLines.filter(looksLikeMetadataLine).length;
+    const remainingMetadataCount = remainingLines.filter((entry) =>
+      looksLikeMetadataLine(entry.text),
+    ).length;
     const remainingMetadataHeavy =
-      remainingMetadataCount >= Math.max(2, Math.ceil(remainingLines.length * 0.5));
+      remainingMetadataCount >=
+      Math.max(2, Math.ceil(remainingLines.length * 0.5));
 
-    if (remainingLines.every(isCompactLine) && remainingMetadataHeavy) {
+    if (
+      remainingLines.every((entry) => isCompactLine(entry.text)) &&
+      remainingMetadataHeavy
+    ) {
       heading = trimmedLines[0];
       content = remainingLines;
     }
   }
 
-  const metadataCount = content.filter(looksLikeMetadataLine).length;
-  const compactCount = content.filter(isCompactLine).length;
-  const sentenceCount = content.filter(endsLikeSentence).length;
-  const metadataHeavy = metadataCount >= Math.max(2, Math.ceil(content.length * 0.5));
+  const metadataCount = content.filter((entry) =>
+    looksLikeMetadataLine(entry.text),
+  ).length;
+  const compactCount = content.filter((entry) =>
+    isCompactLine(entry.text),
+  ).length;
+  const sentenceCount = content.filter((entry) =>
+    endsLikeSentence(entry.text),
+  ).length;
+  const metadataHeavy =
+    metadataCount >= Math.max(2, Math.ceil(content.length * 0.5));
   const compactCluster =
     content.length >= 4 &&
     compactCount === content.length &&
     sentenceCount <= 1;
 
   if (!metadataHeavy && !compactCluster) {
-    return lines;
+    return block;
   }
 
-  const renderedLines = heading ? [`### ${heading}`, ""] : [];
-  const formatter = metadataHeavy ? normalizeMetadataLine : normalizeCompactListLine;
+  const rendered: SourceLine[] = [];
 
-  renderedLines.push(...content.map(formatter));
-  return renderedLines;
+  if (heading) {
+    rendered.push({ text: `### ${heading.text}`, source: heading.source });
+    // Synthetic blank inherits the heading's source.
+    rendered.push({ text: "", source: heading.source });
+  }
+
+  const formatter = metadataHeavy
+    ? normalizeMetadataLine
+    : normalizeCompactListLine;
+
+  for (const entry of content) {
+    rendered.push({ text: formatter(entry.text), source: entry.source });
+  }
+
+  return rendered;
 }
 
 function isValidClosingFence(trimmed: string): boolean {
   return /^[`~]+\s*$/.test(trimmed);
 }
 
-export function formatPreviewMarkdown(markdown: string) {
+export function formatPreviewMarkdownWithLineMap(markdown: string): {
+  markdown: string;
+  originalLineFor: number[];
+} {
+  if (markdown.length === 0) {
+    return { markdown: "", originalLineFor: [] };
+  }
+
   const lines = markdown.split(/\r?\n/);
-  const formatted: string[] = [];
-  let block: string[] = [];
+  const formatted: SourceLine[] = [];
+  let block: SourceLine[] = [];
   let fenceChar: string | null = null;
 
   const flushBlock = () => {
     if (block.length > 0) {
-      formatted.push(...formatDenseBlock(block));
+      formatted.push(...formatDenseBlockWithSources(block));
       block = [];
     }
   };
 
-  for (const line of lines) {
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    const sourceLine = index + 1;
     const trimmed = line.trim();
     const fenceMatch = trimmed.match(/^(`{3,}|~{3,})/);
 
@@ -132,65 +179,66 @@ export function formatPreviewMarkdown(markdown: string) {
       const char = fenceMatch[1][0];
 
       if (fenceChar === null) {
-        // Opening a new fence
         flushBlock();
         fenceChar = char;
-        formatted.push(line);
+        formatted.push({ text: line, source: sourceLine });
         continue;
       }
 
       if (char === fenceChar && isValidClosingFence(trimmed)) {
-        // Closing the fence with a matching marker (no trailing info string)
         fenceChar = null;
-        formatted.push(line);
+        formatted.push({ text: line, source: sourceLine });
         continue;
       }
 
-      // Mismatched marker or has trailing content — pass through inside fence
-      formatted.push(line);
+      formatted.push({ text: line, source: sourceLine });
       continue;
     }
 
     if (fenceChar !== null) {
-      formatted.push(line);
+      formatted.push({ text: line, source: sourceLine });
       continue;
     }
 
     if (trimmed.length === 0) {
       flushBlock();
-      formatted.push("");
+      formatted.push({ text: "", source: sourceLine });
       continue;
     }
 
-    // Indented code blocks (4+ spaces or tab) bypass dense-block formatting
     if (INDENTED_CODE_LINE.test(line)) {
       flushBlock();
-      formatted.push(line);
+      formatted.push({ text: line, source: sourceLine });
       continue;
     }
 
     if (isStructuralLine(trimmed)) {
       flushBlock();
-      formatted.push(line);
+      formatted.push({ text: line, source: sourceLine });
       continue;
     }
 
-    block.push(line);
+    block.push({ text: line, source: sourceLine });
   }
 
   flushBlock();
 
-  return collapseBlankLinesOutsideFences(formatted.join("\n"));
+  return collapseBlankLinesOutsideFencesWithSources(formatted);
 }
 
-function collapseBlankLinesOutsideFences(text: string): string {
-  const lines = text.split("\n");
-  const result: string[] = [];
+export function formatPreviewMarkdown(markdown: string): string {
+  return formatPreviewMarkdownWithLineMap(markdown).markdown;
+}
+
+function collapseBlankLinesOutsideFencesWithSources(
+  entries: SourceLine[],
+): { markdown: string; originalLineFor: number[] } {
+  const result: SourceLine[] = [];
   let fence: string | null = null;
   let consecutiveBlanks = 0;
 
-  for (const line of lines) {
-    const trimmed = line.trim();
+  for (const entry of entries) {
+    const trimmed = entry.text.trim();
     const fenceMatch = trimmed.match(/^(`{3,}|~{3,})/);
 
     if (fenceMatch) {
@@ -201,25 +249,28 @@ function collapseBlankLinesOutsideFences(text: string): string {
         fence = null;
       }
       consecutiveBlanks = 0;
-      result.push(line);
+      result.push(entry);
       continue;
     }
 
     if (fence !== null) {
-      result.push(line);
+      result.push(entry);
       continue;
     }
 
     if (trimmed.length === 0) {
-      consecutiveBlanks++;
+      consecutiveBlanks += 1;
       if (consecutiveBlanks <= 1) {
-        result.push(line);
+        result.push(entry);
       }
     } else {
       consecutiveBlanks = 0;
-      result.push(line);
+      result.push(entry);
     }
   }
 
-  return result.join("\n");
+  const markdown = result.map((entry) => entry.text).join("\n");
+  const originalLineFor = result.map((entry) => entry.source);
+
+  return { markdown, originalLineFor };
 }

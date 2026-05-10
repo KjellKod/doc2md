@@ -39,7 +39,7 @@ export default function FindReplaceBar({
   const findInputRef = useRef<HTMLInputElement | null>(null);
   const replaceInputRef = useRef<HTMLInputElement | null>(null);
   const findReplace = useFindReplace(source, onSourceChange);
-  const { activeMatch, setActiveSelection } = findReplace;
+  const { activeMatch } = findReplace;
   const countLabel =
     findReplace.total === 0
       ? "0"
@@ -68,14 +68,11 @@ export default function FindReplaceBar({
 
   useEffect(() => {
     onActiveMatchChange(activeMatch);
-    setActiveSelection(textareaRef?.current ?? null);
   }, [
     activeMatch?.start,
     activeMatch?.end,
     activeMatch,
     onActiveMatchChange,
-    setActiveSelection,
-    textareaRef,
   ]);
 
   function close() {

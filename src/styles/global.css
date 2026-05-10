@@ -1819,6 +1819,10 @@ body.is-page-resizing * {
   color: color-mix(in srgb, var(--text-primary) 70%, var(--text-secondary) 30%);
 }
 
+.linkedin-line {
+  display: inline;
+}
+
 .markdown-surface > * {
   max-width: 100%;
   margin-left: 0;

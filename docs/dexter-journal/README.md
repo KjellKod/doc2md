@@ -6,6 +6,7 @@ For the other perspective, see [Jean-Claude's Journal](../journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 044 | [Requiem: View Anchor Mode Switch](044-requiem-view-anchor-mode-switch.md) | Burying the scroll-ratio cache, the geometric fiction that two unlike surfaces shared one body, and the LinkedIn impersonator that forgot where the user had been |
 | 043 | [Requiem: Professional DMG Installer](043-requiem-professional-dmg-installer.md) | Separating drag-install polish from release trust, and refusing to let detach failure hide before UDZO conversion |
 | 042 | [Mac License Verifier](042-mac-license-verifier.md) | Public-key-only Mac token verification, empty release trust, integer-second claim enforcement, and no issuer drift |
 | 041 | [Requiem: Phase 7b Distribution Decision](041-requiem-phase-7b-distribution-decision.md) | Burying commercial ambiguity with a direct-DMG-first decision record, one public support alias, explicit ownership, and a go-live gate that cannot accidentally sell things |
