@@ -5,7 +5,7 @@ How to produce a fully signed, notarized, and stapled `doc2md.dmg` on a maintain
 > [!IMPORTANT]
 > **This runbook is for local evaluation, debugging, and pre-release validation only.**
 >
-> doc2md's Mac desktop app is **source-visible shareware**, not open source. The doc2md Desktop Shareware License (`LICENSES/LicenseRef-doc2md-Desktop.txt`) permits private local builds for personal or internal evaluation. It does **not** permit distributing, publishing, selling, sublicensing, hosting, bundling, or providing locally-built copies to clients or other third parties. Productive use of any copy other than the official release requires written permission from the project owner.
+> doc2md's Mac desktop app is **source-visible shareware**, not open source. The doc2md Desktop Shareware License (`LICENSES/LicenseRef-doc2md-Desktop.txt`) permits private local builds for personal or internal evaluation. It does **not** permit distributing, publishing, selling, sublicensing, hosting, bundling, or providing locally-built copies for internal company use, clients or other third parties. Productive use of any copy other than the official release requires written permission from the project owner.
 >
 > Producing a Developer-ID-signed and Apple-notarized DMG locally produces an artifact that **looks** authoritative to Gatekeeper. Releasing such an artifact under the doc2md name without authorization is a license violation, brand-confusion problem, and a breach of trust with users who rely on the official release path. The canonical public release is the artifact produced by the protected `release-mac` GitHub workflow run against a tagged commit, and only that artifact is approved for distribution.
 >
