@@ -1,0 +1,20 @@
+scripts/release/release_mac_local.sh
+  s_bf20507410f396::t_67dd29ac9d8e87 22-26
+  s_bf20507410f396::t_3fa0f55612528f 128-158
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "09eff34887db1e3391a1c3ba0c69c10324e8d75f",
+  "prompts": {},
+  "sessions": {
+    "s_bf20507410f396": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "50b10fff-7bc7-4d70-9b20-4f92a0dd1051",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
