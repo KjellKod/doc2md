@@ -198,11 +198,11 @@ jobs:
         env:
           APP_PATH: ${{ runner.temp }}/release-work/doc2md.app
           VERSION: ${{ needs.build.outputs.version }}
-          APPLE_DEVELOPER_ID_APPLICATION_P12: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_P12 }}
-          APPLE_DEVELOPER_ID_APPLICATION_P12_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_APPLICATION_P12_PASSWORD }}
-          APPLE_NOTARY_API_KEY_P8: ${{ secrets.APPLE_NOTARY_API_KEY_P8 }}
-          APPLE_NOTARY_API_KEY_ID: ${{ secrets.APPLE_NOTARY_API_KEY_ID }}
-          APPLE_NOTARY_API_ISSUER_ID: ${{ secrets.APPLE_NOTARY_API_ISSUER_ID }}
+          APPLE_DEVELOPER_ID_APPLICATION_P12: ${{ secrets.MACOS_CERTIFICATE }}
+          APPLE_DEVELOPER_ID_APPLICATION_P12_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+          APPLE_NOTARY_API_KEY_P8: ${{ secrets.NOTARIZE_API_KEY }}
+          APPLE_NOTARY_API_KEY_ID: ${{ secrets.NOTARIZE_KEY_ID }}
+          APPLE_NOTARY_API_ISSUER_ID: ${{ secrets.NOTARIZE_ISSUER_ID }}
           OUTPUT_DIR: ${{ runner.temp }}/doc2md-package
           RELEASE_ENV_FILE: ${{ runner.temp }}/doc2md-release-env
         run: |

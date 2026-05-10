@@ -1,0 +1,6 @@
+# Code owners for sensitive release plumbing.
+# Any change to these paths must be reviewed by the listed owner.
+# See https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+/.github/workflows/release-mac.yml @KjellKod
+/scripts/release/                  @KjellKod
