@@ -1,0 +1,25 @@
+.github/workflows/intent-review.yml
+  s_2ebef8d1285e5b::t_2a2d3eabe7787f 33-40,43
+.github/workflows/codex-ci-review.yml
+  s_2ebef8d1285e5b::t_12083abdbaa51f 19-21,26
+  s_2ebef8d1285e5b::t_4e3de9251cfa7a 57-65,68-71
+scripts/security_ci_guard.py
+  s_2ebef8d1285e5b::t_419c816abb9135 34-40
+  s_2ebef8d1285e5b::t_576d5f67011d66 221-227
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "895a2c1ede05a24e3401b0932f12d62b2310f294",
+  "prompts": {},
+  "sessions": {
+    "s_2ebef8d1285e5b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d33c79c9-fa5d-4926-874e-2a30e658c6f7",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
