@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { FilePlus, Search } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -318,6 +318,7 @@ export default function PreviewPanel({
   const renderedViewRef = useRef<HTMLElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const findHighlightRef = useRef<HTMLPreElement | null>(null);
+  const toolbarRef = useRef<HTMLDivElement | null>(null);
   const pendingAnchorLineRef = useRef<number | null>(null);
   const suppressMatchCenteringForModeSwitchRef = useRef(false);
   const findCapable =
@@ -428,17 +429,36 @@ export default function PreviewPanel({
   const canEditFromEmptyState = Boolean(
     entry && (entry.isScratch || entry.editedMarkdown !== undefined),
   );
-  const previewWithLineMap = formatPreviewMarkdownWithLineMap(effectiveMarkdown);
+  // Heavy work: full-document parsing, line-mapping, refusal scanning,
+  // and rehype plugin instantiation. Memoize on `effectiveMarkdown`
+  // (and mode where applicable) so a parent re-render — including a
+  // mode switch that doesn't change the source — does not re-parse
+  // the whole document. Without these memos a multi-thousand-line
+  // doc takes several seconds to switch into preview because every
+  // render builds a fresh rehype plugin reference, which busts
+  // ReactMarkdown's internal parse cache.
+  const previewWithLineMap = useMemo(
+    () => formatPreviewMarkdownWithLineMap(effectiveMarkdown),
+    [effectiveMarkdown],
+  );
   const previewMarkdown = previewWithLineMap.markdown;
   const previewOriginalLineFor = previewWithLineMap.originalLineFor;
-  const linkedinRefusal =
-    mode === "linkedin"
-      ? detectUnsupportedConstructs(effectiveMarkdown)
-      : null;
-  const linkedinWithLineMap =
-    linkedinRefusal === null && mode === "linkedin"
-      ? formatLinkedInUnicodeWithLineMap(effectiveMarkdown)
-      : null;
+  const previewRehypePlugins = useMemo(
+    () => [sourceLineRehype(previewOriginalLineFor)],
+    [previewOriginalLineFor],
+  );
+  const linkedinRefusal = useMemo(
+    () =>
+      mode === "linkedin" ? detectUnsupportedConstructs(effectiveMarkdown) : null,
+    [effectiveMarkdown, mode],
+  );
+  const linkedinWithLineMap = useMemo(
+    () =>
+      linkedinRefusal === null && mode === "linkedin"
+        ? formatLinkedInUnicodeWithLineMap(effectiveMarkdown)
+        : null,
+    [effectiveMarkdown, linkedinRefusal, mode],
+  );
   const linkedinPreview = linkedinWithLineMap?.text ?? null;
   const linkedinOriginalLineFor = linkedinWithLineMap?.originalLineFor ?? [];
   const showToggle = Boolean(
@@ -526,12 +546,15 @@ export default function PreviewPanel({
       return;
     }
 
+    const floor = viewportTopFloor();
+
     if (mode === "edit" && textareaRef.current) {
       scrollTextareaToLine(
         textareaRef.current,
         findHighlightRef.current,
         effectiveMarkdown,
         anchorLine,
+        floor,
       );
       syncFindHighlightScroll();
       pendingAnchorLineRef.current = null;
@@ -542,7 +565,7 @@ export default function PreviewPanel({
     }
 
     if (mode !== "edit" && renderedViewRef.current) {
-      scrollRenderedToLine(renderedViewRef.current, anchorLine);
+      scrollRenderedToLine(renderedViewRef.current, anchorLine, floor);
       pendingAnchorLineRef.current = null;
       window.setTimeout(() => {
         suppressMatchCenteringForModeSwitchRef.current = false;
@@ -609,17 +632,24 @@ export default function PreviewPanel({
     );
   }
 
+  function viewportTopFloor(): number {
+    return toolbarRef.current?.getBoundingClientRect().bottom ?? 0;
+  }
+
   function captureAnchorLine(): number | null {
+    const floor = viewportTopFloor();
+
     if (mode === "edit" && textareaRef.current) {
       return topLineFromTextareaMirror(
         textareaRef.current,
         findHighlightRef.current,
         effectiveMarkdown,
+        floor,
       );
     }
 
     if (mode !== "edit" && renderedViewRef.current) {
-      return topLineFromRendered(renderedViewRef.current);
+      return topLineFromRendered(renderedViewRef.current, floor);
     }
 
     return null;
@@ -814,7 +844,7 @@ export default function PreviewPanel({
       >
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
-          rehypePlugins={[sourceLineRehype(previewOriginalLineFor)]}
+          rehypePlugins={previewRehypePlugins}
         >
           {previewMarkdown}
         </ReactMarkdown>
@@ -824,7 +854,7 @@ export default function PreviewPanel({
   return (
     <div className="preview-body">
       {showToggle || showCopyButton || onSave ? (
-        <div className="preview-toolbar">
+        <div ref={toolbarRef} className="preview-toolbar">
           {showToggle ? (
             <div
               className="preview-toggle"

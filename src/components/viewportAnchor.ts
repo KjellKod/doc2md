@@ -16,14 +16,21 @@ function clampScrollTop(element: HTMLElement, scrollTop: number) {
 
 /**
  * The y-coordinate (in viewport space) to anchor the "top of the
- * source view" to. When the container is its own scroll container its
- * `getBoundingClientRect().top` is positive and we use it directly;
- * when an ancestor (often the window) scrolls instead, the container
- * may slide above the viewport top — in that case anchor to viewport
- * top (0) so we capture/apply against what the user actually sees.
+ * source view" to. The caller passes `viewportTopFloor` — typically
+ * the y of the bottom of any sticky/fixed UI (toolbar) above the
+ * surface, defaulting to 0 (window top). We take the max of the
+ * container's top and that floor so:
+ *   - when the container is its own scroll container and is fully
+ *     visible, we use the container top;
+ *   - when an ancestor (window) scrolls and the container has slid
+ *     above the toolbar, we anchor to the toolbar's bottom edge,
+ *     which is what the user actually sees at the top of their view.
  */
-function effectiveTopFor(container: HTMLElement): number {
-  return Math.max(container.getBoundingClientRect().top, 0);
+function effectiveTopFor(
+  container: HTMLElement,
+  viewportTopFloor: number,
+): number {
+  return Math.max(container.getBoundingClientRect().top, viewportTopFloor);
 }
 
 /**
@@ -67,53 +74,132 @@ function rangeRect(range: Range): DOMRect | null {
   return range.getBoundingClientRect();
 }
 
-function measureFirstVisibleCharacter(
-  mirror: HTMLElement,
-  containerTop: number,
-): MeasuredCharacter | null {
+interface TextNodeIndex {
+  node: Text;
+  startOffset: number; // character offset into the mirror's full text
+  length: number;
+}
+
+function collectTextNodes(mirror: HTMLElement): {
+  nodes: TextNodeIndex[];
+  totalLength: number;
+} {
   const walker = document.createTreeWalker(mirror, NodeFilter.SHOW_TEXT);
-  let textOffset = 0;
+  const nodes: TextNodeIndex[] = [];
+  let totalLength = 0;
   let current: Node | null = walker.nextNode();
-  let lastSeenTop = -Infinity;
-  let lastOffset = 0;
 
   while (current) {
     const textNode = current as Text;
     const length = textNode.data.length;
-
-    for (let index = 0; index < length; index += 1) {
-      const range = document.createRange();
-      range.setStart(textNode, index);
-      range.setEnd(textNode, Math.min(index + 1, length));
-      const rect = rangeRect(range);
-      range.detach?.();
-
-      if (!rect) {
-        continue;
-      }
-
-      // Skip zero-rect characters (e.g. between text nodes after newlines).
-      if (rect.top === 0 && rect.bottom === 0 && rect.left === 0) {
-        continue;
-      }
-
-      lastSeenTop = rect.top;
-      lastOffset = textOffset + index;
-
-      if (rect.top >= containerTop - EPSILON) {
-        return { offset: textOffset + index, top: rect.top };
-      }
-    }
-
-    textOffset += length;
+    nodes.push({ node: textNode, startOffset: totalLength, length });
+    totalLength += length;
     current = walker.nextNode();
   }
 
-  if (lastSeenTop !== -Infinity) {
-    return { offset: lastOffset, top: lastSeenTop };
+  return { nodes, totalLength };
+}
+
+function rectAtOffset(
+  index: TextNodeIndex[],
+  offset: number,
+): DOMRect | null {
+  // Binary search across the indexed text nodes for the one that
+  // contains `offset`, then read a single Range rect at that local
+  // position. O(log n) over text-node count, plus a single layout
+  // query.
+  if (index.length === 0) {
+    return null;
   }
 
-  return null;
+  let lo = 0;
+  let hi = index.length - 1;
+
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >>> 1;
+    if (index[mid].startOffset <= offset) {
+      lo = mid;
+    } else {
+      hi = mid - 1;
+    }
+  }
+
+  const entry = index[lo];
+  const localOffset = Math.min(
+    Math.max(offset - entry.startOffset, 0),
+    Math.max(entry.length - 1, 0),
+  );
+  const range = document.createRange();
+  range.setStart(entry.node, localOffset);
+  range.setEnd(entry.node, Math.min(localOffset + 1, entry.length));
+  const rect = rangeRect(range);
+  range.detach?.();
+  return rect;
+}
+
+function isZeroRect(rect: DOMRect): boolean {
+  return rect.top === 0 && rect.bottom === 0 && rect.left === 0;
+}
+
+function measureFirstVisibleCharacter(
+  mirror: HTMLElement,
+  containerTop: number,
+): MeasuredCharacter | null {
+  // Binary search over character offset to find the first offset whose
+  // rect.top is at or below `containerTop - EPSILON`. Rect.top is
+  // monotonically non-decreasing in character offset (characters lay
+  // out top to bottom within a wrapped `<pre>`), so a binary search
+  // converges in O(log n) layout queries instead of the O(n) one
+  // query-per-character scan that locks the main thread for several
+  // seconds on long documents.
+  const { nodes, totalLength } = collectTextNodes(mirror);
+
+  if (totalLength === 0) {
+    return null;
+  }
+
+  const threshold = containerTop - EPSILON;
+  let lo = 0;
+  let hi = totalLength - 1;
+  let candidateOffset = -1;
+  let candidateTop = -Infinity;
+
+  // Find smallest offset with rect.top >= threshold, skipping any
+  // offsets whose rect is a degenerate zero-rect (e.g. between text
+  // nodes after a newline).
+  while (lo <= hi) {
+    const mid = (lo + hi) >>> 1;
+    const rect = rectAtOffset(nodes, mid);
+
+    if (!rect || isZeroRect(rect)) {
+      // Treat as "no information here"; try the right half so we
+      // converge toward a real rect.
+      lo = mid + 1;
+      continue;
+    }
+
+    if (rect.top >= threshold) {
+      candidateOffset = mid;
+      candidateTop = rect.top;
+      hi = mid - 1;
+    } else {
+      lo = mid + 1;
+    }
+  }
+
+  if (candidateOffset === -1) {
+    // No character qualifies — fall back to the last non-zero rect we
+    // can find by scanning backwards from the end.
+    for (let offset = totalLength - 1; offset >= 0; offset -= 1) {
+      const rect = rectAtOffset(nodes, offset);
+      if (rect && !isZeroRect(rect)) {
+        return { offset, top: rect.top };
+      }
+    }
+    return null;
+  }
+
+  return { offset: candidateOffset, top: candidateTop };
 }
 
 /**
@@ -129,6 +215,7 @@ export function topLineFromTextareaMirror(
   textarea: HTMLTextAreaElement,
   mirror: HTMLElement | null,
   source: string,
+  viewportTopFloor = 0,
 ): number {
   if (!mirror) {
     return 1;
@@ -139,10 +226,11 @@ export function topLineFromTextareaMirror(
   // (only meaningful when the textarea is its own scroll container).
   mirror.scrollTop = textarea.scrollTop;
   // Anchor to whichever is lower of the mirror's top and the viewport
-  // top: when the body is the actual scroller, the mirror can sit
+  // floor: when the body is the actual scroller, the mirror can sit
   // above the viewport, and we want the line currently at the top of
-  // the user's screen, not the line at the offscreen mirror top.
-  const containerTop = effectiveTopFor(mirror);
+  // the user's visible area (below any sticky toolbar), not the line
+  // at the offscreen mirror top.
+  const containerTop = effectiveTopFor(mirror, viewportTopFloor);
   const measured = measureFirstVisibleCharacter(mirror, containerTop);
 
   if (!measured) {
@@ -158,7 +246,10 @@ export function topLineFromTextareaMirror(
  * or below the container's top edge; falls back to the last stamped
  * line for end-of-doc, or `1` when nothing is stamped.
  */
-export function topLineFromRendered(container: HTMLElement): number {
+export function topLineFromRendered(
+  container: HTMLElement,
+  viewportTopFloor = 0,
+): number {
   const stamped = Array.from(
     container.querySelectorAll<HTMLElement>("[data-source-line]"),
   );
@@ -167,7 +258,7 @@ export function topLineFromRendered(container: HTMLElement): number {
     return 1;
   }
 
-  const containerTop = effectiveTopFor(container);
+  const containerTop = effectiveTopFor(container, viewportTopFloor);
   let firstQualifying: HTMLElement | null = null;
   let firstNonBlankQualifying: HTMLElement | null = null;
 
@@ -209,7 +300,11 @@ function parseSourceLine(element: HTMLElement): number {
  * `>= line` aligns with the container's top (within 1 px). Falls back
  * to the last stamped element for end-of-doc.
  */
-export function scrollRenderedToLine(container: HTMLElement, line: number) {
+export function scrollRenderedToLine(
+  container: HTMLElement,
+  line: number,
+  viewportTopFloor = 0,
+) {
   const stamped = Array.from(
     container.querySelectorAll<HTMLElement>("[data-source-line]"),
   );
@@ -219,7 +314,7 @@ export function scrollRenderedToLine(container: HTMLElement, line: number) {
       container.scrollTop = 0;
     } else if (typeof window !== "undefined") {
       const containerRect = container.getBoundingClientRect();
-      window.scrollBy(0, containerRect.top);
+      window.scrollBy(0, containerRect.top - viewportTopFloor);
     }
     return;
   }
@@ -255,11 +350,12 @@ export function scrollRenderedToLine(container: HTMLElement, line: number) {
 
   // The container is laid out at full content height; the window (or
   // some ancestor) is the actual scroller. Anchor the chosen element
-  // to whichever is greater of the container's viewport-top and 0,
-  // so we land at the top of the surface when it's still in view, or
-  // at the top of the viewport when the surface is scrolled past.
+  // to whichever is greater of the container's viewport-top and the
+  // viewport floor (sticky toolbar bottom), so we land at the top of
+  // the surface when it's still in view, or just below the toolbar
+  // when the surface has scrolled past it.
   const containerRect = container.getBoundingClientRect();
-  const targetViewportTop = Math.max(containerRect.top, 0);
+  const targetViewportTop = Math.max(containerRect.top, viewportTopFloor);
   const delta = elementRect.top - targetViewportTop;
   window.scrollBy(0, delta);
 }
@@ -276,6 +372,7 @@ export function scrollTextareaToLine(
   mirror: HTMLElement | null,
   source: string,
   line: number,
+  viewportTopFloor = 0,
 ) {
   const offset = offsetForLine(source, line);
   const measureMirror = mirror ?? buildShadowMirror(textarea);
@@ -304,12 +401,11 @@ export function scrollTextareaToLine(
     }
 
     // Textarea is laid out at full content height (no internal
-    // scrollbar). Scroll the window so the line we want sits at the
-    // top of the user's visible viewport — or at the top of the
-    // textarea, whichever is lower on screen, so we don't jump above
-    // a sticky toolbar.
+    // scrollbar). Scroll the window so the line we want sits just
+    // below the sticky toolbar (viewportTopFloor) — or at the
+    // textarea's own top when that is lower on screen.
     const textareaRect = textarea.getBoundingClientRect();
-    const targetViewportTop = Math.max(textareaRect.top, 0);
+    const targetViewportTop = Math.max(textareaRect.top, viewportTopFloor);
     const lineViewportTop = mirrorTop + internalTarget;
     const delta = lineViewportTop - targetViewportTop;
     window.scrollBy(0, delta);
