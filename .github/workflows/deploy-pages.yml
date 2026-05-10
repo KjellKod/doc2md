@@ -1,5 +1,7 @@
 name: Deploy to GitHub Pages
 
+run-name: "Release/Deployment: ${{ inputs.ref || github.ref_name }}"
+
 on:
   push:
     tags: ["[0-9]*.[0-9]*.[0-9]*"]
