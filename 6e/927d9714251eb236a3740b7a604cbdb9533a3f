@@ -1,0 +1,34 @@
+src/components/viewportAnchor.ts
+  s_a512ddf03d46a9::t_9d08db7ea5161d 353-356,358
+  s_a512ddf03d46a9::t_0ded770340b7ff 249-252,261
+  s_a512ddf03d46a9::t_b22c535dd432ac 404-406,408
+  s_a512ddf03d46a9::t_b7dd1e3a980413 303-307,317
+  s_a512ddf03d46a9::t_e86e70803e1ccc 77-86,88-89,95-98,100-101,103-113,115-116,118-125,127-178,181-187,190-199,202
+  s_a512ddf03d46a9::t_14055acb6c8e1d 19-27,29-33
+  s_a512ddf03d46a9::t_831159ffa66bc1 375
+  s_a512ddf03d46a9::t_2f5c7d7f7f2b00 218,229,231-233
+src/components/PreviewPanel.tsx
+  s_a512ddf03d46a9::t_a9b48a69f10b80 432-443,446-461
+  s_a512ddf03d46a9::t_9f1c71fff9afe5 635-638,640-641,647,652
+  s_a512ddf03d46a9::t_352848d528533c 549-550,557,568
+  s_a512ddf03d46a9::t_dbe9a414dcad31 847
+  s_a512ddf03d46a9::t_dec5e5b43ddf54 321
+  s_a512ddf03d46a9::t_7317513f802079 1
+  s_a512ddf03d46a9::t_b66760225df253 857
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "6e927d9714251eb236a3740b7a604cbdb9533a3f",
+  "prompts": {},
+  "sessions": {
+    "s_a512ddf03d46a9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6a18c350-2d69-4a65-85de-7e4bf448394a",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
