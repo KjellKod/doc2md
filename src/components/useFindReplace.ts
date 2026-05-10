@@ -339,7 +339,9 @@ export function useFindReplace(
       return;
     }
 
-    textarea.setSelectionRange(activeMatch.start, activeMatch.end);
+    // Collapsed caret at the end of the match — see scrollTextareaToMatch
+    // in PreviewPanel.tsx for the rationale.
+    textarea.setSelectionRange(activeMatch.end, activeMatch.end);
 
     const linesBeforeMatch = source.slice(0, activeMatch.start).split("\n").length;
     const lineHeight = Number.parseFloat(getComputedStyle(textarea).lineHeight);

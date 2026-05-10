@@ -161,7 +161,12 @@ function scrollTextareaToMatch(
   source: string,
   match: FindMatch,
 ) {
-  textarea.setSelectionRange(match.start, match.end);
+  // Place the caret at the end of the match with no selection so that
+  // when focus lands on the textarea (Escape from find, Tab, click) the
+  // user's next keystroke inserts after the match instead of replacing
+  // it. The visible highlight is painted by the find-overlay <mark>;
+  // it does not depend on the textarea's selection.
+  textarea.setSelectionRange(match.end, match.end);
 
   const linesBeforeMatch = source.slice(0, match.start).split("\n").length;
   const lineHeight = Number.parseFloat(getComputedStyle(textarea).lineHeight);
