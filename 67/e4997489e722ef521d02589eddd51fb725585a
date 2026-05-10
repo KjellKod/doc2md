@@ -1,0 +1,21 @@
+scripts/release/release_mac_local.sh
+  s_2ebef8d1285e5b::t_5cecbbcdb41da2 227-230
+docs/runbooks/release-mac-local.md
+  s_2ebef8d1285e5b::t_4c68ba72f9f26c 32,36-40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "67e4997489e722ef521d02589eddd51fb725585a",
+  "prompts": {},
+  "sessions": {
+    "s_2ebef8d1285e5b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d33c79c9-fa5d-4926-874e-2a30e658c6f7",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
