@@ -19,7 +19,11 @@
 #   APPLE_NOTARY_API_ISSUER_ID     UUID issuer ID from App Store Connect.
 #
 # Optional:
-#   VERSION    Release version (e.g. 2.3.0). Derived from Info.plist if unset.
+#   VERSION    Release version (e.g. 2.3.0). Derived from git state if unset:
+#              - clean tree at the latest X.Y.Z tag: VERSION=<that tag>
+#              - anything else (commits past tag or dirty tracked files):
+#                VERSION=X.Y.(Z+1)-dev, so a local build can never be confused
+#                with the official release artifact of the same number.
 #
 # Output: .build/release/doc2md-<VERSION>.dmg, fully signed/notarized/stapled.
 
@@ -121,11 +125,37 @@ fi
   || fail "APPLE_NOTARY_API_KEY_PATH does not point to a file: $APPLE_NOTARY_API_KEY_PATH"
 
 if [[ -z "${VERSION:-}" ]]; then
-  INFO_PLIST="apps/macos/doc2md/Info.plist"
-  [[ -f "$INFO_PLIST" ]] || fail "VERSION not set and $INFO_PLIST is missing"
-  VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$INFO_PLIST")"
-  [[ -n "$VERSION" ]] || fail "could not derive VERSION from $INFO_PLIST"
-  note "VERSION=$VERSION (derived from Info.plist)"
+  # The source Info.plist holds Xcode build-setting placeholders
+  # (CFBundleShortVersionString = "$(MARKETING_VERSION)"), so reading it
+  # pre-build returns the literal placeholder string, not the version.
+  # Derive from git state instead — see header comment for policy.
+  latest_tag="$(git tag --list '[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n 1)"
+  [[ -n "$latest_tag" ]] \
+    || fail "no X.Y.Z release tag found; export VERSION manually or run 'git fetch --tags'"
+
+  head_sha="$(git rev-parse HEAD)"
+  tag_sha="$(git rev-parse "${latest_tag}^{commit}")"
+
+  dirty="false"
+  if ! git diff --quiet HEAD --; then
+    dirty="true"
+  fi
+
+  if [[ "$head_sha" == "$tag_sha" && "$dirty" == "false" ]]; then
+    VERSION="$latest_tag"
+    note "VERSION=$VERSION (clean tree at release tag $latest_tag)"
+  else
+    IFS=. read -r _maj _min _pat <<<"$latest_tag"
+    VERSION="${_maj}.${_min}.$((_pat + 1))-dev"
+    if [[ "$head_sha" == "$tag_sha" ]]; then
+      reason="HEAD on $latest_tag but tracked working-tree changes present"
+    elif [[ "$dirty" == "true" ]]; then
+      reason="HEAD past $latest_tag and tracked working-tree changes present"
+    else
+      reason="HEAD past $latest_tag"
+    fi
+    note "VERSION=$VERSION ($reason)"
+  fi
   export VERSION
 fi
 
