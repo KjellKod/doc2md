@@ -130,7 +130,15 @@ if [[ -z "${VERSION:-}" ]]; then
 fi
 
 note "Verifying CODESIGN_IDENTITY exists in Keychain"
-if ! security find-identity -v -p codesigning | grep -F "$CODESIGN_IDENTITY" >/dev/null; then
+identities=""
+if ! identities="$(security find-identity -v -p codesigning 2>&1)"; then
+  fail "security find-identity failed (exit $?). Is the login Keychain unlocked? Output:
+$identities"
+fi
+# Bash substring match — no grep, no pipe — distinguishes "tool failed" (above)
+# from "identity not found" (below) instead of collapsing both into one
+# misleading error. See PR #112 review.
+if [[ "$identities" != *"$CODESIGN_IDENTITY"* ]]; then
   fail "CODESIGN_IDENTITY not found in any keychain: $CODESIGN_IDENTITY
 Run 'security find-identity -v -p codesigning | grep \"Developer ID Application\"' and
 re-export CODESIGN_IDENTITY with the exact string shown."
