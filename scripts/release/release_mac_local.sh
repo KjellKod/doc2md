@@ -261,10 +261,11 @@ if [[ "$OVERALL_STATUS" -eq 0 ]]; then
   printf '    spctl --assess --type open --context context:primary-signature --verbose=4 \033[1m%s\033[0m\n' "$DMG_PATH"
   printf '\n'
   printf '  Next: copy the DMG to a clean Mac, drag-install, and confirm Gatekeeper\n'
-  printf '  accepts it without an "unidentified developer" prompt. Per the doc2md\n'
-  printf '  Desktop Shareware License, do not distribute or publish locally-built\n'
-  printf '  signed artifacts; the protected release-mac workflow produces the\n'
-  printf '  approved public artifact.\n'
+  printf '  accepts it without an "unidentified developer" prompt.\n'
+  printf '\n'
+  printf '  \033[1mPer the doc2md Desktop Shareware License, do not distribute or publish\033[0m\n'
+  printf '  \033[1mlocally-built signed artifacts; the protected release-mac workflow\033[0m\n'
+  printf '  \033[1mproduces the approved public artifact.\033[0m\n'
 else
   printf '  See validation errors above. Common causes:\n'
   printf '    - codesign --verify failure: re-sign with --deep, or the cert chain\n'
