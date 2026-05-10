@@ -1,0 +1,21 @@
+src/components/useFindReplace.ts
+  s_a512ddf03d46a9::t_a8fdb6a222804d 342-344
+src/components/PreviewPanel.tsx
+  s_a512ddf03d46a9::t_a8fdb6a222804d 164-169
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "f0e8448d628a9cb8706b90b62bd74848cadfa8f8",
+  "prompts": {},
+  "sessions": {
+    "s_a512ddf03d46a9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6a18c350-2d69-4a65-85de-7e4bf448394a",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
