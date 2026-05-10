@@ -2,11 +2,11 @@ name: Mac release
 
 "on":
   push:
-    tags: ["v*.*.*"]
+    tags: ["*.*.*"]
   workflow_dispatch:
     inputs:
       tag:
-        description: "Existing release tag (vX.Y.Z)"
+        description: "Existing release tag (X.Y.Z)"
         required: true
 
 permissions:
@@ -47,8 +47,8 @@ jobs:
             TAG="${PUSH_REF#refs/tags/}"
           fi
 
-          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Tag $TAG is not canonical semver vX.Y.Z"
+          if [[ ! "$TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Tag $TAG is not canonical semver X.Y.Z"
             exit 1
           fi
 
@@ -71,7 +71,7 @@ jobs:
           {
             echo "tag=$TAG"
             echo "sha=$SHA"
-            echo "version=${TAG#v}"
+            echo "version=$TAG"
           } >>"$GITHUB_OUTPUT"
 
       - name: Checkout resolved release tag
