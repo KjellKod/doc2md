@@ -1,0 +1,21 @@
+.github/workflows/release-mac.yml
+  s_2ebef8d1285e5b::t_674db0c3af7cd1 50-51
+  s_2ebef8d1285e5b::t_3fc5a9e83ad1ac 74
+  s_2ebef8d1285e5b::t_b01146fb32199e 5,9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "fa34c01c6d87632c314ffe07f1507101b13c538b",
+  "prompts": {},
+  "sessions": {
+    "s_2ebef8d1285e5b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d33c79c9-fa5d-4926-874e-2a30e658c6f7",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
