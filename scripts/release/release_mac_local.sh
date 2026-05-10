@@ -147,13 +147,22 @@ APP_PATH=".build/mac/Build/Products/Release/doc2md.app"
 
 # ---------------------------------------------------------------------------
 # 2. Sign app with Developer ID Application
+#
+# Match the CI signer's flags (scripts/release/sign_mac_app.sh): --deep so the
+# bundled Sparkle.framework helpers (Updater.app, Autoupdate, XPCServices) are
+# all re-signed under the same Developer ID, --options runtime for hardened
+# runtime, --timestamp for secure-timestamped signatures Apple notarization
+# requires. Do not use --preserve-metadata=entitlements here; that flag
+# suppresses --deep recursion and leaves embedded helpers with their original
+# (Xcode debug) signatures, which makes "codesign --verify --deep" report
+# "a sealed resource is missing or invalid".
 # ---------------------------------------------------------------------------
 note "2/6 Signing app with $CODESIGN_IDENTITY"
 codesign --force \
+  --deep \
   --options runtime \
   --timestamp \
   --sign "$CODESIGN_IDENTITY" \
-  --preserve-metadata=entitlements \
   "$APP_PATH"
 codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 
@@ -193,12 +202,78 @@ DMG_PATH="$DMG_PATH" \
   ./scripts/release/notarize_mac_dmg.sh
 
 # ---------------------------------------------------------------------------
-# Done — print final validation commands the user can re-run on a clean Mac
+# Final validation + summary
 # ---------------------------------------------------------------------------
+note "Running final validation on $DMG_PATH"
+
+run_final_check() {
+  local label="$1"
+  shift
+  local output
+  local status=0
+  output="$("$@" 2>&1)" || status=$?
+  if [[ "$status" -eq 0 ]]; then
+    printf '  \033[1;32m[PASS]\033[0m %s\n' "$label"
+  else
+    printf '  \033[1;31m[FAIL]\033[0m %s (exit %s)\n' "$label" "$status"
+    printf '         %s\n' "$output" | head -5 | sed 's/^/         /'
+  fi
+  return "$status"
+}
+
+OVERALL_STATUS=0
+run_final_check "codesign --verify --strict" \
+  codesign --verify --strict --verbose=2 "$DMG_PATH" || OVERALL_STATUS=1
+run_final_check "xcrun stapler validate" \
+  xcrun stapler validate "$DMG_PATH" || OVERALL_STATUS=1
+run_final_check "spctl --assess (Gatekeeper)" \
+  spctl --assess --type open --context context:primary-signature --verbose=4 "$DMG_PATH" || OVERALL_STATUS=1
+
+DMG_SIZE_BYTES="$(stat -f '%z' "$DMG_PATH")"
+DMG_SIZE_MB="$(awk "BEGIN { printf \"%.1f\", $DMG_SIZE_BYTES / 1048576 }")"
+
 printf '\n'
-note "Done. Signed/notarized/stapled DMG ready at:"
-printf '       \033[1;32m%s\033[0m\n\n' "$DMG_PATH"
-note "Re-validate any time with:"
-printf '       codesign --verify --strict --verbose=2 \033[1m%s\033[0m\n' "$DMG_PATH"
-printf '       xcrun stapler validate \033[1m%s\033[0m\n' "$DMG_PATH"
-printf '       spctl --assess --type open --context context:primary-signature --verbose=4 \033[1m%s\033[0m\n' "$DMG_PATH"
+printf '\033[1m═══════════════════════════════════════════════════════════════\033[0m\n'
+if [[ "$OVERALL_STATUS" -eq 0 ]]; then
+  printf '\033[1;32m  PASSED\033[0m  Local signed Mac release pipeline\n'
+else
+  printf '\033[1;31m  FAILED\033[0m  Local signed Mac release pipeline (validation errors above)\n'
+fi
+printf '\033[1m═══════════════════════════════════════════════════════════════\033[0m\n\n'
+printf '  Version:      %s\n' "$VERSION"
+printf '  Identity:     %s\n' "$CODESIGN_IDENTITY"
+printf '  App bundle:   %s\n' "$APP_PATH"
+printf '  DMG path:     \033[1m%s\033[0m\n' "$DMG_PATH"
+printf '  DMG size:     %s MB (%s bytes)\n' "$DMG_SIZE_MB" "$DMG_SIZE_BYTES"
+printf '\n'
+printf '  Pipeline steps completed:\n'
+printf '    [ok] 1. Build Release Mac app\n'
+printf '    [ok] 2. Sign app with Developer ID Application\n'
+printf '    [ok] 3. Notarize + staple app\n'
+printf '    [ok] 4. Package polished DMG (mount self-test passed)\n'
+printf '    [ok] 5. Sign DMG with Developer ID Application\n'
+printf '    [ok] 6. Notarize + staple + validate DMG\n'
+printf '\n'
+if [[ "$OVERALL_STATUS" -eq 0 ]]; then
+  printf '  Re-validate any time with:\n'
+  printf '    codesign --verify --strict --verbose=2 \033[1m%s\033[0m\n' "$DMG_PATH"
+  printf '    xcrun stapler validate \033[1m%s\033[0m\n' "$DMG_PATH"
+  printf '    spctl --assess --type open --context context:primary-signature --verbose=4 \033[1m%s\033[0m\n' "$DMG_PATH"
+  printf '\n'
+  printf '  Next: copy the DMG to a clean Mac, drag-install, and confirm Gatekeeper\n'
+  printf '  accepts it without an "unidentified developer" prompt. Per the doc2md\n'
+  printf '  Desktop Shareware License, do not distribute or publish locally-built\n'
+  printf '  signed artifacts; the protected release-mac workflow produces the\n'
+  printf '  approved public artifact.\n'
+else
+  printf '  See validation errors above. Common causes:\n'
+  printf '    - codesign --verify failure: re-sign with --deep, or the cert chain\n'
+  printf '      changed and the DMG needs a fresh build.\n'
+  printf '    - stapler validate failure: notarization staple did not attach;\n'
+  printf '      check notarytool log for the submission ID.\n'
+  printf '    - spctl assess failure: macOS runner version may have changed how\n'
+  printf '      Gatekeeper inspects the DMG; verify codesign + stapler still pass.\n'
+fi
+printf '\n'
+
+exit "$OVERALL_STATUS"
