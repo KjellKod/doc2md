@@ -1,0 +1,22 @@
+apps/macos/README.md
+  s_2ebef8d1285e5b::t_35b7172a70b184 266
+  s_2ebef8d1285e5b::t_d4168e8f506947 269,271,274-280,283
+apps/macos/doc2md/Info.plist
+  s_2ebef8d1285e5b::t_09de869141e744 47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "60204c615fda86a15771c98095f8cb02a189be22",
+  "prompts": {},
+  "sessions": {
+    "s_2ebef8d1285e5b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d33c79c9-fa5d-4926-874e-2a30e658c6f7",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
