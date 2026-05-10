@@ -1,0 +1,21 @@
+scripts/release/release_mac_local.sh
+  s_2ebef8d1285e5b::t_6671fef7c6ae4e 1-204
+apps/macos/README.md
+  s_2ebef8d1285e5b::t_69c7d7a0d0a58a 277-279,281
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "4137a6c330a42b91bda30d4e1fa9de3743abef82",
+  "prompts": {},
+  "sessions": {
+    "s_2ebef8d1285e5b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d33c79c9-fa5d-4926-874e-2a30e658c6f7",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
