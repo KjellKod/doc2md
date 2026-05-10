@@ -274,9 +274,11 @@ The keypair was generated with Sparkle's own `generate_keys` tool, which stores 
 .build/mac/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_keys
 # Prints the public key. Private key is now in your login Keychain.
 
-# Export the private key once to send to the GitHub Environment secret:
+# Export the private key once to send to the GitHub Environment secret.
+# Use stdin redirection so the key is never passed as a command-line
+# argument (process arguments are visible in `ps` output).
 .build/mac/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_keys -x sparkle-private.pem
-gh secret set SPARKLE_EDDSA_PRIVATE_KEY --env mac-release --body "$(cat sparkle-private.pem)"
+gh secret set SPARKLE_EDDSA_PRIVATE_KEY --env mac-release < sparkle-private.pem
 rm -P sparkle-private.pem
 ```
 
