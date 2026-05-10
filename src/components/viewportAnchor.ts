@@ -14,6 +14,27 @@ function clampScrollTop(element: HTMLElement, scrollTop: number) {
   return Math.min(Math.max(scrollTop, 0), maxScroll);
 }
 
+/**
+ * The y-coordinate (in viewport space) to anchor the "top of the
+ * source view" to. When the container is its own scroll container its
+ * `getBoundingClientRect().top` is positive and we use it directly;
+ * when an ancestor (often the window) scrolls instead, the container
+ * may slide above the viewport top — in that case anchor to viewport
+ * top (0) so we capture/apply against what the user actually sees.
+ */
+function effectiveTopFor(container: HTMLElement): number {
+  return Math.max(container.getBoundingClientRect().top, 0);
+}
+
+/**
+ * Returns true when the element is its own scroll container — i.e.
+ * setting its `scrollTop` will visibly move its content. Falls back to
+ * scrolling the window when this returns false.
+ */
+function isOwnScrollContainer(element: HTMLElement): boolean {
+  return element.scrollHeight > element.clientHeight + 1;
+}
+
 function offsetForLine(source: string, line: number): number {
   const sourceLines = source.split("\n");
   const targetLine = Math.max(1, Math.min(line, sourceLines.length));
@@ -113,8 +134,15 @@ export function topLineFromTextareaMirror(
     return 1;
   }
 
+  // Keep the mirror's scroll in lockstep with the textarea so that
+  // text-node y-coords match what the user sees in the textarea
+  // (only meaningful when the textarea is its own scroll container).
   mirror.scrollTop = textarea.scrollTop;
-  const containerTop = mirror.getBoundingClientRect().top;
+  // Anchor to whichever is lower of the mirror's top and the viewport
+  // top: when the body is the actual scroller, the mirror can sit
+  // above the viewport, and we want the line currently at the top of
+  // the user's screen, not the line at the offscreen mirror top.
+  const containerTop = effectiveTopFor(mirror);
   const measured = measureFirstVisibleCharacter(mirror, containerTop);
 
   if (!measured) {
@@ -139,7 +167,7 @@ export function topLineFromRendered(container: HTMLElement): number {
     return 1;
   }
 
-  const containerTop = container.getBoundingClientRect().top;
+  const containerTop = effectiveTopFor(container);
   let firstQualifying: HTMLElement | null = null;
   let firstNonBlankQualifying: HTMLElement | null = null;
 
@@ -187,7 +215,12 @@ export function scrollRenderedToLine(container: HTMLElement, line: number) {
   );
 
   if (stamped.length === 0) {
-    container.scrollTop = 0;
+    if (isOwnScrollContainer(container)) {
+      container.scrollTop = 0;
+    } else if (typeof window !== "undefined") {
+      const containerRect = container.getBoundingClientRect();
+      window.scrollBy(0, containerRect.top);
+    }
     return;
   }
 
@@ -206,12 +239,29 @@ export function scrollRenderedToLine(container: HTMLElement, line: number) {
     chosen = stamped[stamped.length - 1];
   }
 
-  const containerRect = container.getBoundingClientRect();
   const elementRect = chosen.getBoundingClientRect();
-  const target =
-    container.scrollTop + (elementRect.top - containerRect.top);
 
-  container.scrollTop = clampScrollTop(container, target);
+  if (isOwnScrollContainer(container)) {
+    const containerRect = container.getBoundingClientRect();
+    const target =
+      container.scrollTop + (elementRect.top - containerRect.top);
+    container.scrollTop = clampScrollTop(container, target);
+    return;
+  }
+
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  // The container is laid out at full content height; the window (or
+  // some ancestor) is the actual scroller. Anchor the chosen element
+  // to whichever is greater of the container's viewport-top and 0,
+  // so we land at the top of the surface when it's still in view, or
+  // at the top of the viewport when the surface is scrolled past.
+  const containerRect = container.getBoundingClientRect();
+  const targetViewportTop = Math.max(containerRect.top, 0);
+  const delta = elementRect.top - targetViewportTop;
+  window.scrollBy(0, delta);
 }
 
 /**
@@ -240,9 +290,29 @@ export function scrollTextareaToLine(
     }
 
     const mirrorTop = measureMirror.getBoundingClientRect().top;
-    const target = top - mirrorTop;
+    const internalTarget = top - mirrorTop;
 
-    textarea.scrollTop = clampScrollTop(textarea, target);
+    if (isOwnScrollContainer(textarea)) {
+      // Textarea is its own scroll container: line up the chosen line
+      // at its internal top.
+      textarea.scrollTop = clampScrollTop(textarea, internalTarget);
+      return;
+    }
+
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    // Textarea is laid out at full content height (no internal
+    // scrollbar). Scroll the window so the line we want sits at the
+    // top of the user's visible viewport — or at the top of the
+    // textarea, whichever is lower on screen, so we don't jump above
+    // a sticky toolbar.
+    const textareaRect = textarea.getBoundingClientRect();
+    const targetViewportTop = Math.max(textareaRect.top, 0);
+    const lineViewportTop = mirrorTop + internalTarget;
+    const delta = lineViewportTop - targetViewportTop;
+    window.scrollBy(0, delta);
   } finally {
     if (cleanup && cleanup.parentNode) {
       cleanup.parentNode.removeChild(cleanup);
