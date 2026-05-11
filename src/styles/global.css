@@ -310,6 +310,19 @@ a {
 .sidebar-panel,
 .preview-panel {
   min-height: 700px;
+  /* Allow CSS-grid columns to shrink below their intrinsic content
+     width so the resize handle's horizontal drag actually narrows the
+     sidebar (or widens the preview panel). Default `min-width: auto`
+     on grid items would otherwise pin the sidebar column to its
+     contents' natural width. */
+  min-width: 0;
+}
+
+.sidebar-panel {
+  /* When the drag handle narrows the sidebar below the natural width
+     of the DropZone and FileList, let those children scroll inside
+     the column rather than push it open. */
+  overflow-x: hidden;
 }
 
 .preview-panel {
