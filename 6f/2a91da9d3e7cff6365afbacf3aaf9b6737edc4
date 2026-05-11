@@ -1,0 +1,19 @@
+docs/implementation/phase-7b-track-1-operational-checklist.md
+  s_10554aaad5fc8d::t_ec2a92c36641b1 1-136
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "6f2a91da9d3e7cff6365afbacf3aaf9b6737edc4",
+  "prompts": {},
+  "sessions": {
+    "s_10554aaad5fc8d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1f6ff839-f165-4fca-a8e6-f3060000f325",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
