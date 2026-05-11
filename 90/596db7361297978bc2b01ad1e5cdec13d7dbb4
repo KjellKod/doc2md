@@ -1,0 +1,19 @@
+tests/e2e/view-anchor-mode-switch.spec.ts
+  s_a512ddf03d46a9::t_4d811cf4c39321 206,220,234,242,257,265,280,291,306,320,331,342,345,383,394,400,411
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "90596db7361297978bc2b01ad1e5cdec13d7dbb4",
+  "prompts": {},
+  "sessions": {
+    "s_a512ddf03d46a9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6a18c350-2d69-4a65-85de-7e4bf448394a",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
