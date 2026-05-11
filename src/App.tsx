@@ -22,6 +22,8 @@ const PAGE_WIDTH_STEP = 48;
 const MIN_EDIT_SHELL_HEIGHT = 240;
 const MAX_EDIT_SHELL_HEIGHT = 2400;
 const EDIT_SHELL_HEIGHT_STEP = 32;
+const MIN_SIDEBAR_WIDTH = 56;
+const MAX_SIDEBAR_WIDTH = 430;
 type PageView = "convert" | "install";
 const DISPLAY_VERSION = __DOC2MD_DISPLAY_VERSION__;
 
@@ -126,18 +128,27 @@ function clampEditShellHeight(height: number) {
   );
 }
 
+function clampSidebarWidth(width: number) {
+  return Math.min(
+    Math.max(Math.round(width), MIN_SIDEBAR_WIDTH),
+    MAX_SIDEBAR_WIDTH,
+  );
+}
+
 function AppContent() {
   const [activePage, setActivePage] = useState<PageView>("convert");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isPageResizing, setIsPageResizing] = useState(false);
   const [pageMaxWidth, setPageMaxWidth] = useState(BASE_PAGE_MAX_WIDTH);
   const [editShellHeight, setEditShellHeight] = useState<number | null>(null);
+  const [sidebarWidth, setSidebarWidth] = useState<number | null>(null);
   const convertTabRef = useRef<HTMLButtonElement>(null);
   const installTabRef = useRef<HTMLButtonElement>(null);
   const dragStartXRef = useRef(0);
   const dragStartYRef = useRef(0);
   const dragStartWidthRef = useRef(BASE_PAGE_MAX_WIDTH);
   const dragStartHeightRef = useRef<number | null>(null);
+  const dragStartSidebarWidthRef = useRef<number | null>(null);
   const {
     entries,
     addFiles,
@@ -289,11 +300,14 @@ function AppContent() {
     }
 
     const handleMouseMove = (event: globalThis.MouseEvent) => {
+      const deltaX = event.clientX - dragStartXRef.current;
       setPageMaxWidth(
-        clampPageWidth(
-          dragStartWidthRef.current + (event.clientX - dragStartXRef.current),
-        ),
+        clampPageWidth(dragStartWidthRef.current + deltaX),
       );
+      const baseSidebarWidth = dragStartSidebarWidthRef.current;
+      if (baseSidebarWidth !== null) {
+        setSidebarWidth(clampSidebarWidth(baseSidebarWidth - deltaX));
+      }
       const baseHeight = dragStartHeightRef.current;
       if (baseHeight !== null) {
         setEditShellHeight(
@@ -339,15 +353,31 @@ function AppContent() {
     return MIN_EDIT_SHELL_HEIGHT;
   }
 
+  function measureSidebarWidth(): number | null {
+    if (typeof document === "undefined") {
+      return null;
+    }
+    const sidebar =
+      document.querySelector<HTMLElement>(".sidebar-panel") ??
+      document.querySelector<HTMLElement>(".collapse-rail");
+    if (!sidebar) {
+      return null;
+    }
+    return clampSidebarWidth(sidebar.getBoundingClientRect().width);
+  }
+
   const handlePageResizeStart = (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     const normalizedWidth = clampPageWidth(pageMaxWidth);
     const measuredHeight =
       editShellHeight !== null ? editShellHeight : measureEditShellHeight();
+    const measuredSidebarWidth =
+      sidebarWidth !== null ? sidebarWidth : measureSidebarWidth();
     dragStartXRef.current = event.clientX;
     dragStartYRef.current = event.clientY;
     dragStartWidthRef.current = normalizedWidth;
     dragStartHeightRef.current = measuredHeight;
+    dragStartSidebarWidthRef.current = measuredSidebarWidth;
 
     if (normalizedWidth !== pageMaxWidth) {
       setPageMaxWidth(normalizedWidth);
@@ -358,6 +388,12 @@ function AppContent() {
     ) {
       setEditShellHeight(measuredHeight);
     }
+    if (
+      measuredSidebarWidth !== null &&
+      measuredSidebarWidth !== sidebarWidth
+    ) {
+      setSidebarWidth(measuredSidebarWidth);
+    }
 
     setIsPageResizing(true);
   };
@@ -366,12 +402,24 @@ function AppContent() {
     if (event.key === "ArrowRight") {
       event.preventDefault();
       setPageMaxWidth((current) => clampPageWidth(current + PAGE_WIDTH_STEP));
+      setSidebarWidth((current) =>
+        clampSidebarWidth(
+          (current ?? measureSidebarWidth() ?? MAX_SIDEBAR_WIDTH) -
+            PAGE_WIDTH_STEP,
+        ),
+      );
       return;
     }
 
     if (event.key === "ArrowLeft") {
       event.preventDefault();
       setPageMaxWidth((current) => clampPageWidth(current - PAGE_WIDTH_STEP));
+      setSidebarWidth((current) =>
+        clampSidebarWidth(
+          (current ?? measureSidebarWidth() ?? MAX_SIDEBAR_WIDTH) +
+            PAGE_WIDTH_STEP,
+        ),
+      );
       return;
     }
 
@@ -400,6 +448,7 @@ function AppContent() {
     if (event.key === "Home") {
       event.preventDefault();
       setPageMaxWidth(BASE_PAGE_MAX_WIDTH);
+      setSidebarWidth(null);
       setEditShellHeight(null);
     }
   };
@@ -413,6 +462,13 @@ function AppContent() {
       ? ({
           height: `${editShellHeight}px`,
           minHeight: `${editShellHeight}px`,
+        } as CSSProperties)
+      : undefined;
+
+  const workspaceStyle =
+    sidebarWidth !== null
+      ? ({
+          gridTemplateColumns: `${sidebarWidth}px minmax(0, 1fr)`,
         } as CSSProperties)
       : undefined;
 
@@ -622,6 +678,7 @@ function AppContent() {
           >
             <section
               className={`workspace${sidebarCollapsed ? " sidebar-collapsed" : ""}`}
+              style={sidebarCollapsed ? undefined : workspaceStyle}
             >
               {sidebarCollapsed ? (
                 <section className="panel collapse-rail" aria-label="Upload rail">

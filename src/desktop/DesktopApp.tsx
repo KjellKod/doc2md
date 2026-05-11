@@ -41,6 +41,12 @@ const PAGE_WIDTH_STEP = 48;
 const MIN_EDIT_SHELL_HEIGHT = 240;
 const MAX_EDIT_SHELL_HEIGHT = 2400;
 const EDIT_SHELL_HEIGHT_STEP = 32;
+// Sidebar shrink bounds. The default CSS column is
+// `minmax(350px, 430px)`; we let the drag handle pull it all the way
+// down to the collapse-rail width so dragging right steals horizontal
+// space for the preview panel even on narrow windows.
+const MIN_SIDEBAR_WIDTH = 56;
+const MAX_SIDEBAR_WIDTH = 430;
 type PageView = "convert" | "install";
 const DISPLAY_VERSION = __DOC2MD_DISPLAY_VERSION__;
 const CONVERSION_FAILED_SAVE_MESSAGE =
@@ -290,18 +296,27 @@ function clampEditShellHeight(height: number) {
   );
 }
 
+function clampSidebarWidth(width: number) {
+  return Math.min(
+    Math.max(Math.round(width), MIN_SIDEBAR_WIDTH),
+    MAX_SIDEBAR_WIDTH,
+  );
+}
+
 function AppContent() {
   const [activePage, setActivePage] = useState<PageView>("convert");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isPageResizing, setIsPageResizing] = useState(false);
   const [pageMaxWidth, setPageMaxWidth] = useState(BASE_PAGE_MAX_WIDTH);
   const [editShellHeight, setEditShellHeight] = useState<number | null>(null);
+  const [sidebarWidth, setSidebarWidth] = useState<number | null>(null);
   const convertTabRef = useRef<HTMLButtonElement>(null);
   const installTabRef = useRef<HTMLButtonElement>(null);
   const dragStartXRef = useRef(0);
   const dragStartYRef = useRef(0);
   const dragStartWidthRef = useRef(BASE_PAGE_MAX_WIDTH);
   const dragStartHeightRef = useRef<number | null>(null);
+  const dragStartSidebarWidthRef = useRef<number | null>(null);
   const {
     entries,
     addFiles,
@@ -439,11 +454,19 @@ function AppContent() {
     }
 
     const handleMouseMove = (event: globalThis.MouseEvent) => {
+      const deltaX = event.clientX - dragStartXRef.current;
       setPageMaxWidth(
-        clampPageWidth(
-          dragStartWidthRef.current + (event.clientX - dragStartXRef.current),
-        ),
+        clampPageWidth(dragStartWidthRef.current + deltaX),
       );
+      // Shrink the sidebar as the user drags right (positive deltaX).
+      // This is the only way to widen the preview panel visibly on
+      // windows narrower than `--page-max-width`. Bounded between
+      // MIN_SIDEBAR_WIDTH and MAX_SIDEBAR_WIDTH; drags past the bounds
+      // are absorbed by the clamp.
+      const baseSidebarWidth = dragStartSidebarWidthRef.current;
+      if (baseSidebarWidth !== null) {
+        setSidebarWidth(clampSidebarWidth(baseSidebarWidth - deltaX));
+      }
       const baseHeight = dragStartHeightRef.current;
       if (baseHeight !== null) {
         setEditShellHeight(
@@ -827,15 +850,31 @@ function AppContent() {
     return MIN_EDIT_SHELL_HEIGHT;
   }
 
+  function measureSidebarWidth(): number | null {
+    if (typeof document === "undefined") {
+      return null;
+    }
+    const sidebar =
+      document.querySelector<HTMLElement>(".sidebar-panel") ??
+      document.querySelector<HTMLElement>(".collapse-rail");
+    if (!sidebar) {
+      return null;
+    }
+    return clampSidebarWidth(sidebar.getBoundingClientRect().width);
+  }
+
   const handlePageResizeStart = (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     const normalizedWidth = clampPageWidth(pageMaxWidth);
     const measuredHeight =
       editShellHeight !== null ? editShellHeight : measureEditShellHeight();
+    const measuredSidebarWidth =
+      sidebarWidth !== null ? sidebarWidth : measureSidebarWidth();
     dragStartXRef.current = event.clientX;
     dragStartYRef.current = event.clientY;
     dragStartWidthRef.current = normalizedWidth;
     dragStartHeightRef.current = measuredHeight;
+    dragStartSidebarWidthRef.current = measuredSidebarWidth;
 
     if (normalizedWidth !== pageMaxWidth) {
       setPageMaxWidth(normalizedWidth);
@@ -846,6 +885,12 @@ function AppContent() {
     ) {
       setEditShellHeight(measuredHeight);
     }
+    if (
+      measuredSidebarWidth !== null &&
+      measuredSidebarWidth !== sidebarWidth
+    ) {
+      setSidebarWidth(measuredSidebarWidth);
+    }
 
     setIsPageResizing(true);
   };
@@ -854,12 +899,24 @@ function AppContent() {
     if (event.key === "ArrowRight") {
       event.preventDefault();
       setPageMaxWidth((current) => clampPageWidth(current + PAGE_WIDTH_STEP));
+      setSidebarWidth((current) =>
+        clampSidebarWidth(
+          (current ?? measureSidebarWidth() ?? MAX_SIDEBAR_WIDTH) -
+            PAGE_WIDTH_STEP,
+        ),
+      );
       return;
     }
 
     if (event.key === "ArrowLeft") {
       event.preventDefault();
       setPageMaxWidth((current) => clampPageWidth(current - PAGE_WIDTH_STEP));
+      setSidebarWidth((current) =>
+        clampSidebarWidth(
+          (current ?? measureSidebarWidth() ?? MAX_SIDEBAR_WIDTH) +
+            PAGE_WIDTH_STEP,
+        ),
+      );
       return;
     }
 
@@ -888,6 +945,7 @@ function AppContent() {
     if (event.key === "Home") {
       event.preventDefault();
       setPageMaxWidth(BASE_PAGE_MAX_WIDTH);
+      setSidebarWidth(null);
       setEditShellHeight(null);
     }
   };
@@ -895,6 +953,18 @@ function AppContent() {
   const pageFrameStyle = {
     "--page-max-width": `${pageMaxWidth}px`,
   } as CSSProperties;
+
+  // Inline workspace grid template lets the user steal horizontal
+  // space from the sidebar by dragging the resize handle right; the
+  // preview-panel column (1fr) absorbs the freed pixels and the edit
+  // area grows visibly even on narrow windows where adjusting
+  // `--page-max-width` alone has no effect.
+  const workspaceStyle =
+    sidebarWidth !== null
+      ? ({
+          gridTemplateColumns: `${sidebarWidth}px minmax(0, 1fr)`,
+        } as CSSProperties)
+      : undefined;
 
   // The resize handle drags BOTH dimensions on the preview panel:
   //   - vertical: inline `height` + `min-height` force the panel to
@@ -2160,6 +2230,7 @@ function AppContent() {
 
               <section
                 className={`workspace${sidebarCollapsed ? " sidebar-collapsed" : ""}`}
+                style={sidebarCollapsed ? undefined : workspaceStyle}
               >
                 {sidebarCollapsed ? (
                   <section className="panel collapse-rail" aria-label="Upload rail">
