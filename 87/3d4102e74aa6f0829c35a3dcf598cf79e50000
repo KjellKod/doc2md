@@ -1,0 +1,35 @@
+src/desktop/DesktopApp.tsx
+  s_10554aaad5fc8d::t_c359f824feb925 2457-2467,2472-2474,2479-2481
+  s_10554aaad5fc8d::t_cb3bf0299d7e3d 2029-2032,2052-2132
+  s_10554aaad5fc8d::t_9483975423c156 2600
+  s_10554aaad5fc8d::t_3ed1ed62c75b3a 2675-2690
+tests/e2e/resize-handles.spec.ts
+  s_10554aaad5fc8d::t_1aced75e53057d 41-49
+src/components/DropZone.tsx
+  s_10554aaad5fc8d::t_82b1fe312c7c80 7-12,15-19,37-40
+src/App.tsx
+  s_10554aaad5fc8d::t_b16ab9e8f75393 1044-1059
+src/components/__tests__/DropZone.test.tsx
+  s_10554aaad5fc8d::t_77e5e03e30dbfb 46-67
+src/App.test.tsx
+  s_10554aaad5fc8d::t_6307306e4c5181 321
+  s_10554aaad5fc8d::t_c4ce16e5d6c37d 411-421
+  s_10554aaad5fc8d::t_14ec6f4f7476df 357
+  s_10554aaad5fc8d::t_445643c51b959d 387
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "873d4102e74aa6f0829c35a3dcf598cf79e50000",
+  "prompts": {},
+  "sessions": {
+    "s_10554aaad5fc8d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1f6ff839-f165-4fca-a8e6-f3060000f325",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
