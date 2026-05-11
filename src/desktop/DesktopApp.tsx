@@ -807,16 +807,24 @@ function AppContent() {
     setIsDesktopSettingsOpen(false);
   };
 
+  // Measure the panel that the handle controls (the preview panel
+  // contains both the heading and the active surface, so its rendered
+  // height is the "current size" the drag starts from). Fall back to
+  // the edit shell when in edit mode, and finally to MIN if neither
+  // exists yet.
   function measureEditShellHeight(): number | null {
     if (typeof document === "undefined") {
       return null;
     }
-    const shell = document.querySelector(".markdown-edit-shell");
-    if (!shell) {
-      return MIN_EDIT_SHELL_HEIGHT;
+    const panel = document.querySelector(".preview-panel");
+    if (panel) {
+      return clampEditShellHeight(panel.getBoundingClientRect().height);
     }
-    const rect = shell.getBoundingClientRect();
-    return clampEditShellHeight(rect.height);
+    const shell = document.querySelector(".markdown-edit-shell");
+    if (shell) {
+      return clampEditShellHeight(shell.getBoundingClientRect().height);
+    }
+    return MIN_EDIT_SHELL_HEIGHT;
   }
 
   const handlePageResizeStart = (event: MouseEvent<HTMLButtonElement>) => {
@@ -888,14 +896,24 @@ function AppContent() {
     "--page-max-width": `${pageMaxWidth}px`,
   } as CSSProperties;
 
-  // Inline min-height drives the whole preview panel taller when the user
-  // drags the bottom-right resize handle. The active surface (edit shell,
-  // preview, or LinkedIn) is `flex: 1` so it absorbs the extra height in
-  // any mode, giving immediate visual feedback regardless of which view
-  // is current.
+  // The resize handle drags BOTH dimensions on the preview panel:
+  //   - vertical: inline `height` + `min-height` force the panel to
+  //     the dragged value regardless of content; the active surface
+  //     (`flex: 1`) absorbs the new height and scrolls overflow
+  //     internally.
+  //   - horizontal: the workspace-grid template's preview-panel column
+  //     is widened directly; this is independent of the
+  //     `--page-max-width` CSS var (which is invisible when the window
+  //     is narrower than the var). The grid widens by stealing space
+  //     from the sidebar's `minmax(350px, 430px)` column.
+  // If both states are unset (no drag yet) the panel uses its default
+  // CSS sizing.
   const previewPanelStyle =
     editShellHeight !== null
-      ? ({ minHeight: `${editShellHeight}px` } as CSSProperties)
+      ? ({
+          height: `${editShellHeight}px`,
+          minHeight: `${editShellHeight}px`,
+        } as CSSProperties)
       : undefined;
 
   const focusPageTab = (page: PageView) => {

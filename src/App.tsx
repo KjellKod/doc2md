@@ -328,12 +328,15 @@ function AppContent() {
     if (typeof document === "undefined") {
       return null;
     }
-    const shell = document.querySelector(".markdown-edit-shell");
-    if (!shell) {
-      return MIN_EDIT_SHELL_HEIGHT;
+    const panel = document.querySelector(".preview-panel");
+    if (panel) {
+      return clampEditShellHeight(panel.getBoundingClientRect().height);
     }
-    const rect = shell.getBoundingClientRect();
-    return clampEditShellHeight(rect.height);
+    const shell = document.querySelector(".markdown-edit-shell");
+    if (shell) {
+      return clampEditShellHeight(shell.getBoundingClientRect().height);
+    }
+    return MIN_EDIT_SHELL_HEIGHT;
   }
 
   const handlePageResizeStart = (event: MouseEvent<HTMLButtonElement>) => {
@@ -407,7 +410,10 @@ function AppContent() {
 
   const previewPanelStyle =
     editShellHeight !== null
-      ? ({ minHeight: `${editShellHeight}px` } as CSSProperties)
+      ? ({
+          height: `${editShellHeight}px`,
+          minHeight: `${editShellHeight}px`,
+        } as CSSProperties)
       : undefined;
 
   const focusPageTab = (page: PageView) => {
