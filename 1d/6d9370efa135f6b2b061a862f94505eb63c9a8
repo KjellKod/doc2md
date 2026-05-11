@@ -1,0 +1,23 @@
+src/desktop/DesktopApp.tsx
+  s_a512ddf03d46a9::t_00d200f7319d59 1622-1659
+  s_a512ddf03d46a9::t_b06664efce33b8 318
+  s_a512ddf03d46a9::t_6c7990f1fa7dc0 2067,2071-2075,2077-2086
+src/hooks/useFileConversion.ts
+  s_a512ddf03d46a9::t_e5521806df74f5 263-272,289
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "1d6d9370efa135f6b2b061a862f94505eb63c9a8",
+  "prompts": {},
+  "sessions": {
+    "s_a512ddf03d46a9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6a18c350-2d69-4a65-85de-7e4bf448394a",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
