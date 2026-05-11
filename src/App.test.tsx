@@ -72,7 +72,7 @@ describe("App", () => {
     ).toBeInTheDocument();
 
     expect(
-      screen.getByText("Browser-side conversion with no doc2md upload backend"),
+      screen.getByText(/Browser only, privacy first\./),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Switch to day mode" }),
@@ -116,7 +116,7 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Open the editor to paste or write Markdown from scratch, or convert a document and review the result here.",
+        /Open the editor to paste or write Markdown from scratch/,
       ),
     ).toBeInTheDocument();
     expect(
@@ -202,7 +202,7 @@ describe("App", () => {
     const { container } = render(<App />);
     const pageFrame = container.querySelector(".page-frame");
     const handle = screen.getByRole("button", {
-      name: "Resize workspace width",
+      name: "Resize workspace and editor",
     });
 
     expect(pageFrame).toHaveStyle("--page-max-width: 1680px");

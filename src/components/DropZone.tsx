@@ -1,6 +1,5 @@
 import { useRef, useState } from "react";
 import { MAX_BROWSER_FILE_SIZE_BYTES } from "../converters/messages";
-import { SUPPORTED_FORMATS } from "../types";
 
 interface DropZoneProps {
   onFilesAdded: (files: FileList | File[]) => void;
@@ -57,9 +56,19 @@ export default function DropZone({ onFilesAdded, onUrlAdded }: DropZoneProps) {
       role="button"
       tabIndex={0}
       onClick={(event) => {
-        if (event.target === event.currentTarget) {
-          openFilePicker();
+        // Open the file picker for any click in the drop area, except
+        // when the user clicked an interactive child element that owns
+        // its own click behavior (the inline "browse" button, the URL
+        // form's input/button). Those elements either handle the click
+        // themselves or stop propagation, so this `.closest()` check
+        // covers anything that bubbles through to us.
+        const target = event.target as Element | null;
+        if (
+          target?.closest("button, input, textarea, a, label, [contenteditable]")
+        ) {
+          return;
         }
+        openFilePicker();
       }}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
@@ -124,13 +133,6 @@ export default function DropZone({ onFilesAdded, onUrlAdded }: DropZoneProps) {
         </button>
         .
       </p>
-      <div className="drop-zone-format-list" aria-label="Supported formats">
-        {SUPPORTED_FORMATS.map((format) => (
-          <span key={format} className="drop-zone-format-pill">
-            .{format}
-          </span>
-        ))}
-      </div>
       <p className="drop-zone-note">
         Mix supported file types. URL imports must allow direct browser access.
         Up to {maxSizeInMb} MB each.

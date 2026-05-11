@@ -38,6 +38,9 @@ const MIN_PAGE_MAX_WIDTH = 1360;
 const HARD_MAX_PAGE_MAX_WIDTH = 2400;
 const PAGE_WIDTH_FRAME_ALLOWANCE = 96;
 const PAGE_WIDTH_STEP = 48;
+const MIN_EDIT_SHELL_HEIGHT = 240;
+const MAX_EDIT_SHELL_HEIGHT = 2400;
+const EDIT_SHELL_HEIGHT_STEP = 32;
 type PageView = "convert" | "install";
 const DISPLAY_VERSION = __DOC2MD_DISPLAY_VERSION__;
 const CONVERSION_FAILED_SAVE_MESSAGE =
@@ -92,29 +95,31 @@ function PanelRightCloseIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-function MoveHorizontalIcon(props: SVGProps<SVGSVGElement>) {
+function MoveDiagonalIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" {...props}>
+      {/* Top-left arrowhead */}
       <path
-        d="m7 8-4 4 4 4"
+        d="M9 4 H4 V9"
         stroke="currentColor"
-        strokeWidth="1.8"
+        strokeWidth="2.2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+      {/* Bottom-right arrowhead */}
       <path
-        d="m17 8 4 4-4 4"
+        d="M15 20 H20 V15"
         stroke="currentColor"
-        strokeWidth="1.8"
+        strokeWidth="2.2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+      {/* Diagonal shaft */}
       <path
-        d="M3 12h18"
+        d="M4 4 L20 20"
         stroke="currentColor"
-        strokeWidth="1.8"
+        strokeWidth="2.2"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
     </svg>
   );
@@ -278,15 +283,25 @@ function clampPageWidth(width: number) {
   );
 }
 
+function clampEditShellHeight(height: number) {
+  return Math.min(
+    Math.max(Math.round(height), MIN_EDIT_SHELL_HEIGHT),
+    MAX_EDIT_SHELL_HEIGHT,
+  );
+}
+
 function AppContent() {
   const [activePage, setActivePage] = useState<PageView>("convert");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isPageResizing, setIsPageResizing] = useState(false);
   const [pageMaxWidth, setPageMaxWidth] = useState(BASE_PAGE_MAX_WIDTH);
+  const [editShellHeight, setEditShellHeight] = useState<number | null>(null);
   const convertTabRef = useRef<HTMLButtonElement>(null);
   const installTabRef = useRef<HTMLButtonElement>(null);
   const dragStartXRef = useRef(0);
+  const dragStartYRef = useRef(0);
   const dragStartWidthRef = useRef(BASE_PAGE_MAX_WIDTH);
+  const dragStartHeightRef = useRef<number | null>(null);
   const {
     entries,
     addFiles,
@@ -428,6 +443,14 @@ function AppContent() {
           dragStartWidthRef.current + (event.clientX - dragStartXRef.current),
         ),
       );
+      const baseHeight = dragStartHeightRef.current;
+      if (baseHeight !== null) {
+        setEditShellHeight(
+          clampEditShellHeight(
+            baseHeight + (event.clientY - dragStartYRef.current),
+          ),
+        );
+      }
     };
     const handleMouseUp = () => {
       setIsPageResizing(false);
@@ -783,14 +806,36 @@ function AppContent() {
     setIsDesktopSettingsOpen(false);
   };
 
+  function measureEditShellHeight(): number | null {
+    if (typeof document === "undefined") {
+      return null;
+    }
+    const shell = document.querySelector(".markdown-edit-shell");
+    if (!shell) {
+      return MIN_EDIT_SHELL_HEIGHT;
+    }
+    const rect = shell.getBoundingClientRect();
+    return clampEditShellHeight(rect.height);
+  }
+
   const handlePageResizeStart = (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     const normalizedWidth = clampPageWidth(pageMaxWidth);
+    const measuredHeight =
+      editShellHeight !== null ? editShellHeight : measureEditShellHeight();
     dragStartXRef.current = event.clientX;
+    dragStartYRef.current = event.clientY;
     dragStartWidthRef.current = normalizedWidth;
+    dragStartHeightRef.current = measuredHeight;
 
     if (normalizedWidth !== pageMaxWidth) {
       setPageMaxWidth(normalizedWidth);
+    }
+    if (
+      measuredHeight !== null &&
+      measuredHeight !== editShellHeight
+    ) {
+      setEditShellHeight(measuredHeight);
     }
 
     setIsPageResizing(true);
@@ -809,15 +854,48 @@ function AppContent() {
       return;
     }
 
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setEditShellHeight((current) =>
+        clampEditShellHeight(
+          (current ?? measureEditShellHeight() ?? MIN_EDIT_SHELL_HEIGHT) +
+            EDIT_SHELL_HEIGHT_STEP,
+        ),
+      );
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setEditShellHeight((current) =>
+        clampEditShellHeight(
+          (current ?? measureEditShellHeight() ?? MIN_EDIT_SHELL_HEIGHT) -
+            EDIT_SHELL_HEIGHT_STEP,
+        ),
+      );
+      return;
+    }
+
     if (event.key === "Home") {
       event.preventDefault();
       setPageMaxWidth(BASE_PAGE_MAX_WIDTH);
+      setEditShellHeight(null);
     }
   };
 
   const pageFrameStyle = {
     "--page-max-width": `${pageMaxWidth}px`,
   } as CSSProperties;
+
+  // Inline min-height drives the whole preview panel taller when the user
+  // drags the bottom-right resize handle. The active surface (edit shell,
+  // preview, or LinkedIn) is `flex: 1` so it absorbs the extra height in
+  // any mode, giving immediate visual feedback regardless of which view
+  // is current.
+  const previewPanelStyle =
+    editShellHeight !== null
+      ? ({ minHeight: `${editShellHeight}px` } as CSSProperties)
+      : undefined;
 
   const focusPageTab = (page: PageView) => {
     const tab =
@@ -1863,57 +1941,63 @@ function AppContent() {
                   ) : null}
                 </div>
               </div>
-              <h1>Edit or convert to Markdown, without leaving the browser.</h1>
+              <h1>
+                {"Edit or convert to Markdown, "}
+                <br />
+                {"without leaving the browser."}
+              </h1>
               <p className="hero-copy">
-                Start with a blank draft, paste in existing content, or bring in
-                a local file or document URL to convert in your browser before
-                you review and download clean Markdown.
+                Browser only, privacy first. Start with a blank draft, edit
+                existing content, or convert{" "}
+                <strong>.md</strong>, <strong>.txt</strong>,{" "}
+                <strong>.json</strong>, <strong>.csv</strong>,{" "}
+                <strong>.tsv</strong>, <strong>.html</strong>,{" "}
+                <strong>.docx</strong>, <strong>.xlsx</strong>,{" "}
+                <strong>.pdf</strong>, and <strong>.pptx</strong> files to
+                Markdown.
               </p>
-              <div className="hero-meta" aria-label="Product highlights">
-                <span className="hero-pill">
-                  Browser-side conversion with no doc2md upload backend
-                </span>
-                <span className="hero-pill">
-                  Supports .md, .txt, .json, .csv, .tsv, .html, .docx, .xlsx,
-                  .pdf, and .pptx
-                </span>
-                <span className="hero-pill">
-                  {activePage === "convert"
-                    ? heroSummary
-                    : "CLI, Node, and portable skill setup from one place"}
-                </span>
-              </div>
             </header>
 
-            <div className="view-switcher" role="tablist" aria-label="doc2md views">
-              <button
-                id="view-tab-convert"
-                ref={convertTabRef}
-                type="button"
-                role="tab"
-                aria-selected={activePage === "convert"}
-                aria-controls="view-panel-convert"
-                tabIndex={activePage === "convert" ? 0 : -1}
-                className={`view-tab${activePage === "convert" ? " is-active" : ""}`}
-                onClick={() => setActivePage("convert")}
-                onKeyDown={(event) => handleViewTabKeyDown(event, "convert")}
+            <div className="view-switcher-row">
+              <div
+                className="view-switcher"
+                role="tablist"
+                aria-label="doc2md views"
               >
-                Convert
-              </button>
-              <button
-                id="view-tab-install"
-                ref={installTabRef}
-                type="button"
-                role="tab"
-                aria-selected={activePage === "install"}
-                aria-controls="view-panel-install"
-                tabIndex={activePage === "install" ? 0 : -1}
-                className={`view-tab${activePage === "install" ? " is-active" : ""}`}
-                onClick={() => setActivePage("install")}
-                onKeyDown={(event) => handleViewTabKeyDown(event, "install")}
-              >
-                Install & Use
-              </button>
+                <button
+                  id="view-tab-convert"
+                  ref={convertTabRef}
+                  type="button"
+                  role="tab"
+                  aria-selected={activePage === "convert"}
+                  aria-controls="view-panel-convert"
+                  tabIndex={activePage === "convert" ? 0 : -1}
+                  className={`view-tab${activePage === "convert" ? " is-active" : ""}`}
+                  onClick={() => setActivePage("convert")}
+                  onKeyDown={(event) => handleViewTabKeyDown(event, "convert")}
+                >
+                  Convert
+                </button>
+                <button
+                  id="view-tab-install"
+                  ref={installTabRef}
+                  type="button"
+                  role="tab"
+                  aria-selected={activePage === "install"}
+                  aria-controls="view-panel-install"
+                  tabIndex={activePage === "install" ? 0 : -1}
+                  className={`view-tab${activePage === "install" ? " is-active" : ""}`}
+                  onClick={() => setActivePage("install")}
+                  onKeyDown={(event) => handleViewTabKeyDown(event, "install")}
+                >
+                  Install & Use
+                </button>
+              </div>
+              <span className="view-switcher-meta" aria-live="polite">
+                {activePage === "convert"
+                  ? heroSummary
+                  : "CLI, Node, and portable skill setup from one place"}
+              </span>
             </div>
 
             <section
@@ -1941,14 +2025,14 @@ function AppContent() {
                         <span className="desktop-save-pill">
                           {saveStateLabel}
                         </span>
-                        {!activePendingConflict ? (
+                        {!activePendingConflict && selectedPath ? (
                           <button
                             type="button"
                             className="ghost-button desktop-reload-button"
                             onClick={() => void handleReloadSelectedDocument()}
-                            disabled={!selectedPath || activeSaveState === "saving"}
+                            disabled={activeSaveState === "saving"}
                             aria-label="Reload from disk"
-                            title="Reload from disk"
+                            title="Reload from disk and discard unsaved changes"
                           >
                             Reload
                           </button>
@@ -2080,6 +2164,7 @@ function AppContent() {
                 <section
                   className="panel preview-panel"
                   aria-labelledby="preview-title"
+                  style={previewPanelStyle}
                 >
                   <div className="panel-heading">
                     <div>
@@ -2090,19 +2175,6 @@ function AppContent() {
                           : "Start writing, paste Markdown, or convert a file and review it here."}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      className="ghost-button page-width-handle"
-                      onMouseDown={handlePageResizeStart}
-                      onKeyDown={handlePageResizeKeyDown}
-                      aria-label="Resize workspace width"
-                      title="Drag to widen or narrow the workspace"
-                    >
-                      <MoveHorizontalIcon
-                        className="page-width-icon"
-                        aria-hidden="true"
-                      />
-                    </button>
                   </div>
                   <PreviewPanel
                     entry={selectedEntry}
@@ -2124,6 +2196,19 @@ function AppContent() {
                       }
                     }}
                   />
+                  <button
+                    type="button"
+                    className="page-resize-handle"
+                    onMouseDown={handlePageResizeStart}
+                    onKeyDown={handlePageResizeKeyDown}
+                    aria-label="Resize workspace and editor"
+                    title="Drag to resize the workspace width and editor height (arrow keys: ←→ width, ↑↓ height, Home reset)"
+                  >
+                    <MoveDiagonalIcon
+                      className="page-resize-icon"
+                      aria-hidden="true"
+                    />
+                  </button>
                 </section>
               </section>
 
