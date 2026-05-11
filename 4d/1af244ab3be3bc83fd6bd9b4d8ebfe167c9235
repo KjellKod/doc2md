@@ -1,0 +1,65 @@
+src/App.test.tsx
+  s_a512ddf03d46a9::t_6946ceae06965e 205
+  s_a512ddf03d46a9::t_667be97d2e400d 75
+  s_a512ddf03d46a9::t_496ff4bfccb71b 119
+src/desktop/DesktopApp.tsx
+  s_a512ddf03d46a9::t_d6649882bcdd29 298,302,304
+  s_a512ddf03d46a9::t_619757ed8f60c2 286-292
+  s_a512ddf03d46a9::t_96cd668925687f 98,101,103,105,109,111,113,117,119,121
+  s_a512ddf03d46a9::t_bb7955c0d27571 2167
+  s_a512ddf03d46a9::t_06f8fc5023660b 809-820
+  s_a512ddf03d46a9::t_4cc16332a2a336 890-899
+  s_a512ddf03d46a9::t_a13ff3de737f45 1950
+  s_a512ddf03d46a9::t_8cbcbee134bab7 1961-1965,1967-2000
+  s_a512ddf03d46a9::t_7ee858ea302300 41-43
+  s_a512ddf03d46a9::t_418a2a42b10c91 2199-2211
+  s_a512ddf03d46a9::t_4b9ca4e2b788cb 1951-1957
+  s_a512ddf03d46a9::t_36943867bfe945 824-825,827,829,834-839,857-878,882
+  s_a512ddf03d46a9::t_38d60e20b5b2d6 2028,2033,2035
+  s_a512ddf03d46a9::t_87b718dfe63a8e 1944-1948
+  s_a512ddf03d46a9::t_28b75c049bfed8 446-453
+src/styles/global.css
+  s_a512ddf03d46a9::t_9121b13cc54abf 187
+  s_a512ddf03d46a9::t_73ffae2e06b575 1010-1019
+  s_a512ddf03d46a9::t_5663fab8ba2e94 218-225,237-240
+  s_a512ddf03d46a9::t_99a3a1519c372d 315-318
+  s_a512ddf03d46a9::t_6480e1d70a6223 736,742-743,745-762,765-767,770-772,779
+  s_a512ddf03d46a9::t_ee25a4eecd25ac 737-740
+  s_a512ddf03d46a9::t_e0faf5fcd80bf5 2467
+ideas/remove-url-import.md
+  s_a512ddf03d46a9::t_11faa7380bbdf3 1-47
+src/App.tsx
+  s_a512ddf03d46a9::t_f6252b61d33624 70,74,76,81,83,88,90
+  s_a512ddf03d46a9::t_c3ce5769e32307 297-304
+  s_a512ddf03d46a9::t_71e1e444c48fb8 557
+  s_a512ddf03d46a9::t_923b55991797b7 122-128
+  s_a512ddf03d46a9::t_afae4c3f102fe5 134,138,140
+  s_a512ddf03d46a9::t_975617438b6315 327-338,342-343,345,347,352-357,375-396,400
+  s_a512ddf03d46a9::t_69ca1a70e4c734 568-572,574-607
+  s_a512ddf03d46a9::t_f5f4013cbc8789 688,716-728
+  s_a512ddf03d46a9::t_2f391d3393079a 22-24
+  s_a512ddf03d46a9::t_e36c6a6ade234e 408-412
+  s_a512ddf03d46a9::t_85d9d1f93c4e80 551-555
+  s_a512ddf03d46a9::t_e9486201f26ee5 558-564
+src/components/DropZone.tsx
+  s_a512ddf03d46a9::t_d018951e0bb13e 59-69,71
+src/components/PreviewPanel.tsx
+  s_a512ddf03d46a9::t_8a0309af738ce5 691-700
+  s_a512ddf03d46a9::t_f16b1efb36fb92 577,579-605,609-610
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "4d1af244ab3be3bc83fd6bd9b4d8ebfe167c9235",
+  "prompts": {},
+  "sessions": {
+    "s_a512ddf03d46a9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6a18c350-2d69-4a65-85de-7e4bf448394a",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
