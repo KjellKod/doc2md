@@ -1,0 +1,23 @@
+ideas/preview-panel-refactor.md
+  s_a512ddf03d46a9::t_a1ee5480275587 1-103
+ideas/bug_report_find_highlight_dom_leaks.md
+  s_a512ddf03d46a9::t_95da3c4762148d 1-193
+ideas/bug_report_find_match_scrolls_to_wrong_line.md
+  s_a512ddf03d46a9::t_9f5ea353a37c69 1-114
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "4acd78a079633e0effadfcee66b08590da5b9a3d",
+  "prompts": {},
+  "sessions": {
+    "s_a512ddf03d46a9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6a18c350-2d69-4a65-85de-7e4bf448394a",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
