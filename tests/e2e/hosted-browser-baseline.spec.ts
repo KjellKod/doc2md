@@ -104,13 +104,13 @@ test("loads hosted app regions and empty states", async ({ page }) => {
   await expect(
     page.getByText("Start with writing or drop a file.", { exact: true }),
   ).toBeVisible();
-  await expect(page.getByRole("button", { name: "Start writing" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Start writing", exact: true })).toBeVisible();
 });
 
 test("creates and edits a scratch draft", async ({ page }) => {
   await openHostedApp(page);
 
-  await page.getByRole("button", { name: "Start writing" }).click();
+  await page.getByRole("button", { name: "Start writing", exact: true }).click();
   const editor = page.getByLabel("Edit markdown");
   await expect(editor).toBeFocused();
   await editor.fill("# Browser baseline draft\n\nPlaywright edits real focus.");

@@ -265,8 +265,9 @@ export function useFileConversion() {
       if (entry.editedMarkdown === undefined) {
         return entry;
       }
-      const { editedMarkdown: _omit, ...rest } = entry;
-      return rest;
+      const next = { ...entry };
+      delete next.editedMarkdown;
+      return next;
     });
   }
 
