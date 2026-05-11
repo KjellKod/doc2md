@@ -428,6 +428,14 @@ function AppContent() {
         setSidebarCollapsed(false);
         setIsPageResizing(false);
         setPageMaxWidth(BASE_PAGE_MAX_WIDTH);
+        // Clear drag-driven inline overrides when the layout
+        // collapses to the mobile single-column breakpoint. Without
+        // this, a previously dragged-large editor height or
+        // narrowed sidebar would persist as inline style and
+        // override the @media single-column rules below 980px,
+        // leaving narrow viewports stuck in a desktop layout.
+        setEditShellHeight(null);
+        setSidebarWidth(null);
       }
     };
 
