@@ -72,7 +72,7 @@ describe("App", () => {
     ).toBeInTheDocument();
 
     expect(
-      screen.getByText("Browser-side conversion with no doc2md upload backend"),
+      screen.getByText(/Browser only, privacy first\./),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Switch to day mode" }),
@@ -116,7 +116,7 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Open the editor to paste or write Markdown from scratch, or convert a document and review the result here.",
+        /Open the editor to paste or write Markdown from scratch/,
       ),
     ).toBeInTheDocument();
     expect(
@@ -191,7 +191,7 @@ describe("App", () => {
     ).toBeInTheDocument();
   });
 
-  it("lets users drag the workspace wider from the right edge", () => {
+  it("lets users drag the workspace sidebar narrower from the right edge", () => {
     const originalInnerWidth = window.innerWidth;
     Object.defineProperty(window, "innerWidth", {
       configurable: true,
@@ -199,31 +199,58 @@ describe("App", () => {
       value: 2600,
     });
 
-    const { container } = render(<App />);
-    const pageFrame = container.querySelector(".page-frame");
-    const handle = screen.getByRole("button", {
-      name: "Resize workspace width",
-    });
+    try {
+      const { container } = render(<App />);
+      const pageFrame = container.querySelector(".page-frame");
+      const workspace = container.querySelector<HTMLElement>(".workspace");
+      const sidebar = container.querySelector<HTMLElement>(".sidebar-panel");
+      const handle = screen.getByRole("button", {
+        name: "Resize workspace and editor",
+      });
 
-    expect(pageFrame).toHaveStyle("--page-max-width: 1680px");
+      expect(pageFrame).not.toBeNull();
+      expect(workspace).not.toBeNull();
+      expect(sidebar).not.toBeNull();
+      expect(pageFrame).toHaveStyle("--page-max-width: 1680px");
+      expect(workspace!.style.gridTemplateColumns).toBe("");
 
-    fireEvent.mouseDown(handle, { clientX: 2000 });
-    fireEvent.mouseMove(window, { clientX: 2160 });
-    fireEvent.mouseUp(window);
+      Object.defineProperty(sidebar!, "getBoundingClientRect", {
+        configurable: true,
+        value: () => new DOMRect(0, 0, 430, 600),
+      });
 
-    expect(pageFrame).toHaveStyle("--page-max-width: 1840px");
+      const getSidebarWidth = () => {
+        const match = workspace!.style.gridTemplateColumns.match(
+          /^(\d+)px minmax\(0,\s*1fr\)$/u,
+        );
 
-    fireEvent.mouseDown(handle, { clientX: 2160 });
-    fireEvent.mouseMove(window, { clientX: 2000 });
-    fireEvent.mouseUp(window);
+        expect(match).not.toBeNull();
+        return Number(match![1]);
+      };
 
-    expect(pageFrame).toHaveStyle("--page-max-width: 1680px");
+      fireEvent.mouseDown(handle, { clientX: 2000 });
 
-    Object.defineProperty(window, "innerWidth", {
-      configurable: true,
-      writable: true,
-      value: originalInnerWidth,
-    });
+      expect(getSidebarWidth()).toBe(430);
+
+      fireEvent.mouseMove(window, { clientX: 2160 });
+      fireEvent.mouseUp(window);
+
+      expect(pageFrame).toHaveStyle("--page-max-width: 1680px");
+      expect(getSidebarWidth()).toBe(270);
+
+      fireEvent.mouseDown(handle, { clientX: 2160 });
+      fireEvent.mouseMove(window, { clientX: 2000 });
+      fireEvent.mouseUp(window);
+
+      expect(pageFrame).toHaveStyle("--page-max-width: 1680px");
+      expect(getSidebarWidth()).toBe(430);
+    } finally {
+      Object.defineProperty(window, "innerWidth", {
+        configurable: true,
+        writable: true,
+        value: originalInnerWidth,
+      });
+    }
   });
 
   it("supports upload, selection, preview readiness, and download state changes", async () => {

@@ -203,7 +203,7 @@ test.describe("view anchor mode switch", () => {
     page,
   }) => {
     await openFixture(page);
-    await page.getByRole("button", { name: "Preview" }).click();
+    await page.getByRole("button", { name: "Preview", exact: true }).click();
 
     await page.evaluate(() => {
       const surface = document.querySelector(
@@ -217,7 +217,7 @@ test.describe("view anchor mode switch", () => {
     const captured = await topRenderedSourceLine(page, ".markdown-surface");
     expect(captured).toBeGreaterThan(1);
 
-    await page.getByRole("button", { name: "Edit" }).click();
+    await page.getByRole("button", { name: "Edit", exact: true }).click();
     await editorTextarea(page).then((textarea) => textarea.waitFor());
     const editorTopLine = await topSourceLineFromEditor(page);
 
@@ -231,7 +231,7 @@ test.describe("view anchor mode switch", () => {
     page,
   }) => {
     await openFixture(page);
-    await page.getByRole("button", { name: "Edit" }).click();
+    await page.getByRole("button", { name: "Edit", exact: true }).click();
     const editor = await editorTextarea(page);
     await editor.evaluate((node) => {
       const textarea = node as HTMLTextAreaElement;
@@ -239,7 +239,7 @@ test.describe("view anchor mode switch", () => {
     });
     const captured = await topSourceLineFromEditor(page);
 
-    await page.getByRole("button", { name: "Preview" }).click();
+    await page.getByRole("button", { name: "Preview", exact: true }).click();
     await (await previewSurface(page)).waitFor();
 
     const delta = await topElementYDelta(
@@ -254,7 +254,7 @@ test.describe("view anchor mode switch", () => {
     page,
   }) => {
     await openFixture(page);
-    await page.getByRole("button", { name: "Edit" }).click();
+    await page.getByRole("button", { name: "Edit", exact: true }).click();
     const editor = await editorTextarea(page);
     await editor.evaluate((node) => {
       const textarea = node as HTMLTextAreaElement;
@@ -262,7 +262,7 @@ test.describe("view anchor mode switch", () => {
     });
     const captured = await topSourceLineFromEditor(page);
 
-    await page.getByRole("button", { name: "LinkedIn" }).click();
+    await page.getByRole("button", { name: "LinkedIn", exact: true }).click();
     await (await linkedinSurface(page)).waitFor();
 
     const delta = await topElementYDelta(
@@ -277,7 +277,7 @@ test.describe("view anchor mode switch", () => {
     page,
   }) => {
     await openFixture(page);
-    await page.getByRole("button", { name: "Preview" }).click();
+    await page.getByRole("button", { name: "Preview", exact: true }).click();
     await page.evaluate(() => {
       const surface = document.querySelector(
         ".markdown-surface",
@@ -288,7 +288,7 @@ test.describe("view anchor mode switch", () => {
     });
     const captured = await topRenderedSourceLine(page, ".markdown-surface");
 
-    await page.getByRole("button", { name: "LinkedIn" }).click();
+    await page.getByRole("button", { name: "LinkedIn", exact: true }).click();
     await (await linkedinSurface(page)).waitFor();
 
     const delta = await topElementYDelta(
@@ -303,7 +303,7 @@ test.describe("view anchor mode switch", () => {
     page,
   }) => {
     await openFixture(page);
-    await page.getByRole("button", { name: "Edit" }).click();
+    await page.getByRole("button", { name: "Edit", exact: true }).click();
     const editor = await editorTextarea(page);
     await editor.evaluate((node) => {
       const textarea = node as HTMLTextAreaElement;
@@ -317,7 +317,7 @@ test.describe("view anchor mode switch", () => {
       document.documentElement.style.setProperty("--page-max-width", "1100px");
     });
 
-    await page.getByRole("button", { name: "Preview" }).click();
+    await page.getByRole("button", { name: "Preview", exact: true }).click();
     await (await previewSurface(page)).waitFor();
 
     const delta = await topElementYDelta(page, ".markdown-surface", captured);
@@ -328,7 +328,7 @@ test.describe("view anchor mode switch", () => {
     page,
   }) => {
     await openFixture(page);
-    await page.getByRole("button", { name: "Preview" }).click();
+    await page.getByRole("button", { name: "Preview", exact: true }).click();
     await page.evaluate(() => {
       const surface = document.querySelector(
         ".markdown-surface",
@@ -339,10 +339,10 @@ test.describe("view anchor mode switch", () => {
     });
     const captured = await topRenderedSourceLine(page, ".markdown-surface");
 
-    await page.getByRole("button", { name: "Edit" }).click();
+    await page.getByRole("button", { name: "Edit", exact: true }).click();
     await editorTextarea(page).then((textarea) => textarea.waitFor());
 
-    await page.getByRole("button", { name: "Preview" }).click();
+    await page.getByRole("button", { name: "Preview", exact: true }).click();
     await (await previewSurface(page)).waitFor();
 
     const delta = await topElementYDelta(page, ".markdown-surface", captured);
@@ -380,7 +380,7 @@ test.describe("view anchor mode switch", () => {
       },
     ]);
 
-    await page.getByRole("button", { name: "Preview" }).click();
+    await page.getByRole("button", { name: "Preview", exact: true }).click();
     await page.evaluate(() => {
       const surface = document.querySelector(
         ".markdown-surface",
@@ -391,13 +391,13 @@ test.describe("view anchor mode switch", () => {
     });
     const captured = await topRenderedSourceLine(page, ".markdown-surface");
 
-    await page.getByRole("button", { name: "LinkedIn" }).click();
+    await page.getByRole("button", { name: "LinkedIn", exact: true }).click();
     // Refusal screen renders.
     await expect(
       page.getByText("LinkedIn view is unavailable for Markdown tables."),
     ).toBeVisible();
 
-    await page.getByRole("button", { name: "Preview" }).click();
+    await page.getByRole("button", { name: "Preview", exact: true }).click();
     await (await previewSurface(page)).waitFor();
 
     const delta = await topElementYDelta(page, ".markdown-surface", captured);
@@ -408,7 +408,7 @@ test.describe("view anchor mode switch", () => {
     page,
   }) => {
     await openFixture(page);
-    await page.getByRole("button", { name: "Preview" }).click();
+    await page.getByRole("button", { name: "Preview", exact: true }).click();
 
     const stampedCount = await page.evaluate(() => {
       const surface = document.querySelector(

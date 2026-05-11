@@ -184,7 +184,7 @@ a {
 
 .hero h1 {
   margin: 0;
-  max-width: 11ch;
+  max-width: 30ch;
   font-size: clamp(2.85rem, 5.3vw, 5rem);
   line-height: 0.95;
   letter-spacing: -0.045em;
@@ -215,16 +215,29 @@ a {
   font-size: 0.93rem;
 }
 
+.view-switcher-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
 .view-switcher {
   display: inline-flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-bottom: 24px;
   padding: 8px;
   border: 1px solid var(--panel-border);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.66);
   box-shadow: 0 18px 40px rgba(27, 39, 49, 0.06);
+}
+
+.view-switcher-meta {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.35;
 }
 
 .view-tab {
@@ -297,6 +310,24 @@ a {
 .sidebar-panel,
 .preview-panel {
   min-height: 700px;
+  /* Allow CSS-grid columns to shrink below their intrinsic content
+     width so the resize handle's horizontal drag actually narrows the
+     sidebar (or widens the preview panel). Default `min-width: auto`
+     on grid items would otherwise pin the sidebar column to its
+     contents' natural width. */
+  min-width: 0;
+}
+
+.sidebar-panel {
+  /* When the drag handle narrows the sidebar below the natural width
+     of the DropZone and FileList, let those children scroll inside
+     the column rather than push it open. */
+  overflow-x: hidden;
+}
+
+.preview-panel {
+  position: relative;
+  overflow-x: hidden;
 }
 
 .about-section {
@@ -716,30 +747,50 @@ a {
   transform: rotate(180deg);
 }
 
-.page-width-handle {
+.page-resize-handle {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 6;
   flex-shrink: 0;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 3rem;
+  height: 3rem;
   padding: 0;
-  border-radius: 999px;
-  cursor: col-resize;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--panel-border);
+  background: var(--panel-bg);
+  border-radius: 14px;
+  cursor: nwse-resize;
+  color: var(--text-primary);
+  box-shadow: 0 1px 2px rgba(15, 22, 36, 0.08);
+  transition: background 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
 }
 
-.page-width-handle:hover,
-.page-width-handle:focus-visible {
-  box-shadow: 0 0 0 1px rgba(151, 198, 228, 0.16);
+.page-resize-handle:hover,
+.page-resize-handle:focus-visible {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(15, 22, 36, 0.18);
 }
 
-.page-width-icon {
-  width: 0.9rem;
-  height: 0.9rem;
+.page-resize-handle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.page-resize-icon {
+  width: 1.5rem;
+  height: 1.5rem;
   color: currentColor;
   stroke-width: 2.2;
 }
 
 body.is-page-resizing,
 body.is-page-resizing * {
-  cursor: col-resize;
+  cursor: nwse-resize;
   user-select: none;
 }
 
@@ -970,6 +1021,16 @@ body.is-page-resizing * {
   color: var(--error);
 }
 
+.preview-empty-state-interactive {
+  cursor: pointer;
+}
+
+.preview-empty-state-interactive:hover,
+.preview-empty-state-interactive:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
 .preview-body,
 .preview-empty-state,
 .empty-state,
@@ -989,6 +1050,7 @@ body.is-page-resizing * {
 
 .preview-body {
   min-height: 0;
+  min-width: 0;
   justify-content: flex-start;
   gap: 12px;
 }
@@ -1686,6 +1748,7 @@ body.is-page-resizing * {
   position: relative;
   flex: 1;
   min-height: 300px;
+  min-width: 0;
   width: 100%;
 }
 
@@ -2417,7 +2480,7 @@ body.is-page-resizing * {
   }
 
   .collapse-toggle,
-  .page-width-handle {
+  .page-resize-handle {
     display: none;
   }
 

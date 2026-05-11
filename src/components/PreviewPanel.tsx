@@ -574,12 +574,40 @@ export default function PreviewPanel({
   }, [activeFindMatch, effectiveMarkdown, mode]);
 
   if (!entry) {
+    const emptyStateInteractive = Boolean(onStartWriting);
     return (
-      <div className="preview-empty-state">
+      <div
+        className={`preview-empty-state${emptyStateInteractive ? " preview-empty-state-interactive" : ""}`}
+        role={emptyStateInteractive ? "button" : undefined}
+        tabIndex={emptyStateInteractive ? 0 : undefined}
+        onClick={(event) => {
+          if (!onStartWriting) {
+            return;
+          }
+          // Let inner buttons handle their own clicks (the Start
+          // writing button below); otherwise treat the click anywhere
+          // in the empty area as "open the editor".
+          const target = event.target as Element | null;
+          if (target?.closest("button, a, input, textarea, label")) {
+            return;
+          }
+          onStartWriting();
+        }}
+        onKeyDown={(event) => {
+          if (!onStartWriting) {
+            return;
+          }
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onStartWriting();
+          }
+        }}
+      >
         <p className="empty-state-title">Start with writing or drop a file.</p>
         <p className="empty-state-copy">
           Open the editor to paste or write Markdown from scratch, or convert a
-          document and review the result here.
+          document and review the result here. Click anywhere here to start
+          writing.
         </p>
         {onStartWriting ? (
           <div className="empty-state-actions">
@@ -658,6 +686,16 @@ export default function PreviewPanel({
   function switchMode(nextMode: "edit" | "preview" | "linkedin") {
     if (nextMode === mode) {
       return;
+    }
+
+    // Clear DOM mutations applied to the rendered surface (find
+    // highlights, <mark> wrappers) BEFORE the surface unmounts. If we
+    // leave the mutations in place, React's reconciler can leak
+    // remnants of the rendered markdown into the editor's DOM when it
+    // diffs against its virtual tree, and stale <mark> nodes can
+    // produce phantom selections that look like rogue edits.
+    if (mode !== "edit" && renderedViewRef.current) {
+      clearRenderedFindHighlight(renderedViewRef.current);
     }
 
     const captured = captureAnchorLine();

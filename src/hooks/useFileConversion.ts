@@ -260,6 +260,17 @@ export function useFileConversion() {
     updateEntry(id, (entry) => ({ ...entry, editedMarkdown: markdown }));
   }
 
+  function discardEditedMarkdown(id: string) {
+    updateEntry(id, (entry) => {
+      if (entry.editedMarkdown === undefined) {
+        return entry;
+      }
+      const next = { ...entry };
+      delete next.editedMarkdown;
+      return next;
+    });
+  }
+
   const selectedEntry = entries.find((entry) => entry.selected) ?? null;
 
   return {
@@ -276,5 +287,6 @@ export function useFileConversion() {
     selectEntry,
     selectedEntry,
     updateMarkdown,
+    discardEditedMarkdown,
   };
 }
