@@ -34,20 +34,17 @@ import { useDesktopSaveState } from "./useDesktopSaveState";
 import { useNativeMenuEvents } from "./useNativeMenuEvents";
 
 const BASE_PAGE_MAX_WIDTH = 1680;
-const MIN_PAGE_MAX_WIDTH = 1360;
-const HARD_MAX_PAGE_MAX_WIDTH = 2400;
-const PAGE_WIDTH_FRAME_ALLOWANCE = 96;
-const PAGE_WIDTH_STEP = 48;
+const DEFAULT_SIDEBAR_WIDTH = 430;
+const SIDEBAR_COLLAPSE_WIDTH = 56;
+const SIDEBAR_SNAP_THRESHOLD = 200;
+const SIDEBAR_WIDTH_STEP = 16;
 const MIN_EDIT_SHELL_HEIGHT = 240;
-const MAX_EDIT_SHELL_HEIGHT = 2400;
 const EDIT_SHELL_HEIGHT_STEP = 32;
-// Sidebar shrink bounds. The default CSS column is
-// `minmax(350px, 430px)`; we let the drag handle pull it all the way
-// down to the collapse-rail width so dragging right steals horizontal
-// space for the preview panel even on narrow windows.
-const MIN_SIDEBAR_WIDTH = 56;
-const MAX_SIDEBAR_WIDTH = 430;
+const EDIT_SHELL_BOTTOM_GUTTER = 36;
+const DEFAULT_HEADER_OFFSET_PX = 280;
+const MAX_SIDEBAR_WIDTH = DEFAULT_SIDEBAR_WIDTH;
 type PageView = "convert" | "install";
+type ResizeAxis = "sidebar" | "height";
 const DISPLAY_VERSION = __DOC2MD_DISPLAY_VERSION__;
 const CONVERSION_FAILED_SAVE_MESSAGE =
   "Cannot save: conversion failed. Please re-open the file or choose another.";
@@ -96,36 +93,6 @@ function PanelRightCloseIcon(props: SVGProps<SVGSVGElement>) {
         strokeWidth="1.8"
         strokeLinecap="round"
         strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function MoveDiagonalIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" {...props}>
-      {/* Top-left arrowhead */}
-      <path
-        d="M9 4 H4 V9"
-        stroke="currentColor"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {/* Bottom-right arrowhead */}
-      <path
-        d="M15 20 H20 V15"
-        stroke="currentColor"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {/* Diagonal shaft */}
-      <path
-        d="M4 4 L20 20"
-        stroke="currentColor"
-        strokeWidth="2.2"
-        strokeLinecap="round"
       />
     </svg>
   );
@@ -270,35 +237,85 @@ function DesktopMenuEventBridge({
   return <span data-testid="desktop-menu-bridge" hidden />;
 }
 
-function clampPageWidth(width: number) {
-  if (typeof window === "undefined") {
-    return Math.min(
-      Math.max(Math.round(width), MIN_PAGE_MAX_WIDTH),
-      HARD_MAX_PAGE_MAX_WIDTH,
-    );
-  }
+function computeEditShellCeiling(
+  innerHeight: number,
+  previewPanelTop: number | null,
+  bottomGutter = EDIT_SHELL_BOTTOM_GUTTER,
+  fallbackHeaderOffset = DEFAULT_HEADER_OFFSET_PX,
+): number {
+  const raw =
+    typeof previewPanelTop === "number" &&
+    Number.isFinite(previewPanelTop) &&
+    previewPanelTop > 0
+      ? innerHeight - previewPanelTop - bottomGutter
+      : innerHeight - fallbackHeaderOffset;
 
-  const viewportLimitedMax = Math.min(
-    HARD_MAX_PAGE_MAX_WIDTH,
-    Math.max(MIN_PAGE_MAX_WIDTH, window.innerWidth - PAGE_WIDTH_FRAME_ALLOWANCE),
-  );
-
-  return Math.min(
-    Math.max(Math.round(width), MIN_PAGE_MAX_WIDTH),
-    viewportLimitedMax,
-  );
+  return Math.max(MIN_EDIT_SHELL_HEIGHT, Math.round(raw));
 }
 
-function clampEditShellHeight(height: number) {
+function outerHeight(element: Element | null): number {
+  if (!(element instanceof HTMLElement)) {
+    return 0;
+  }
+
+  const rect = element.getBoundingClientRect();
+  const style = window.getComputedStyle(element);
+  const marginTop = Number.parseFloat(style.marginTop) || 0;
+  const marginBottom = Number.parseFloat(style.marginBottom) || 0;
+
+  return rect.height + marginTop + marginBottom;
+}
+
+function computeFallbackHeaderOffsetPx(): number {
+  if (typeof document === "undefined" || typeof window === "undefined") {
+    return DEFAULT_HEADER_OFFSET_PX;
+  }
+
+  const workspace = document.querySelector(".workspace");
+  const workspaceTop = workspace?.getBoundingClientRect().top;
+  if (
+    typeof workspaceTop === "number" &&
+    Number.isFinite(workspaceTop) &&
+    workspaceTop > 0
+  ) {
+    return Math.round(workspaceTop);
+  }
+
+  const appShell = document.querySelector(".app-shell");
+  const hero = document.querySelector(".hero");
+  const viewSwitcherRow = document.querySelector(".view-switcher-row");
+  const appShellTopPadding =
+    appShell instanceof HTMLElement
+      ? Number.parseFloat(window.getComputedStyle(appShell).paddingTop) || 0
+      : 0;
+  // Fallback breakdown: app shell top padding, rendered hero height,
+  // rendered view-switcher row including its bottom margin, and a small
+  // workspace gap allowance when layout has not produced a usable rect yet.
+  const measuredOffset =
+    appShellTopPadding + outerHeight(hero) + outerHeight(viewSwitcherRow) + 24;
+
+  return measuredOffset > 0
+    ? Math.round(measuredOffset)
+    : DEFAULT_HEADER_OFFSET_PX;
+}
+
+function clampEditShellHeight(height: number, ceiling: number) {
   return Math.min(
     Math.max(Math.round(height), MIN_EDIT_SHELL_HEIGHT),
-    MAX_EDIT_SHELL_HEIGHT,
+    Math.max(MIN_EDIT_SHELL_HEIGHT, ceiling),
   );
 }
 
 function clampSidebarWidth(width: number) {
   return Math.min(
-    Math.max(Math.round(width), MIN_SIDEBAR_WIDTH),
+    Math.max(Math.round(width), SIDEBAR_COLLAPSE_WIDTH),
+    MAX_SIDEBAR_WIDTH,
+  );
+}
+
+function clampKeyboardSidebarWidth(width: number) {
+  return Math.min(
+    Math.max(Math.round(width), SIDEBAR_SNAP_THRESHOLD),
     MAX_SIDEBAR_WIDTH,
   );
 }
@@ -306,17 +323,30 @@ function clampSidebarWidth(width: number) {
 function AppContent() {
   const [activePage, setActivePage] = useState<PageView>("convert");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [isPageResizing, setIsPageResizing] = useState(false);
-  const [pageMaxWidth, setPageMaxWidth] = useState(BASE_PAGE_MAX_WIDTH);
+  const [activeResizeAxis, setActiveResizeAxis] =
+    useState<ResizeAxis | null>(null);
   const [editShellHeight, setEditShellHeight] = useState<number | null>(null);
+  const [editShellHeightCeiling, setEditShellHeightCeiling] = useState(() =>
+    computeEditShellCeiling(
+      typeof window === "undefined" ? DEFAULT_HEADER_OFFSET_PX : window.innerHeight,
+      null,
+    ),
+  );
   const [sidebarWidth, setSidebarWidth] = useState<number | null>(null);
   const convertTabRef = useRef<HTMLButtonElement>(null);
   const installTabRef = useRef<HTMLButtonElement>(null);
+  const previewPanelRef = useRef<HTMLElement | null>(null);
+  const editShellHeightCeilingRef = useRef(editShellHeightCeiling);
   const dragStartXRef = useRef(0);
   const dragStartYRef = useRef(0);
-  const dragStartWidthRef = useRef(BASE_PAGE_MAX_WIDTH);
   const dragStartHeightRef = useRef<number | null>(null);
   const dragStartSidebarWidthRef = useRef<number | null>(null);
+  const latestSidebarWidthRef = useRef(DEFAULT_SIDEBAR_WIDTH);
+  const restoreSidebarWidthRef = useRef(DEFAULT_SIDEBAR_WIDTH);
+  const lastSidebarClickAtRef = useRef(-Infinity);
+  const lastHeightClickAtRef = useRef(-Infinity);
+  const sidebarDragMovedRef = useRef(false);
+  const heightDragMovedRef = useRef(false);
   const {
     entries,
     addFiles,
@@ -426,8 +456,7 @@ function AppContent() {
     const handleChange = (event: MediaQueryList | MediaQueryListEvent) => {
       if (event.matches) {
         setSidebarCollapsed(false);
-        setIsPageResizing(false);
-        setPageMaxWidth(BASE_PAGE_MAX_WIDTH);
+        setActiveResizeAxis(null);
         // Clear drag-driven inline overrides when the layout
         // collapses to the mobile single-column breakpoint. Without
         // this, a previously dragged-large editor height or
@@ -456,33 +485,128 @@ function AppContent() {
     };
   }, []);
 
+  const recomputeEditShellHeightCeiling = useCallback(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const previewPanelTop =
+      previewPanelRef.current?.getBoundingClientRect().top ?? null;
+    const ceiling = computeEditShellCeiling(
+      window.innerHeight,
+      previewPanelTop,
+      EDIT_SHELL_BOTTOM_GUTTER,
+      computeFallbackHeaderOffsetPx(),
+    );
+    editShellHeightCeilingRef.current = ceiling;
+    setEditShellHeightCeiling((current) =>
+      current === ceiling ? current : ceiling,
+    );
+    setEditShellHeight((current) =>
+      current === null ? current : clampEditShellHeight(current, ceiling),
+    );
+  }, []);
+
   useEffect(() => {
-    if (!isPageResizing) {
+    recomputeEditShellHeightCeiling();
+
+    let frameId: number | null = null;
+    if (typeof window.requestAnimationFrame === "function") {
+      frameId = window.requestAnimationFrame(recomputeEditShellHeightCeiling);
+    }
+
+    window.addEventListener("resize", recomputeEditShellHeightCeiling);
+
+    let observer: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined") {
+      observer = new ResizeObserver(recomputeEditShellHeightCeiling);
+      const previewPanel = previewPanelRef.current;
+      const observedElements = new Set<Element>();
+
+      if (previewPanel) {
+        observedElements.add(previewPanel);
+        if (previewPanel.parentElement) {
+          observedElements.add(previewPanel.parentElement);
+        }
+        const viewPanel = previewPanel.closest(".view-panel");
+        if (viewPanel) {
+          observedElements.add(viewPanel);
+        }
+      }
+
+      const appShell = document.querySelector(".app-shell");
+      if (appShell) {
+        observedElements.add(appShell);
+      }
+
+      observedElements.forEach((element) => observer?.observe(element));
+    }
+
+    return () => {
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
+      window.removeEventListener("resize", recomputeEditShellHeightCeiling);
+      observer?.disconnect();
+    };
+  }, [recomputeEditShellHeightCeiling]);
+
+  useEffect(() => {
+    if (activeResizeAxis === null) {
       return;
     }
 
     const handleMouseMove = (event: globalThis.MouseEvent) => {
-      const deltaX = event.clientX - dragStartXRef.current;
-      // Shrink the sidebar as the user drags right (positive deltaX).
-      // This is the only way to widen the preview panel visibly on
-      // windows narrower than `--page-max-width`. Bounded between
-      // MIN_SIDEBAR_WIDTH and MAX_SIDEBAR_WIDTH; drags past the bounds
-      // are absorbed by the clamp.
-      const baseSidebarWidth = dragStartSidebarWidthRef.current;
-      if (baseSidebarWidth !== null) {
-        setSidebarWidth(clampSidebarWidth(baseSidebarWidth - deltaX));
+      if (activeResizeAxis === "sidebar") {
+        const baseSidebarWidth = dragStartSidebarWidthRef.current;
+        if (baseSidebarWidth === null) {
+          return;
+        }
+        if (Math.abs(event.clientX - dragStartXRef.current) > 2) {
+          sidebarDragMovedRef.current = true;
+        }
+        const nextWidth = clampSidebarWidth(
+          baseSidebarWidth + (event.clientX - dragStartXRef.current),
+        );
+        latestSidebarWidthRef.current = nextWidth;
+        setSidebarWidth(nextWidth);
+        return;
       }
+
       const baseHeight = dragStartHeightRef.current;
       if (baseHeight !== null) {
+        if (Math.abs(event.clientY - dragStartYRef.current) > 2) {
+          heightDragMovedRef.current = true;
+        }
         setEditShellHeight(
           clampEditShellHeight(
             baseHeight + (event.clientY - dragStartYRef.current),
+            editShellHeightCeilingRef.current,
           ),
         );
       }
     };
-    const handleMouseUp = () => {
-      setIsPageResizing(false);
+    const handleMouseUp = (event: globalThis.MouseEvent) => {
+      if (
+        activeResizeAxis === "sidebar" &&
+        latestSidebarWidthRef.current < SIDEBAR_SNAP_THRESHOLD
+      ) {
+        const restoreWidth = restoreSidebarWidthRef.current;
+        setSidebarWidth(restoreWidth);
+        // Snap-collapse remains in-session only; reload behavior is unchanged, with no localStorage or desktop-settings write.
+        setSidebarCollapsed(true);
+      }
+      if (activeResizeAxis === "sidebar") {
+        lastSidebarClickAtRef.current = sidebarDragMovedRef.current
+          ? -Infinity
+          : event.timeStamp;
+      }
+      if (activeResizeAxis === "height") {
+        lastHeightClickAtRef.current = heightDragMovedRef.current
+          ? -Infinity
+          : event.timeStamp;
+      }
+      setActiveResizeAxis(null);
     };
 
     window.addEventListener("mousemove", handleMouseMove);
@@ -492,15 +616,23 @@ function AppContent() {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isPageResizing]);
+  }, [activeResizeAxis]);
 
   useEffect(() => {
-    document.body.classList.toggle("is-page-resizing", isPageResizing);
+    document.body.classList.toggle(
+      "is-sidebar-resizing",
+      activeResizeAxis === "sidebar",
+    );
+    document.body.classList.toggle(
+      "is-height-resizing",
+      activeResizeAxis === "height",
+    );
 
     return () => {
-      document.body.classList.remove("is-page-resizing");
+      document.body.classList.remove("is-sidebar-resizing");
+      document.body.classList.remove("is-height-resizing");
     };
-  }, [isPageResizing]);
+  }, [activeResizeAxis]);
 
   useEffect(() => {
     currentThemeRef.current = theme;
@@ -846,11 +978,17 @@ function AppContent() {
     }
     const panel = document.querySelector(".preview-panel");
     if (panel) {
-      return clampEditShellHeight(panel.getBoundingClientRect().height);
+      return clampEditShellHeight(
+        panel.getBoundingClientRect().height,
+        editShellHeightCeilingRef.current,
+      );
     }
     const shell = document.querySelector(".markdown-edit-shell");
     if (shell) {
-      return clampEditShellHeight(shell.getBoundingClientRect().height);
+      return clampEditShellHeight(
+        shell.getBoundingClientRect().height,
+        editShellHeightCeilingRef.current,
+      );
     }
     return MIN_EDIT_SHELL_HEIGHT;
   }
@@ -868,45 +1006,35 @@ function AppContent() {
     return clampSidebarWidth(sidebar.getBoundingClientRect().width);
   }
 
-  const handlePageResizeStart = (event: MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-    const normalizedWidth = clampPageWidth(pageMaxWidth);
-    const measuredHeight =
-      editShellHeight !== null ? editShellHeight : measureEditShellHeight();
-    const measuredSidebarWidth =
-      sidebarWidth !== null ? sidebarWidth : measureSidebarWidth();
+  const handleSidebarResizeStart = (event: MouseEvent<HTMLButtonElement>) => {
+    if (event.detail >= 2) {
+      event.preventDefault();
+      handleSidebarResizeReset();
+      return;
+    }
+
+    const measuredSidebarWidth = measureSidebarWidth();
+    const startWidth =
+      sidebarWidth ?? measuredSidebarWidth ?? MAX_SIDEBAR_WIDTH;
     dragStartXRef.current = event.clientX;
-    dragStartYRef.current = event.clientY;
-    dragStartWidthRef.current = normalizedWidth;
-    dragStartHeightRef.current = measuredHeight;
-    dragStartSidebarWidthRef.current = measuredSidebarWidth;
-
-    if (normalizedWidth !== pageMaxWidth) {
-      setPageMaxWidth(normalizedWidth);
-    }
-    if (
-      measuredHeight !== null &&
-      measuredHeight !== editShellHeight
-    ) {
-      setEditShellHeight(measuredHeight);
-    }
-    if (
-      measuredSidebarWidth !== null &&
-      measuredSidebarWidth !== sidebarWidth
-    ) {
-      setSidebarWidth(measuredSidebarWidth);
-    }
-
-    setIsPageResizing(true);
+    dragStartSidebarWidthRef.current = startWidth;
+    latestSidebarWidthRef.current = startWidth;
+    restoreSidebarWidthRef.current = startWidth;
+    sidebarDragMovedRef.current = false;
+    setSidebarWidth(startWidth);
+    setSidebarCollapsed(false);
+    setActiveResizeAxis("sidebar");
   };
 
-  const handlePageResizeKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+  const handleSidebarResizeKeyDown = (
+    event: KeyboardEvent<HTMLButtonElement>,
+  ) => {
     if (event.key === "ArrowRight") {
       event.preventDefault();
       setSidebarWidth((current) =>
-        clampSidebarWidth(
-          (current ?? measureSidebarWidth() ?? MAX_SIDEBAR_WIDTH) -
-            PAGE_WIDTH_STEP,
+        clampKeyboardSidebarWidth(
+          (current ?? measureSidebarWidth() ?? MAX_SIDEBAR_WIDTH) +
+            SIDEBAR_WIDTH_STEP,
         ),
       );
       return;
@@ -915,20 +1043,88 @@ function AppContent() {
     if (event.key === "ArrowLeft") {
       event.preventDefault();
       setSidebarWidth((current) =>
-        clampSidebarWidth(
-          (current ?? measureSidebarWidth() ?? MAX_SIDEBAR_WIDTH) +
-            PAGE_WIDTH_STEP,
+        clampKeyboardSidebarWidth(
+          (current ?? measureSidebarWidth() ?? MAX_SIDEBAR_WIDTH) -
+            SIDEBAR_WIDTH_STEP,
         ),
       );
       return;
     }
 
+    if (event.key === "Home") {
+      event.preventDefault();
+      handleSidebarResizeReset();
+    }
+  };
+
+  const handleSidebarResizeClickReset = (
+    event: MouseEvent<HTMLButtonElement>,
+  ) => {
+    const elapsedSinceLastClick = event.timeStamp - lastSidebarClickAtRef.current;
+    lastSidebarClickAtRef.current = event.timeStamp;
+
+    if (event.detail < 2 && elapsedSinceLastClick >= 500) {
+      return;
+    }
+
+    event.preventDefault();
+    lastSidebarClickAtRef.current = -Infinity;
+    handleSidebarResizeReset();
+  };
+
+  const handleSidebarResizeMouseUp = (
+    event: MouseEvent<HTMLButtonElement>,
+  ) => {
+    lastSidebarClickAtRef.current = sidebarDragMovedRef.current
+      ? -Infinity
+      : event.timeStamp;
+  };
+
+  const handleSidebarResizeReset = () => {
+    lastSidebarClickAtRef.current = -Infinity;
+    restoreSidebarWidthRef.current = DEFAULT_SIDEBAR_WIDTH;
+    latestSidebarWidthRef.current = DEFAULT_SIDEBAR_WIDTH;
+    setSidebarCollapsed(false);
+    setSidebarWidth(DEFAULT_SIDEBAR_WIDTH);
+  };
+
+  const handleCollapseSidebar = () => {
+    restoreSidebarWidthRef.current =
+      sidebarWidth ?? measureSidebarWidth() ?? DEFAULT_SIDEBAR_WIDTH;
+    setSidebarCollapsed(true);
+  };
+
+  const handleShowSidebar = () => {
+    setSidebarWidth(restoreSidebarWidthRef.current);
+    setSidebarCollapsed(false);
+  };
+
+  const handleHeightResizeStart = (event: MouseEvent<HTMLButtonElement>) => {
+    if (event.detail >= 2) {
+      event.preventDefault();
+      handleHeightResizeReset();
+      return;
+    }
+
+    recomputeEditShellHeightCeiling();
+    const measuredHeight =
+      editShellHeight ?? measureEditShellHeight() ?? MIN_EDIT_SHELL_HEIGHT;
+    dragStartYRef.current = event.clientY;
+    dragStartHeightRef.current = measuredHeight;
+    heightDragMovedRef.current = false;
+    setActiveResizeAxis("height");
+  };
+
+  const handleHeightResizeKeyDown = (
+    event: KeyboardEvent<HTMLButtonElement>,
+  ) => {
     if (event.key === "ArrowDown") {
       event.preventDefault();
       setEditShellHeight((current) =>
         clampEditShellHeight(
           (current ?? measureEditShellHeight() ?? MIN_EDIT_SHELL_HEIGHT) +
             EDIT_SHELL_HEIGHT_STEP,
+          editShellHeightCeilingRef.current,
         ),
       );
       return;
@@ -940,6 +1136,7 @@ function AppContent() {
         clampEditShellHeight(
           (current ?? measureEditShellHeight() ?? MIN_EDIT_SHELL_HEIGHT) -
             EDIT_SHELL_HEIGHT_STEP,
+          editShellHeightCeilingRef.current,
         ),
       );
       return;
@@ -947,47 +1144,56 @@ function AppContent() {
 
     if (event.key === "Home") {
       event.preventDefault();
-      setPageMaxWidth(BASE_PAGE_MAX_WIDTH);
-      setSidebarWidth(null);
-      setEditShellHeight(null);
+      handleHeightResizeReset();
     }
   };
 
+  const handleHeightResizeClickReset = (
+    event: MouseEvent<HTMLButtonElement>,
+  ) => {
+    const elapsedSinceLastClick = event.timeStamp - lastHeightClickAtRef.current;
+    lastHeightClickAtRef.current = event.timeStamp;
+
+    if (event.detail < 2 && elapsedSinceLastClick >= 500) {
+      return;
+    }
+
+    event.preventDefault();
+    lastHeightClickAtRef.current = -Infinity;
+    handleHeightResizeReset();
+  };
+
+  const handleHeightResizeMouseUp = (
+    event: MouseEvent<HTMLButtonElement>,
+  ) => {
+    lastHeightClickAtRef.current = heightDragMovedRef.current
+      ? -Infinity
+      : event.timeStamp;
+  };
+
+  const handleHeightResizeReset = () => {
+    lastHeightClickAtRef.current = -Infinity;
+    setEditShellHeight(null);
+  };
+
   const pageFrameStyle = {
-    "--page-max-width": `${pageMaxWidth}px`,
+    "--page-max-width": `${BASE_PAGE_MAX_WIDTH}px`,
   } as CSSProperties;
 
-  // Inline workspace grid template lets the user steal horizontal
-  // space from the sidebar by dragging the resize handle right; the
-  // preview-panel column (1fr) absorbs the freed pixels and the edit
-  // area grows visibly even on narrow windows where adjusting
-  // `--page-max-width` alone has no effect.
-  const workspaceStyle =
-    sidebarWidth !== null
-      ? ({
-          gridTemplateColumns: `${sidebarWidth}px minmax(0, 1fr)`,
-        } as CSSProperties)
-      : undefined;
+  const workspaceStyle = {
+    "--sidebar-width": `${sidebarWidth ?? DEFAULT_SIDEBAR_WIDTH}px`,
+  } as CSSProperties & Record<"--sidebar-width", string>;
 
-  // The resize handle drags BOTH dimensions on the preview panel:
-  //   - vertical: inline `height` + `min-height` force the panel to
-  //     the dragged value regardless of content; the active surface
-  //     (`flex: 1`) absorbs the new height and scrolls overflow
-  //     internally.
-  //   - horizontal: the workspace-grid template's preview-panel column
-  //     is widened directly; this is independent of the
-  //     `--page-max-width` CSS var (which is invisible when the window
-  //     is narrower than the var). The grid widens by stealing space
-  //     from the sidebar's `minmax(350px, 430px)` column.
-  // If both states are unset (no drag yet) the panel uses its default
-  // CSS sizing.
   const previewPanelStyle =
     editShellHeight !== null
       ? ({
+          "--preview-panel-ceiling": `${editShellHeightCeiling}px`,
           height: `${editShellHeight}px`,
           minHeight: `${editShellHeight}px`,
-        } as CSSProperties)
-      : undefined;
+        } as CSSProperties & Record<"--preview-panel-ceiling", string>)
+      : ({
+          "--preview-panel-ceiling": `${editShellHeightCeiling}px`,
+        } as CSSProperties & Record<"--preview-panel-ceiling", string>);
 
   const focusPageTab = (page: PageView) => {
     const tab =
@@ -1820,7 +2026,10 @@ function AppContent() {
 
       if (result.code === "error") {
         setEntryDesktopSaveState(entry.id, "error");
-        setDocumentNotice(entry.id, noticeFromError(result));
+        setDocumentNotice(entry.id, {
+          kind: "error",
+          message: `Unable to reload file from disk: ${result.message}`,
+        });
       }
     } catch (error) {
       setEntryDesktopSaveState(entry.id, "error");
@@ -1835,6 +2044,92 @@ function AppContent() {
     applyReloadedMarkdownFile,
     selectedEntry,
     selectedPath,
+    setDocumentNotice,
+    setEntryDesktopSaveState,
+    shell,
+  ]);
+
+  // Reload-from-disk for documents that were loaded without a captured disk
+  // path (e.g. drag-dropped). Prompts the user via the native open dialog,
+  // then replaces the selected entry's content and registers the path so
+  // subsequent reloads do not re-prompt.
+  const handleReloadViaPicker = useCallback(async () => {
+    if (!shell || !selectedEntry) {
+      return;
+    }
+
+    const entry = selectedEntry;
+
+    if (entry.status === "pending" || entry.status === "converting") {
+      setDocumentNotice(entry.id, {
+        kind: "info",
+        message: "Finishing conversion. Try reloading again in a moment.",
+      });
+      return;
+    }
+
+    if (activeSaveState === "saving") {
+      setDocumentNotice(entry.id, {
+        kind: "info",
+        message: "Wait for the current save to finish before reloading.",
+      });
+      return;
+    }
+
+    if (
+      activeSaveState !== "saved" &&
+      !window.confirm(
+        "Reload from disk and discard unsaved changes? Pick the source file in the next dialog.",
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const result = await shell.openFile();
+      if (result.ok) {
+        if (result.kind !== "markdown") {
+          setEntryDesktopSaveState(entry.id, "error");
+          setDocumentNotice(entry.id, {
+            kind: "error",
+            message: "Reload failed: selected file is not a Markdown target.",
+          });
+          return;
+        }
+
+        applyReloadedMarkdownFile(entry, result);
+        return;
+      }
+
+      if (result.code === "cancelled") {
+        return;
+      }
+
+      if (result.code === "permission-needed") {
+        setEntryDesktopSaveState(entry.id, "permission-needed");
+        setDocumentNotice(entry.id, noticeFromPermission(result));
+        return;
+      }
+
+      if (result.code === "error") {
+        setEntryDesktopSaveState(entry.id, "error");
+        setDocumentNotice(entry.id, {
+          kind: "error",
+          message: `Unable to reload file from disk: ${result.message}`,
+        });
+      }
+    } catch (error) {
+      setEntryDesktopSaveState(entry.id, "error");
+      setDocumentNotice(entry.id, {
+        kind: "error",
+        message: "Reload failed before the app received a native result.",
+      });
+      console.error("doc2md desktop reload-via-picker transport failure", error);
+    }
+  }, [
+    activeSaveState,
+    applyReloadedMarkdownFile,
+    selectedEntry,
     setDocumentNotice,
     setEntryDesktopSaveState,
     shell,
@@ -1977,7 +2272,7 @@ function AppContent() {
           handlers={nativeMenuHandlers}
         />
         <main
-          className={`page-frame${isPageResizing ? " is-page-resizing" : ""}`}
+          className={`page-frame${activeResizeAxis !== null ? " is-resizing" : ""}`}
           style={pageFrameStyle}
         >
           <div className="page">
@@ -2159,21 +2454,31 @@ function AppContent() {
                           <button
                             type="button"
                             className="ghost-button desktop-reload-button"
-                            onClick={() =>
-                              selectedPath
-                                ? void handleReloadSelectedDocument()
-                                : handleResetEditedMarkdown()
-                            }
+                            onClick={() => {
+                              if (selectedPath) {
+                                void handleReloadSelectedDocument();
+                                return;
+                              }
+                              if (shell) {
+                                void handleReloadViaPicker();
+                                return;
+                              }
+                              handleResetEditedMarkdown();
+                            }}
                             disabled={activeSaveState === "saving"}
                             aria-label={
                               selectedPath
                                 ? "Reload from disk"
-                                : "Discard edits and restore original"
+                                : shell
+                                  ? "Reload from disk (pick file)"
+                                  : "Discard edits and restore original"
                             }
                             title={
                               selectedPath
                                 ? "Reload from disk and discard unsaved changes"
-                                : "Discard your edits and restore the original document content"
+                                : shell
+                                  ? "Pick the source file to reload from disk"
+                                  : "Discard your edits and restore the original document content"
                             }
                           >
                             Reload
@@ -2232,15 +2537,25 @@ function AppContent() {
               ) : null}
 
               <section
-                className={`workspace${sidebarCollapsed ? " sidebar-collapsed" : ""}`}
+                className={`workspace${sidebarCollapsed ? " sidebar-collapsed" : ""}${activeResizeAxis !== null ? " is-resizing" : ""}`}
                 style={sidebarCollapsed ? undefined : workspaceStyle}
               >
+                <span id="split-bar-resize-hint" className="visually-hidden">
+                  Drag left or right to resize the upload panel. Double-click or
+                  press Home to reset. Use Arrow Left and Arrow Right for
+                  keyboard resizing.
+                </span>
+                <span id="preview-height-resize-hint" className="visually-hidden">
+                  Drag up or down to resize the editor height. Double-click or
+                  press Home to reset. Use Arrow Up and Arrow Down for keyboard
+                  resizing.
+                </span>
                 {sidebarCollapsed ? (
                   <section className="panel collapse-rail" aria-label="Upload rail">
                     <button
                       type="button"
                       className="collapse-rail-button"
-                      onClick={() => setSidebarCollapsed(false)}
+                      onClick={handleShowSidebar}
                       aria-label="Show upload panel"
                       title="Show upload panel"
                     >
@@ -2268,7 +2583,7 @@ function AppContent() {
                       <button
                         type="button"
                         className="ghost-button collapse-toggle"
-                        onClick={() => setSidebarCollapsed(true)}
+                        onClick={handleCollapseSidebar}
                         aria-label="Hide upload panel"
                         title="Hide upload panel"
                       >
@@ -2282,6 +2597,7 @@ function AppContent() {
                     <DropZone
                       onFilesAdded={addFiles}
                       onUrlAdded={handleUrlAdded}
+                      onNativeBrowse={shell ? handleOpenFile : undefined}
                     />
 
                     <div className="panel-heading panel-heading-tight">
@@ -2305,10 +2621,27 @@ function AppContent() {
                 )}
 
                 <section
+                  ref={previewPanelRef}
                   className="panel preview-panel"
                   aria-labelledby="preview-title"
                   style={previewPanelStyle}
                 >
+                  {!sidebarCollapsed ? (
+                    <button
+                      type="button"
+                      className="workspace-split-bar"
+                      role="separator"
+                      aria-orientation="vertical"
+                      aria-label="Resize upload panel"
+                      aria-describedby="split-bar-resize-hint"
+                      title="Drag to resize the upload panel; double-click to reset"
+                      onMouseDown={handleSidebarResizeStart}
+                      onMouseUp={handleSidebarResizeMouseUp}
+                      onClick={handleSidebarResizeClickReset}
+                      onDoubleClick={handleSidebarResizeReset}
+                      onKeyDown={handleSidebarResizeKeyDown}
+                    />
+                  ) : null}
                   <div className="panel-heading">
                     <div>
                       <h2 id="preview-title">Preview</h2>
@@ -2339,19 +2672,22 @@ function AppContent() {
                       }
                     }}
                   />
-                  <button
-                    type="button"
-                    className="page-resize-handle"
-                    onMouseDown={handlePageResizeStart}
-                    onKeyDown={handlePageResizeKeyDown}
-                    aria-label="Resize workspace and editor"
-                    title="Drag to resize the workspace width and editor height (arrow keys: ←→ width, ↑↓ height, Home reset)"
-                  >
-                    <MoveDiagonalIcon
-                      className="page-resize-icon"
-                      aria-hidden="true"
+                  {selectedEntry ? (
+                    <button
+                      type="button"
+                      className="preview-height-handle"
+                      role="separator"
+                      aria-orientation="horizontal"
+                      aria-label="Resize editor height"
+                      aria-describedby="preview-height-resize-hint"
+                      title="Drag to resize the editor height; double-click to reset"
+                      onMouseDown={handleHeightResizeStart}
+                      onMouseUp={handleHeightResizeMouseUp}
+                      onClick={handleHeightResizeClickReset}
+                      onDoubleClick={handleHeightResizeReset}
+                      onKeyDown={handleHeightResizeKeyDown}
                     />
-                  </button>
+                  ) : null}
                 </section>
               </section>
 

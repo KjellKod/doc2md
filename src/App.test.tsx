@@ -8,7 +8,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import App from "./App";
+import App, { computeEditShellCeiling } from "./App";
 
 const { convertFileMock } = vi.hoisted(() => ({
   convertFileMock: vi.fn(),
@@ -191,66 +191,232 @@ describe("App", () => {
     ).toBeInTheDocument();
   });
 
-  it("lets users drag the workspace sidebar narrower from the right edge", () => {
-    const originalInnerWidth = window.innerWidth;
-    Object.defineProperty(window, "innerWidth", {
-      configurable: true,
-      writable: true,
-      value: 2600,
+  it("lets users drag and keyboard-step the upload panel split bar", () => {
+    const { container } = render(<App />);
+    const pageFrame = container.querySelector(".page-frame");
+    const workspace = container.querySelector<HTMLElement>(".workspace");
+    const sidebar = container.querySelector<HTMLElement>(".sidebar-panel");
+    const splitBar = screen.getByRole("separator", {
+      name: "Resize upload panel",
     });
 
-    try {
-      const { container } = render(<App />);
-      const pageFrame = container.querySelector(".page-frame");
-      const workspace = container.querySelector<HTMLElement>(".workspace");
-      const sidebar = container.querySelector<HTMLElement>(".sidebar-panel");
-      const handle = screen.getByRole("button", {
-        name: "Resize workspace and editor",
-      });
+    expect(pageFrame).not.toBeNull();
+    expect(workspace).not.toBeNull();
+    expect(sidebar).not.toBeNull();
+    expect(splitBar).toHaveAttribute("aria-orientation", "vertical");
+    expect(pageFrame).toHaveStyle("--page-max-width: 1680px");
 
-      expect(pageFrame).not.toBeNull();
-      expect(workspace).not.toBeNull();
-      expect(sidebar).not.toBeNull();
-      expect(pageFrame).toHaveStyle("--page-max-width: 1680px");
-      expect(workspace!.style.gridTemplateColumns).toBe("");
+    Object.defineProperty(sidebar!, "getBoundingClientRect", {
+      configurable: true,
+      value: () => new DOMRect(0, 0, 430, 600),
+    });
 
-      Object.defineProperty(sidebar!, "getBoundingClientRect", {
-        configurable: true,
-        value: () => new DOMRect(0, 0, 430, 600),
-      });
+    const getSidebarWidth = () =>
+      Number(workspace!.style.getPropertyValue("--sidebar-width").replace("px", ""));
 
-      const getSidebarWidth = () => {
-        const match = workspace!.style.gridTemplateColumns.match(
-          /^(\d+)px minmax\(0,\s*1fr\)$/u,
-        );
+    expect(getSidebarWidth()).toBe(430);
 
-        expect(match).not.toBeNull();
-        return Number(match![1]);
-      };
+    fireEvent.mouseDown(splitBar, { clientX: 200 });
+    fireEvent.mouseMove(window, { clientX: 80 });
+    fireEvent.mouseUp(window);
 
-      fireEvent.mouseDown(handle, { clientX: 2000 });
+    expect(pageFrame).toHaveStyle("--page-max-width: 1680px");
+    expect(getSidebarWidth()).toBe(310);
 
-      expect(getSidebarWidth()).toBe(430);
+    fireEvent.mouseDown(splitBar, { clientX: 80 });
+    fireEvent.mouseMove(window, { clientX: 140 });
+    fireEvent.mouseUp(window);
+    expect(getSidebarWidth()).toBe(370);
 
-      fireEvent.mouseMove(window, { clientX: 2160 });
-      fireEvent.mouseUp(window);
+    fireEvent.keyDown(splitBar, { key: "ArrowRight" });
+    expect(getSidebarWidth()).toBe(386);
 
-      expect(pageFrame).toHaveStyle("--page-max-width: 1680px");
-      expect(getSidebarWidth()).toBe(270);
+    fireEvent.keyDown(splitBar, { key: "ArrowLeft" });
+    expect(getSidebarWidth()).toBe(370);
 
-      fireEvent.mouseDown(handle, { clientX: 2160 });
-      fireEvent.mouseMove(window, { clientX: 2000 });
-      fireEvent.mouseUp(window);
+    fireEvent.keyDown(splitBar, { key: "Home" });
+    expect(getSidebarWidth()).toBe(430);
+  });
 
-      expect(pageFrame).toHaveStyle("--page-max-width: 1680px");
-      expect(getSidebarWidth()).toBe(430);
-    } finally {
-      Object.defineProperty(window, "innerWidth", {
-        configurable: true,
-        writable: true,
-        value: originalInnerWidth,
-      });
-    }
+  it("resets and snap-collapses the upload panel from the split bar", () => {
+    const { container } = render(<App />);
+    const workspace = container.querySelector<HTMLElement>(".workspace");
+    const sidebar = container.querySelector<HTMLElement>(".sidebar-panel");
+    const splitBar = screen.getByRole("separator", {
+      name: "Resize upload panel",
+    });
+
+    expect(workspace).not.toBeNull();
+    expect(sidebar).not.toBeNull();
+
+    Object.defineProperty(sidebar!, "getBoundingClientRect", {
+      configurable: true,
+      value: () => new DOMRect(0, 0, 430, 600),
+    });
+
+    const getSidebarWidth = () =>
+      Number(workspace!.style.getPropertyValue("--sidebar-width").replace("px", ""));
+
+    fireEvent.mouseDown(splitBar, { clientX: 200 });
+    fireEvent.mouseMove(window, { clientX: 80 });
+    fireEvent.mouseUp(window);
+    expect(getSidebarWidth()).toBe(310);
+
+    fireEvent.doubleClick(splitBar);
+    expect(getSidebarWidth()).toBe(430);
+
+    fireEvent.mouseDown(splitBar, { clientX: 200 });
+    fireEvent.mouseMove(window, { clientX: 80 });
+    fireEvent.mouseUp(window);
+    expect(getSidebarWidth()).toBe(310);
+
+    fireEvent.mouseDown(splitBar, { clientX: 200 });
+    fireEvent.mouseMove(window, { clientX: 40 });
+    fireEvent.mouseUp(window);
+
+    expect(workspace).toHaveClass("sidebar-collapsed");
+    expect(
+      screen.getByRole("button", { name: "Show upload panel" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Show upload panel" }));
+
+    expect(workspace).not.toHaveClass("sidebar-collapsed");
+    expect(getSidebarWidth()).toBe(310);
+  });
+
+  it("grows the upload panel when dragging the split bar right", () => {
+    const { container } = render(<App />);
+    const workspace = container.querySelector<HTMLElement>(".workspace");
+    const sidebar = container.querySelector<HTMLElement>(".sidebar-panel");
+    const splitBar = screen.getByRole("separator", {
+      name: "Resize upload panel",
+    });
+
+    expect(workspace).not.toBeNull();
+    expect(sidebar).not.toBeNull();
+
+    Object.defineProperty(sidebar!, "getBoundingClientRect", {
+      configurable: true,
+      value: () => new DOMRect(0, 0, 430, 600),
+    });
+
+    const getSidebarWidth = () =>
+      Number(workspace!.style.getPropertyValue("--sidebar-width").replace("px", ""));
+
+    fireEvent.mouseDown(splitBar, { clientX: 200 });
+    fireEvent.mouseMove(window, { clientX: 80 });
+    fireEvent.mouseUp(window);
+    expect(getSidebarWidth()).toBe(310);
+
+    fireEvent.mouseDown(splitBar, { clientX: 80 });
+    fireEvent.mouseMove(window, { clientX: 140 });
+    fireEvent.mouseUp(window);
+    expect(getSidebarWidth()).toBe(370);
+  });
+
+  it("lets users grow and reset the editor height with the bottom handle", () => {
+    vi.stubGlobal("innerHeight", 1200);
+    const { container } = render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Start writing" }));
+    const workspace = container.querySelector<HTMLElement>(".workspace");
+    const preview = container.querySelector<HTMLElement>(".preview-panel");
+    const heightHandle = screen.getByRole("separator", {
+      name: "Resize editor height",
+    });
+
+    expect(workspace).not.toBeNull();
+    expect(preview).not.toBeNull();
+    expect(heightHandle).toHaveAttribute("aria-orientation", "horizontal");
+
+    Object.defineProperty(preview!, "getBoundingClientRect", {
+      configurable: true,
+      value: () => new DOMRect(0, 280, 900, 700),
+    });
+
+    fireEvent.mouseDown(heightHandle, { clientY: 100 });
+    fireEvent.mouseMove(window, { clientY: 164 });
+    fireEvent.mouseUp(window);
+
+    expect(preview!.style.height).toBe("764px");
+    expect(workspace!.style.getPropertyValue("--sidebar-width")).toBe("430px");
+
+    fireEvent.keyDown(heightHandle, { key: "ArrowDown" });
+    expect(preview!.style.height).toBe("796px");
+
+    fireEvent.keyDown(heightHandle, { key: "ArrowUp" });
+    expect(preview!.style.height).toBe("764px");
+
+    fireEvent.keyDown(heightHandle, { key: "Home" });
+    expect(preview!.style.height).toBe("");
+  });
+
+  it("does not change editor height until the first horizontal mousemove", () => {
+    vi.stubGlobal("innerHeight", 900);
+    const { container } = render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Start writing" }));
+    const preview = container.querySelector<HTMLElement>(".preview-panel");
+    const heightHandle = screen.getByRole("separator", {
+      name: "Resize editor height",
+    });
+
+    expect(preview).not.toBeNull();
+
+    Object.defineProperty(preview!, "getBoundingClientRect", {
+      configurable: true,
+      value: () => new DOMRect(0, 260, 900, 3200),
+    });
+
+    fireEvent.mouseDown(heightHandle, { clientY: 100 });
+
+    expect(preview!.style.height).toBe("");
+    expect(preview!.style.minHeight).toBe("");
+
+    fireEvent.mouseMove(window, { clientY: 140 });
+    fireEvent.mouseUp(window);
+
+    expect(preview!.style.height).not.toBe("");
+    expect(preview!.style.minHeight).not.toBe("");
+  });
+
+  it("clamps editor height to the viewport-derived ceiling", () => {
+    vi.stubGlobal("innerHeight", 1000);
+    const previewTop = 260;
+    const expected = computeEditShellCeiling(window.innerHeight, previewTop);
+    const { container } = render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Start writing" }));
+    const preview = container.querySelector<HTMLElement>(".preview-panel");
+    const heightHandle = screen.getByRole("separator", {
+      name: "Resize editor height",
+    });
+
+    expect(preview).not.toBeNull();
+
+    Object.defineProperty(preview!, "getBoundingClientRect", {
+      configurable: true,
+      value: () => new DOMRect(0, previewTop, 900, 700),
+    });
+
+    fireEvent.mouseDown(heightHandle, { clientY: 100 });
+    fireEvent.mouseMove(window, { clientY: 1000 });
+    fireEvent.mouseUp(window);
+
+    expect(preview!.style.height).toBe(`${expected}px`);
+    expect(preview!.style.maxHeight).toBe("");
+    expect(preview!.style.getPropertyValue("--preview-panel-ceiling")).toBe(
+      `${expected}px`,
+    );
+  });
+
+  it("hides the preview height handle when no document is loaded", () => {
+    render(<App />);
+
+    expect(
+      screen.queryByRole("separator", { name: "Resize editor height" }),
+    ).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Start writing" }),
+    ).toBeInTheDocument();
   });
 
   it("supports upload, selection, preview readiness, and download state changes", async () => {
