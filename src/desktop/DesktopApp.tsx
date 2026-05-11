@@ -315,6 +315,7 @@ function AppContent() {
     selectEntry,
     selectedEntry,
     updateMarkdown,
+    discardEditedMarkdown,
   } = useFileConversion();
   const { isDesktop, shell } = useDesktopCapability();
   const saveState = useDesktopSaveState(isDesktop);
@@ -1618,6 +1619,44 @@ function AppContent() {
     ],
   );
 
+  // For documents without a disk path (drop-loaded conversions, scratch
+  // drafts), reload means "discard my edits and restore the original
+  // markdown the document was created with". For disk-backed documents,
+  // reload means "re-read the file from disk". The button below
+  // dispatches by whether `selectedPath` is set.
+  const handleResetEditedMarkdown = useCallback(() => {
+    if (!selectedEntry) {
+      return;
+    }
+
+    if (selectedEntry.editedMarkdown === undefined) {
+      setDocumentNotice(selectedEntry.id, {
+        kind: "info",
+        message: "Nothing to discard — there are no unsaved edits.",
+      });
+      return;
+    }
+
+    if (
+      !window.confirm(
+        "Discard your edits and restore the original document content?",
+      )
+    ) {
+      return;
+    }
+
+    const entryId = selectedEntry.id;
+    discardEditedMarkdown(entryId);
+    setEntryDesktopSaveState(entryId, "saved");
+    clearDocumentProblem(entryId);
+  }, [
+    clearDocumentProblem,
+    discardEditedMarkdown,
+    selectedEntry,
+    setDocumentNotice,
+    setEntryDesktopSaveState,
+  ]);
+
   const handleReloadSelectedDocument = useCallback(async () => {
     if (!selectedEntry) {
       setDesktopNotice({
@@ -2025,14 +2064,26 @@ function AppContent() {
                         <span className="desktop-save-pill">
                           {saveStateLabel}
                         </span>
-                        {!activePendingConflict && selectedPath ? (
+                        {!activePendingConflict ? (
                           <button
                             type="button"
                             className="ghost-button desktop-reload-button"
-                            onClick={() => void handleReloadSelectedDocument()}
+                            onClick={() =>
+                              selectedPath
+                                ? void handleReloadSelectedDocument()
+                                : handleResetEditedMarkdown()
+                            }
                             disabled={activeSaveState === "saving"}
-                            aria-label="Reload from disk"
-                            title="Reload from disk and discard unsaved changes"
+                            aria-label={
+                              selectedPath
+                                ? "Reload from disk"
+                                : "Discard edits and restore original"
+                            }
+                            title={
+                              selectedPath
+                                ? "Reload from disk and discard unsaved changes"
+                                : "Discard your edits and restore the original document content"
+                            }
                           >
                             Reload
                           </button>
