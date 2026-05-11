@@ -38,12 +38,18 @@ test("renders split-pane resize handles with separator roles", async ({
   const splitBar = page.getByRole("separator", {
     name: "Resize upload panel",
   });
+  await expect(splitBar).toBeVisible();
+  await expect(splitBar).toHaveAttribute("aria-orientation", "vertical");
+
+  await expect(
+    page.getByRole("separator", { name: "Resize editor height" }),
+  ).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Start writing", exact: true }).click();
+
   const heightHandle = page.getByRole("separator", {
     name: "Resize editor height",
   });
-
-  await expect(splitBar).toBeVisible();
-  await expect(splitBar).toHaveAttribute("aria-orientation", "vertical");
   await expect(heightHandle).toBeVisible();
   await expect(heightHandle).toHaveAttribute("aria-orientation", "horizontal");
 });

@@ -43,4 +43,26 @@ describe("DropZone", () => {
 
     expect(onFilesAdded).toHaveBeenCalledWith(files);
   });
+
+  it("routes the browse button through onNativeBrowse when provided and skips the HTML file input", () => {
+    const onNativeBrowse = vi.fn();
+    const inputClick = vi
+      .spyOn(HTMLInputElement.prototype, "click")
+      .mockImplementation(() => undefined);
+
+    render(
+      <DropZone
+        onFilesAdded={() => undefined}
+        onUrlAdded={async () => undefined}
+        onNativeBrowse={onNativeBrowse}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getAllByRole("button", { name: /browse from your device/i })[1],
+    );
+
+    expect(onNativeBrowse).toHaveBeenCalledTimes(1);
+    expect(inputClick).not.toHaveBeenCalled();
+  });
 });

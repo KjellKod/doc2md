@@ -1041,20 +1041,22 @@ function AppContent() {
                     }
                   }}
                 />
-                <button
-                  type="button"
-                  className="preview-height-handle"
-                  role="separator"
-                  aria-orientation="horizontal"
-                  aria-label="Resize editor height"
-                  aria-describedby="preview-height-resize-hint"
-                  title="Drag to resize the editor height; double-click to reset"
-                  onMouseDown={handleHeightResizeStart}
-                  onMouseUp={handleHeightResizeMouseUp}
-                  onClick={handleHeightResizeClickReset}
-                  onDoubleClick={handleHeightResizeReset}
-                  onKeyDown={handleHeightResizeKeyDown}
-                />
+                {selectedEntry ? (
+                  <button
+                    type="button"
+                    className="preview-height-handle"
+                    role="separator"
+                    aria-orientation="horizontal"
+                    aria-label="Resize editor height"
+                    aria-describedby="preview-height-resize-hint"
+                    title="Drag to resize the editor height; double-click to reset"
+                    onMouseDown={handleHeightResizeStart}
+                    onMouseUp={handleHeightResizeMouseUp}
+                    onClick={handleHeightResizeClickReset}
+                    onDoubleClick={handleHeightResizeReset}
+                    onKeyDown={handleHeightResizeKeyDown}
+                  />
+                ) : null}
               </section>
             </section>
 

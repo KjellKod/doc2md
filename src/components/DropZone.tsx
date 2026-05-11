@@ -4,9 +4,19 @@ import { MAX_BROWSER_FILE_SIZE_BYTES } from "../converters/messages";
 interface DropZoneProps {
   onFilesAdded: (files: FileList | File[]) => void;
   onUrlAdded: (url: string) => Promise<void>;
+  // When provided, the browse-file affordance routes through this callback
+  // instead of the HTML file input. The desktop shell wires this to a native
+  // openFile IPC so the selected file's disk path is captured for later
+  // reload-from-disk operations. The browser-only build leaves it unset
+  // and continues to use the HTML input (path-less by browser API).
+  onNativeBrowse?: () => void | Promise<void>;
 }
 
-export default function DropZone({ onFilesAdded, onUrlAdded }: DropZoneProps) {
+export default function DropZone({
+  onFilesAdded,
+  onUrlAdded,
+  onNativeBrowse,
+}: DropZoneProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const dragDepthRef = useRef(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -24,6 +34,10 @@ export default function DropZone({ onFilesAdded, onUrlAdded }: DropZoneProps) {
   }
 
   function openFilePicker() {
+    if (onNativeBrowse) {
+      void onNativeBrowse();
+      return;
+    }
     inputRef.current?.click();
   }
 

@@ -2026,7 +2026,10 @@ function AppContent() {
 
       if (result.code === "error") {
         setEntryDesktopSaveState(entry.id, "error");
-        setDocumentNotice(entry.id, noticeFromError(result));
+        setDocumentNotice(entry.id, {
+          kind: "error",
+          message: `Unable to reload file from disk: ${result.message}`,
+        });
       }
     } catch (error) {
       setEntryDesktopSaveState(entry.id, "error");
@@ -2041,6 +2044,92 @@ function AppContent() {
     applyReloadedMarkdownFile,
     selectedEntry,
     selectedPath,
+    setDocumentNotice,
+    setEntryDesktopSaveState,
+    shell,
+  ]);
+
+  // Reload-from-disk for documents that were loaded without a captured disk
+  // path (e.g. drag-dropped). Prompts the user via the native open dialog,
+  // then replaces the selected entry's content and registers the path so
+  // subsequent reloads do not re-prompt.
+  const handleReloadViaPicker = useCallback(async () => {
+    if (!shell || !selectedEntry) {
+      return;
+    }
+
+    const entry = selectedEntry;
+
+    if (entry.status === "pending" || entry.status === "converting") {
+      setDocumentNotice(entry.id, {
+        kind: "info",
+        message: "Finishing conversion. Try reloading again in a moment.",
+      });
+      return;
+    }
+
+    if (activeSaveState === "saving") {
+      setDocumentNotice(entry.id, {
+        kind: "info",
+        message: "Wait for the current save to finish before reloading.",
+      });
+      return;
+    }
+
+    if (
+      activeSaveState !== "saved" &&
+      !window.confirm(
+        "Reload from disk and discard unsaved changes? Pick the source file in the next dialog.",
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const result = await shell.openFile();
+      if (result.ok) {
+        if (result.kind !== "markdown") {
+          setEntryDesktopSaveState(entry.id, "error");
+          setDocumentNotice(entry.id, {
+            kind: "error",
+            message: "Reload failed: selected file is not a Markdown target.",
+          });
+          return;
+        }
+
+        applyReloadedMarkdownFile(entry, result);
+        return;
+      }
+
+      if (result.code === "cancelled") {
+        return;
+      }
+
+      if (result.code === "permission-needed") {
+        setEntryDesktopSaveState(entry.id, "permission-needed");
+        setDocumentNotice(entry.id, noticeFromPermission(result));
+        return;
+      }
+
+      if (result.code === "error") {
+        setEntryDesktopSaveState(entry.id, "error");
+        setDocumentNotice(entry.id, {
+          kind: "error",
+          message: `Unable to reload file from disk: ${result.message}`,
+        });
+      }
+    } catch (error) {
+      setEntryDesktopSaveState(entry.id, "error");
+      setDocumentNotice(entry.id, {
+        kind: "error",
+        message: "Reload failed before the app received a native result.",
+      });
+      console.error("doc2md desktop reload-via-picker transport failure", error);
+    }
+  }, [
+    activeSaveState,
+    applyReloadedMarkdownFile,
+    selectedEntry,
     setDocumentNotice,
     setEntryDesktopSaveState,
     shell,
@@ -2365,21 +2454,31 @@ function AppContent() {
                           <button
                             type="button"
                             className="ghost-button desktop-reload-button"
-                            onClick={() =>
-                              selectedPath
-                                ? void handleReloadSelectedDocument()
-                                : handleResetEditedMarkdown()
-                            }
+                            onClick={() => {
+                              if (selectedPath) {
+                                void handleReloadSelectedDocument();
+                                return;
+                              }
+                              if (shell) {
+                                void handleReloadViaPicker();
+                                return;
+                              }
+                              handleResetEditedMarkdown();
+                            }}
                             disabled={activeSaveState === "saving"}
                             aria-label={
                               selectedPath
                                 ? "Reload from disk"
-                                : "Discard edits and restore original"
+                                : shell
+                                  ? "Reload from disk (pick file)"
+                                  : "Discard edits and restore original"
                             }
                             title={
                               selectedPath
                                 ? "Reload from disk and discard unsaved changes"
-                                : "Discard your edits and restore the original document content"
+                                : shell
+                                  ? "Pick the source file to reload from disk"
+                                  : "Discard your edits and restore the original document content"
                             }
                           >
                             Reload
@@ -2498,6 +2597,7 @@ function AppContent() {
                     <DropZone
                       onFilesAdded={addFiles}
                       onUrlAdded={handleUrlAdded}
+                      onNativeBrowse={shell ? handleOpenFile : undefined}
                     />
 
                     <div className="panel-heading panel-heading-tight">
@@ -2572,20 +2672,22 @@ function AppContent() {
                       }
                     }}
                   />
-                  <button
-                    type="button"
-                    className="preview-height-handle"
-                    role="separator"
-                    aria-orientation="horizontal"
-                    aria-label="Resize editor height"
-                    aria-describedby="preview-height-resize-hint"
-                    title="Drag to resize the editor height; double-click to reset"
-                    onMouseDown={handleHeightResizeStart}
-                    onMouseUp={handleHeightResizeMouseUp}
-                    onClick={handleHeightResizeClickReset}
-                    onDoubleClick={handleHeightResizeReset}
-                    onKeyDown={handleHeightResizeKeyDown}
-                  />
+                  {selectedEntry ? (
+                    <button
+                      type="button"
+                      className="preview-height-handle"
+                      role="separator"
+                      aria-orientation="horizontal"
+                      aria-label="Resize editor height"
+                      aria-describedby="preview-height-resize-hint"
+                      title="Drag to resize the editor height; double-click to reset"
+                      onMouseDown={handleHeightResizeStart}
+                      onMouseUp={handleHeightResizeMouseUp}
+                      onClick={handleHeightResizeClickReset}
+                      onDoubleClick={handleHeightResizeReset}
+                      onKeyDown={handleHeightResizeKeyDown}
+                    />
+                  ) : null}
                 </section>
               </section>
 

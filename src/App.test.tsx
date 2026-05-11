@@ -318,6 +318,7 @@ describe("App", () => {
   it("lets users grow and reset the editor height with the bottom handle", () => {
     vi.stubGlobal("innerHeight", 1200);
     const { container } = render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Start writing" }));
     const workspace = container.querySelector<HTMLElement>(".workspace");
     const preview = container.querySelector<HTMLElement>(".preview-panel");
     const heightHandle = screen.getByRole("separator", {
@@ -353,6 +354,7 @@ describe("App", () => {
   it("does not change editor height until the first horizontal mousemove", () => {
     vi.stubGlobal("innerHeight", 900);
     const { container } = render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Start writing" }));
     const preview = container.querySelector<HTMLElement>(".preview-panel");
     const heightHandle = screen.getByRole("separator", {
       name: "Resize editor height",
@@ -382,6 +384,7 @@ describe("App", () => {
     const previewTop = 260;
     const expected = computeEditShellCeiling(window.innerHeight, previewTop);
     const { container } = render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Start writing" }));
     const preview = container.querySelector<HTMLElement>(".preview-panel");
     const heightHandle = screen.getByRole("separator", {
       name: "Resize editor height",
@@ -403,6 +406,17 @@ describe("App", () => {
     expect(preview!.style.getPropertyValue("--preview-panel-ceiling")).toBe(
       `${expected}px`,
     );
+  });
+
+  it("hides the preview height handle when no document is loaded", () => {
+    render(<App />);
+
+    expect(
+      screen.queryByRole("separator", { name: "Resize editor height" }),
+    ).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Start writing" }),
+    ).toBeInTheDocument();
   });
 
   it("supports upload, selection, preview readiness, and download state changes", async () => {
