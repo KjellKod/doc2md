@@ -39,8 +39,9 @@ const SIDEBAR_COLLAPSE_WIDTH = 56;
 const SIDEBAR_SNAP_THRESHOLD = 200;
 const SIDEBAR_WIDTH_STEP = 16;
 const MIN_EDIT_SHELL_HEIGHT = 240;
-const MAX_EDIT_SHELL_HEIGHT = 2400;
 const EDIT_SHELL_HEIGHT_STEP = 32;
+const EDIT_SHELL_BOTTOM_GUTTER = 36;
+const DEFAULT_HEADER_OFFSET_PX = 280;
 const MAX_SIDEBAR_WIDTH = DEFAULT_SIDEBAR_WIDTH;
 type PageView = "convert" | "install";
 type ResizeAxis = "sidebar" | "height";
@@ -236,10 +237,72 @@ function DesktopMenuEventBridge({
   return <span data-testid="desktop-menu-bridge" hidden />;
 }
 
-function clampEditShellHeight(height: number) {
+function computeEditShellCeiling(
+  innerHeight: number,
+  previewPanelTop: number | null,
+  bottomGutter = EDIT_SHELL_BOTTOM_GUTTER,
+  fallbackHeaderOffset = DEFAULT_HEADER_OFFSET_PX,
+): number {
+  const raw =
+    typeof previewPanelTop === "number" &&
+    Number.isFinite(previewPanelTop) &&
+    previewPanelTop > 0
+      ? innerHeight - previewPanelTop - bottomGutter
+      : innerHeight - fallbackHeaderOffset;
+
+  return Math.max(MIN_EDIT_SHELL_HEIGHT, Math.round(raw));
+}
+
+function outerHeight(element: Element | null): number {
+  if (!(element instanceof HTMLElement)) {
+    return 0;
+  }
+
+  const rect = element.getBoundingClientRect();
+  const style = window.getComputedStyle(element);
+  const marginTop = Number.parseFloat(style.marginTop) || 0;
+  const marginBottom = Number.parseFloat(style.marginBottom) || 0;
+
+  return rect.height + marginTop + marginBottom;
+}
+
+function computeFallbackHeaderOffsetPx(): number {
+  if (typeof document === "undefined" || typeof window === "undefined") {
+    return DEFAULT_HEADER_OFFSET_PX;
+  }
+
+  const workspace = document.querySelector(".workspace");
+  const workspaceTop = workspace?.getBoundingClientRect().top;
+  if (
+    typeof workspaceTop === "number" &&
+    Number.isFinite(workspaceTop) &&
+    workspaceTop > 0
+  ) {
+    return Math.round(workspaceTop);
+  }
+
+  const appShell = document.querySelector(".app-shell");
+  const hero = document.querySelector(".hero");
+  const viewSwitcherRow = document.querySelector(".view-switcher-row");
+  const appShellTopPadding =
+    appShell instanceof HTMLElement
+      ? Number.parseFloat(window.getComputedStyle(appShell).paddingTop) || 0
+      : 0;
+  // Fallback breakdown: app shell top padding, rendered hero height,
+  // rendered view-switcher row including its bottom margin, and a small
+  // workspace gap allowance when layout has not produced a usable rect yet.
+  const measuredOffset =
+    appShellTopPadding + outerHeight(hero) + outerHeight(viewSwitcherRow) + 24;
+
+  return measuredOffset > 0
+    ? Math.round(measuredOffset)
+    : DEFAULT_HEADER_OFFSET_PX;
+}
+
+function clampEditShellHeight(height: number, ceiling: number) {
   return Math.min(
     Math.max(Math.round(height), MIN_EDIT_SHELL_HEIGHT),
-    MAX_EDIT_SHELL_HEIGHT,
+    Math.max(MIN_EDIT_SHELL_HEIGHT, ceiling),
   );
 }
 
@@ -263,9 +326,17 @@ function AppContent() {
   const [activeResizeAxis, setActiveResizeAxis] =
     useState<ResizeAxis | null>(null);
   const [editShellHeight, setEditShellHeight] = useState<number | null>(null);
+  const [editShellHeightCeiling, setEditShellHeightCeiling] = useState(() =>
+    computeEditShellCeiling(
+      typeof window === "undefined" ? DEFAULT_HEADER_OFFSET_PX : window.innerHeight,
+      null,
+    ),
+  );
   const [sidebarWidth, setSidebarWidth] = useState<number | null>(null);
   const convertTabRef = useRef<HTMLButtonElement>(null);
   const installTabRef = useRef<HTMLButtonElement>(null);
+  const previewPanelRef = useRef<HTMLElement | null>(null);
+  const editShellHeightCeilingRef = useRef(editShellHeightCeiling);
   const dragStartXRef = useRef(0);
   const dragStartYRef = useRef(0);
   const dragStartHeightRef = useRef<number | null>(null);
@@ -414,6 +485,72 @@ function AppContent() {
     };
   }, []);
 
+  const recomputeEditShellHeightCeiling = useCallback(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const previewPanelTop =
+      previewPanelRef.current?.getBoundingClientRect().top ?? null;
+    const ceiling = computeEditShellCeiling(
+      window.innerHeight,
+      previewPanelTop,
+      EDIT_SHELL_BOTTOM_GUTTER,
+      computeFallbackHeaderOffsetPx(),
+    );
+    editShellHeightCeilingRef.current = ceiling;
+    setEditShellHeightCeiling((current) =>
+      current === ceiling ? current : ceiling,
+    );
+    setEditShellHeight((current) =>
+      current === null ? current : clampEditShellHeight(current, ceiling),
+    );
+  }, []);
+
+  useEffect(() => {
+    recomputeEditShellHeightCeiling();
+
+    let frameId: number | null = null;
+    if (typeof window.requestAnimationFrame === "function") {
+      frameId = window.requestAnimationFrame(recomputeEditShellHeightCeiling);
+    }
+
+    window.addEventListener("resize", recomputeEditShellHeightCeiling);
+
+    let observer: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined") {
+      observer = new ResizeObserver(recomputeEditShellHeightCeiling);
+      const previewPanel = previewPanelRef.current;
+      const observedElements = new Set<Element>();
+
+      if (previewPanel) {
+        observedElements.add(previewPanel);
+        if (previewPanel.parentElement) {
+          observedElements.add(previewPanel.parentElement);
+        }
+        const viewPanel = previewPanel.closest(".view-panel");
+        if (viewPanel) {
+          observedElements.add(viewPanel);
+        }
+      }
+
+      const appShell = document.querySelector(".app-shell");
+      if (appShell) {
+        observedElements.add(appShell);
+      }
+
+      observedElements.forEach((element) => observer?.observe(element));
+    }
+
+    return () => {
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
+      window.removeEventListener("resize", recomputeEditShellHeightCeiling);
+      observer?.disconnect();
+    };
+  }, [recomputeEditShellHeightCeiling]);
+
   useEffect(() => {
     if (activeResizeAxis === null) {
       return;
@@ -429,7 +566,7 @@ function AppContent() {
           sidebarDragMovedRef.current = true;
         }
         const nextWidth = clampSidebarWidth(
-          baseSidebarWidth - (event.clientX - dragStartXRef.current),
+          baseSidebarWidth + (event.clientX - dragStartXRef.current),
         );
         latestSidebarWidthRef.current = nextWidth;
         setSidebarWidth(nextWidth);
@@ -444,6 +581,7 @@ function AppContent() {
         setEditShellHeight(
           clampEditShellHeight(
             baseHeight + (event.clientY - dragStartYRef.current),
+            editShellHeightCeilingRef.current,
           ),
         );
       }
@@ -840,11 +978,17 @@ function AppContent() {
     }
     const panel = document.querySelector(".preview-panel");
     if (panel) {
-      return clampEditShellHeight(panel.getBoundingClientRect().height);
+      return clampEditShellHeight(
+        panel.getBoundingClientRect().height,
+        editShellHeightCeilingRef.current,
+      );
     }
     const shell = document.querySelector(".markdown-edit-shell");
     if (shell) {
-      return clampEditShellHeight(shell.getBoundingClientRect().height);
+      return clampEditShellHeight(
+        shell.getBoundingClientRect().height,
+        editShellHeightCeilingRef.current,
+      );
     }
     return MIN_EDIT_SHELL_HEIGHT;
   }
@@ -889,7 +1033,7 @@ function AppContent() {
       event.preventDefault();
       setSidebarWidth((current) =>
         clampKeyboardSidebarWidth(
-          (current ?? measureSidebarWidth() ?? MAX_SIDEBAR_WIDTH) -
+          (current ?? measureSidebarWidth() ?? MAX_SIDEBAR_WIDTH) +
             SIDEBAR_WIDTH_STEP,
         ),
       );
@@ -900,7 +1044,7 @@ function AppContent() {
       event.preventDefault();
       setSidebarWidth((current) =>
         clampKeyboardSidebarWidth(
-          (current ?? measureSidebarWidth() ?? MAX_SIDEBAR_WIDTH) +
+          (current ?? measureSidebarWidth() ?? MAX_SIDEBAR_WIDTH) -
             SIDEBAR_WIDTH_STEP,
         ),
       );
@@ -962,12 +1106,12 @@ function AppContent() {
       return;
     }
 
+    recomputeEditShellHeightCeiling();
     const measuredHeight =
       editShellHeight ?? measureEditShellHeight() ?? MIN_EDIT_SHELL_HEIGHT;
     dragStartYRef.current = event.clientY;
     dragStartHeightRef.current = measuredHeight;
     heightDragMovedRef.current = false;
-    setEditShellHeight(measuredHeight);
     setActiveResizeAxis("height");
   };
 
@@ -980,6 +1124,7 @@ function AppContent() {
         clampEditShellHeight(
           (current ?? measureEditShellHeight() ?? MIN_EDIT_SHELL_HEIGHT) +
             EDIT_SHELL_HEIGHT_STEP,
+          editShellHeightCeilingRef.current,
         ),
       );
       return;
@@ -991,6 +1136,7 @@ function AppContent() {
         clampEditShellHeight(
           (current ?? measureEditShellHeight() ?? MIN_EDIT_SHELL_HEIGHT) -
             EDIT_SHELL_HEIGHT_STEP,
+          editShellHeightCeilingRef.current,
         ),
       );
       return;
@@ -1041,10 +1187,13 @@ function AppContent() {
   const previewPanelStyle =
     editShellHeight !== null
       ? ({
+          "--preview-panel-ceiling": `${editShellHeightCeiling}px`,
           height: `${editShellHeight}px`,
           minHeight: `${editShellHeight}px`,
-        } as CSSProperties)
-      : undefined;
+        } as CSSProperties & Record<"--preview-panel-ceiling", string>)
+      : ({
+          "--preview-panel-ceiling": `${editShellHeightCeiling}px`,
+        } as CSSProperties & Record<"--preview-panel-ceiling", string>);
 
   const focusPageTab = (page: PageView) => {
     const tab =
@@ -2292,6 +2441,16 @@ function AppContent() {
                 className={`workspace${sidebarCollapsed ? " sidebar-collapsed" : ""}${activeResizeAxis !== null ? " is-resizing" : ""}`}
                 style={sidebarCollapsed ? undefined : workspaceStyle}
               >
+                <span id="split-bar-resize-hint" className="visually-hidden">
+                  Drag left or right to resize the upload panel. Double-click or
+                  press Home to reset. Use Arrow Left and Arrow Right for
+                  keyboard resizing.
+                </span>
+                <span id="preview-height-resize-hint" className="visually-hidden">
+                  Drag up or down to resize the editor height. Double-click or
+                  press Home to reset. Use Arrow Up and Arrow Down for keyboard
+                  resizing.
+                </span>
                 {sidebarCollapsed ? (
                   <section className="panel collapse-rail" aria-label="Upload rail">
                     <button
@@ -2361,27 +2520,28 @@ function AppContent() {
                   </section>
                 )}
 
-                {!sidebarCollapsed ? (
-                  <button
-                    type="button"
-                    className="workspace-split-bar"
-                    role="separator"
-                    aria-orientation="vertical"
-                    aria-label="Resize upload panel"
-                    title="Drag to resize the upload panel"
-                    onMouseDown={handleSidebarResizeStart}
-                    onMouseUp={handleSidebarResizeMouseUp}
-                    onClick={handleSidebarResizeClickReset}
-                    onDoubleClick={handleSidebarResizeReset}
-                    onKeyDown={handleSidebarResizeKeyDown}
-                  />
-                ) : null}
-
                 <section
+                  ref={previewPanelRef}
                   className="panel preview-panel"
                   aria-labelledby="preview-title"
                   style={previewPanelStyle}
                 >
+                  {!sidebarCollapsed ? (
+                    <button
+                      type="button"
+                      className="workspace-split-bar"
+                      role="separator"
+                      aria-orientation="vertical"
+                      aria-label="Resize upload panel"
+                      aria-describedby="split-bar-resize-hint"
+                      title="Drag to resize the upload panel; double-click to reset"
+                      onMouseDown={handleSidebarResizeStart}
+                      onMouseUp={handleSidebarResizeMouseUp}
+                      onClick={handleSidebarResizeClickReset}
+                      onDoubleClick={handleSidebarResizeReset}
+                      onKeyDown={handleSidebarResizeKeyDown}
+                    />
+                  ) : null}
                   <div className="panel-heading">
                     <div>
                       <h2 id="preview-title">Preview</h2>
@@ -2418,7 +2578,8 @@ function AppContent() {
                     role="separator"
                     aria-orientation="horizontal"
                     aria-label="Resize editor height"
-                    title="Drag to resize the editor height"
+                    aria-describedby="preview-height-resize-hint"
+                    title="Drag to resize the editor height; double-click to reset"
                     onMouseDown={handleHeightResizeStart}
                     onMouseUp={handleHeightResizeMouseUp}
                     onClick={handleHeightResizeClickReset}

@@ -8,7 +8,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import App from "./App";
+import App, { computeEditShellCeiling } from "./App";
 
 const { convertFileMock } = vi.hoisted(() => ({
   convertFileMock: vi.fn(),
@@ -217,17 +217,22 @@ describe("App", () => {
     expect(getSidebarWidth()).toBe(430);
 
     fireEvent.mouseDown(splitBar, { clientX: 200 });
-    fireEvent.mouseMove(window, { clientX: 320 });
+    fireEvent.mouseMove(window, { clientX: 80 });
     fireEvent.mouseUp(window);
 
     expect(pageFrame).toHaveStyle("--page-max-width: 1680px");
     expect(getSidebarWidth()).toBe(310);
 
+    fireEvent.mouseDown(splitBar, { clientX: 80 });
+    fireEvent.mouseMove(window, { clientX: 140 });
+    fireEvent.mouseUp(window);
+    expect(getSidebarWidth()).toBe(370);
+
     fireEvent.keyDown(splitBar, { key: "ArrowRight" });
-    expect(getSidebarWidth()).toBe(294);
+    expect(getSidebarWidth()).toBe(386);
 
     fireEvent.keyDown(splitBar, { key: "ArrowLeft" });
-    expect(getSidebarWidth()).toBe(310);
+    expect(getSidebarWidth()).toBe(370);
 
     fireEvent.keyDown(splitBar, { key: "Home" });
     expect(getSidebarWidth()).toBe(430);
@@ -253,7 +258,7 @@ describe("App", () => {
       Number(workspace!.style.getPropertyValue("--sidebar-width").replace("px", ""));
 
     fireEvent.mouseDown(splitBar, { clientX: 200 });
-    fireEvent.mouseMove(window, { clientX: 320 });
+    fireEvent.mouseMove(window, { clientX: 80 });
     fireEvent.mouseUp(window);
     expect(getSidebarWidth()).toBe(310);
 
@@ -261,12 +266,12 @@ describe("App", () => {
     expect(getSidebarWidth()).toBe(430);
 
     fireEvent.mouseDown(splitBar, { clientX: 200 });
-    fireEvent.mouseMove(window, { clientX: 320 });
+    fireEvent.mouseMove(window, { clientX: 80 });
     fireEvent.mouseUp(window);
     expect(getSidebarWidth()).toBe(310);
 
     fireEvent.mouseDown(splitBar, { clientX: 200 });
-    fireEvent.mouseMove(window, { clientX: 460 });
+    fireEvent.mouseMove(window, { clientX: 40 });
     fireEvent.mouseUp(window);
 
     expect(workspace).toHaveClass("sidebar-collapsed");
@@ -280,7 +285,38 @@ describe("App", () => {
     expect(getSidebarWidth()).toBe(310);
   });
 
+  it("grows the upload panel when dragging the split bar right", () => {
+    const { container } = render(<App />);
+    const workspace = container.querySelector<HTMLElement>(".workspace");
+    const sidebar = container.querySelector<HTMLElement>(".sidebar-panel");
+    const splitBar = screen.getByRole("separator", {
+      name: "Resize upload panel",
+    });
+
+    expect(workspace).not.toBeNull();
+    expect(sidebar).not.toBeNull();
+
+    Object.defineProperty(sidebar!, "getBoundingClientRect", {
+      configurable: true,
+      value: () => new DOMRect(0, 0, 430, 600),
+    });
+
+    const getSidebarWidth = () =>
+      Number(workspace!.style.getPropertyValue("--sidebar-width").replace("px", ""));
+
+    fireEvent.mouseDown(splitBar, { clientX: 200 });
+    fireEvent.mouseMove(window, { clientX: 80 });
+    fireEvent.mouseUp(window);
+    expect(getSidebarWidth()).toBe(310);
+
+    fireEvent.mouseDown(splitBar, { clientX: 80 });
+    fireEvent.mouseMove(window, { clientX: 140 });
+    fireEvent.mouseUp(window);
+    expect(getSidebarWidth()).toBe(370);
+  });
+
   it("lets users grow and reset the editor height with the bottom handle", () => {
+    vi.stubGlobal("innerHeight", 1200);
     const { container } = render(<App />);
     const workspace = container.querySelector<HTMLElement>(".workspace");
     const preview = container.querySelector<HTMLElement>(".preview-panel");
@@ -294,7 +330,7 @@ describe("App", () => {
 
     Object.defineProperty(preview!, "getBoundingClientRect", {
       configurable: true,
-      value: () => new DOMRect(0, 0, 900, 700),
+      value: () => new DOMRect(0, 280, 900, 700),
     });
 
     fireEvent.mouseDown(heightHandle, { clientY: 100 });
@@ -312,6 +348,61 @@ describe("App", () => {
 
     fireEvent.keyDown(heightHandle, { key: "Home" });
     expect(preview!.style.height).toBe("");
+  });
+
+  it("does not change editor height until the first horizontal mousemove", () => {
+    vi.stubGlobal("innerHeight", 900);
+    const { container } = render(<App />);
+    const preview = container.querySelector<HTMLElement>(".preview-panel");
+    const heightHandle = screen.getByRole("separator", {
+      name: "Resize editor height",
+    });
+
+    expect(preview).not.toBeNull();
+
+    Object.defineProperty(preview!, "getBoundingClientRect", {
+      configurable: true,
+      value: () => new DOMRect(0, 260, 900, 3200),
+    });
+
+    fireEvent.mouseDown(heightHandle, { clientY: 100 });
+
+    expect(preview!.style.height).toBe("");
+    expect(preview!.style.minHeight).toBe("");
+
+    fireEvent.mouseMove(window, { clientY: 140 });
+    fireEvent.mouseUp(window);
+
+    expect(preview!.style.height).not.toBe("");
+    expect(preview!.style.minHeight).not.toBe("");
+  });
+
+  it("clamps editor height to the viewport-derived ceiling", () => {
+    vi.stubGlobal("innerHeight", 1000);
+    const previewTop = 260;
+    const expected = computeEditShellCeiling(window.innerHeight, previewTop);
+    const { container } = render(<App />);
+    const preview = container.querySelector<HTMLElement>(".preview-panel");
+    const heightHandle = screen.getByRole("separator", {
+      name: "Resize editor height",
+    });
+
+    expect(preview).not.toBeNull();
+
+    Object.defineProperty(preview!, "getBoundingClientRect", {
+      configurable: true,
+      value: () => new DOMRect(0, previewTop, 900, 700),
+    });
+
+    fireEvent.mouseDown(heightHandle, { clientY: 100 });
+    fireEvent.mouseMove(window, { clientY: 1000 });
+    fireEvent.mouseUp(window);
+
+    expect(preview!.style.height).toBe(`${expected}px`);
+    expect(preview!.style.maxHeight).toBe("");
+    expect(preview!.style.getPropertyValue("--preview-panel-ceiling")).toBe(
+      `${expected}px`,
+    );
   });
 
   it("supports upload, selection, preview readiness, and download state changes", async () => {
