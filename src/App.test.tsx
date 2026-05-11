@@ -191,66 +191,127 @@ describe("App", () => {
     ).toBeInTheDocument();
   });
 
-  it("lets users drag the workspace sidebar narrower from the right edge", () => {
-    const originalInnerWidth = window.innerWidth;
-    Object.defineProperty(window, "innerWidth", {
-      configurable: true,
-      writable: true,
-      value: 2600,
+  it("lets users drag and keyboard-step the upload panel split bar", () => {
+    const { container } = render(<App />);
+    const pageFrame = container.querySelector(".page-frame");
+    const workspace = container.querySelector<HTMLElement>(".workspace");
+    const sidebar = container.querySelector<HTMLElement>(".sidebar-panel");
+    const splitBar = screen.getByRole("separator", {
+      name: "Resize upload panel",
     });
 
-    try {
-      const { container } = render(<App />);
-      const pageFrame = container.querySelector(".page-frame");
-      const workspace = container.querySelector<HTMLElement>(".workspace");
-      const sidebar = container.querySelector<HTMLElement>(".sidebar-panel");
-      const handle = screen.getByRole("button", {
-        name: "Resize workspace and editor",
-      });
+    expect(pageFrame).not.toBeNull();
+    expect(workspace).not.toBeNull();
+    expect(sidebar).not.toBeNull();
+    expect(splitBar).toHaveAttribute("aria-orientation", "vertical");
+    expect(pageFrame).toHaveStyle("--page-max-width: 1680px");
 
-      expect(pageFrame).not.toBeNull();
-      expect(workspace).not.toBeNull();
-      expect(sidebar).not.toBeNull();
-      expect(pageFrame).toHaveStyle("--page-max-width: 1680px");
-      expect(workspace!.style.gridTemplateColumns).toBe("");
+    Object.defineProperty(sidebar!, "getBoundingClientRect", {
+      configurable: true,
+      value: () => new DOMRect(0, 0, 430, 600),
+    });
 
-      Object.defineProperty(sidebar!, "getBoundingClientRect", {
-        configurable: true,
-        value: () => new DOMRect(0, 0, 430, 600),
-      });
+    const getSidebarWidth = () =>
+      Number(workspace!.style.getPropertyValue("--sidebar-width").replace("px", ""));
 
-      const getSidebarWidth = () => {
-        const match = workspace!.style.gridTemplateColumns.match(
-          /^(\d+)px minmax\(0,\s*1fr\)$/u,
-        );
+    expect(getSidebarWidth()).toBe(430);
 
-        expect(match).not.toBeNull();
-        return Number(match![1]);
-      };
+    fireEvent.mouseDown(splitBar, { clientX: 200 });
+    fireEvent.mouseMove(window, { clientX: 320 });
+    fireEvent.mouseUp(window);
 
-      fireEvent.mouseDown(handle, { clientX: 2000 });
+    expect(pageFrame).toHaveStyle("--page-max-width: 1680px");
+    expect(getSidebarWidth()).toBe(310);
 
-      expect(getSidebarWidth()).toBe(430);
+    fireEvent.keyDown(splitBar, { key: "ArrowRight" });
+    expect(getSidebarWidth()).toBe(294);
 
-      fireEvent.mouseMove(window, { clientX: 2160 });
-      fireEvent.mouseUp(window);
+    fireEvent.keyDown(splitBar, { key: "ArrowLeft" });
+    expect(getSidebarWidth()).toBe(310);
 
-      expect(pageFrame).toHaveStyle("--page-max-width: 1680px");
-      expect(getSidebarWidth()).toBe(270);
+    fireEvent.keyDown(splitBar, { key: "Home" });
+    expect(getSidebarWidth()).toBe(430);
+  });
 
-      fireEvent.mouseDown(handle, { clientX: 2160 });
-      fireEvent.mouseMove(window, { clientX: 2000 });
-      fireEvent.mouseUp(window);
+  it("resets and snap-collapses the upload panel from the split bar", () => {
+    const { container } = render(<App />);
+    const workspace = container.querySelector<HTMLElement>(".workspace");
+    const sidebar = container.querySelector<HTMLElement>(".sidebar-panel");
+    const splitBar = screen.getByRole("separator", {
+      name: "Resize upload panel",
+    });
 
-      expect(pageFrame).toHaveStyle("--page-max-width: 1680px");
-      expect(getSidebarWidth()).toBe(430);
-    } finally {
-      Object.defineProperty(window, "innerWidth", {
-        configurable: true,
-        writable: true,
-        value: originalInnerWidth,
-      });
-    }
+    expect(workspace).not.toBeNull();
+    expect(sidebar).not.toBeNull();
+
+    Object.defineProperty(sidebar!, "getBoundingClientRect", {
+      configurable: true,
+      value: () => new DOMRect(0, 0, 430, 600),
+    });
+
+    const getSidebarWidth = () =>
+      Number(workspace!.style.getPropertyValue("--sidebar-width").replace("px", ""));
+
+    fireEvent.mouseDown(splitBar, { clientX: 200 });
+    fireEvent.mouseMove(window, { clientX: 320 });
+    fireEvent.mouseUp(window);
+    expect(getSidebarWidth()).toBe(310);
+
+    fireEvent.doubleClick(splitBar);
+    expect(getSidebarWidth()).toBe(430);
+
+    fireEvent.mouseDown(splitBar, { clientX: 200 });
+    fireEvent.mouseMove(window, { clientX: 320 });
+    fireEvent.mouseUp(window);
+    expect(getSidebarWidth()).toBe(310);
+
+    fireEvent.mouseDown(splitBar, { clientX: 200 });
+    fireEvent.mouseMove(window, { clientX: 460 });
+    fireEvent.mouseUp(window);
+
+    expect(workspace).toHaveClass("sidebar-collapsed");
+    expect(
+      screen.getByRole("button", { name: "Show upload panel" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Show upload panel" }));
+
+    expect(workspace).not.toHaveClass("sidebar-collapsed");
+    expect(getSidebarWidth()).toBe(310);
+  });
+
+  it("lets users grow and reset the editor height with the bottom handle", () => {
+    const { container } = render(<App />);
+    const workspace = container.querySelector<HTMLElement>(".workspace");
+    const preview = container.querySelector<HTMLElement>(".preview-panel");
+    const heightHandle = screen.getByRole("separator", {
+      name: "Resize editor height",
+    });
+
+    expect(workspace).not.toBeNull();
+    expect(preview).not.toBeNull();
+    expect(heightHandle).toHaveAttribute("aria-orientation", "horizontal");
+
+    Object.defineProperty(preview!, "getBoundingClientRect", {
+      configurable: true,
+      value: () => new DOMRect(0, 0, 900, 700),
+    });
+
+    fireEvent.mouseDown(heightHandle, { clientY: 100 });
+    fireEvent.mouseMove(window, { clientY: 164 });
+    fireEvent.mouseUp(window);
+
+    expect(preview!.style.height).toBe("764px");
+    expect(workspace!.style.getPropertyValue("--sidebar-width")).toBe("430px");
+
+    fireEvent.keyDown(heightHandle, { key: "ArrowDown" });
+    expect(preview!.style.height).toBe("796px");
+
+    fireEvent.keyDown(heightHandle, { key: "ArrowUp" });
+    expect(preview!.style.height).toBe("764px");
+
+    fireEvent.keyDown(heightHandle, { key: "Home" });
+    expect(preview!.style.height).toBe("");
   });
 
   it("supports upload, selection, preview readiness, and download state changes", async () => {
