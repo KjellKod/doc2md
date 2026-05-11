@@ -301,9 +301,6 @@ function AppContent() {
 
     const handleMouseMove = (event: globalThis.MouseEvent) => {
       const deltaX = event.clientX - dragStartXRef.current;
-      setPageMaxWidth(
-        clampPageWidth(dragStartWidthRef.current + deltaX),
-      );
       const baseSidebarWidth = dragStartSidebarWidthRef.current;
       if (baseSidebarWidth !== null) {
         setSidebarWidth(clampSidebarWidth(baseSidebarWidth - deltaX));
@@ -401,7 +398,6 @@ function AppContent() {
   const handlePageResizeKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
     if (event.key === "ArrowRight") {
       event.preventDefault();
-      setPageMaxWidth((current) => clampPageWidth(current + PAGE_WIDTH_STEP));
       setSidebarWidth((current) =>
         clampSidebarWidth(
           (current ?? measureSidebarWidth() ?? MAX_SIDEBAR_WIDTH) -
@@ -413,7 +409,6 @@ function AppContent() {
 
     if (event.key === "ArrowLeft") {
       event.preventDefault();
-      setPageMaxWidth((current) => clampPageWidth(current - PAGE_WIDTH_STEP));
       setSidebarWidth((current) =>
         clampSidebarWidth(
           (current ?? measureSidebarWidth() ?? MAX_SIDEBAR_WIDTH) +

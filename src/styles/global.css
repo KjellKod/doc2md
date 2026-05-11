@@ -327,6 +327,7 @@ a {
 
 .preview-panel {
   position: relative;
+  overflow-x: hidden;
 }
 
 .about-section {
@@ -1049,6 +1050,7 @@ body.is-page-resizing * {
 
 .preview-body {
   min-height: 0;
+  min-width: 0;
   justify-content: flex-start;
   gap: 12px;
 }
@@ -1746,6 +1748,7 @@ body.is-page-resizing * {
   position: relative;
   flex: 1;
   min-height: 300px;
+  min-width: 0;
   width: 100%;
 }
 
