@@ -72,7 +72,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{ needs.classify-ref.outputs.checkout_ref }}
           fetch-depth: 0
