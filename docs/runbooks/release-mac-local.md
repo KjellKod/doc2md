@@ -28,6 +28,7 @@ Use the GitHub `release-mac` workflow (`gh workflow run release-mac.yml --ref ma
 |---|---|
 | macOS with full Xcode | `xcodebuild -version` |
 | Node.js + npm + project dependencies installed | `npm ci` from repo root |
+| Pinned `dmgbuild` installed with `pipx` | see code block below |
 | `gh` authenticated as you | `gh auth status` |
 | Apple Developer ID Application certificate **in your login Keychain** | see code block below |
 | App Store Connect API key (`.p8` file) saved on disk | `ls -l "$APPLE_NOTARY_API_KEY_PATH"` |
@@ -40,6 +41,16 @@ security find-identity -v -p codesigning | grep "Developer ID Application"
 ```
 
 If the Developer ID certificate is not in your Keychain yet, import it from Apple Developer (Certificates → Developer ID Application → Download → double-click the `.cer` to install). The `.p8` notary key can only be downloaded once at creation time; if you have lost it, generate a new one in App Store Connect.
+
+Install the pinned DMG packaging tool from the repo root so the constraints path is absolute:
+
+```bash
+python3 -m pip install --user pipx
+python3 -m pipx ensurepath
+export PIPX_HOME="${PIPX_HOME:-$HOME/.local/share/pipx}"
+python3 -m pipx install "dmgbuild==1.6.7" --pip-args "--constraint $PWD/requirements-mac-release.txt"
+"$PIPX_HOME/venvs/dmgbuild/bin/python" -c "import ds_store, mac_alias"
+```
 
 ## Environment variables
 
@@ -129,8 +140,8 @@ The string in the env var must exactly match the identity name printed by `secur
 **`xcrun notarytool submit` returns `Invalid` or `Rejected`**
 Run `xcrun notarytool log <submission-id> --key-id ... --issuer ... --key ...` to see Apple's specific objections. Common causes: hardened runtime not enabled on the app, missing entitlements, embedded binaries unsigned, timestamp server unreachable when signing. The notarize scripts already pull `notarytool log` automatically when status is non-`Accepted`.
 
-**AppleScript layout step fails locally**
-`package_mac_dmg.sh` falls back to icon-only layout in local dry-run mode. In release mode it fails loudly. If it fails repeatedly on the same machine, restart Finder (`killall Finder`) and try again. See `docs/runbooks/dmg-applescript-failure.md` for the full triage path.
+**Headless DMG packaging fails**
+`package_mac_dmg.sh` uses pinned `dmgbuild` in both local dry-run and release mode. Missing `dmgbuild`, invalid JSON settings, missing `.DS_Store`, background mismatches, stale mounts, and codesign preservation failures are blocking. See `docs/runbooks/dmg-packaging-failure.md` for the full triage path.
 
 **`spctl` exits non-zero on the validated DMG**
 Different macOS versions accept different `spctl` invocations. The script uses `--type open --context context:primary-signature --verbose=4`, which is the documented Apple recommendation. If it fails on a runner image that has changed behavior, treat as a real failure: do not ship the DMG, file an issue, and revert to a previous known-green packaging commit until the runner is understood.
@@ -141,7 +152,7 @@ The script prints which ones are missing and what each is for. Set them and re-r
 ## Related
 
 - `apps/macos/README.md` — Sparkle plumbing, Mac release workflow overview, validation commands.
-- `docs/runbooks/dmg-applescript-failure.md` — Finder layout failure triage.
+- `docs/runbooks/dmg-packaging-failure.md` — Headless dmgbuild packaging failure triage.
 - `.github/workflows/release-mac.yml` — The protected GitHub workflow that produces the canonical public release artifact.
 - `docs/licensing.md` — Full licensing guide.
 - `LICENSES/LicenseRef-doc2md-Desktop.txt` — Mac desktop shareware license terms.

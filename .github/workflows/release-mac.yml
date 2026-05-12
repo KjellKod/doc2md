@@ -195,6 +195,20 @@ jobs:
           mkdir -p "$RUNNER_TEMP/release-work"
           tar -C "$RUNNER_TEMP/release-work" -xzf "$RUNNER_TEMP/doc2md-build/doc2md-app.tar.gz"
 
+      - name: Install pinned dmgbuild
+        run: |
+          set -euo pipefail
+          echo "PIPX_HOME=$RUNNER_TEMP/pipx" >> "$GITHUB_ENV"
+          echo "PIPX_BIN_DIR=$RUNNER_TEMP/pipx-bin" >> "$GITHUB_ENV"
+          echo "$RUNNER_TEMP/pipx-bin" >> "$GITHUB_PATH"
+          export PIPX_HOME="$RUNNER_TEMP/pipx"
+          export PIPX_BIN_DIR="$RUNNER_TEMP/pipx-bin"
+          python3 -m pip install --user pipx
+          python3 -m pipx ensurepath
+          python3 -m pipx install "dmgbuild==1.6.7" --pip-args "--constraint $GITHUB_WORKSPACE/requirements-mac-release.txt"
+          "$PIPX_BIN_DIR/dmgbuild" --help >/dev/null
+          "$PIPX_HOME/venvs/dmgbuild/bin/python" -c "import ds_store, mac_alias"
+
       - name: Sign app, notarize, package DMG, notarize DMG, and build Sparkle ZIP
         env:
           APP_PATH: ${{ runner.temp }}/release-work/doc2md.app

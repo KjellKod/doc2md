@@ -18,6 +18,19 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Detect DMG packaging changes
+        id: dmg_changes
+        run: |
+          set -euo pipefail
+          changed="$(git diff --name-only "origin/${{ github.base_ref }}"...HEAD)"
+          if printf '%s\n' "$changed" | grep -E '^(scripts/release/|apps/macos/dmg/|scripts/build-mac-|tests/release/|requirements-mac-release\.txt|\.github/workflows/(mac-pr-check|release-mac)\.yml)'; then
+            echo "run_dmg_checks=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_dmg_checks=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -45,3 +58,37 @@ jobs:
           path: .build/mac/Build/Products/Release/doc2md.app
           if-no-files-found: error
           retention-days: 7
+
+      - name: Install pinned dmgbuild
+        if: steps.dmg_changes.outputs.run_dmg_checks == 'true'
+        run: |
+          set -euo pipefail
+          echo "PIPX_HOME=$RUNNER_TEMP/pipx" >> "$GITHUB_ENV"
+          echo "PIPX_BIN_DIR=$RUNNER_TEMP/pipx-bin" >> "$GITHUB_ENV"
+          echo "$RUNNER_TEMP/pipx-bin" >> "$GITHUB_PATH"
+          export PIPX_HOME="$RUNNER_TEMP/pipx"
+          export PIPX_BIN_DIR="$RUNNER_TEMP/pipx-bin"
+          python3 -m pip install --user pipx
+          python3 -m pipx ensurepath
+          python3 -m pipx install "dmgbuild==1.6.7" --pip-args "--constraint $GITHUB_WORKSPACE/requirements-mac-release.txt"
+          "$PIPX_BIN_DIR/dmgbuild" --help >/dev/null
+          "$PIPX_HOME/venvs/dmgbuild/bin/python" -c "import ds_store, mac_alias"
+
+      - name: Validate DMG packaging shell scripts
+        if: steps.dmg_changes.outputs.run_dmg_checks == 'true'
+        run: bash -n scripts/release/package_mac_dmg.sh scripts/build-mac-dmg.sh scripts/release/check_dmg_determinism.sh
+
+      - name: Build headless local DMG
+        if: steps.dmg_changes.outputs.run_dmg_checks == 'true'
+        run: npm run build:dmg
+
+      - name: Test DMG layout metadata
+        if: steps.dmg_changes.outputs.run_dmg_checks == 'true'
+        run: |
+          set -euo pipefail
+          version="$(node --input-type=module -e 'import { getDisplayVersionInfo } from "./packages/core/scripts/release-version.mjs"; process.stdout.write(getDisplayVersionInfo().version)')"
+          "$PIPX_HOME/venvs/dmgbuild/bin/python" tests/release/test_dmg_layout.py ".build/release/doc2md-${version}.dmg"
+
+      - name: Check DMG determinism
+        if: steps.dmg_changes.outputs.run_dmg_checks == 'true'
+        run: APP_PATH=".build/mac/Build/Products/Release/doc2md.app" bash scripts/release/check_dmg_determinism.sh

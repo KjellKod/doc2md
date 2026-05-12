@@ -16,6 +16,9 @@ Build doc2md.app and package it as a DMG.
 By default this creates an unsigned local DMG:
   npm run build:dmg
 
+DMG layout packaging requires pinned dmgbuild installed with pipx:
+  python3 -m pipx install "dmgbuild==1.6.7" --pip-args "--constraint $PWD/requirements-mac-release.txt"
+
 Use --signed only after signing/notarization has already prepared a valid
 CODESIGN_IDENTITY for the DMG packaging step.
 USAGE
