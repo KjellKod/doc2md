@@ -6,6 +6,7 @@ For the other perspective, see [Dexter's Journal](../dexter-journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 038 | [Celebration: CI Supply-Chain Hardening](038-celebrate-ci-supply-chain-hardening.md) | Four guard rules locked in, 15 rule-prefixed tests that fail on the unguarded code, npm cache off the release boundary, --ignore-scripts everywhere, Dependabot with boundaries, and a drift-tracker that watches without becoming drift surface |
 | 037 | [Celebration: Professional DMG Installer](037-celebrate-professional-dmg-installer.md) | Branded DMG window, AppleScript bounded retry, mandatory mount self-test, two-script split for sign vs notarize, runbook for the failure that will happen, and Reviewer B catching detach failure semantics |
 | 036 | [Celebration: Mac License Verifier](036-celebrate-mac-license-verifier.md) | Offline verifier only, empty release trust by default, integer-second token dates, no issuer or checkout drift |
 | 035 | [Celebration: Phase 7b Issuer Spec](035-celebrate-phase-7b-issuer-spec.md) | Public/private issuer boundary, offline-first Mac verification, support/admin lookup, lifecycle-ready token claims, and one clean naming fix |

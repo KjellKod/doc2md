@@ -80,7 +80,6 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '22'
-          cache: 'npm'
       - name: Explain non-release manual runs
         if: needs.classify-ref.outputs.is_release != 'true'
         run: |
@@ -92,7 +91,7 @@ jobs:
             echo "::error::Expected checked-out commit to include release tag '${{ needs.classify-ref.outputs.release_version }}'."
             exit 1
           fi
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - run: npm run build
       - name: Build and copy core tarball for Pages
         if: needs.classify-ref.outputs.is_release == 'true'

@@ -29,6 +29,30 @@ BROAD_WRITE_SNIPPETS = (
 )
 APPLE_SECRET_RE = re.compile(r"secrets\.APPLE_[A-Z0-9_]+")
 SPARKLE_SECRET_RE = re.compile(r"secrets\.SPARKLE_[A-Z0-9_]+")
+# APPLE_*, SPARKLE_*, MACOS_*, and NOTARIZE_* are intentionally broad
+# secret-family matches so CI guardrails cover newly added release credentials.
+NPM_SECRET_TOKEN_RE = re.compile(
+    r"(?<![A-Za-z0-9_])"
+    r"(?:OPENAI_API_KEY|APPLE_[A-Z0-9_]+|SPARKLE_[A-Z0-9_]+|"
+    r"MACOS_[A-Z0-9_]+|NOTARIZE_[A-Z0-9_]+)"
+    r"(?![A-Za-z0-9_])"
+)
+RELEASE_SIGNING_SECRET_RE = re.compile(
+    r"(?<![A-Za-z0-9_])(?:APPLE_[A-Z0-9_]+|SPARKLE_[A-Z0-9_]+)(?![A-Za-z0-9_])"
+)
+NPM_CACHE_RE = re.compile(r"^\s*cache:\s*['\"]?(?:npm|yarn|pnpm)['\"]?\s*(?:#.*)?$")
+CONTENTS_WRITE_RE = re.compile(r"^\s*contents:\s*write\s*(?:#.*)?$", re.MULTILINE)
+ID_TOKEN_WRITE_RE = re.compile(r"^\s*id-token:\s*write\s*(?:#.*)?$", re.MULTILINE)
+JOB_NAME_RE = re.compile(r"^    name:\s*['\"]?(.+?)['\"]?\s*(?:#.*)?$", re.MULTILINE)
+SENSITIVE_JOB_NAME_RE = re.compile(r"publish|release|sign|notariz", re.IGNORECASE)
+NPM_INSTALL_RE = re.compile(r"\bnpm\s+install\b")
+NPM_CI_RE = re.compile(r"\bnpm\s+ci\b")
+NPM_GLOBAL_RE = re.compile(r"(?<!\S)(?:-g|--global)(?!\S)")
+IGNORE_SCRIPTS_FALSE_RE = re.compile(r"--ignore-scripts=false(?:\s|$)")
+IGNORE_SCRIPTS_RE = re.compile(r"(?<!\S)--ignore-scripts(?!\S)")
+ID_TOKEN_WRITE_ALLOWLIST = {
+    ("deploy-pages.yml", "deploy"),
+}
 # Detect repo-content fetches pinned to PR HEAD (via $HEAD_SHA shell var or
 # ${{ github.event.pull_request.head.sha }} expansion). Secret-bearing PR
 # workflows must use the base checkout, not pull PR HEAD content at runtime.
@@ -74,6 +98,56 @@ def uses_apple_secret(text: str) -> bool:
 
 def uses_sparkle_secret(text: str) -> bool:
     return SPARKLE_SECRET_RE.search(text) is not None
+
+
+def strip_yaml_comments(line: str) -> str:
+    return line.split("#", 1)[0]
+
+
+def references_npm_sensitive_secret(job_text: str) -> bool:
+    return any(
+        NPM_SECRET_TOKEN_RE.search(strip_yaml_comments(line))
+        for line in job_text.splitlines()
+    )
+
+
+def references_release_signing_secret(job_text: str) -> bool:
+    return any(
+        RELEASE_SIGNING_SECRET_RE.search(strip_yaml_comments(line))
+        for line in job_text.splitlines()
+    )
+
+
+def has_ignore_scripts(line: str) -> bool:
+    if IGNORE_SCRIPTS_FALSE_RE.search(line):
+        return False
+    return IGNORE_SCRIPTS_RE.search(line) is not None
+
+
+def is_global_npm_install(line: str) -> bool:
+    line_without_comments = strip_yaml_comments(line)
+    return NPM_INSTALL_RE.search(line_without_comments) is not None and (
+        NPM_GLOBAL_RE.search(line_without_comments) is not None
+    )
+
+
+def is_local_npm_install(line: str) -> bool:
+    line_without_comments = strip_yaml_comments(line)
+    if NPM_CI_RE.search(line_without_comments):
+        return True
+    return (
+        NPM_INSTALL_RE.search(line_without_comments) is not None
+        and not is_global_npm_install(line_without_comments)
+    )
+
+
+def job_display_name(job_text: str) -> str | None:
+    match = JOB_NAME_RE.search(job_text)
+    return match.group(1).strip() if match else None
+
+
+def sensitive_job_name(job_key: str, job_text: str) -> bool:
+    return SENSITIVE_JOB_NAME_RE.search(job_display_name(job_text) or job_key) is not None
 
 
 def is_secret_bearing(text: str) -> bool:
@@ -166,6 +240,60 @@ def release_secret_failures(path: Path, text: str) -> list[str]:
     return failures
 
 
+def workflow_level_text(text: str) -> str:
+    before_jobs, _separator, _after_jobs = text.partition("\njobs:")
+    return before_jobs
+
+
+def supply_chain_failures(path: Path, text: str) -> list[str]:
+    failures: list[str] = []
+
+    if ID_TOKEN_WRITE_RE.search(workflow_level_text(text)):
+        failures.append(
+            f"{path}: Rule 4 id-token: write is only allowed for approved deployment jobs."
+        )
+
+    for job_name, job_text in workflow_jobs(text).items():
+        privileged_release_job = (
+            references_release_signing_secret(job_text)
+            or CONTENTS_WRITE_RE.search(job_text) is not None
+            or sensitive_job_name(job_name, job_text)
+        )
+
+        if privileged_release_job:
+            for line in job_text.splitlines():
+                if NPM_CACHE_RE.match(line):
+                    failures.append(
+                        f"{path}: Rule 1 job {job_name} must not use npm/yarn/pnpm cache in privileged release jobs."
+                    )
+
+        if references_npm_sensitive_secret(job_text):
+            for line in job_text.splitlines():
+                line_without_comments = strip_yaml_comments(line)
+                if is_global_npm_install(line_without_comments):
+                    if not has_ignore_scripts(line_without_comments):
+                        failures.append(
+                            f"{path}: Rule 2 job {job_name} global npm installs must use --ignore-scripts."
+                        )
+                    continue
+                if is_local_npm_install(line_without_comments) and not has_ignore_scripts(
+                    line_without_comments
+                ):
+                    failures.append(
+                        f"{path}: Rule 3 job {job_name} npm installs must use --ignore-scripts."
+                    )
+
+        if (
+            ID_TOKEN_WRITE_RE.search(job_text)
+            and (path.name, job_name) not in ID_TOKEN_WRITE_ALLOWLIST
+        ):
+            failures.append(
+                f"{path}: Rule 4 job {job_name} id-token: write is not allowlisted."
+            )
+
+    return failures
+
+
 def scan_workflow(path: Path) -> list[str]:
     text = path.read_text(encoding="utf-8")
     failures: list[str] = []
@@ -174,6 +302,7 @@ def scan_workflow(path: Path) -> list[str]:
         failures.append(f"{path}: pull_request_target is banned in this repository.")
 
     failures.extend(release_secret_failures(path, text))
+    failures.extend(supply_chain_failures(path, text))
 
     if not uses_pull_request_event(text):
         return failures
