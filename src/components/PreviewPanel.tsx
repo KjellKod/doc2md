@@ -486,8 +486,12 @@ export default function PreviewPanel({
       const isFindShortcut =
         key === "f" &&
         ((event.metaKey && !event.ctrlKey) || (event.ctrlKey && !event.metaKey));
+      // Replace shortcut: Cmd-Alt-F (macOS muscle memory) OR Ctrl-Alt-F
+      // (Linux/Windows). Mirrors the cross-platform handling above.
       const isReplaceShortcut =
-        key === "f" && event.metaKey && event.altKey;
+        key === "f" &&
+        event.altKey &&
+        ((event.metaKey && !event.ctrlKey) || (event.ctrlKey && !event.metaKey));
 
       if (!isFindShortcut && !isReplaceShortcut) {
         return;
