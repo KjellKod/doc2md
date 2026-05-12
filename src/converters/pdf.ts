@@ -68,7 +68,13 @@ async function ensureBrowserWorkerConfigured() {
     return;
   }
 
-  const pdfWorker = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
+  // Pair the legacy worker with the legacy main bundle imported above.
+  // pdfjs-dist 5 enforces stricter version/format alignment between main
+  // and worker; mixing legacy main + non-legacy worker can reject some
+  // valid PDFs at the parsing stage.
+  const pdfWorker = await import(
+    "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url"
+  );
   GlobalWorkerOptions.workerSrc = pdfWorker.default;
   browserWorkerConfigured = true;
 }
@@ -1411,7 +1417,11 @@ export const convertPdf: Converter = async (file) => {
       status: quality.status,
       quality: quality.quality
     };
-  } catch {
+  } catch (error) {
+    if (typeof console !== "undefined") {
+      // eslint-disable-next-line no-console -- diagnostic for PDF.js failures
+      console.warn("doc2md PDF conversion failed:", error);
+    }
     return {
       markdown: "",
       warnings: [CORRUPT_FILE_MESSAGE],
