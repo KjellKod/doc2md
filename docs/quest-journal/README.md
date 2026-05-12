@@ -2,6 +2,7 @@
 
 | Date | Quest | Outcome |
 |------|-------|---------|
+| 2026-05-12 | [ci-supply-chain-hardening](ci-supply-chain-hardening_2026-05-12.md) | Hardened CI/CD against Mini Shai-Hulud / TanStack-class supply-chain risks: wired Python guard tests into security.yml, dropped npm cache off the release/deploy boundary, applied --ignore-scripts uniformly, added Dependabot + codex-version-drift workflow, and extended security_ci_guard.py with 4 new low-noise rules and 15 bug-fail-positive tests. Solo, 2 plan iterations, 1-shot build, clean code review. |
 | 2026-05-09 | [professional-dmg-installer](professional-dmg-installer_2026-05-09.md) | Make the Mac DMG installer professional and release-ready. Current state: - `npm run build:dmg` builds an unsigned lo... |
 | 2026-05-07 | [mac-license-verifier](mac-license-verifier_2026-05-07.md) | The Mac app already has a local licensing module under `apps/macos/doc2md/Licensing`, including token parsing, Curve2... |
 | 2026-05-06 | [phase-7b-distribution-decision](phase-7b-distribution-decision_2026-05-06.md) | Added an accepted Phase 7b direct-DMG-first commercial distribution decision record, `doc2md.dev` public-surface contract, ownership/go-live gates, and follow-up issuer/UX acceptance criteria. |

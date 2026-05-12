@@ -38,5 +38,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
+      - name: Run workflow guard unit tests
+        run: python3 -m unittest discover -s tests/unit -p 'test_*.py' -v
+
       - name: Run workflow security guard
         run: python3 scripts/security_ci_guard.py

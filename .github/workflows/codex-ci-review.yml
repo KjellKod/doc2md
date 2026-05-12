@@ -90,7 +90,7 @@ jobs:
         if: steps.check-key.outputs.skip != 'true'
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq bubblewrap >/dev/null 2>&1 || true
-          npm install -g @openai/codex
+          npm install -g --ignore-scripts @openai/codex
 
       - name: Authenticate Codex CLI
         if: steps.check-key.outputs.skip != 'true'
