@@ -1,0 +1,15 @@
+{
+  "title": "__VOLUME_NAME__",
+  "background": "__BACKGROUND_SOURCE__",
+  "icon-size": 96,
+  "format": "UDZO",
+  "compression-level": 9,
+  "window": {
+    "position": { "x": 100, "y": 100 },
+    "size": { "width": 720, "height": 460 }
+  },
+  "contents": [
+    { "x": 190, "y": 205, "type": "file", "path": "__APP_PATH__", "name": "doc2md.app" },
+    { "x": 515, "y": 205, "type": "link", "path": "/Applications", "name": "Applications" }
+  ]
+}

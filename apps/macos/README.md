@@ -189,7 +189,7 @@ Build a local unsigned DMG from the repo root:
 npm run build:dmg
 ```
 
-This is the local smoke path. The command builds the Release `.app`, derives the version automatically from the repo's release-version helper, applies the drag-to-Applications Finder layout, runs a mandatory DMG mount self-test for `doc2md.app` and `Applications`, and writes:
+This is the local smoke path. The command builds the Release `.app`, derives the version automatically from the repo's release-version helper, renders the drag-to-Applications DMG layout headlessly with pinned `dmgbuild`, runs a mandatory DMG mount self-test for `doc2md.app`, `Applications`, `.DS_Store`, and `.background.png`, and writes:
 
 ```text
 .build/release/doc2md-<version>.dmg
@@ -201,7 +201,14 @@ Dirty or unreleased local builds use a `-dev` version suffix. To force a specifi
 npm run build:dmg -- --version 0.1.0
 ```
 
-This local DMG is unsigned and unnotarized unless you pass `--signed` with a valid `CODESIGN_IDENTITY` already available. Local dry-run packaging may fall back to an icon-only DMG after bounded Finder AppleScript exhaustion; release packaging treats the same failure as blocking. Public release DMGs should come from the protected release workflow so signing, notarization, stapling, Sparkle ZIP signing, appcast generation, and asset upload happen together.
+This local DMG is unsigned and unnotarized unless you pass `--signed` with a valid `CODESIGN_IDENTITY` already available. Local dry-run and release packaging both use the same headless `dmgbuild` layout path; missing `dmgbuild`, invalid JSON settings, missing `.DS_Store`, or background mismatches are blocking failures. If `dmgbuild` is missing, install the pinned release tool from the repo root (macOS system Python is PEP 668-managed, so install `pipx` via Homebrew first):
+
+```bash
+brew install pipx
+pipx install "dmgbuild==1.6.7" --pip-args "--constraint $PWD/requirements-mac-release.txt"
+```
+
+Public release DMGs should come from the protected release workflow so signing, notarization, stapling, Sparkle ZIP signing, appcast generation, and asset upload happen together.
 
 ## Launch Smoke
 
@@ -360,22 +367,23 @@ Protected release dispatch:
 gh workflow run release-mac.yml -f tag=v0.1.0
 ```
 
-Approve the `mac-release` Environment gate in GitHub Actions. The workflow signs and notarizes `doc2md.app`, staples the app ticket, packages the polished `doc2md-<version>.dmg`, signs and notarizes the DMG, staples and validates the DMG ticket, creates and EdDSA-signs `doc2md-<version>.zip`, generates `appcast.xml`, creates the GitHub Release if needed, and uploads all three assets with `--clobber` for idempotent reruns. If Finder layout automation fails, use the [DMG AppleScript failure runbook](../../docs/runbooks/dmg-applescript-failure.md).
+Approve the `mac-release` Environment gate in GitHub Actions. The workflow signs and notarizes `doc2md.app`, staples the app ticket, packages the polished `doc2md-<version>.dmg` with pinned headless `dmgbuild`, signs and notarizes the DMG, staples and validates the DMG ticket, creates and EdDSA-signs `doc2md-<version>.zip`, generates `appcast.xml`, creates the GitHub Release if needed, and uploads all three assets with `--clobber` for idempotent reruns. If DMG packaging fails, use the [DMG packaging failure runbook](../../docs/runbooks/dmg-packaging-failure.md).
 
-Release artifact validation commands:
+Release artifact validation commands (signed-DMG path only). Set `VERSION` to your build version first (literal `<version>` would be parsed as shell input redirection). **Do not run these against the unsigned local `npm run build:dmg` output** — `codesign --verify` will correctly report `code object is not signed at all` because the local dry-run build is intentionally unsigned. The commands below assume a signed DMG produced by the protected `release-mac.yml` workflow above (or by a local signed run via `scripts/release/release_mac_local.sh` with a Developer ID certificate):
 
 ```bash
+VERSION="0.1.0"  # replace with your release version
 codesign --verify --deep --strict --verbose=2 /Applications/doc2md.app
 spctl --assess --type execute --verbose=4 /Applications/doc2md.app
 xcrun stapler validate /Applications/doc2md.app
-codesign --verify --strict --verbose=2 .build/release/doc2md-<version>.dmg
-xcrun stapler validate .build/release/doc2md-<version>.dmg
-spctl --assess --type open --context context:primary-signature --verbose=4 .build/release/doc2md-<version>.dmg
-hdiutil attach .build/release/doc2md-<version>.dmg
-hdiutil detach /Volumes/doc2md\ <version>
+codesign --verify --strict --verbose=2 ".build/release/doc2md-${VERSION}.dmg"
+xcrun stapler validate ".build/release/doc2md-${VERSION}.dmg"
+spctl --assess --type open --context context:primary-signature --verbose=4 ".build/release/doc2md-${VERSION}.dmg"
+hdiutil attach ".build/release/doc2md-${VERSION}.dmg"
+hdiutil detach "/Volumes/doc2md ${VERSION}"
 ```
 
-The DMG background source lives at `apps/macos/dmg/doc2md-dmg-background.png`. It is copied into the temporary DMG staging tree, not into the Xcode target, and should not exist at:
+The DMG background source lives at `apps/macos/dmg/doc2md-dmg-background.png`. `dmgbuild` copies it into the mounted volume as `.background.png`; it is not bundled into the Xcode target and should not exist at:
 
 ```text
 .build/mac/Build/Products/Release/doc2md.app/Contents/Resources/doc2md-dmg-background.png
@@ -395,7 +403,7 @@ Use these checks for this phase:
 8. Open a supported non-Markdown source file, confirm it converts into Markdown, Save As to `.md`, and verify subsequent saves update only the chosen Markdown target.
 9. Serve `apps/macos/doc2mdTests/Fixtures/Sparkle/appcast.xml`, launch with `DOC2MD_SPARKLE_FEED_URL`, and confirm `Check for Updates...` detects the fixture update.
 10. Stop the fixture server, launch again, and confirm offline launch is not blocked by Sparkle.
-11. `npm run build:dmg` creates `.build/release/doc2md-<version>.dmg`; the package script reports the mandatory self-test passed for `doc2md.app` and `Applications`.
+11. `npm run build:dmg` creates `.build/release/doc2md-<version>.dmg`; the package script reports the mandatory self-test passed for `doc2md.app`, the `/Applications` symlink, `.DS_Store`, `.background.png` byte equality, and signed-app preservation when signing is active.
 12. `test -f apps/macos/dmg/doc2md-dmg-background.png && test ! -e .build/mac/Build/Products/Release/doc2md.app/Contents/Resources/doc2md-dmg-background.png` passes after a Release build.
 
 If full Xcode is not available, record that the Mac app build and launch checks were not run. The command line tools package alone is not enough; `xcodebuild` must point at a full Xcode developer directory.
