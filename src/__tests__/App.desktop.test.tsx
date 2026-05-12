@@ -1696,6 +1696,11 @@ describe("App desktop bridge", () => {
     });
     expect(saveFile).not.toHaveBeenCalled();
 
+    // React 19 batches the post-Save-As state updates (path + mtimeMs anchor)
+    // more aggressively than 18; wait for the anchored saved-file button to
+    // appear so the next save event routes to saveFile, not another saveFileAs.
+    await screen.findByRole("button", { name: /Imported\.md/i });
+
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.save));
 
     await waitFor(() => expect(saveFile).toHaveBeenCalledTimes(1));

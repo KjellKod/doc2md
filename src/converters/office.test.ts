@@ -1,8 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const { convertToHtmlMock, readSheetNamesMock, readXlsxFileMock } = vi.hoisted(() => ({
+const { convertToHtmlMock, readXlsxFileMock } = vi.hoisted(() => ({
   convertToHtmlMock: vi.fn(),
-  readSheetNamesMock: vi.fn(),
   readXlsxFileMock: vi.fn()
 }));
 
@@ -12,9 +11,10 @@ vi.mock("mammoth", () => ({
   }
 }));
 
+// read-excel-file v9 exposes a single default export that returns every
+// sheet at once. The old named `readSheetNames` is gone.
 vi.mock("read-excel-file/universal", () => ({
-  default: readXlsxFileMock,
-  readSheetNames: readSheetNamesMock
+  default: readXlsxFileMock
 }));
 
 import { convertDocxToHtml, readAllSheets } from "./office";
@@ -38,10 +38,10 @@ describe("office helpers", () => {
 
   it("reads every sheet in order with trim disabled", async () => {
     const file = new File(["ignored"], "sample.xlsx");
-    readSheetNamesMock.mockResolvedValue(["Projects", "Inventory"]);
-    readXlsxFileMock
-      .mockResolvedValueOnce([["Project"], ["Atlas"]])
-      .mockResolvedValueOnce([["Item"], ["Laptop"]]);
+    readXlsxFileMock.mockResolvedValue([
+      { sheet: "Projects", data: [["Project"], ["Atlas"]] },
+      { sheet: "Inventory", data: [["Item"], ["Laptop"]] }
+    ]);
 
     await expect(readAllSheets(file)).resolves.toEqual([
       {
@@ -54,14 +54,7 @@ describe("office helpers", () => {
       }
     ]);
 
-    expect(readSheetNamesMock).toHaveBeenCalledWith(file);
-    expect(readXlsxFileMock).toHaveBeenNthCalledWith(1, file, {
-      sheet: "Projects",
-      trim: false
-    });
-    expect(readXlsxFileMock).toHaveBeenNthCalledWith(2, file, {
-      sheet: "Inventory",
-      trim: false
-    });
+    expect(readXlsxFileMock).toHaveBeenCalledTimes(1);
+    expect(readXlsxFileMock).toHaveBeenCalledWith(file, { trim: false });
   });
 });

@@ -80,6 +80,7 @@ export default defineConfig(({ mode }) => ({
   },
   test: {
     environment: "jsdom",
+    setupFiles: ["./vitest.setup.ts"],
     exclude: [
       ".claude/**",
       ".quest/**",

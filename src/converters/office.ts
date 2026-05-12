@@ -1,5 +1,5 @@
 import mammoth from "mammoth";
-import readXlsxFile, { readSheetNames } from "read-excel-file/universal";
+import readXlsxFile from "read-excel-file/universal";
 
 export function convertDocxToHtml(arrayBuffer: ArrayBuffer) {
   if (typeof Buffer !== "undefined") {
@@ -17,13 +17,9 @@ export interface SheetData {
 }
 
 export async function readAllSheets(file: File): Promise<SheetData[]> {
-  const names = await readSheetNames(file);
-  const sheets: SheetData[] = [];
-
-  for (const name of names) {
-    const rows = await readXlsxFile(file, { sheet: name, trim: false });
-    sheets.push({ name, rows });
-  }
-
-  return sheets;
+  // read-excel-file v9 unified API: a single call returns every sheet as
+  // { sheet: name, data: rows }. The old v7 dance with readSheetNames + a
+  // per-sheet readXlsxFile is no longer supported.
+  const sheets = await readXlsxFile(file, { trim: false });
+  return sheets.map((sheet) => ({ name: sheet.sheet, rows: sheet.data }));
 }
