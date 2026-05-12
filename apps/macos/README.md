@@ -369,17 +369,18 @@ gh workflow run release-mac.yml -f tag=v0.1.0
 
 Approve the `mac-release` Environment gate in GitHub Actions. The workflow signs and notarizes `doc2md.app`, staples the app ticket, packages the polished `doc2md-<version>.dmg` with pinned headless `dmgbuild`, signs and notarizes the DMG, staples and validates the DMG ticket, creates and EdDSA-signs `doc2md-<version>.zip`, generates `appcast.xml`, creates the GitHub Release if needed, and uploads all three assets with `--clobber` for idempotent reruns. If DMG packaging fails, use the [DMG packaging failure runbook](../../docs/runbooks/dmg-packaging-failure.md).
 
-Release artifact validation commands:
+Release artifact validation commands (set `VERSION` to your build version first; literal `<version>` would be parsed as shell input redirection):
 
 ```bash
+VERSION="0.1.0"  # replace with your release version
 codesign --verify --deep --strict --verbose=2 /Applications/doc2md.app
 spctl --assess --type execute --verbose=4 /Applications/doc2md.app
 xcrun stapler validate /Applications/doc2md.app
-codesign --verify --strict --verbose=2 .build/release/doc2md-<version>.dmg
-xcrun stapler validate .build/release/doc2md-<version>.dmg
-spctl --assess --type open --context context:primary-signature --verbose=4 .build/release/doc2md-<version>.dmg
-hdiutil attach .build/release/doc2md-<version>.dmg
-hdiutil detach /Volumes/doc2md\ <version>
+codesign --verify --strict --verbose=2 ".build/release/doc2md-${VERSION}.dmg"
+xcrun stapler validate ".build/release/doc2md-${VERSION}.dmg"
+spctl --assess --type open --context context:primary-signature --verbose=4 ".build/release/doc2md-${VERSION}.dmg"
+hdiutil attach ".build/release/doc2md-${VERSION}.dmg"
+hdiutil detach "/Volumes/doc2md ${VERSION}"
 ```
 
 The DMG background source lives at `apps/macos/dmg/doc2md-dmg-background.png`. `dmgbuild` copies it into the mounted volume as `.background.png`; it is not bundled into the Xcode target and should not exist at:

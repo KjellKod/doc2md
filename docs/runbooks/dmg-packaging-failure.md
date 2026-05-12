@@ -42,10 +42,11 @@ Run the renderer directly with a known app path to isolate schema errors.
 
 ## Layout metadata mismatches
 
-Run the standalone layout test with the dmgbuild venv Python:
+Run the standalone layout test with the dmgbuild venv Python. Set `VERSION` to your build version first (literal `<version>` would be parsed as shell input redirection):
 
 ```bash
-"$PIPX_HOME/venvs/dmgbuild/bin/python" tests/release/test_dmg_layout.py .build/release/doc2md-<version>.dmg
+VERSION="2.3.3-dev"  # replace with your build version
+"$PIPX_HOME/venvs/dmgbuild/bin/python" tests/release/test_dmg_layout.py ".build/release/doc2md-${VERSION}.dmg"
 ```
 
 Failures identify the mismatched field, such as `bwsp.WindowBounds`, `icvp.iconSize`, `icvp.backgroundType`, `icvp.backgroundImageAlias`, `doc2md.app Iloc`, or `Applications Iloc`.
@@ -59,7 +60,8 @@ The accepted mounted background path is `.background.png` at the volume root. It
 Check both files after mounting:
 
 ```bash
-cmp apps/macos/dmg/doc2md-dmg-background.png /Volumes/doc2md\ <version>/.background.png
+VERSION="2.3.3-dev"  # replace with your build version
+cmp apps/macos/dmg/doc2md-dmg-background.png "/Volumes/doc2md ${VERSION}/.background.png"
 ```
 
 Do not change the artwork or the expected mounted path as a workaround.
@@ -69,8 +71,9 @@ Do not change the artwork or the expected mounted path as a workaround.
 The package script uses `dmgbuild --detach-retries 12`; tests and determinism checks retry normal detach and then force detach. If detach still fails, check for stale mounts:
 
 ```bash
+VERSION="2.3.3-dev"  # replace with your build version
 hdiutil info
-hdiutil detach /Volumes/doc2md\ <version> || hdiutil detach -force /Volumes/doc2md\ <version>
+hdiutil detach "/Volumes/doc2md ${VERSION}" || hdiutil detach -force "/Volumes/doc2md ${VERSION}"
 ```
 
 Re-run after the stale mount is gone. Persistent detach failures are runner or OS issues; keep the blocking validation in place.
@@ -80,7 +83,8 @@ Re-run after the stale mount is gone. Persistent detach failures are runner or O
 When `CODESIGN_IDENTITY` is set, `mount_self_test` runs:
 
 ```bash
-codesign --verify --deep --strict --verbose=2 /Volumes/doc2md\ <version>/doc2md.app
+VERSION="2.3.3-dev"  # replace with your build version
+codesign --verify --deep --strict --verbose=2 "/Volumes/doc2md ${VERSION}/doc2md.app"
 ```
 
 If this fails, the signed app did not survive packaging intact. Do not continue to DMG signing or notarization. Confirm the input `.app` verifies before packaging, then inspect whether `dmgbuild` staging preserved resource forks and extended attributes.
