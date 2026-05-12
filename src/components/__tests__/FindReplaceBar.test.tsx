@@ -11,7 +11,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import FindReplaceBar from "../FindReplaceBar";
 
 function ControlledFindReplaceBar({
-  initialSource = "Alpha beta alpha",
+  initialSource = "alpha beta alpha",
   showReplace = false,
   onClose = vi.fn(),
 }: {
@@ -99,7 +99,7 @@ describe("FindReplaceBar", () => {
       "gamma beta alpha",
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "All" }));
+    fireEvent.click(screen.getByRole("button", { name: "Replace All" }));
     expect(screen.getByRole("textbox", { name: "source" })).toHaveValue(
       "gamma beta gamma",
     );
@@ -119,7 +119,7 @@ describe("FindReplaceBar", () => {
       target: { value: "gamma" },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "All" }));
+    fireEvent.click(screen.getByRole("button", { name: "Replace All" }));
 
     expect(screen.getByText("Replaced 2")).toBeInTheDocument();
   });

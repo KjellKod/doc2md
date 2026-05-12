@@ -347,6 +347,13 @@ function AppContent() {
   const lastHeightClickAtRef = useRef(-Infinity);
   const sidebarDragMovedRef = useRef(false);
   const heightDragMovedRef = useRef(false);
+  // Mirror of the hosted App's working-mode auto-collapse: fires once per
+  // session when the user opens a non-scratch entry AND has not touched
+  // the sidebar yet. Without this, the Mac shell stayed in landing-mode
+  // chrome on first file open (regression caught in manual validation).
+  const userTouchedSidebarRef = useRef(false);
+  const firstAutoCollapseFiredRef = useRef(false);
+  const previousSelectedEntryIdRef = useRef<string | null>(null);
   const {
     entries,
     addFiles,
@@ -386,6 +393,9 @@ function AppContent() {
   const pendingConflictsRef = useRef<Record<string, PendingConflict>>({});
   const [entrySaveStates, setEntrySaveStates] = useState<
     Record<string, DesktopSaveState>
+  >({});
+  const [entryLastSavedAt, setEntryLastSavedAt] = useState<
+    Record<string, number>
   >({});
   const [desktopFiles, setDesktopFiles] = useState<
     Record<string, DesktopFileMetadata>
@@ -446,6 +456,28 @@ function AppContent() {
   useEffect(() => {
     pendingConflictsRef.current = pendingConflicts;
   }, [pendingConflicts]);
+
+  // Working-mode auto-collapse: same one-shot semantics as the hosted App,
+  // applied here so the Mac shell actually collapses the upload chrome
+  // when the user opens a file.
+  useEffect(() => {
+    const previous = previousSelectedEntryIdRef.current;
+    previousSelectedEntryIdRef.current = selectedEntryId;
+
+    if (firstAutoCollapseFiredRef.current) return;
+    if (previous !== null || selectedEntryId === null) return;
+    if (selectedEntry?.isScratch) return;
+    if (userTouchedSidebarRef.current) return;
+    if (sidebarCollapsed) return;
+    if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
+      if (window.matchMedia("(max-width: 980px)").matches) return;
+    }
+
+    firstAutoCollapseFiredRef.current = true;
+    restoreSidebarWidthRef.current =
+      sidebarWidth ?? measureSidebarWidth() ?? DEFAULT_SIDEBAR_WIDTH;
+    setSidebarCollapsed(true);
+  }, [selectedEntry?.isScratch, selectedEntryId, sidebarCollapsed, sidebarWidth]);
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") {
@@ -597,6 +629,9 @@ function AppContent() {
         setSidebarCollapsed(true);
       }
       if (activeResizeAxis === "sidebar") {
+        if (sidebarDragMovedRef.current) {
+          userTouchedSidebarRef.current = true;
+        }
         lastSidebarClickAtRef.current = sidebarDragMovedRef.current
           ? -Infinity
           : event.timeStamp;
@@ -698,10 +733,27 @@ function AppContent() {
 
   const setEntryDesktopSaveState = useCallback(
     (entryId: string, nextState: DesktopSaveState) => {
-      setEntrySaveStates((current) => ({
-        ...current,
-        [entryId]: nextState,
-      }));
+      setEntrySaveStates((current) => {
+        const previous = current[entryId];
+        // Stamp lastSavedAt only on a real save-state transition INTO "saved"
+        // (edited → saved, saving → saved, conflict/error → saved). Do NOT
+        // stamp when an entry was already "saved" — switching between
+        // already-saved entries must not reset the relative-time pill.
+        if (
+          nextState === "saved" &&
+          previous !== undefined &&
+          previous !== "saved"
+        ) {
+          setEntryLastSavedAt((stamps) => ({
+            ...stamps,
+            [entryId]: Date.now(),
+          }));
+        }
+        return {
+          ...current,
+          [entryId]: nextState,
+        };
+      });
 
       if (activeEntryIdRef.current === entryId) {
         saveState.restore(nextState);
@@ -728,6 +780,11 @@ function AppContent() {
       ),
     );
     setDesktopFiles((current) =>
+      Object.fromEntries(
+        Object.entries(current).filter(([entryId]) => !idsToRemove.has(entryId)),
+      ),
+    );
+    setEntryLastSavedAt((current) =>
       Object.fromEntries(
         Object.entries(current).filter(([entryId]) => !idsToRemove.has(entryId)),
       ),
@@ -1031,6 +1088,7 @@ function AppContent() {
   ) => {
     if (event.key === "ArrowRight") {
       event.preventDefault();
+      userTouchedSidebarRef.current = true;
       setSidebarWidth((current) =>
         clampKeyboardSidebarWidth(
           (current ?? measureSidebarWidth() ?? MAX_SIDEBAR_WIDTH) +
@@ -1042,6 +1100,7 @@ function AppContent() {
 
     if (event.key === "ArrowLeft") {
       event.preventDefault();
+      userTouchedSidebarRef.current = true;
       setSidebarWidth((current) =>
         clampKeyboardSidebarWidth(
           (current ?? measureSidebarWidth() ?? MAX_SIDEBAR_WIDTH) -
@@ -1081,6 +1140,7 @@ function AppContent() {
   };
 
   const handleSidebarResizeReset = () => {
+    userTouchedSidebarRef.current = true;
     lastSidebarClickAtRef.current = -Infinity;
     restoreSidebarWidthRef.current = DEFAULT_SIDEBAR_WIDTH;
     latestSidebarWidthRef.current = DEFAULT_SIDEBAR_WIDTH;
@@ -1089,12 +1149,14 @@ function AppContent() {
   };
 
   const handleCollapseSidebar = () => {
+    userTouchedSidebarRef.current = true;
     restoreSidebarWidthRef.current =
       sidebarWidth ?? measureSidebarWidth() ?? DEFAULT_SIDEBAR_WIDTH;
     setSidebarCollapsed(true);
   };
 
   const handleShowSidebar = () => {
+    userTouchedSidebarRef.current = true;
     setSidebarWidth(restoreSidebarWidthRef.current);
     setSidebarCollapsed(false);
   };
@@ -1319,7 +1381,7 @@ function AppContent() {
     desktopNotice.kind === "none" ? activeDocumentNotice : desktopNotice;
   const saveStateLabels = {
     saved: "Saved",
-    edited: "Edited",
+    edited: "Unsaved",
     saving: "Saving",
     conflict: "Conflict",
     error: "Error",
@@ -2662,6 +2724,11 @@ function AppContent() {
                     saveDisabled={saveButtonDisabled}
                     saveKeyShortcuts={isDesktop ? "Meta+S" : undefined}
                     saveState={activeSaveState}
+                    lastSavedAt={
+                      selectedEntry
+                        ? (entryLastSavedAt[selectedEntry.id] ?? null)
+                        : null
+                    }
                     onMarkdownChange={(text) => {
                       if (selectedEntry) {
                         updateMarkdown(selectedEntry.id, text);

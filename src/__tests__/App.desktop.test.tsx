@@ -28,6 +28,33 @@ const { convertFileMock } = vi.hoisted(() => ({
   convertFileMock: vi.fn(),
 }));
 
+// The working-mode auto-collapse fires on first non-scratch entry open and
+// hides the file list behind the upload rail. Tests that interact with
+// file-list items call this helper to re-expand.
+function ensureSidebarVisible() {
+  const showButton = screen.queryByRole("button", { name: "Show upload panel" });
+  if (showButton) {
+    fireEvent.click(showButton);
+  }
+}
+
+// `findByRole` races with auto-collapse: after a file opens, the file-list
+// buttons exist briefly, then auto-collapse hides them. Two-step approach:
+// (1) wait for the rail OR the file button (whichever appears),
+// (2) if the rail is up, click to expand,
+// (3) re-find the file button. waitFor callbacks stay side-effect-free.
+async function awaitOpenButton(name: string | RegExp): Promise<HTMLElement> {
+  await waitFor(() => {
+    const open = screen.queryByRole("button", { name });
+    const rail = screen.queryByRole("button", { name: "Show upload panel" });
+    if (!open && !rail) {
+      throw new Error(`Neither ${name} nor the upload rail is visible yet`);
+    }
+  });
+  ensureSidebarVisible();
+  return await screen.findByRole("button", { name });
+}
+
 vi.mock("../converters", () => ({
   convertFile: convertFileMock,
   getFileExtension: (fileName: string) =>
@@ -124,9 +151,9 @@ describe("App desktop bridge", () => {
 
     render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
-    await screen.findByRole("button", { name: "Open Alpha.md" });
+    await awaitOpenButton("Open Alpha.md");
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
-    await screen.findByRole("button", { name: "Open Beta.md" });
+    await awaitOpenButton("Open Beta.md");
 
     fireEvent.click(screen.getByRole("button", { name: "Open Alpha.md" }));
 
@@ -164,21 +191,19 @@ describe("App desktop bridge", () => {
 
     render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
-    await screen.findByRole("button", { name: "Open Edited.md" });
+    await awaitOpenButton("Open Edited.md");
 
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     fireEvent.change(screen.getByRole("textbox", { name: "Edit markdown" }), {
       target: { value: "# Locally edited" },
     });
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
-    await screen.findByRole("button", { name: "Open Untitled.md" });
+    await awaitOpenButton("Open Untitled.md");
 
     fireEvent.click(screen.getByRole("button", { name: "Open Edited.md" }));
 
     await waitFor(() => expect(statFile).toHaveBeenCalledTimes(1));
-    expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
-      "Edited",
-    );
+    expect(screen.getByLabelText("Desktop file status")).toHaveTextContent("Unsaved");
     expect(
       screen.getByRole("heading", { name: "Locally edited" }),
     ).toBeInTheDocument();
@@ -328,9 +353,9 @@ describe("App desktop bridge", () => {
 
     render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
-    await screen.findByRole("button", { name: "Open Alpha.md" });
+    await awaitOpenButton("Open Alpha.md");
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
-    await screen.findByRole("button", { name: "Open Beta.md" });
+    await awaitOpenButton("Open Beta.md");
 
     fireEvent.click(screen.getByRole("button", { name: "Open Alpha.md" }));
 
@@ -364,14 +389,14 @@ describe("App desktop bridge", () => {
 
     render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
-    await screen.findByRole("button", { name: /untitled\.md/i });
+    await awaitOpenButton(/untitled\.md/i);
     fireEvent.change(screen.getByLabelText("Edit markdown"), {
       target: { value: "# Saved draft" },
     });
 
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.save));
     await waitFor(() => expect(saveFileAs).toHaveBeenCalledTimes(1));
-    await screen.findByRole("button", { name: "Open SavedDraft.md" });
+    await awaitOpenButton("Open SavedDraft.md");
 
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     fireEvent.change(screen.getByLabelText("Edit markdown"), {
@@ -421,9 +446,9 @@ describe("App desktop bridge", () => {
 
     render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
-    await screen.findByRole("button", { name: "Open Alpha.md" });
+    await awaitOpenButton("Open Alpha.md");
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
-    await screen.findByRole("button", { name: "Open Beta.md" });
+    await awaitOpenButton("Open Beta.md");
 
     fireEvent.click(screen.getByRole("button", { name: "Open Alpha.md" }));
 
@@ -467,9 +492,9 @@ describe("App desktop bridge", () => {
 
     render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
-    await screen.findByRole("button", { name: "Open Alpha.md" });
+    await awaitOpenButton("Open Alpha.md");
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
-    await screen.findByRole("button", { name: "Open Beta.md" });
+    await awaitOpenButton("Open Beta.md");
 
     fireEvent.click(screen.getByRole("button", { name: "Open Alpha.md" }));
     await waitFor(() =>
@@ -530,9 +555,9 @@ describe("App desktop bridge", () => {
 
     render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
-    await screen.findByRole("button", { name: /untitled\.md/i });
+    await awaitOpenButton(/untitled\.md/i);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
-    await screen.findByRole("button", { name: "Open imported.md" });
+    await awaitOpenButton("Open imported.md");
 
     fireEvent.click(screen.getByRole("button", { name: "Open Untitled.md" }));
     fireEvent.click(screen.getByRole("button", { name: "Open imported.md" }));
@@ -598,9 +623,7 @@ describe("App desktop bridge", () => {
 
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
 
-    expect(
-      await screen.findByRole("button", { name: /untitled\.md/i }),
-    ).toBeInTheDocument();
+    expect(await awaitOpenButton(/untitled\.md/i)).toBeInTheDocument();
     expect(screen.getByText("1 draft")).toBeInTheDocument();
     expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
       "Saved",
@@ -619,7 +642,7 @@ describe("App desktop bridge", () => {
     render(<DesktopApp />);
 
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
-    await screen.findByRole("button", { name: "Open Untitled.md" });
+    await awaitOpenButton("Open Untitled.md");
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
 
     expect((await screen.findAllByText("Untitled 2.md")).length).toBeGreaterThan(
@@ -660,7 +683,7 @@ describe("App desktop bridge", () => {
 
     render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
-    await screen.findByRole("button", { name: /original\.md/i });
+    await awaitOpenButton(/original\.md/i);
 
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
 
@@ -699,15 +722,13 @@ describe("App desktop bridge", () => {
 
     render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
-    await screen.findByRole("button", { name: /dirty\.md/i });
+    await awaitOpenButton(/dirty\.md/i);
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     fireEvent.change(screen.getByLabelText("Edit markdown"), {
       target: { value: "# Dirty\n\nKeep this" },
     });
     await waitFor(() =>
-      expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
-        "Edited",
-      ),
+      expect(screen.getByLabelText("Desktop file status")).toHaveTextContent("Unsaved"),
     );
 
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
@@ -732,9 +753,7 @@ describe("App desktop bridge", () => {
       "# Dirty\n\nKeep this",
     );
     await waitFor(() =>
-      expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
-        "Edited",
-      ),
+      expect(screen.getByLabelText("Desktop file status")).toHaveTextContent("Unsaved"),
     );
     expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
       "/Users/me/Dirty.md",
@@ -770,15 +789,13 @@ describe("App desktop bridge", () => {
 
     render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
-    await screen.findByRole("button", { name: /dirty\.md/i });
+    await awaitOpenButton(/dirty\.md/i);
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     fireEvent.change(screen.getByLabelText("Edit markdown"), {
       target: { value: "# Dirty\n\nDiscard this" },
     });
     await waitFor(() =>
-      expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
-        "Edited",
-      ),
+      expect(screen.getByLabelText("Desktop file status")).toHaveTextContent("Unsaved"),
     );
 
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
@@ -1347,8 +1364,8 @@ describe("App desktop bridge", () => {
         }),
       ),
     );
-    expect(await screen.findByRole("button", { name: /sample\.md/i })).toBeInTheDocument();
-    expect(screen.getAllByText("Edited").length).toBeGreaterThan(0);
+    expect(await awaitOpenButton(/sample\.md/i)).toBeInTheDocument();
+    expect(screen.getAllByText("Unsaved").length).toBeGreaterThan(0);
 
     cleanupShell();
   });
@@ -1512,9 +1529,7 @@ describe("App desktop bridge", () => {
     expect(saveFileAs).not.toHaveBeenCalled();
 
     resolveConversion?.(createSuccessResult("# Pending"));
-    await waitFor(() =>
-      expect(screen.getByRole("button", { name: /pending\.md/i })).toBeInTheDocument(),
-    );
+    expect(await awaitOpenButton(/pending\.md/i)).toBeInTheDocument();
 
     cleanupShell();
   });
@@ -1609,7 +1624,7 @@ describe("App desktop bridge", () => {
     render(<DesktopApp />);
 
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
-    await screen.findByRole("button", { name: /untitled\.md/i });
+    await awaitOpenButton(/untitled\.md/i);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.save));
 
     await waitFor(() => expect(saveFileAs).toHaveBeenCalledTimes(1));
@@ -1680,7 +1695,7 @@ describe("App desktop bridge", () => {
     render(<DesktopApp />);
 
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
-    await screen.findByRole("button", { name: /untitled\.md/i });
+    await awaitOpenButton(/untitled\.md/i);
 
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.saveAs));
     await waitFor(() =>
@@ -1775,7 +1790,7 @@ describe("App desktop bridge", () => {
 
     render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
-    await screen.findByRole("button", { name: /conflict\.md/i });
+    await awaitOpenButton(/conflict\.md/i);
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     fireEvent.change(screen.getByLabelText("Edit markdown"), {
       target: { value: "local edit" },
@@ -1784,7 +1799,7 @@ describe("App desktop bridge", () => {
 
     expect(await screen.findByText("File changed on disk.")).toBeInTheDocument();
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
-    await screen.findByRole("button", { name: /untitled\.md/i });
+    await awaitOpenButton(/untitled\.md/i);
 
     expect(confirmSpy).not.toHaveBeenCalled();
     await waitFor(() =>
@@ -1840,7 +1855,7 @@ describe("App desktop bridge", () => {
 
     render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
-    await screen.findByRole("button", { name: /conflict\.md/i });
+    await awaitOpenButton(/conflict\.md/i);
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     fireEvent.change(screen.getByLabelText("Edit markdown"), {
       target: { value: "local edit" },
@@ -1945,9 +1960,9 @@ describe("App desktop bridge", () => {
 
     render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
-    await screen.findByRole("button", { name: /alpha\.md/i });
+    await awaitOpenButton(/alpha\.md/i);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
-    await screen.findByRole("button", { name: /beta\.md/i });
+    await awaitOpenButton(/beta\.md/i);
 
     fireEvent.click(screen.getByRole("button", { name: /alpha\.md/i }));
     await waitFor(() =>
@@ -2066,7 +2081,7 @@ describe("App desktop bridge", () => {
 
     render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
-    await screen.findByRole("button", { name: /reload\.md/i });
+    await awaitOpenButton(/reload\.md/i);
 
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.save));
     await screen.findByText("File changed on disk.");

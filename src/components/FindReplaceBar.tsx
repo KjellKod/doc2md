@@ -44,7 +44,7 @@ export default function FindReplaceBar({
     findReplace.total === 0
       ? "0"
       : `${findReplace.activeIndex + 1} of ${findReplace.total}${
-          findReplace.capped ? "+" : ""
+          findReplace.capped ? "+ more" : ""
         }`;
   const statusLabel = findReplace.replaceStatus || countLabel;
 
@@ -56,15 +56,6 @@ export default function FindReplaceBar({
     focusTarget?.focus();
     focusTarget?.select();
   }, [allowReplace, focusRequest.id, focusRequest.target]);
-
-  useEffect(() => {
-    if (!showReplace || !allowReplace) {
-      return;
-    }
-
-    replaceInputRef.current?.focus();
-    replaceInputRef.current?.select();
-  }, [allowReplace, showReplace]);
 
   useEffect(() => {
     onActiveMatchChange(activeMatch);
@@ -133,6 +124,10 @@ export default function FindReplaceBar({
             placeholder="Find"
             aria-label="Find markdown text"
             aria-invalid={findReplace.error ? "true" : "false"}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
           />
         </label>
         <div className="find-replace-options" role="group" aria-label="Find options">
@@ -157,6 +152,27 @@ export default function FindReplaceBar({
               className="find-replace-tooltip"
             >
               Match case
+            </span>
+          </span>
+          <span className="find-replace-tooltip-wrap">
+            <button
+              type="button"
+              className={`find-replace-option${
+                findReplace.wholeWord ? " is-active" : ""
+              }`}
+              onClick={() => findReplace.setWholeWord(!findReplace.wholeWord)}
+              aria-label="Match whole word"
+              aria-pressed={findReplace.wholeWord}
+              aria-describedby="whole-word-tooltip"
+            >
+              Ab
+            </button>
+            <span
+              id="whole-word-tooltip"
+              role="tooltip"
+              className="find-replace-tooltip"
+            >
+              Match whole word
             </span>
           </span>
           <span className="find-replace-tooltip-wrap">
@@ -246,13 +262,20 @@ export default function FindReplaceBar({
               }
               placeholder="Replace"
               aria-label="Replacement text"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
             />
           </label>
           <div className="find-replace-replace-actions">
             <button
               type="button"
               className="find-replace-action-button"
-              onClick={findReplace.replaceCurrent}
+              // Preserve textarea focus so `execCommand('insertText')` lands on
+              // it rather than this button — single-undo depends on it.
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => findReplace.replaceCurrent(textareaRef?.current)}
               disabled={replaceDisabled}
             >
               Replace
@@ -260,10 +283,11 @@ export default function FindReplaceBar({
             <button
               type="button"
               className="find-replace-action-button"
-              onClick={findReplace.replaceAll}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => findReplace.replaceAll(textareaRef?.current)}
               disabled={Boolean(findReplace.error) || findReplace.query.length === 0}
             >
-              All
+              Replace All
             </button>
           </div>
         </div>

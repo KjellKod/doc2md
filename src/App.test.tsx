@@ -46,10 +46,22 @@ async function uploadConvertedFiles(container: HTMLElement, names: string[]) {
     },
   });
 
+  // The sidebar auto-collapses on the first non-scratch file open
+  // (working-mode polish). Re-expand it so the rest of the test can
+  // interact with file-list items.
+  await ensureSidebarVisible();
+
   for (const name of names) {
     expect(
       await screen.findByRole("button", { name: `Open ${name}` }),
     ).toBeInTheDocument();
+  }
+}
+
+async function ensureSidebarVisible() {
+  const showButton = screen.queryByRole("button", { name: "Show upload panel" });
+  if (showButton) {
+    fireEvent.click(showButton);
   }
 }
 
@@ -443,6 +455,8 @@ describe("App", () => {
       },
     });
 
+    await ensureSidebarVisible();
+
     expect(
       await screen.findByRole("button", { name: /alpha\.txt/i }),
     ).toBeInTheDocument();
@@ -642,15 +656,19 @@ describe("App", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Import URL" }));
 
-    expect(
-      await screen.findByRole("button", { name: /remote-brief\.txt/i }),
-    ).toBeInTheDocument();
-
+    // Wait for the heading first; the sidebar auto-collapses on first file
+    // open, so file-list buttons are not visible until we re-expand.
     await waitFor(() => {
       expect(
         screen.getByRole("heading", { name: "Remote Brief" }),
       ).toBeInTheDocument();
     });
+
+    await ensureSidebarVisible();
+
+    expect(
+      screen.getByRole("button", { name: /remote-brief\.txt/i }),
+    ).toBeInTheDocument();
   });
 
   it("shows URL import failures inline", async () => {

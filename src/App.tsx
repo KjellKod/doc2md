@@ -187,6 +187,13 @@ function AppContent() {
   const lastHeightClickAtRef = useRef(-Infinity);
   const sidebarDragMovedRef = useRef(false);
   const heightDragMovedRef = useRef(false);
+  // Tracks whether the user has expressed an explicit sidebar preference
+  // (manual collapse, expand, resize, or keyboard adjust). Auto-collapse on
+  // first-file-open does not fire when this ref is true.
+  const userTouchedSidebarRef = useRef(false);
+  // One-shot guard so auto-collapse fires at most once per session.
+  const firstAutoCollapseFiredRef = useRef(false);
+  const previousSelectedEntryIdRef = useRef<string | null>(null);
   const {
     entries,
     addFiles,
@@ -206,6 +213,9 @@ function AppContent() {
   );
   const [entrySaveStates, setEntrySaveStates] = useState<
     Record<string, SaveState>
+  >({});
+  const [entryLastSavedAt, setEntryLastSavedAt] = useState<
+    Record<string, number>
   >({});
   const [editorFocusRequest, setEditorFocusRequest] = useState<{
     id: number;
@@ -258,6 +268,11 @@ function AppContent() {
         Object.entries(current).filter(([entryId]) => liveEntryIds.has(entryId)),
       ),
     );
+    setEntryLastSavedAt((current) =>
+      Object.fromEntries(
+        Object.entries(current).filter(([entryId]) => liveEntryIds.has(entryId)),
+      ),
+    );
   }, [entries]);
 
   useEffect(() => {
@@ -300,6 +315,42 @@ function AppContent() {
     },
     [saveState],
   );
+
+  // Auto-collapse the upload sidebar the FIRST time the user OPENS a file
+  // in this session — only if the user has not already expressed a sidebar
+  // preference, the layout is desktop-wide, and the selected entry is NOT
+  // a scratch draft (scratch drafts are created via "Start writing" and
+  // don't imply the user wants the upload panel out of the way).
+  useEffect(() => {
+    const previous = previousSelectedEntryIdRef.current;
+    previousSelectedEntryIdRef.current = selectedEntryId;
+
+    if (firstAutoCollapseFiredRef.current) {
+      return;
+    }
+    if (previous !== null || selectedEntryId === null) {
+      return;
+    }
+    if (selectedEntry?.isScratch) {
+      return;
+    }
+    if (userTouchedSidebarRef.current) {
+      return;
+    }
+    if (sidebarCollapsed) {
+      return;
+    }
+    if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
+      if (window.matchMedia("(max-width: 980px)").matches) {
+        return;
+      }
+    }
+
+    firstAutoCollapseFiredRef.current = true;
+    restoreSidebarWidthRef.current =
+      sidebarWidth ?? measureSidebarWidth() ?? DEFAULT_SIDEBAR_WIDTH;
+    setSidebarCollapsed(true);
+  }, [selectedEntry?.isScratch, selectedEntryId, sidebarCollapsed, sidebarWidth]);
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") {
@@ -450,6 +501,11 @@ function AppContent() {
         setSidebarCollapsed(true);
       }
       if (activeResizeAxis === "sidebar") {
+        // Any sidebar drag that actually moved counts as a manual sidebar
+        // preference and disables one-shot auto-collapse.
+        if (sidebarDragMovedRef.current) {
+          userTouchedSidebarRef.current = true;
+        }
         lastSidebarClickAtRef.current = sidebarDragMovedRef.current
           ? -Infinity
           : event.timeStamp;
@@ -546,6 +602,7 @@ function AppContent() {
   ) => {
     if (event.key === "ArrowRight") {
       event.preventDefault();
+      userTouchedSidebarRef.current = true;
       setSidebarWidth((current) =>
         clampKeyboardSidebarWidth(
           (current ?? measureSidebarWidth() ?? MAX_SIDEBAR_WIDTH) +
@@ -557,6 +614,7 @@ function AppContent() {
 
     if (event.key === "ArrowLeft") {
       event.preventDefault();
+      userTouchedSidebarRef.current = true;
       setSidebarWidth((current) =>
         clampKeyboardSidebarWidth(
           (current ?? measureSidebarWidth() ?? MAX_SIDEBAR_WIDTH) -
@@ -596,6 +654,7 @@ function AppContent() {
   };
 
   const handleSidebarResizeReset = () => {
+    userTouchedSidebarRef.current = true;
     lastSidebarClickAtRef.current = -Infinity;
     restoreSidebarWidthRef.current = DEFAULT_SIDEBAR_WIDTH;
     latestSidebarWidthRef.current = DEFAULT_SIDEBAR_WIDTH;
@@ -604,12 +663,14 @@ function AppContent() {
   };
 
   const handleCollapseSidebar = () => {
+    userTouchedSidebarRef.current = true;
     restoreSidebarWidthRef.current =
       sidebarWidth ?? measureSidebarWidth() ?? DEFAULT_SIDEBAR_WIDTH;
     setSidebarCollapsed(true);
   };
 
   const handleShowSidebar = () => {
+    userTouchedSidebarRef.current = true;
     setSidebarWidth(restoreSidebarWidthRef.current);
     setSidebarCollapsed(false);
   };
@@ -825,8 +886,36 @@ function AppContent() {
     saveState.markSaving();
     downloadEntry(selectedEntry);
     setEntrySaveState(selectedEntry.id, "saved");
+    setEntryLastSavedAt((current) => ({
+      ...current,
+      [selectedEntry.id]: Date.now(),
+    }));
     saveState.markSaved();
   }, [saveState, selectedEntry, setEntrySaveState]);
+
+  // beforeunload guard: warn the user when they have unsaved edits in any
+  // entry. Browser policy gates the actual prompt on prior user interaction
+  // with the page; that is browser-mandated and not configurable.
+  useEffect(() => {
+    const dirty = Object.values(entrySaveStates).some(
+      (state) => state === "edited",
+    );
+
+    if (!dirty) {
+      return;
+    }
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      // Chromium ignores the returnValue text but requires a truthy return
+      // to display the leave-confirmation prompt.
+      event.returnValue = "";
+      return "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [entrySaveStates]);
 
   const saveButtonBusy = saveState.state === "saving";
   const saveButtonDisabled = !isDownloadableEntry(selectedEntry) || saveButtonBusy;
@@ -1034,6 +1123,9 @@ function AppContent() {
                   saveBusy={saveButtonBusy}
                   saveDisabled={saveButtonDisabled}
                   saveState={saveState.state}
+                  lastSavedAt={
+                    selectedEntry ? (entryLastSavedAt[selectedEntry.id] ?? null) : null
+                  }
                   onMarkdownChange={(text) => {
                     if (selectedEntry) {
                       updateMarkdown(selectedEntry.id, text);

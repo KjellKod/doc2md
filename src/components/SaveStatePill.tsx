@@ -1,8 +1,9 @@
 import type { SaveState } from "../types/saveState";
+import { useRelativeTime } from "../hooks/useRelativeTime";
 
 const SAVE_STATE_LABELS: Record<SaveState, string> = {
   saved: "Saved",
-  edited: "Edited",
+  edited: "Unsaved",
   saving: "Saving",
   conflict: "Conflict",
   error: "Error",
@@ -11,9 +12,20 @@ const SAVE_STATE_LABELS: Record<SaveState, string> = {
 
 interface SaveStatePillProps {
   state: SaveState;
+  /** Wall-clock time of the most recent successful save. When provided and
+   *  `state === "saved"`, the pill renders `"Saved · <relative time>"`. */
+  lastSavedAt?: number | null;
 }
 
-export default function SaveStatePill({ state }: SaveStatePillProps) {
+export default function SaveStatePill({
+  state,
+  lastSavedAt = null,
+}: SaveStatePillProps) {
+  const relative = useRelativeTime(state === "saved" ? lastSavedAt : null);
+  const label =
+    state === "saved" && relative
+      ? `Saved · ${relative}`
+      : SAVE_STATE_LABELS[state];
   return (
     <span
       className={`save-state-pill save-state-pill--${state}`}
@@ -21,7 +33,7 @@ export default function SaveStatePill({ state }: SaveStatePillProps) {
       aria-live="polite"
       aria-atomic="true"
     >
-      {SAVE_STATE_LABELS[state]}
+      {label}
     </span>
   );
 }

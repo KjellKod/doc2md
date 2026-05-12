@@ -23,6 +23,102 @@ import SaveButton from "./SaveButton";
 import SaveStatePill from "./SaveStatePill";
 import FindReplaceBar from "./FindReplaceBar";
 import type { FindMatch } from "./useFindReplace";
+import {
+  insertLink,
+  smartWrapInsert,
+  toggleListLine,
+  wrapSelection,
+  type ListKind,
+} from "./markdownFormatting";
+import { computeAutoContinueEdit } from "./markdownAutoContinue";
+
+interface TargetedInsert {
+  start: number;
+  end: number;
+  text: string;
+  caretStart: number;
+  caretEnd: number;
+}
+
+/**
+ * Replace [start, end) in `textarea.value` with `text` via a native input
+ * event so the browser records ONE undo step. Synchronously sets the
+ * post-insertion selection. Returns true on success.
+ *
+ * This is the workhorse for auto-continue and formatting shortcuts. It
+ * intentionally NEVER touches selection outside [start, end] so we don't
+ * cause viewport jumps or fight with the user's caret.
+ */
+function commitTargetedInsert(
+  textarea: HTMLTextAreaElement,
+  insert: TargetedInsert,
+): boolean {
+  if (textarea.ownerDocument?.activeElement !== textarea) {
+    textarea.focus();
+  }
+  if (textarea.ownerDocument?.activeElement !== textarea) {
+    return false;
+  }
+  textarea.setSelectionRange(insert.start, insert.end);
+  const exec = textarea.ownerDocument?.execCommand;
+  if (typeof exec !== "function") {
+    return false;
+  }
+  let ok = false;
+  try {
+    ok = exec.call(
+      textarea.ownerDocument,
+      "insertText",
+      false,
+      insert.text,
+    );
+  } catch {
+    return false;
+  }
+  if (!ok) {
+    return false;
+  }
+  textarea.setSelectionRange(insert.caretStart, insert.caretEnd);
+  return true;
+}
+
+/**
+ * Derive a TargetedInsert from a SelectionEdit (full-doc new value) by
+ * finding the longest common prefix/suffix between the old and new values
+ * — the replaced span is what's between them. Falls back to a full-doc
+ * insert when the diff cannot be localized (multi-region change).
+ */
+function targetedFromSelectionEdit(
+  oldValue: string,
+  newValue: string,
+  selectionStart: number,
+  selectionEnd: number,
+): TargetedInsert {
+  let prefixLen = 0;
+  const minLen = Math.min(oldValue.length, newValue.length);
+  while (
+    prefixLen < minLen &&
+    oldValue.charCodeAt(prefixLen) === newValue.charCodeAt(prefixLen)
+  ) {
+    prefixLen += 1;
+  }
+  let suffixLen = 0;
+  while (
+    suffixLen < oldValue.length - prefixLen &&
+    suffixLen < newValue.length - prefixLen &&
+    oldValue.charCodeAt(oldValue.length - 1 - suffixLen) ===
+      newValue.charCodeAt(newValue.length - 1 - suffixLen)
+  ) {
+    suffixLen += 1;
+  }
+  return {
+    start: prefixLen,
+    end: oldValue.length - suffixLen,
+    text: newValue.slice(prefixLen, newValue.length - suffixLen),
+    caretStart: selectionStart,
+    caretEnd: selectionEnd,
+  };
+}
 
 type LinkedInPreviewTone =
   | "bold"
@@ -111,6 +207,9 @@ interface PreviewPanelProps {
   saveDisabled?: boolean;
   saveKeyShortcuts?: string;
   saveState?: SaveState;
+  /** Epoch ms of the most recent successful save. Drives the relative-time
+   *  status label "Saved · Ns ago". */
+  lastSavedAt?: number | null;
   onStartWriting?: () => void;
   onNewDocument?: () => void;
   editorFocusRequest?: { id: number; target: "editor" };
@@ -298,6 +397,7 @@ export default function PreviewPanel({
   saveDisabled = false,
   saveKeyShortcuts,
   saveState = "saved",
+  lastSavedAt = null,
   onStartWriting,
   onNewDocument,
   editorFocusRequest,
@@ -321,6 +421,7 @@ export default function PreviewPanel({
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const pendingAnchorLineRef = useRef<number | null>(null);
   const suppressMatchCenteringForModeSwitchRef = useRef(false);
+  const isComposingRef = useRef(false);
   const findCapable =
     entry !== null &&
     (entry.status === "success" || entry.status === "warning") &&
@@ -409,7 +510,11 @@ export default function PreviewPanel({
 
       event.preventDefault();
       setIsFindOpen(true);
-      if (isReplaceShortcut && mode === "edit") {
+      // In edit mode, default to showing Replace so users see all the
+      // controls at once and can hide them via the existing toggle.
+      // The Cmd-Alt-F shortcut still forces Replace open for keyboard
+      // muscle memory.
+      if (mode === "edit" || isReplaceShortcut) {
         setShowReplace(true);
       } else if (!isFindOpen) {
         setShowReplace(false);
@@ -711,7 +816,10 @@ export default function PreviewPanel({
 
   function openFind(replace = false) {
     setIsFindOpen(true);
-    setShowReplace(replace && mode === "edit");
+    // Show Replace by default in edit mode; toolbar Find button passes
+    // replace=false but we still expose Replace because the user is
+    // already in edit mode and likely needs both.
+    setShowReplace(mode === "edit" || replace);
     setFindFocusRequest(({ id }) => ({
       id: id + 1,
       target: replace && mode === "edit" ? "replace" : "find",
@@ -738,6 +846,145 @@ export default function PreviewPanel({
     }
 
     syncFindHighlightScroll();
+  }
+
+  function commitTargeted(insert: TargetedInsert, fallbackValue: string) {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const ok = commitTargetedInsert(textarea, insert);
+    if (!ok) {
+      onMarkdownChange?.(fallbackValue);
+      // React-reconciled fallback: set selection on the next tick because
+      // the controlled re-render is the only path that mutates the textarea
+      // value here.
+      window.setTimeout(() => {
+        const ta = textareaRef.current;
+        if (ta) ta.setSelectionRange(insert.caretStart, insert.caretEnd);
+      }, 0);
+    }
+  }
+
+  function commitSelectionEditTargeted(
+    oldValue: string,
+    edit: { value: string; selectionStart: number; selectionEnd: number },
+  ) {
+    commitTargeted(
+      targetedFromSelectionEdit(
+        oldValue,
+        edit.value,
+        edit.selectionStart,
+        edit.selectionEnd,
+      ),
+      edit.value,
+    );
+  }
+
+  function handleTextareaKeyDown(
+    event: React.KeyboardEvent<HTMLTextAreaElement>,
+  ) {
+    // IME composition guard — checks both signals before any edit.
+    if (event.nativeEvent.isComposing || isComposingRef.current) {
+      return;
+    }
+
+    const textarea = event.currentTarget;
+    const selectionStart = textarea.selectionStart;
+    const selectionEnd = textarea.selectionEnd;
+    const value = textarea.value;
+    const isMeta = event.metaKey || event.ctrlKey;
+
+    // Auto-continue lists on Enter (not Shift-Enter). Compute the targeted
+    // insertion directly from the parsed marker so we never touch the rest
+    // of the document — full-document replacement here was the slow path.
+    if (event.key === "Enter" && !event.shiftKey && !event.altKey && !isMeta) {
+      const edit = computeAutoContinueEdit(value, selectionStart, selectionEnd);
+      if (edit) {
+        event.preventDefault();
+        const insert = targetedFromSelectionEdit(
+          value,
+          edit.value,
+          edit.caretPos,
+          edit.caretPos,
+        );
+        commitTargeted(insert, edit.value);
+      }
+      return;
+    }
+
+    // Inline formatting shortcuts (Cmd/Ctrl + B, I, K).
+    if (isMeta && !event.altKey && !event.shiftKey) {
+      const key = event.key.toLowerCase();
+      if (key === "b") {
+        event.preventDefault();
+        commitSelectionEditTargeted(
+          value,
+          wrapSelection(value, selectionStart, selectionEnd, "**"),
+        );
+        return;
+      }
+      if (key === "i") {
+        event.preventDefault();
+        commitSelectionEditTargeted(
+          value,
+          wrapSelection(value, selectionStart, selectionEnd, "_"),
+        );
+        return;
+      }
+      if (key === "k") {
+        event.preventDefault();
+        commitSelectionEditTargeted(
+          value,
+          insertLink(value, selectionStart, selectionEnd),
+        );
+        return;
+      }
+    }
+
+    // List toggles: Cmd-Shift-7/8/9 (ordered / unordered / task).
+    if (isMeta && event.shiftKey && !event.altKey) {
+      let kind: ListKind | null = null;
+      if (event.key === "7" || event.key === "&") kind = "ordered";
+      else if (event.key === "8" || event.key === "*") kind = "unordered";
+      else if (event.key === "9" || event.key === "(") kind = "task";
+      if (kind !== null) {
+        event.preventDefault();
+        commitSelectionEditTargeted(
+          value,
+          toggleListLine(value, selectionStart, selectionEnd, kind),
+        );
+        return;
+      }
+    }
+
+    // Smart-wrap for `* _ ` [ ( "` with a non-empty selection. Skip when Cmd/Ctrl
+    // or Alt is pressed (those are shortcut combinations).
+    if (
+      !isMeta &&
+      !event.altKey &&
+      selectionStart !== selectionEnd &&
+      event.key.length === 1 &&
+      "*_`[(\"".includes(event.key)
+    ) {
+      const edit = smartWrapInsert(
+        value,
+        selectionStart,
+        selectionEnd,
+        event.key,
+      );
+      if (edit) {
+        event.preventDefault();
+        commitSelectionEditTargeted(value, edit);
+        return;
+      }
+    }
+  }
+
+  function handleTextareaCompositionStart() {
+    isComposingRef.current = true;
+  }
+
+  function handleTextareaCompositionEnd() {
+    isComposingRef.current = false;
   }
 
   async function copyRenderedContent() {
@@ -823,6 +1070,9 @@ export default function PreviewPanel({
           value={effectiveMarkdown}
           onChange={(event) => onMarkdownChange?.(event.target.value)}
           onScroll={handleEditorScroll}
+          onKeyDown={handleTextareaKeyDown}
+          onCompositionStart={handleTextareaCompositionStart}
+          onCompositionEnd={handleTextareaCompositionEnd}
           aria-label="Edit markdown"
         />
       </div>
@@ -969,7 +1219,7 @@ export default function PreviewPanel({
                   busy={saveBusy}
                   ariaKeyshortcuts={saveKeyShortcuts}
                 />
-                <SaveStatePill state={saveState} />
+                <SaveStatePill state={saveState} lastSavedAt={lastSavedAt} />
               </div>
             ) : null}
             {showCopyButton ? (

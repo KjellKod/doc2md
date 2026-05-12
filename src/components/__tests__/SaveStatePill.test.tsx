@@ -11,7 +11,7 @@ describe("SaveStatePill", () => {
 
   it.each<[SaveState, string]>([
     ["saved", "Saved"],
-    ["edited", "Edited"],
+    ["edited", "Unsaved"],
     ["saving", "Saving"],
     ["conflict", "Conflict"],
     ["error", "Error"],
