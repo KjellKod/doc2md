@@ -2,6 +2,7 @@
 .claude/skills/grill-me/
 .claude/projects
 .claude/worktrees/
+.claude/scheduled_tasks.lock
 apps/macos/doc2md.xcodeproj/project.xcworkspace/*
 !apps/macos/doc2md.xcodeproj/project.xcworkspace/xcshareddata/
 !apps/macos/doc2md.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
