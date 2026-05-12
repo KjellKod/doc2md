@@ -203,9 +203,10 @@ jobs:
           echo "$RUNNER_TEMP/pipx-bin" >> "$GITHUB_PATH"
           export PIPX_HOME="$RUNNER_TEMP/pipx"
           export PIPX_BIN_DIR="$RUNNER_TEMP/pipx-bin"
-          python3 -m pip install --user pipx
-          python3 -m pipx ensurepath
-          python3 -m pipx install "dmgbuild==1.6.7" --pip-args "--constraint $GITHUB_WORKSPACE/requirements-mac-release.txt"
+          # macos-latest ships PEP 668-managed Python, so we install pipx via Homebrew
+          # (idempotent: brew install is a no-op when the formula is already present).
+          brew install pipx
+          pipx install "dmgbuild==1.6.7" --pip-args "--constraint $GITHUB_WORKSPACE/requirements-mac-release.txt"
           "$PIPX_BIN_DIR/dmgbuild" --help >/dev/null
           "$PIPX_HOME/venvs/dmgbuild/bin/python" -c "import ds_store, mac_alias"
 

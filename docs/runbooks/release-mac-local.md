@@ -42,14 +42,13 @@ security find-identity -v -p codesigning | grep "Developer ID Application"
 
 If the Developer ID certificate is not in your Keychain yet, import it from Apple Developer (Certificates → Developer ID Application → Download → double-click the `.cer` to install). The `.p8` notary key can only be downloaded once at creation time; if you have lost it, generate a new one in App Store Connect.
 
-Install the pinned DMG packaging tool from the repo root so the constraints path is absolute:
+Install the pinned DMG packaging tool from the repo root so the constraints path is absolute. macOS system Python is PEP 668 externally-managed, so install `pipx` through Homebrew (idempotent):
 
 ```bash
-python3 -m pip install --user pipx
-python3 -m pipx ensurepath
-export PIPX_HOME="${PIPX_HOME:-$HOME/.local/share/pipx}"
-python3 -m pipx install "dmgbuild==1.6.7" --pip-args "--constraint $PWD/requirements-mac-release.txt"
-"$PIPX_HOME/venvs/dmgbuild/bin/python" -c "import ds_store, mac_alias"
+brew install pipx
+pipx ensurepath
+pipx install "dmgbuild==1.6.7" --pip-args "--constraint $PWD/requirements-mac-release.txt"
+"$(pipx environment --value PIPX_HOME)/venvs/dmgbuild/bin/python" -c "import ds_store, mac_alias"
 ```
 
 ## Environment variables

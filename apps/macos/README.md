@@ -201,10 +201,11 @@ Dirty or unreleased local builds use a `-dev` version suffix. To force a specifi
 npm run build:dmg -- --version 0.1.0
 ```
 
-This local DMG is unsigned and unnotarized unless you pass `--signed` with a valid `CODESIGN_IDENTITY` already available. Local dry-run and release packaging both use the same headless `dmgbuild` layout path; missing `dmgbuild`, invalid JSON settings, missing `.DS_Store`, or background mismatches are blocking failures. If `dmgbuild` is missing, install the pinned release tool from the repo root:
+This local DMG is unsigned and unnotarized unless you pass `--signed` with a valid `CODESIGN_IDENTITY` already available. Local dry-run and release packaging both use the same headless `dmgbuild` layout path; missing `dmgbuild`, invalid JSON settings, missing `.DS_Store`, or background mismatches are blocking failures. If `dmgbuild` is missing, install the pinned release tool from the repo root (macOS system Python is PEP 668-managed, so install `pipx` via Homebrew first):
 
 ```bash
-python3 -m pipx install "dmgbuild==1.6.7" --pip-args "--constraint $PWD/requirements-mac-release.txt"
+brew install pipx
+pipx install "dmgbuild==1.6.7" --pip-args "--constraint $PWD/requirements-mac-release.txt"
 ```
 
 Public release DMGs should come from the protected release workflow so signing, notarization, stapling, Sparkle ZIP signing, appcast generation, and asset upload happen together.

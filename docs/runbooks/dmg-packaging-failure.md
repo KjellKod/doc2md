@@ -8,15 +8,16 @@ The packaging path is intentionally headless. Missing `dmgbuild`, invalid JSON s
 
 ## Local install precondition
 
-Install the pinned tool from the repo root so the constraints path is absolute:
+Install the pinned tool from the repo root so the constraints path is absolute. On macOS, install `pipx` through Homebrew because system Python is PEP 668 externally-managed and refuses `pip install --user`:
 
 ```bash
-python3 -m pip install --user pipx
-python3 -m pipx ensurepath
-export PIPX_HOME="${PIPX_HOME:-$HOME/.local/share/pipx}"
-python3 -m pipx install "dmgbuild==1.6.7" --pip-args "--constraint $PWD/requirements-mac-release.txt"
-"$PIPX_HOME/venvs/dmgbuild/bin/python" -c "import ds_store, mac_alias"
+brew install pipx              # idempotent
+pipx ensurepath
+pipx install "dmgbuild==1.6.7" --pip-args "--constraint $PWD/requirements-mac-release.txt"
+"$(pipx environment --value PIPX_HOME)/venvs/dmgbuild/bin/python" -c "import ds_store, mac_alias"
 ```
+
+If you already have `pipx` on `PATH` from a different installation method (Homebrew Python, a private venv), use it as-is rather than reinstalling.
 
 Do not install `dmgbuild` into the system Python for release work.
 
