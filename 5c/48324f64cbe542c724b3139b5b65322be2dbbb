@@ -1,0 +1,19 @@
+docs/quest-journal/headless-dmg-packaging_2026-05-12.md
+  s_cd9f1a961ebb24::t_1547d6b67ad0c0 1-134
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "5c48324f64cbe542c724b3139b5b65322be2dbbb",
+  "prompts": {},
+  "sessions": {
+    "s_cd9f1a961ebb24": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1ba4e19f-5254-422f-8aff-552ce4dd5b60",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}

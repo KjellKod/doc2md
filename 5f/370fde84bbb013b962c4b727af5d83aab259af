@@ -1,0 +1,19 @@
+scripts/release/check_dmg_determinism.sh
+  s_cd9f1a961ebb24::t_f318517e2968df 9-17,23-27,31-33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "5f370fde84bbb013b962c4b727af5d83aab259af",
+  "prompts": {},
+  "sessions": {
+    "s_cd9f1a961ebb24": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1ba4e19f-5254-422f-8aff-552ce4dd5b60",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
