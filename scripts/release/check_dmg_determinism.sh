@@ -6,20 +6,31 @@ VERSION="${VERSION:-determinism-test}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && /bin/pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && /bin/pwd)"
+fail() {
+  printf 'Error: %s\n' "$*" >&2
+  exit 1
+}
+
+# Resolve the dmgbuild venv Python without requiring the caller to export
+# PIPX_HOME. Locally, "pipx install dmgbuild" puts the shim on PATH but does
+# not export PIPX_HOME; reading the shim's shebang gives us the exact venv
+# interpreter dmgbuild itself uses, so ds_store and mac_alias imports work.
 PYTHON="${DMGBUILD_PYTHON:-}"
 
 if [[ -z "$PYTHON" ]]; then
   if [[ -n "${PIPX_HOME:-}" && -x "$PIPX_HOME/venvs/dmgbuild/bin/python" ]]; then
     PYTHON="$PIPX_HOME/venvs/dmgbuild/bin/python"
-  else
-    PYTHON="python3"
+  elif dmgbuild_bin="$(command -v dmgbuild 2>/dev/null)"; then
+    shim_python="$(head -n1 "$dmgbuild_bin" 2>/dev/null | sed -n 's|^#!||p')"
+    if [[ -n "$shim_python" && -x "$shim_python" ]]; then
+      PYTHON="$shim_python"
+    fi
   fi
 fi
 
-fail() {
-  printf 'Error: %s\n' "$*" >&2
-  exit 1
-}
+if [[ -z "$PYTHON" ]]; then
+  fail "could not resolve the dmgbuild venv Python. Install with 'brew install pipx && pipx install dmgbuild==1.6.7 --pip-args \"--constraint \$PWD/requirements-mac-release.txt\"', or set DMGBUILD_PYTHON to a Python that imports ds_store and mac_alias."
+fi
 
 detach_mount() {
   local target="$1"
