@@ -1,0 +1,26 @@
+scripts/release/package_mac_dmg.sh
+  s_cd9f1a961ebb24::t_68983a08ce0eb6 42-46
+docs/runbooks/dmg-packaging-failure.md
+  s_cd9f1a961ebb24::t_c5042efe272e04 11,14-17,20
+  s_cd9f1a961ebb24::t_6cff451ccd10e1 45,49
+  s_cd9f1a961ebb24::t_ae66c90d759ba3 48,63,74,86-87
+  s_cd9f1a961ebb24::t_9fd7791a0cdb6e 64
+  s_cd9f1a961ebb24::t_60cec2648b4f11 76
+  s_cd9f1a961ebb24::t_670cb7c6b60748 83,92
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "d22470eeb6ea38e373800c73dfdb0b14502029f5",
+  "prompts": {},
+  "sessions": {
+    "s_cd9f1a961ebb24": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1ba4e19f-5254-422f-8aff-552ce4dd5b60",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
