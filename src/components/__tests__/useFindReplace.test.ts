@@ -169,3 +169,97 @@ describe("replace helpers", () => {
     ).toEqual({ next: "abc", replaced: 0, error: "Invalid regex" });
   });
 });
+
+describe("findMatches with wholeWord", () => {
+  it("excludes substring matches when wholeWord is true (plain mode)", () => {
+    const result = findMatches("foo foobar foo_bar foo2", "foo", {
+      regex: false,
+      caseSensitive: true,
+      wholeWord: true,
+    });
+    // "foo" alone matches; "foobar" / "foo_bar" / "foo2" do not because of
+    // adjacent word characters (\b uses [A-Za-z0-9_] semantics).
+    expect(result.matches).toHaveLength(1);
+    expect(result.matches[0]).toMatchObject({ start: 0, end: 3 });
+  });
+
+  it("matches without wholeWord still find substrings", () => {
+    const result = findMatches("foo foobar", "foo", {
+      regex: false,
+      caseSensitive: true,
+      wholeWord: false,
+    });
+    expect(result.total).toBe(2);
+  });
+
+  it("preserves regex alternation with wholeWord", () => {
+    const result = findMatches("cat catfish dog dogwood bird", "cat|dog", {
+      regex: true,
+      caseSensitive: true,
+      wholeWord: true,
+    });
+    // 'cat' at offset 0 and 'dog' at offset 12 match; 'catfish' / 'dogwood'
+    // do not because of adjacent word characters.
+    expect(result.matches.map((m) => ({ start: m.start, end: m.end, text: m.text }))).toEqual([
+      { start: 0, end: 3, text: "cat" },
+      { start: 12, end: 15, text: "dog" },
+    ]);
+  });
+
+  it("combines wholeWord with case-insensitive matching", () => {
+    const result = findMatches("Foo foo FOO foobar", "foo", {
+      regex: false,
+      caseSensitive: false,
+      wholeWord: true,
+    });
+    expect(result.matches).toHaveLength(3);
+  });
+
+  it("caps the navigable match list at 5000", () => {
+    expect(MAX_MATCHES).toBe(5_000);
+    const result = findMatches("a".repeat(7_000), "a", {
+      regex: false,
+      caseSensitive: true,
+    });
+    expect(result.capped).toBe(true);
+    expect(result.matches).toHaveLength(5_000);
+  });
+});
+
+describe("applyReplaceAll with wholeWord", () => {
+  it("only replaces whole-word matches", () => {
+    const result = applyReplaceAll(
+      "foo foobar foo",
+      "foo",
+      "bar",
+      { regex: false, caseSensitive: true, wholeWord: true },
+    );
+    expect(result.next).toBe("bar foobar bar");
+    expect(result.replaced).toBe(2);
+  });
+
+  it("treats the replacement as literal text in plain Whole Word mode (no $& expansion)", () => {
+    const result = applyReplaceAll(
+      "foo foobar foo",
+      "foo",
+      "$&!",
+      { regex: false, caseSensitive: true, wholeWord: true },
+    );
+    // Plain Whole Word must NOT expand $& to the match; the user typed
+    // the literal characters "$&!" so they appear verbatim in the output.
+    expect(result.next).toBe("$&! foobar $&!");
+    expect(result.replaced).toBe(2);
+  });
+
+  it("keeps regex Whole Word replacement-template semantics intact", () => {
+    const result = applyReplaceAll(
+      "alpha beta alpha",
+      "alpha",
+      "[$&]",
+      { regex: true, caseSensitive: true, wholeWord: true },
+    );
+    // Genuine regex mode keeps $& expansion — user opted in.
+    expect(result.next).toBe("[alpha] beta [alpha]");
+    expect(result.replaced).toBe(2);
+  });
+});

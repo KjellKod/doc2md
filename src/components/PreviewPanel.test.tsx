@@ -618,10 +618,11 @@ describe("PreviewPanel", () => {
       "true",
     );
 
+    // Match Case is on by default; query uses the document's casing.
     fireEvent.change(
       screen.getByRole("textbox", { name: "Find markdown text" }),
       {
-        target: { value: "alpha" },
+        target: { value: "Alpha" },
       },
     );
 
@@ -645,7 +646,7 @@ describe("PreviewPanel", () => {
     fireEvent.change(
       screen.getByRole("textbox", { name: "Find markdown text" }),
       {
-        target: { value: "alpha" },
+        target: { value: "Alpha" },
       },
     );
 
@@ -1128,7 +1129,8 @@ describe("PreviewPanel", () => {
 
     await waitFor(() => expect(document.activeElement).toBe(findInput));
 
-    fireEvent.click(screen.getByRole("button", { name: "Show replace controls" }));
+    // Replace is now expanded by default in edit mode; the toggle reads
+    // "Hide replace controls" and the input is already present.
     const replaceInput = screen.getByRole("textbox", {
       name: "Replacement text",
     });
@@ -1224,7 +1226,7 @@ describe("PreviewPanel", () => {
         target: { value: "Alpha" },
       },
     );
-    fireEvent.click(screen.getByRole("button", { name: "Show replace controls" }));
+    // Replace is auto-expanded on Cmd-F in edit mode; no toggle click needed.
     fireEvent.change(screen.getByRole("textbox", { name: "Replacement text" }), {
       target: { value: "Gamma" },
     });
@@ -1232,7 +1234,7 @@ describe("PreviewPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Replace" }));
     expect(onChange).toHaveBeenCalledWith("Gamma beta Alpha");
 
-    fireEvent.click(screen.getByRole("button", { name: "All" }));
+    fireEvent.click(screen.getByRole("button", { name: "Replace All" }));
     expect(onChange).toHaveBeenCalledWith("Gamma beta Gamma");
   });
 
@@ -1254,12 +1256,11 @@ describe("PreviewPanel", () => {
         target: { value: "a" },
       },
     );
-    fireEvent.click(screen.getByRole("button", { name: "Show replace controls" }));
     fireEvent.change(screen.getByRole("textbox", { name: "Replacement text" }), {
       target: { value: "b" },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "All" }));
+    fireEvent.click(screen.getByRole("button", { name: "Replace All" }));
 
     expect(onChange).toHaveBeenCalledWith("b".repeat(12_000));
   });

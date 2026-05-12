@@ -53,6 +53,13 @@ async function openFixture(page: Page) {
       buffer: Buffer.from(FIXTURE_BODY),
     },
   ]);
+  // First file open triggers the working-mode auto-collapse — the file list
+  // moves behind the upload rail. Re-expand so this test (which is about
+  // mode-switch anchoring, not layout) can still see the file button.
+  const showUpload = page.getByRole("button", { name: "Show upload panel" });
+  if (await showUpload.isVisible().catch(() => false)) {
+    await showUpload.click();
+  }
   await expect(
     page.getByRole("button", { name: `Open ${FIXTURE_NAME}` }),
   ).toBeVisible();

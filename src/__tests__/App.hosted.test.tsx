@@ -74,7 +74,7 @@ describe("App hosted save control", () => {
     });
 
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent("Edited"),
+      expect(screen.getByRole("status")).toHaveTextContent("Unsaved"),
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Save document" }));
@@ -112,7 +112,7 @@ describe("App hosted save control", () => {
       target: { value: "# Keep me" },
     });
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent("Edited"),
+      expect(screen.getByRole("status")).toHaveTextContent("Unsaved"),
     );
 
     fireEvent.click(screen.getByRole("button", { name: "New document" }));
@@ -130,7 +130,7 @@ describe("App hosted save control", () => {
 
     expect(screen.getByLabelText("Edit markdown")).toHaveValue("# Keep me");
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent("Edited"),
+      expect(screen.getByRole("status")).toHaveTextContent("Unsaved"),
     );
   });
 
@@ -144,7 +144,7 @@ describe("App hosted save control", () => {
       target: { value: "# Discard me" },
     });
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent("Edited"),
+      expect(screen.getByRole("status")).toHaveTextContent("Unsaved"),
     );
 
     fireEvent.click(screen.getByRole("button", { name: "New document" }));

@@ -47,6 +47,13 @@ async function uploadMarkdownFiles(page: Page, fixtures: MarkdownFixture[]) {
     })),
   );
 
+  // First file open triggers working-mode auto-collapse; re-expand so the
+  // file-list buttons remain locatable for tests that interact with them.
+  const showUpload = page.getByRole("button", { name: "Show upload panel" });
+  if (await showUpload.isVisible().catch(() => false)) {
+    await showUpload.click();
+  }
+
   for (const { name } of fixtures) {
     await expect(page.getByRole("button", { name: `Open ${name}` })).toBeVisible();
     await expect(page.getByRole("checkbox", { name: `Select ${name}` })).toBeVisible();

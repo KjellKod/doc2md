@@ -1343,7 +1343,10 @@ body.is-height-resizing * {
 .find-replace-bar {
   position: sticky;
   top: 74px;
-  z-index: 4;
+  /* Sit above the editor's bottom resize handle (z-index 6) so the find
+   * action buttons are always clickable, even when the preview body is
+   * small and the bar approaches the handle's hit area. */
+  z-index: 7;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 8px;
