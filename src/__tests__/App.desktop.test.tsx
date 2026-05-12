@@ -1699,7 +1699,11 @@ describe("App desktop bridge", () => {
     // React 19 batches the post-Save-As state updates (path + mtimeMs anchor)
     // more aggressively than 18; wait for the anchored saved-file button to
     // appear so the next save event routes to saveFile, not another saveFileAs.
-    await screen.findByRole("button", { name: /Imported\.md/i });
+    // The pre-Save-As button label is "Open imported.md" (lowercase i); after
+    // Save As resolves with path /Users/me/Imported.md the label updates to
+    // "Open Imported.md" (capital I). Match case-sensitively so this wait
+    // actually anchors on the post-Save-As state, not the pre-existing button.
+    await screen.findByRole("button", { name: /Open Imported\.md/ });
 
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.save));
 
