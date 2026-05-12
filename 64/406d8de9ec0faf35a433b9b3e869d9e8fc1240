@@ -1,0 +1,180 @@
+src/components/__tests__/applyAtomicTextareaEdit.test.ts
+  s_905dfb6806d57a::t_2eb37d925cd02a 1-63
+ideas/doc2md-folder-view.md
+  s_905dfb6806d57a::t_aac8379142dcf7 1-40
+docs/accessibility-notes.md
+  s_905dfb6806d57a::t_b29d2f218fd5ea 1-80
+src/App.tsx
+  s_905dfb6806d57a::t_3eae9a1c24a460 217-219
+  s_905dfb6806d57a::t_29d7ab2a621447 271-275
+  s_905dfb6806d57a::t_e8a6e6f7e62e1c 324-333,337-352,354
+  s_905dfb6806d57a::t_c6c8283e450411 605,617
+  s_905dfb6806d57a::t_cf769fa90307d3 889-892,896-918
+  s_905dfb6806d57a::t_adf5b17726deb7 190-196
+  s_905dfb6806d57a::t_f91e56927ff62e 504-508
+  s_905dfb6806d57a::t_f389adc80c260b 319-323,334-336,353
+  s_905dfb6806d57a::t_7e23b513b31f43 657,666,673
+  s_905dfb6806d57a::t_ddb00875af5d27 1126-1128
+tests/e2e/view-anchor-mode-switch.spec.ts
+  s_905dfb6806d57a::t_a7e25e324a8722 56-62
+src/App.test.tsx
+  s_905dfb6806d57a::t_8a2e48fb765b43 458-459
+  s_905dfb6806d57a::t_8bddd15dd6416b 659-660,666-671
+  s_905dfb6806d57a::t_08720cbf220cde 49-53,61-64
+src/components/SaveStatePill.tsx
+  s_905dfb6806d57a::t_db0bc55fd497a8 2,6,15-17,20-28,36
+tests/e2e/inline-formatting.spec.ts
+  s_905dfb6806d57a::t_8eb894fb4bc7ca 1-67
+ideas/doc2md-working-mode-chrome.md
+  s_905dfb6806d57a::t_464a0dac81595d 1-122
+tests/e2e/hosted-browser-baseline.spec.ts
+  s_905dfb6806d57a::t_418945b3e2260a 50-56
+ideas/doc2md-multibrowser-playwright.md
+  s_905dfb6806d57a::t_3c06707248f5c5 1-19
+tests/e2e/auto-continue.spec.ts
+  s_905dfb6806d57a::t_913b6008bacbfb 1-80
+src/__tests__/App.beforeunload.test.tsx
+  s_905dfb6806d57a::t_ad9eb44f7fc43c 43,59
+  s_905dfb6806d57a::t_cc80c0d8463915 30-32,49-51
+  s_905dfb6806d57a::t_9d48a8ee6d1fab 1-29,33-42,44-48,52-58,60-66
+src/components/FindReplaceBar.tsx
+  s_905dfb6806d57a::t_d3013f2d4ca708 290
+  s_905dfb6806d57a::t_b0c166ff806d39 127-130
+  s_905dfb6806d57a::t_b0f0e2496c4d81 160-177
+  s_905dfb6806d57a::t_54e071b83e6c68 47
+  s_905dfb6806d57a::t_f74f0750795f75 265-268
+  s_905dfb6806d57a::t_93fbd1338287ac 275-278,286-287
+src/components/__tests__/markdownAutoContinue.test.ts
+  s_905dfb6806d57a::t_6f049f9bf58933 1-201
+.ai/allowlist.json
+  s_905dfb6806d57a::t_f83b6b33362fbc 132,151-156
+src/components/__tests__/useFindReplace.test.ts
+  s_905dfb6806d57a::t_69133ea5423940 172-181,184-200,206-239,265
+  s_905dfb6806d57a::t_6471e7723549d8 182-183
+  s_905dfb6806d57a::t_f1d621df23a4e0 201-205
+  s_905dfb6806d57a::t_4ee130f48cdd39 240-264
+src/hooks/useRelativeTime.ts
+  s_905dfb6806d57a::t_cc5b9c42766dd1 1-33
+tests/e2e/find-replace-whole-word.spec.ts
+  s_905dfb6806d57a::t_6e3f986f15645c 24,34
+  s_905dfb6806d57a::t_04a09449f762fe 30
+  s_905dfb6806d57a::t_71d76db14199dc 1-23,25-29,31-33,35
+tests/e2e/autosave-status.spec.ts
+  s_905dfb6806d57a::t_d859406b749fef 1-46
+ideas/doc2md-mac-file-watchers.md
+  s_905dfb6806d57a::t_598b6bfed7cc31 1-37
+ideas/doc2md-browser-crash-recovery.md
+  s_905dfb6806d57a::t_9df6a8e96e3dda 1-42
+src/components/PreviewPanel.test.tsx
+  s_905dfb6806d57a::t_c0240259c41f01 621,625,649
+  s_905dfb6806d57a::t_720338680d67d7 1237,1263
+  s_905dfb6806d57a::t_c2dc90968e0a81 1229
+  s_905dfb6806d57a::t_4b0fe612d56fe4 1132-1133
+src/components/__tests__/FindReplaceBar.test.tsx
+  s_905dfb6806d57a::t_720338680d67d7 102,122
+  s_905dfb6806d57a::t_cf63f0d3ef0a79 14
+src/components/PreviewPanel.tsx
+  s_905dfb6806d57a::t_4c0e6f7c22c397 852-853,864-866,880-895,899-902,910-918,923-926,931-934,939-950,953-975,977-989
+  s_905dfb6806d57a::t_11fda22b42b2c8 896-898,903-909,919-922,927-930,935-938,951-952,976
+  s_905dfb6806d57a::t_739c0428d2a856 33
+  s_905dfb6806d57a::t_27d7a40bab8452 1073-1075
+  s_905dfb6806d57a::t_a6e5275adac342 1222
+  s_905dfb6806d57a::t_e011f003384644 34-121
+  s_905dfb6806d57a::t_047d576a18861f 513-517
+  s_905dfb6806d57a::t_c3d7c944bceff7 210-212
+  s_905dfb6806d57a::t_d27d4e2f72e667 819-822
+  s_905dfb6806d57a::t_b3b793566554bd 26-32
+  s_905dfb6806d57a::t_1aa910248e2c91 424
+  s_905dfb6806d57a::t_aaff492a76b5df 400
+  s_905dfb6806d57a::t_90e79da074cbde 851,854-863,867-879
+src/components/__tests__/PreviewPanel.ime.test.tsx
+  s_905dfb6806d57a::t_d63ec63225c7d9 1
+  s_905dfb6806d57a::t_097de85bb4f1fd 2-60
+src/__tests__/App.hosted.test.tsx
+  s_905dfb6806d57a::t_e90fdbc530475e 77,115,133,147
+src/hooks/__tests__/useRelativeTime.test.ts
+  s_905dfb6806d57a::t_1fcf61747887d5 1-47
+src/__tests__/App.desktop.test.tsx
+  s_905dfb6806d57a::t_04efb774ac4753 46
+  s_905dfb6806d57a::t_f817cda0be2eaa 626
+  s_905dfb6806d57a::t_43cf8b4a991d3e 41-45,48-51,54-55
+  s_905dfb6806d57a::t_3ee819c48395e8 1367-1368
+  s_905dfb6806d57a::t_9eb316744d17c6 154,156,194,201,356,358,399,449,451,495,497,560,645
+  s_905dfb6806d57a::t_23dc14dacc4dc0 206,731,756,798
+  s_905dfb6806d57a::t_f6e2b6aefbe18e 47,52-53,56-57
+  s_905dfb6806d57a::t_6caa61d5d5b873 1532
+  s_905dfb6806d57a::t_b94b86df05babf 392,558,686,725,792,1627,1698,1793,1802,1858,1963,1965,2084
+  s_905dfb6806d57a::t_68464b690c0f3b 31-40
+tests/e2e/find-replace-single-undo.spec.ts
+  s_905dfb6806d57a::t_c78a94282ba723 32-33,35
+  s_905dfb6806d57a::t_78debc20078c66 1-12,19-24,26-29,36-37,39-41,43-46
+  s_905dfb6806d57a::t_f80dadfd95df70 13-18,25,30-31,34,38,42
+ideas/doc2md-editor-engine-evaluation.md
+  s_905dfb6806d57a::t_5cccfc298badb1 1-35
+tests/e2e/editor-integration.spec.ts
+  s_905dfb6806d57a::t_692ea30145d4cd 162-187
+  s_905dfb6806d57a::t_10bd6a41844ac2 245-277
+  s_905dfb6806d57a::t_55e7fb5ead0ec0 1-137,141-147,151,153-156,201-236,238-243
+  s_905dfb6806d57a::t_979f3121873643 138-140,148-150,152,157-161,188-200
+  s_905dfb6806d57a::t_c88773d445937d 244,278-325,327-337
+  s_905dfb6806d57a::t_720338680d67d7 237,326
+src/components/markdownFormatting.ts
+  s_905dfb6806d57a::t_fe937d375c7aa9 177-184
+  s_905dfb6806d57a::t_2b11499f719651 213-215
+  s_905dfb6806d57a::t_0e63264aeaf113 1-176,185-212,216-275,282-286
+  s_905dfb6806d57a::t_d24d84513dd967 276-281
+src/components/markdownAutoContinue.ts
+  s_905dfb6806d57a::t_71608df945b992 1-214
+ideas/doc2md-mac-session-restore.md
+  s_905dfb6806d57a::t_7bd535f9a685f9 1-41
+src/components/__tests__/SaveStatePill.test.tsx
+  s_905dfb6806d57a::t_faf75f34355074 14
+src/desktop/DesktopApp.tsx
+  s_905dfb6806d57a::t_8bfacb66de1174 2727-2731
+  s_905dfb6806d57a::t_785894b48225ec 460-481
+  s_905dfb6806d57a::t_badfb34e447bf4 736-756
+  s_905dfb6806d57a::t_2c2aff40559bf2 632-634
+  s_905dfb6806d57a::t_0fd4063f27e85b 787-791
+  s_905dfb6806d57a::t_4428e310e5c13f 1091,1103,1143,1152,1159
+  s_905dfb6806d57a::t_e20de68b5a8d10 1384
+  s_905dfb6806d57a::t_573634f264cb50 397-399
+  s_905dfb6806d57a::t_a66517779cbb1a 350-356
+src/styles/global.css
+  s_905dfb6806d57a::t_b4409048b0ae64 1346-1349
+src/components/useFindReplace.ts
+  s_905dfb6806d57a::t_97a26d6b513163 218,242,245,252
+  s_905dfb6806d57a::t_bca306b6a8e984 72,91,94
+  s_905dfb6806d57a::t_1be7bcb78cb089 281-283
+  s_905dfb6806d57a::t_28463853977096 405-409,416-420,428
+  s_905dfb6806d57a::t_8e799dd7392464 495-496
+  s_905dfb6806d57a::t_978a860c571429 3,9-25
+  s_905dfb6806d57a::t_a56b31bb08c1cc 338-376
+  s_905dfb6806d57a::t_30488785619ef2 259-271
+  s_905dfb6806d57a::t_6b190e532150d6 387
+  s_905dfb6806d57a::t_a024e4d0719140 392-404,410-415,421-427,429-446
+  s_905dfb6806d57a::t_7644c22788abbd 333
+  s_905dfb6806d57a::t_cc4b81410c0af4 285,290-291
+src/components/__tests__/markdownFormatting.test.ts
+  s_905dfb6806d57a::t_6b6060fcd88044 1-73,75-111
+  s_905dfb6806d57a::t_e00da405235e4b 74
+tests/e2e/working-mode-collapse.spec.ts
+  s_905dfb6806d57a::t_0c5043cc70425e 1-77
+  s_905dfb6806d57a::t_459bdb2e1e49cb 79,84,90-101,105
+  s_905dfb6806d57a::t_6e4c945c5ddc1e 78,80-83,85-89,102-104,106-107
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "64406d8de9ec0faf35a433b9b3e869d9e8fc1240",
+  "prompts": {},
+  "sessions": {
+    "s_905dfb6806d57a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "617e3081-9563-45a0-9b55-cc30887e26a9",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
