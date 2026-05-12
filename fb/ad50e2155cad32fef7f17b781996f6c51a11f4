@@ -1,0 +1,27 @@
+.github/workflows/mac-pr-check.yml
+  s_cd9f1a961ebb24::t_d3bdf5d1a12d0d 71-74
+docs/runbooks/dmg-packaging-failure.md
+  s_cd9f1a961ebb24::t_c5042efe272e04 11,14-17,20
+docs/runbooks/release-mac-local.md
+  s_cd9f1a961ebb24::t_5648e7f55b783b 45,48-51
+apps/macos/README.md
+  s_cd9f1a961ebb24::t_76d919edad4e1c 204,207-208
+.github/workflows/release-mac.yml
+  s_cd9f1a961ebb24::t_4abcbc8bc1a69a 207-210
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "fbad50e2155cad32fef7f17b781996f6c51a11f4",
+  "prompts": {},
+  "sessions": {
+    "s_cd9f1a961ebb24": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1ba4e19f-5254-422f-8aff-552ce4dd5b60",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
