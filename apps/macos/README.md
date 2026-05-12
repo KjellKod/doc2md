@@ -369,7 +369,7 @@ gh workflow run release-mac.yml -f tag=v0.1.0
 
 Approve the `mac-release` Environment gate in GitHub Actions. The workflow signs and notarizes `doc2md.app`, staples the app ticket, packages the polished `doc2md-<version>.dmg` with pinned headless `dmgbuild`, signs and notarizes the DMG, staples and validates the DMG ticket, creates and EdDSA-signs `doc2md-<version>.zip`, generates `appcast.xml`, creates the GitHub Release if needed, and uploads all three assets with `--clobber` for idempotent reruns. If DMG packaging fails, use the [DMG packaging failure runbook](../../docs/runbooks/dmg-packaging-failure.md).
 
-Release artifact validation commands (set `VERSION` to your build version first; literal `<version>` would be parsed as shell input redirection):
+Release artifact validation commands (signed-DMG path only). Set `VERSION` to your build version first (literal `<version>` would be parsed as shell input redirection). **Do not run these against the unsigned local `npm run build:dmg` output** — `codesign --verify` will correctly report `code object is not signed at all` because the local dry-run build is intentionally unsigned. The commands below assume a signed DMG produced by the protected `release-mac.yml` workflow above (or by a local signed run via `scripts/release/release_mac_local.sh` with a Developer ID certificate):
 
 ```bash
 VERSION="0.1.0"  # replace with your release version
