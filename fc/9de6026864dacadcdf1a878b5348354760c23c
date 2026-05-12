@@ -1,0 +1,21 @@
+scripts/release/package_mac_dmg.sh
+  s_cd9f1a961ebb24::t_68983a08ce0eb6 42-46
+docs/runbooks/dmg-packaging-failure.md
+  s_cd9f1a961ebb24::t_670cb7c6b60748 83,92
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "fc9de6026864dacadcdf1a878b5348354760c23c",
+  "prompts": {},
+  "sessions": {
+    "s_cd9f1a961ebb24": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1ba4e19f-5254-422f-8aff-552ce4dd5b60",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
