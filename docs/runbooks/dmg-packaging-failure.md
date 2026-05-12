@@ -80,7 +80,7 @@ Re-run after the stale mount is gone. Persistent detach failures are runner or O
 
 ## Codesign preservation failure
 
-When `CODESIGN_IDENTITY` is set, `mount_self_test` runs:
+When `CODESIGN_IDENTITY` is set **and** `RELEASE_DRY_RUN != 1` (i.e., a real signed-release path, not a local dry-run), `mount_self_test` runs:
 
 ```bash
 VERSION="2.3.3-dev"  # replace with your build version
@@ -88,6 +88,8 @@ codesign --verify --deep --strict --verbose=2 "/Volumes/doc2md ${VERSION}/doc2md
 ```
 
 If this fails, the signed app did not survive packaging intact. Do not continue to DMG signing or notarization. Confirm the input `.app` verifies before packaging, then inspect whether `dmgbuild` staging preserved resource forks and extended attributes.
+
+The strict verify is skipped on local `npm run build:dmg` runs even if `CODESIGN_IDENTITY` is exported in the shell, because local Xcode Release builds default to adhoc/linker-signed `.app` bundles whose `Sealed Resources=none` will fail strict verification independent of `dmgbuild`. That is an Xcode project signing concern, not a DMG packaging regression.
 
 ## Escalation
 

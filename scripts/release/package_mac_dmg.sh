@@ -39,7 +39,11 @@ mount_self_test() {
   [[ -f "$mount_path/.background.png" ]] || fail "DMG self-test failed: missing .background.png at volume root"
   cmp -s "$BACKGROUND_SOURCE" "$mount_path/.background.png" || fail "DMG self-test failed: mounted .background.png does not match source artwork"
 
-  if [[ -n "${CODESIGN_IDENTITY:-}" ]]; then
+  # Verify the mounted app survived dmgbuild's copy intact when we are actually
+  # in a signed-release path. Skip in dry-run because local Xcode Release builds
+  # default to adhoc/linker-signed .app bundles whose unsealed resources fail
+  # strict verification independent of our packaging step.
+  if [[ -n "${CODESIGN_IDENTITY:-}" && "${RELEASE_DRY_RUN:-0}" != "1" ]]; then
     codesign --verify --deep --strict --verbose=2 "$mount_path/doc2md.app"
   fi
 
