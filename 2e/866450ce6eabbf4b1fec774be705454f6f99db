@@ -1,0 +1,29 @@
+docs/security/2026-05-12-ci-supply-chain-review.md
+  s_1e99cc142947fa::t_c4b20f2f86e9e4 1-158
+docs/quest-journal/ci-supply-chain-hardening_2026-05-12.md
+  s_1e99cc142947fa::t_14bcc2b51bcaf2 1-85
+docs/quest-journal/README.md
+  s_1e99cc142947fa::t_d013f170575521 5
+docs/journal/038-celebrate-ci-supply-chain-hardening.md
+  s_1e99cc142947fa::t_fd6f05645ec28d 1-99
+docs/journal/README.md
+  s_1e99cc142947fa::t_cd4b229f881e07 9
+docs/diary/2026-05-12.md
+  s_1e99cc142947fa::t_b35076c2098a16 1-73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "2e866450ce6eabbf4b1fec774be705454f6f99db",
+  "prompts": {},
+  "sessions": {
+    "s_1e99cc142947fa": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f53923ae-d819-4a1c-9903-05c1659f8124",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
