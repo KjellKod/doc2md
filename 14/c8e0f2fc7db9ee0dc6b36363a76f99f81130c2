@@ -1,0 +1,20 @@
+tests/e2e/preview-panel-refactor-characterization.spec.ts
+  s_aa1dc5e9102e59::t_0b75ea61eb0bbd 181,185,190
+  s_aa1dc5e9102e59::t_5e05fee6fd7088 1-180,182-184,186-189,191-194
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "14c8e0f2fc7db9ee0dc6b36363a76f99f81130c2",
+  "prompts": {},
+  "sessions": {
+    "s_aa1dc5e9102e59": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e23ab-17d1-7561-8c40-c7fad1deb9e7",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
