@@ -1,0 +1,23 @@
+tests/e2e/find-highlight-leak.spec.ts
+  s_905dfb6806d57a::t_07f8ea09984d2d 157
+  s_905dfb6806d57a::t_54b116581d19bb 77-84
+  s_905dfb6806d57a::t_4413c46d7d7ec5 136
+  s_905dfb6806d57a::t_80480ccdfe864b 173
+  s_905dfb6806d57a::t_962eefa6a6be3f 189
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "9147b2cc6f9ce2db7711e2c3b723843537175163",
+  "prompts": {},
+  "sessions": {
+    "s_905dfb6806d57a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "617e3081-9563-45a0-9b55-cc30887e26a9",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
