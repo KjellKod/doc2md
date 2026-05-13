@@ -1,0 +1,19 @@
+src/converters/pdf.ts
+  s_cd9f1a961ebb24::t_bee93d1fa7d29e 2,64-65,67-70,78-79,1343-1344,1427
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "3fda0889d5fd8300173fb195da164423b249ac90",
+  "prompts": {},
+  "sessions": {
+    "s_cd9f1a961ebb24": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1ba4e19f-5254-422f-8aff-552ce4dd5b60",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}

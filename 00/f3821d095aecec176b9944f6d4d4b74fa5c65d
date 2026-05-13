@@ -1,0 +1,24 @@
+src/converters/pdf.ts
+  s_cd9f1a961ebb24::t_bee93d1fa7d29e 2,64-65,67-70,78-79,1465
+tests/e2e/dep-bump-format-smoke.spec.ts
+  s_cd9f1a961ebb24::t_81c529a6ba03a2 1-7,10-16,19-160
+  s_cd9f1a961ebb24::t_116803e5d3da16 8-9,17-18
+vite.config.ts
+  s_cd9f1a961ebb24::t_dcb3fd2ae54b63 130
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "00f3821d095aecec176b9944f6d4d4b74fa5c65d",
+  "prompts": {},
+  "sessions": {
+    "s_cd9f1a961ebb24": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1ba4e19f-5254-422f-8aff-552ce4dd5b60",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}

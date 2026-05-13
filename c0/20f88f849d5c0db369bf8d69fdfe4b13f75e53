@@ -1,0 +1,20 @@
+src/__tests__/App.desktop.test.tsx
+  s_cd9f1a961ebb24::t_2ac4903820bc46 1699-1701,1707
+  s_cd9f1a961ebb24::t_ed9e64c2f3c15c 1702-1706
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "c020f88f849d5c0db369bf8d69fdfe4b13f75e53",
+  "prompts": {},
+  "sessions": {
+    "s_cd9f1a961ebb24": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1ba4e19f-5254-422f-8aff-552ce4dd5b60",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}

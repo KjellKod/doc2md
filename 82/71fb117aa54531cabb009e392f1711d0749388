@@ -1,0 +1,31 @@
+vite.config.ts
+  s_cd9f1a961ebb24::t_bee93d1fa7d29e 2,73
+  s_cd9f1a961ebb24::t_dcb3fd2ae54b63 83
+vitest.setup.ts
+  s_cd9f1a961ebb24::t_79ee21da7ef2cc 1-23
+src/converters/office.ts
+  s_cd9f1a961ebb24::t_4c4d1a026e44bd 2,20-24
+src/__tests__/App.desktop.test.tsx
+  s_cd9f1a961ebb24::t_2ac4903820bc46 1699-1701,1703
+src/components/FindReplaceBar.tsx
+  s_cd9f1a961ebb24::t_1a7bd8da32871e 16-19
+src/converters/office.test.ts
+  s_cd9f1a961ebb24::t_13208375e1acf8 3,14-15,17
+  s_cd9f1a961ebb24::t_20c120b1bf2a3c 41-44,57-58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "8271fb117aa54531cabb009e392f1711d0749388",
+  "prompts": {},
+  "sessions": {
+    "s_cd9f1a961ebb24": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1ba4e19f-5254-422f-8aff-552ce4dd5b60",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
