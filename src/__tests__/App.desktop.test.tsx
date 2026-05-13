@@ -1221,7 +1221,12 @@ describe("App desktop bridge", () => {
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
 
     await waitFor(() => expect(getPersistenceSettings).toHaveBeenCalledTimes(2));
-    fireEvent.click(screen.getByRole("button", { name: "Show intro and return to landing" }));
+    // The "Show intro and return to landing" working-mode button (added by
+    // PR #122) is rendered async relative to getPersistenceSettings under
+    // React 19's batching, so wait for it rather than fetching synchronously.
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Show intro and return to landing" }),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Desktop settings" }));
     let settingsDialog = screen.getByRole("dialog", { name: "Desktop settings" });
     expect(within(settingsDialog).getByText("Opened.md")).toBeInTheDocument();
@@ -1239,7 +1244,9 @@ describe("App desktop bridge", () => {
       expectedMtimeMs: 10,
       lineEnding: "lf",
     });
-    fireEvent.click(screen.getByRole("button", { name: "Show intro and return to landing" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Show intro and return to landing" }),
+    );
     settingsDialog = screen.getByRole("dialog", { name: "Desktop settings" });
     expect(within(settingsDialog).getByText("Saved.md")).toBeInTheDocument();
 
