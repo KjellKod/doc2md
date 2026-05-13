@@ -74,6 +74,14 @@ interface SurfaceShape {
   trimmedText: string;
 }
 
+async function awaitActiveMark(page: Page) {
+  // The count text and the rehype plugin's <mark> can land in
+  // different commits — wait for the mark itself before snapshotting.
+  await expect(
+    page.locator(".markdown-rendered-find-highlight").first(),
+  ).toBeAttached();
+}
+
 async function captureSurfaceShape(page: Page): Promise<SurfaceShape> {
   return page.evaluate(() => {
     const surface = document.querySelector(
@@ -125,6 +133,7 @@ test("Symptom A: navigating matches in Preview does not shift visible text or du
   await findInput.fill("alpha");
   // Match Case is on by default; lowercase "alpha" finds 3 occurrences.
   await expect(page.locator(".find-replace-count")).toHaveText(/of 3/);
+  await awaitActiveMark(page);
 
   // Capture shape with the first match highlighted.
   const afterFirst = await captureSurfaceShape(page);
@@ -145,6 +154,7 @@ test("Symptom A: navigating matches in Preview does not shift visible text or du
   // Navigate to next match (REAL USER ACTION via the next-match button).
   await page.getByRole("button", { name: "Next match" }).click();
   await expect(page.locator(".find-replace-count")).toHaveText(/2 of 3/);
+  await awaitActiveMark(page);
   const afterNext = await captureSurfaceShape(page);
   expect(
     afterNext.trimmedText,
@@ -160,6 +170,7 @@ test("Symptom A: navigating matches in Preview does not shift visible text or du
   // Third match — across the _em_ span.
   await page.getByRole("button", { name: "Next match" }).click();
   await expect(page.locator(".find-replace-count")).toHaveText(/3 of 3/);
+  await awaitActiveMark(page);
   const afterThird = await captureSurfaceShape(page);
   expect(
     afterThird.trimmedText,
@@ -175,6 +186,7 @@ test("Symptom A: navigating matches in Preview does not shift visible text or du
   // Wrap around to match #1.
   await page.getByRole("button", { name: "Next match" }).click();
   await expect(page.locator(".find-replace-count")).toHaveText(/1 of 3/);
+  await awaitActiveMark(page);
   const afterWrap = await captureSurfaceShape(page);
   expect(afterWrap.trimmedText).toBe(baseline.trimmedText);
   expect(afterWrap.orphanMarkCount).toBe(1);
