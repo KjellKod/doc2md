@@ -35,9 +35,9 @@ Commercial boundary:
 | 5a. Mac PR CI Check | done | PR #83 | Add a no-secrets GitHub Actions workflow that runs `npm run build:desktop` + unsigned `xcodebuild build` + `swiftc -parse` + forbidden-API grep on every PR so Mac-only regressions cannot land silently. | Phase 5b |
 | 5b. Sparkle Plumbing | done | PR #84 | Add Sparkle 2 to the Xcode project, wire `SUFeedURL` / `SUPublicEDKey` in Info.plist, define the appcast XML schema, and verify offline + test-appcast update detection. No signing, no release automation. | Phase 5c |
 | 5c. Release CI, Signing, Notarization, DMG, Appcast Publish | done | PR #85 (`mac-release-ci_2026-04-25__0010`) | Tag-triggered macOS release workflow with a protected `mac-release` Environment: Developer ID signing, notarization, stapling, DMG, Sparkle ZIP + `sign_update`, appcast publish. The only phase that touches Apple or Sparkle secrets. | MVP ship |
-| 6. Editor and UI Refresh (cross-surface) | active | Phase 6a PR #86; Phase 6b PR #88 (`persistent-mode-switcher_2026-04-27__2355`); Phase 6c PR #87 (`save-control-ui_2026-04-27__1212`); Phase 6d PR #89 (`mac-find-replace_2026-04-28__0032`) | Hosted-web + Mac editor polish: app icon, persistent mode switcher, explicit save control, find/replace, accessibility audit, keyboard-shortcut help. Runs in parallel with Phase 5b+ because it does not touch the Mac shell contract. | MVP polish |
-| 7a. Desktop License Boundary | done | PR #103 (`dual-licensing-boundary_2026-05-01__2036`, `desktop-license-boundary_2026-05-03__0954`) | Keep `@doc2md/core`, hosted web, shared converters, and MIT-marked files MIT while making the Mac app and desktop-specific UI/bridge code source-visible shareware under `LicenseRef-doc2md-Desktop`. | Phase 7b |
-| 7b. Mac Commercial Distribution And License UX | active | `quest/phase-7b-distribution-decision`; [decision record](../docs/implementation/mac-commercial-distribution-decision-record.md); [issuer spec](../docs/implementation/mac-private-license-issuer-spec.md) | Use a direct-DMG-first commercial launch, document operational ownership, define the private issuer contract, and then add purchase/registration UX without changing the MIT web/npm surfaces or the evaluation-only shareware model. | Paid app launch |
+| 6. Editor and UI Refresh (cross-surface) | done (MVP scope) | Phase 6a PR #86; Phase 6b PR #88; Phase 6c PR #87; Phase 6d PR #89 | App icon, persistent mode switcher, explicit save control, find/replace all shipped. Phase 6e (shortcut cheatsheet) and 6f (accessibility audit) remain deferred until after paid-launch decisions per their YAGNI notes; not gating for MVP. | MVP polish |
+| 7a. Desktop License Boundary | done | PR #103 (`dual-licensing-boundary_2026-05-01__2036`, `desktop-license-boundary_2026-05-03__0954`); license storage/cadence fixes in PR #105; license/notice surfacing in PR #106; verifier in PR #110 | Keep `@doc2md/core`, hosted web, shared converters, and MIT-marked files MIT while making the Mac app and desktop-specific UI/bridge code source-visible shareware under `LicenseRef-doc2md-Desktop`. | Phase 7b |
+| 7b. Mac Commercial Distribution And License UX | **blocked: operational setup** | Decision record PR #108; private issuer spec PR #109; Mac verifier PR #110; [decision record](../docs/implementation/mac-commercial-distribution-decision-record.md); [issuer spec](../docs/implementation/mac-private-license-issuer-spec.md) | In-repo deliverables (decision record, private issuer spec, in-app verifier, license boundary) all shipped. Remaining work is **outside this repo**: human operational setup of Cloudflare Worker issuer, Lemon Squeezy merchant account, `doc2md.dev` DNS + support email, and explicit go-live approval. No further in-repo changes can land productive purchase/registration UX until that setup completes. | Paid app launch |
 
 ## Next Work Candidates
 
@@ -468,7 +468,25 @@ Remaining human validation:
 
 ## Phase 7b: Mac Commercial Distribution And License UX
 
-Goal:
+### Current status (2026-05-14): blocked on out-of-repo operational setup
+
+In-repo deliverables that have already shipped:
+
+- **Phase 7b decision record** — `docs/implementation/mac-commercial-distribution-decision-record.md` (PR #108).
+- **Private issuer spec** — `docs/implementation/mac-private-license-issuer-spec.md` (PR #109): public contract for the Cloudflare Worker issuer that stays in a private repo.
+- **In-app license verifier** — `apps/macos/doc2md/Licensing/` + License menu wiring (PR #110, with earlier storage/cadence fixes in PR #105 and license/notice surfacing in PR #106).
+- **License boundary** — `LicenseRef-doc2md-Desktop` separation (PR #103). See Phase 7a.
+
+What blocks paid-app launch (none of these are in-repo work):
+
+- Cloudflare Worker issuer deployed against the contract in `mac-private-license-issuer-spec.md`. Code lives in a private repo per the spec; nothing further in this public repo.
+- Lemon Squeezy merchant-of-record account created, products configured, webhook into the issuer wired.
+- `doc2md.dev` DNS pointed at the issuer's Worker, plus `support@doc2md.dev` (or chosen support alias) operational.
+- Maintainer go-live approval (tax/refund/customer-records ownership confirmed per the decision record).
+
+Until those land, in-repo work intentionally cannot ship purchase or registration UX: per the decision record, Mac-only purchase affordances must stay omitted or visibly unavailable until explicit commercial go-live approval.
+
+### Goal
 
 Keep the hosted web app and npm ecosystem MIT/free while giving the Mac app a clear purchase and registration path. The Official App remains evaluation-friendly, but routine or ongoing productive use after evaluation requires purchasing a license. The tone should be practical and respectful: no document lock-in, no data hostage behavior, no artificial conversion limits.
 
