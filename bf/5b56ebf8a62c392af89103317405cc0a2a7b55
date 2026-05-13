@@ -1,0 +1,39 @@
+src/App.tsx
+  s_3c494116950111::t_1b466b2cc39302 1015-1035
+  s_3c494116950111::t_10d54a486ef558 910-916
+src/desktop/DesktopApp.tsx
+  s_3c494116950111::t_3add656333d91d 1544-1550
+  s_3c494116950111::t_4f89f7a169553b 2431-2451
+src/components/WorkingModeBar.tsx
+  s_3c494116950111::t_5bdf93645af36a 147-149,152-156
+tests/e2e/working-mode-chrome.spec.ts
+  s_3c494116950111::t_b68727072f4a99 34,41,60
+  s_3c494116950111::t_a7338b76dc6233 75-91
+src/styles/global.css
+  s_3c494116950111::t_7be1756a695e52 193-233
+  s_3c494116950111::t_66cff61df7d681 358-360,365-387
+src/__tests__/App.desktop.test.tsx
+  s_3c494116950111::t_1790f505480f00 656,679,709,812,1224,1242
+  s_3c494116950111::t_e4f9cf0f2357b1 829-869
+src/components/WorkingModeBar.test.tsx
+  s_3c494116950111::t_b122dbf8d62b04 41-43,48-51
+src/App.test.tsx
+  s_3c494116950111::t_1790f505480f00 188,210,217,260
+  s_3c494116950111::t_3a1dcee3cc9652 282-307
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "bf5b56ebf8a62c392af89103317405cc0a2a7b55",
+  "prompts": {},
+  "sessions": {
+    "s_3c494116950111": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9c36ea7e-2a3b-47d8-954a-7a1b2d100d3c",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
