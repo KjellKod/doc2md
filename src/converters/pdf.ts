@@ -1338,9 +1338,17 @@ export const convertPdf: Converter = async (file) => {
     await ensureBrowserWorkerConfigured();
     const arrayBuffer = await readFileAsArrayBuffer(file);
 
+    // pdfjs-dist 5 enables several modern-API code paths (ImageDecoder,
+    // OffscreenCanvas, OS font discovery) that throw cryptic
+    // "undefined is not a function" errors in WKWebView's JavaScriptCore.
+    // We only consume text content, so disable every modern-capability
+    // option and stay on the conservative path the v4 default used to be.
     loadingTask = getDocument({
       data: new Uint8Array(arrayBuffer),
-      useSystemFonts: true,
+      useSystemFonts: false,
+      isOffscreenCanvasSupported: false,
+      isImageDecoderSupported: false,
+      disableFontFace: true,
       standardFontDataUrl: undefined,
     });
 
@@ -1422,9 +1430,24 @@ export const convertPdf: Converter = async (file) => {
       // eslint-disable-next-line no-console -- diagnostic for PDF.js failures
       console.warn("doc2md PDF conversion failed:", error);
     }
+    // Surface the underlying error in the user-visible warning so future
+    // pdfjs regressions are diagnosable from the UI without opening dev
+    // tools. The generic CORRUPT_FILE_MESSAGE stays as the primary message
+    // (existing tests rely on it as the corrupt-file signal) and the
+    // specific cause is appended in parentheses.
+    const errorName =
+      error instanceof Error ? error.name : typeof error;
+    const errorMessage =
+      error instanceof Error ? error.message : String(error);
+    const detail = `${errorName}: ${errorMessage}`.trim();
+    const diagnosticWarning =
+      detail && detail !== ": "
+        ? `${CORRUPT_FILE_MESSAGE} (PDF.js: ${detail})`
+        : CORRUPT_FILE_MESSAGE;
+
     return {
       markdown: "",
-      warnings: [CORRUPT_FILE_MESSAGE],
+      warnings: [diagnosticWarning],
       status: "error",
       quality: {
         level: "poor",
