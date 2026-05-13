@@ -3,6 +3,30 @@ import {
   OPS,
   getDocument
 } from "pdfjs-dist/legacy/build/pdf.mjs";
+// Statically import the worker module and expose it on globalThis so pdfjs 5
+// detects a main-thread handler at `globalThis.pdfjsWorker?.WorkerMessageHandler`
+// and skips its dynamic-import worker bootstrap. In WKWebView the
+// dynamic-import path fails ("TypeError: undefined is not a function") because
+// the custom doc2md:// URL scheme does not support module loading from a
+// worker context, and the fake-worker fallback then dynamically re-imports
+// the same broken URL. Pre-registering the worker module sidesteps both
+// failure modes — pdfjs runs the worker logic in the main thread.
+import * as pdfWorkerModule from "pdfjs-dist/legacy/build/pdf.worker.mjs";
+
+interface PdfWorkerGlobal {
+  pdfjsWorker?: { WorkerMessageHandler?: unknown };
+}
+
+const pdfWorkerGlobal = globalThis as PdfWorkerGlobal;
+if (
+  typeof pdfWorkerGlobal === "object" &&
+  pdfWorkerGlobal !== null &&
+  !pdfWorkerGlobal.pdfjsWorker
+) {
+  pdfWorkerGlobal.pdfjsWorker = pdfWorkerModule as {
+    WorkerMessageHandler?: unknown;
+  };
+}
 import type {
   TextItem,
   TextMarkedContent
