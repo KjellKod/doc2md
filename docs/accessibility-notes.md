@@ -60,6 +60,27 @@ find/replace bar, save controls, or the upload/working-mode chrome.
 - Scratch drafts (`Start writing`) do NOT trigger auto-collapse — the
   upload panel stays visible when the user has not actually opened a file.
 
+## Working-mode bar and desktop Recent menu
+
+- The working-mode logo is a real button with visible `doc2md` text and
+  `aria-label="Home"`. It returns to Landing chrome without clearing entries
+  or resetting the one-shot auto-collapse guard.
+- Browser working mode exposes plain Open and New buttons. Browser-side
+  Recent files remain deferred.
+- Desktop working mode exposes Recent files from the Open button only when
+  `recentFiles.length > 0`. In that state, Open has `aria-haspopup="menu"`,
+  `aria-expanded`, and `aria-controls`; with no recents it is a plain Open
+  button with none of those menu attributes.
+- The Recent panel uses `role="menu"` and `role="menuitem"` children. The first
+  item is `Browse...`; the remaining items are recent file paths from desktop
+  persistence.
+- Opening the Recent menu moves focus to `Browse...`. Tab and Shift+Tab wrap
+  within the menu, Arrow Up/Down moves between items, Enter/Space activates the
+  focused item, and Escape closes the menu and returns focus to Open.
+- Clicking outside the Recent menu dismisses it. The settings-popover Recent
+  list remains display-only; actionable Recent opens live in the working-mode
+  Open popover.
+
 ## Before-unload guard
 
 - The `beforeunload` listener is only installed while at least one entry has

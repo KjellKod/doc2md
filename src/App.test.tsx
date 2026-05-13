@@ -32,19 +32,23 @@ function createFile(name: string) {
   return new File(["content"], name, { type: "text/plain" });
 }
 
+function changeFileInput(input: HTMLInputElement, files: File[]) {
+  Object.defineProperty(input, "files", {
+    configurable: true,
+    value: files,
+  });
+  fireEvent.change(input);
+}
+
 async function uploadConvertedFiles(container: HTMLElement, names: string[]) {
   convertFileMock.mockImplementation((file: File) =>
     Promise.resolve(createSuccessResult(`# ${file.name.replace(/\.[^.]+$/u, "")}`)),
   );
 
-  const input = container.querySelector('input[type="file"]');
+  const input = container.querySelector<HTMLInputElement>('input[type="file"]');
   expect(input).not.toBeNull();
 
-  fireEvent.change(input!, {
-    target: {
-      files: names.map(createFile),
-    },
-  });
+  changeFileInput(input!, names.map(createFile));
 
   // The sidebar auto-collapses on the first non-scratch file open
   // (working-mode polish). Re-expand it so the rest of the test can
@@ -172,6 +176,106 @@ describe("App", () => {
 
     expect(
       screen.getByRole("heading", { name: "Planning Notes" }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows working-mode chrome for a hosted non-scratch entry", async () => {
+    const { container } = render(<App />);
+
+    await uploadConvertedFiles(container, ["alpha.txt"]);
+
+    expect(container.querySelector(".page")).toHaveClass("is-working-mode");
+    expect(screen.getByRole("button", { name: "Home" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", {
+        name: "Edit or convert to Markdown, without leaving the browser.",
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps scratch entries on landing chrome", async () => {
+    const { container } = render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Start writing" }));
+
+    expect(
+      await screen.findByRole("button", { name: /untitled\.md/i }),
+    ).toBeInTheDocument();
+    expect(container.querySelector(".page")).not.toHaveClass("is-working-mode");
+    expect(
+      screen.getByRole("heading", {
+        name: "Edit or convert to Markdown, without leaving the browser.",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Home" })).not.toBeInTheDocument();
+  });
+
+  it("returns Home without clearing entries and re-enters working mode on another hosted file", async () => {
+    const { container } = render(<App />);
+
+    await uploadConvertedFiles(container, ["alpha.txt"]);
+    fireEvent.click(screen.getByRole("button", { name: "Home" }));
+
+    expect(container.querySelector(".page")).not.toHaveClass("is-working-mode");
+    expect(screen.getByRole("button", { name: "Open alpha.txt" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: "Edit or convert to Markdown, without leaving the browser.",
+      }),
+    ).toBeInTheDocument();
+
+    const liftedInput = container.querySelectorAll<HTMLInputElement>(
+      'input[type="file"]',
+    )[0];
+    convertFileMock.mockResolvedValueOnce(createSuccessResult("# Beta"));
+    await act(async () => {
+      changeFileInput(liftedInput, [createFile("beta.txt")]);
+      await Promise.resolve();
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Open beta.txt" }));
+    await screen.findByRole("heading", { name: "Beta" });
+    expect(container.querySelector(".page")).toHaveClass("is-working-mode");
+    await ensureSidebarVisible();
+    expect(screen.getByRole("button", { name: "Open alpha.txt" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open beta.txt" })).toBeInTheDocument();
+  });
+
+  it("keeps the upload panel expanded after a Home roundtrip and second hosted open", async () => {
+    convertFileMock.mockImplementation((file: File) =>
+      Promise.resolve(createSuccessResult(`# ${file.name.replace(/\.[^.]+$/u, "")}`)),
+    );
+    const { container } = render(<App />);
+    let liftedInput = container.querySelectorAll<HTMLInputElement>(
+      'input[type="file"]',
+    )[0];
+
+    changeFileInput(liftedInput, [createFile("alpha.txt")]);
+
+    await screen.findByRole("heading", { name: "alpha" });
+    expect(
+      screen.getByRole("button", { name: "Show upload panel" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Home" }));
+    fireEvent.click(screen.getByRole("button", { name: "Show upload panel" }));
+    expect(
+      screen.getByRole("button", { name: "Hide upload panel" }),
+    ).toBeInTheDocument();
+
+    liftedInput = container.querySelectorAll<HTMLInputElement>(
+      'input[type="file"]',
+    )[0];
+    await act(async () => {
+      changeFileInput(liftedInput, [createFile("beta.txt")]);
+      await Promise.resolve();
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Open beta.txt" }));
+    await screen.findByRole("heading", { name: "beta" });
+    expect(container.querySelector(".page")).toHaveClass("is-working-mode");
+    expect(
+      screen.getByRole("button", { name: "Hide upload panel" }),
     ).toBeInTheDocument();
   });
 

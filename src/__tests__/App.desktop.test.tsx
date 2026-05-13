@@ -636,6 +636,196 @@ describe("App desktop bridge", () => {
     cleanupShell();
   });
 
+  it("shows desktop working-mode chrome for a non-scratch entry", async () => {
+    const cleanupShell = installMockShell({
+      openFile: vi.fn(async () => ({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Alpha.md",
+        content: "# Alpha",
+        mtimeMs: 10,
+        lineEnding: "lf" as const,
+      })),
+    });
+    const { container } = render(<DesktopApp />);
+
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+
+    await screen.findByRole("heading", { name: "Alpha" });
+    expect(container.querySelector(".page")).toHaveClass("is-working-mode");
+    expect(screen.getByRole("button", { name: "Home" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", {
+        name: "Edit or convert to Markdown, without leaving the browser.",
+      }),
+    ).not.toBeInTheDocument();
+
+    cleanupShell();
+  });
+
+  it("keeps desktop scratch entries on landing chrome", async () => {
+    const cleanupShell = installMockShell();
+    const { container } = render(<DesktopApp />);
+
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
+
+    expect(await awaitOpenButton(/untitled\.md/i)).toBeInTheDocument();
+    expect(container.querySelector(".page")).not.toHaveClass("is-working-mode");
+    expect(
+      screen.getByRole("heading", {
+        name: "Edit or convert to Markdown, without leaving the browser.",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Home" })).not.toBeInTheDocument();
+
+    cleanupShell();
+  });
+
+  it("returns Home without clearing desktop entries and re-enters working mode on another open", async () => {
+    const openFile = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Alpha.md",
+        content: "# Alpha",
+        mtimeMs: 10,
+        lineEnding: "lf" as const,
+      })
+      .mockResolvedValueOnce({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Beta.md",
+        content: "# Beta",
+        mtimeMs: 20,
+        lineEnding: "lf" as const,
+      });
+    const cleanupShell = installMockShell({ openFile });
+    const { container } = render(<DesktopApp />);
+
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await screen.findByRole("heading", { name: "Alpha" });
+    ensureSidebarVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Home" }));
+
+    expect(container.querySelector(".page")).not.toHaveClass("is-working-mode");
+    expect(screen.getByRole("button", { name: "Open Alpha.md" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: "Edit or convert to Markdown, without leaving the browser.",
+      }),
+    ).toBeInTheDocument();
+
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+
+    await screen.findByRole("heading", { name: "Beta" });
+    expect(container.querySelector(".page")).toHaveClass("is-working-mode");
+    ensureSidebarVisible();
+    expect(screen.getByRole("button", { name: "Open Alpha.md" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open Beta.md" })).toBeInTheDocument();
+
+    cleanupShell();
+  });
+
+  it("opens desktop Recent files from the working-mode Open popover", async () => {
+    const openFile = vi.fn(async (args?: { path?: string }) => {
+      if (args?.path) {
+        return {
+          ok: true as const,
+          kind: "markdown" as const,
+          path: args.path,
+          content: "# Recent",
+          mtimeMs: 20,
+          lineEnding: "lf" as const,
+        };
+      }
+
+      return {
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Alpha.md",
+        content: "# Alpha",
+        mtimeMs: 10,
+        lineEnding: "lf" as const,
+      };
+    });
+    const cleanupShell = installMockShell({
+      openFile,
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: true,
+        recentFiles: [
+          {
+            path: "/Users/me/Recent.md",
+            displayName: "Recent.md",
+            lastOpenedAt: "2026-05-12T22:11:00.000Z",
+          },
+        ],
+      })),
+    });
+
+    render(<DesktopApp />);
+    await screen.findByRole("button", { name: "Desktop settings" });
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await screen.findByRole("heading", { name: "Alpha" });
+
+    const open = screen.getByRole("button", { name: "Open" });
+    fireEvent.click(open);
+    expect(open).toHaveAttribute("aria-haspopup", "menu");
+    expect(open).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(screen.getByRole("menuitem", { name: /Recent\.md/ }));
+
+    await screen.findByRole("heading", { name: "Recent" });
+    expect(openFile).toHaveBeenLastCalledWith({ path: "/Users/me/Recent.md" });
+
+    cleanupShell();
+  });
+
+  it("keeps the desktop upload panel expanded after a Home roundtrip and second open", async () => {
+    const openFile = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Alpha.md",
+        content: "# Alpha",
+        mtimeMs: 10,
+        lineEnding: "lf" as const,
+      })
+      .mockResolvedValueOnce({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Beta.md",
+        content: "# Beta",
+        mtimeMs: 20,
+        lineEnding: "lf" as const,
+      });
+    const cleanupShell = installMockShell({ openFile });
+    const { container } = render(<DesktopApp />);
+
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await screen.findByRole("heading", { name: "Alpha" });
+    expect(
+      screen.getByRole("button", { name: "Show upload panel" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Home" }));
+    fireEvent.click(screen.getByRole("button", { name: "Show upload panel" }));
+    expect(
+      screen.getByRole("button", { name: "Hide upload panel" }),
+    ).toBeInTheDocument();
+
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+
+    await screen.findByRole("heading", { name: "Beta" });
+    expect(container.querySelector(".page")).toHaveClass("is-working-mode");
+    expect(
+      screen.getByRole("button", { name: "Hide upload panel" }),
+    ).toBeInTheDocument();
+
+    cleanupShell();
+  });
+
   it("creates separate uniquely named drafts on repeated native New", async () => {
     const cleanupShell = installMockShell();
 
@@ -990,6 +1180,7 @@ describe("App desktop bridge", () => {
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
 
     await waitFor(() => expect(getPersistenceSettings).toHaveBeenCalledTimes(2));
+    fireEvent.click(screen.getByRole("button", { name: "Home" }));
     fireEvent.click(screen.getByRole("button", { name: "Desktop settings" }));
     let settingsDialog = screen.getByRole("dialog", { name: "Desktop settings" });
     expect(within(settingsDialog).getByText("Opened.md")).toBeInTheDocument();
@@ -1007,6 +1198,7 @@ describe("App desktop bridge", () => {
       expectedMtimeMs: 10,
       lineEnding: "lf",
     });
+    fireEvent.click(screen.getByRole("button", { name: "Home" }));
     settingsDialog = screen.getByRole("dialog", { name: "Desktop settings" });
     expect(within(settingsDialog).getByText("Saved.md")).toBeInTheDocument();
 
