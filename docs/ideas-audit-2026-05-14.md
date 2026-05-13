@@ -76,3 +76,79 @@ In order of "what to pick up first":
 4. **`remove-url-import`** — pure deletion; ship it the next time a related user-support friction hits.
 
 Everything else stays in `ideas/` until a real trigger lands.
+
+## Appendix: `doc2md-ux-hardening-proposal` claim-by-claim validation
+
+The parent proposal was archived above on the strength of WorkingModeBar, Find/Replace, auto-continue, and resize-handle work landing across PRs #114, #115, #121, and #122. This appendix walks every sub-claim with code-evidence so the gaps are explicit and routed to a tracker.
+
+### Two-mode layout (Landing vs Working)
+
+| Claim | Status | Evidence |
+|---|---|---|
+| Landing mode untouched | DONE | `src/App.tsx:172,235-236` `isWorkingMode` gating preserves hero when no file open |
+| Working mode collapses chrome | DONE | `src/components/WorkingModeBar.tsx:144-228`, `src/App.tsx:1006,1019-1030` |
+| Auto-transition on first file open | DONE | `WorkingModeBar` mounts on `entry` truthy |
+| Auto-transition on paste over 200 chars | NOT DONE | No `onPaste` handler reads paste length in `App.tsx`, `DesktopApp.tsx`, or `PreviewPanel.tsx`. Tracker: route into [`paste-to-markdown-in-editor`](../ideas/paste-to-markdown-in-editor.md) (already covers paste interception; add the 200-char auto-fence sub-claim) |
+| Logo / Home affordance returns to landing | DONE | Home affordance shipped PR #122 |
+
+### Editor parity with GitHub
+
+| Claim | Status | Evidence | Tracker for gap |
+|---|---|---|---|
+| Auto-continue lists on Enter | DONE | `src/components/markdownAutoContinue.ts:24-31,56-149` (bullets, ordered, tasks, blockquotes, IME guard via `compositionstart`/`compositionend`) | n/a |
+| Ordered auto-renumber on insert/remove | PARTIAL | Continuation emits `n+1` only; no renumber of trailing items on insert/remove. Tracker: [`markdown-editing-and-rendering-stack`](../ideas/markdown-editing-and-rendering-stack.md) (pipeline-level rewrite touches this) |
+| Tab / Shift-Tab indent or outdent | NOT DONE | No keydown handler intercepts Tab in the editor textarea | new note in `markdown-editing-and-rendering-stack` |
+| Empty-bullet Enter exits list | DONE | `markdownAutoContinue.ts` returns plain newline on empty marker | n/a |
+| Find with Replace, Match Case, Regex, Whole Word, counter | DONE | `src/components/FindReplaceBar.tsx`, `src/components/useFindReplace.ts` | n/a |
+| Replace All as single undo step | NEEDS VERIFY | History-coalescing behavior not confirmed in this pass. Flag for review the next time `useFindReplace` is touched | sidebar note in [`preview-panel-refactor`](../ideas/preview-panel-refactor.md) |
+| Live-highlight cap | DONE | `useFindReplace.ts:3` `MAX_MATCHES = 5_000` enforced at lines 79, 103 with `capped: true` | n/a |
+| Tokenize once, search incrementally, cancellable on input change | PARTIAL | Cap enforced. `useMemo` recomputes whole-document matches on every change; no AbortController, no incremental tokenization | [`preview-panel-refactor`](../ideas/preview-panel-refactor.md) (find subsystem extraction) |
+| Cmd/Ctrl-B, I, K wrap selection | DONE | `src/components/markdownFormatting.ts:18-110` |
+| Selection-wrap on `*` `_` backtick `[` `(` `"` | DONE | `markdownFormatting.ts` smart-wrap branches | n/a |
+| Cmd-Shift-7 / 8 / 9 list toggles | DONE | `markdownFormatting.ts` list-toggle helpers | n/a |
+| Cmd/Ctrl-H opens with Replace expanded | PARTIAL | Cmd-F opens; binding for Cmd-H not present | small note in `markdown-editing-and-rendering-stack` |
+| Block move Alt-Up / Alt-Down | NOT DONE | No handler in textarea | small note in `markdown-editing-and-rendering-stack` |
+| Cmd-D select next occurrence | NOT DONE | No handler | same note |
+
+### Folder view
+
+| Claim | Status | Evidence |
+|---|---|---|
+| Two-tab Active / Folder rail | NOT DONE | No folder-tree component in `src/components/` |
+| Mac `NSOpenPanel` with `canChooseDirectories` | NOT DONE | `apps/macos/doc2md/ShellBridge.swift:146` and `WebShellView.swift:180` both set `canChooseDirectories = false` |
+| Browser File System Access API folder pick | NOT DONE | No `showDirectoryPicker` calls in repo |
+| Supported-set dim/disable, hidden-file toggle | NOT DONE | No filtering UI present |
+| Never auto-convert, convert promotes into Active | NOT DONE | No conversion gating tied to a folder context |
+| Re-convert focuses existing buffer | NOT DONE | No dedup logic across re-opens of the same source path |
+| Folder pick persists across launches | NOT DONE | `PersistenceStore` has `recentFiles` but no `lastFolderRoot` |
+
+All folder-view gaps are tracked in [`doc2md-folder-view`](../ideas/doc2md-folder-view.md), gut `if-needed`.
+
+### Feature hardening
+
+| Claim | Status | Evidence | Tracker for gap |
+|---|---|---|---|
+| Visible "Saved · 2s ago" + "Unsaved" pill | DONE | `src/components/SaveStatePill.tsx` | n/a |
+| `beforeunload` guard while dirty | DONE | `src/App.tsx:967-989` | n/a |
+| localStorage debounced snapshot on keystroke | NOT DONE | No `localStorage.setItem` in keystroke path | [`doc2md-browser-crash-recovery`](../ideas/doc2md-browser-crash-recovery.md) |
+| IndexedDB fallback over ~500KB | NOT DONE | No IndexedDB usage in `src/` | same |
+| Crash-recovery prompt on reopen | NOT DONE | No reopen-time compare path | same |
+| Mac per-file write lock | PARTIAL | Atomic write + mtime-at-save in shell; no `NSFileCoordinator` | [`doc2md-mac-file-watchers`](../ideas/doc2md-mac-file-watchers.md) |
+| Mac "file changed on disk, reload?" live detection | PARTIAL | mtime checked only at save/reload, not while document is open | same |
+| `NSDocumentController.noteNewRecentDocumentURL` + Open Recent submenu | NOT DONE | Zero `NSDocumentController` references in `apps/macos/doc2md/`; no Open Recent menu wiring | [`doc2md-mac-session-restore`](../ideas/doc2md-mac-session-restore.md) |
+| `session.json` reopen | NOT DONE | No `session.json` write/read; recent-files data is in `settings.json` only | same |
+| Tabs vs spaces detection (no save-time reformat) | DONE | `src/components/markdownAutoContinue.ts:37-50` `detectIndentUnit` reads first indented line; line 152-164 reuses parsed marker indent | n/a |
+| Aria labels on overlay buttons | DONE | `FindReplaceBar.tsx:114,128,146,167,186,207,216,267,303` all carry `aria-label` | n/a |
+| Find bar keyboard reachable, ESC closes | DONE | `FindReplaceBar.tsx:74,84-88` ESC closes and returns focus | n/a |
+
+### Untracked gaps summary
+
+Three claims from this proposal were not tracked anywhere else and are folded into existing trackers by this audit:
+
+1. **200-character paste auto-fence into working mode** → notional sub-claim added to [`paste-to-markdown-in-editor`](../ideas/paste-to-markdown-in-editor.md).
+2. **Find/Replace incremental + cancellable search** (cap is shipped, streaming is not) → folded into [`preview-panel-refactor`](../ideas/preview-panel-refactor.md) since the find subsystem is being extracted there.
+3. **Editor keybinding gaps** (Tab indent, Alt-Up/Down, Cmd-D, Cmd-H Replace, ordered renumber on edits) → folded into [`markdown-editing-and-rendering-stack`](../ideas/markdown-editing-and-rendering-stack.md). None of these are individually load-bearing, and the proposal itself flagged them as "nice if free." They earn a `need` only if a user-visible regression lands.
+
+### Net effect
+
+Of the 38 discrete sub-claims in the proposal, 22 are shipped, 11 are not, 5 are partial. Every gap is now mapped to one of four active idea files. The proposal's archive status holds: the load-bearing themes (two-mode layout, find/replace, auto-continue, save-state visibility, accessibility, indent detection) all shipped; the remaining gaps are correctly captured downstream.

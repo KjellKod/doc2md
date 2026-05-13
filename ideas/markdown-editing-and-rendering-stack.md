@@ -210,6 +210,18 @@ Manual verification:
 5. add shared styling for the markdown container, including `hr`
 6. add validation and tests
 
+## Editor keybinding gaps absorbed from the archived UX hardening proposal
+
+From the `doc2md-ux-hardening-proposal` archive validation (see `docs/ideas-audit-2026-05-14.md` appendix), these editor-surface gaps remain unimplemented. None individually justify a quest; bundle them whenever the editor surface is touched (especially during `[[doc2md-editor-engine-evaluation]]` execution).
+
+- **Tab and Shift-Tab indent or outdent** for the current item or selection. Currently the textarea passes Tab through to the browser focus chain.
+- **Alt-Up / Alt-Down** block move for the current line or selected block.
+- **Cmd-D** select next occurrence. Together with Alt-arrows these are the muscle-memory bindings users carry from GitHub, VS Code, and Notion.
+- **Cmd/Ctrl-H** opens Find/Replace with the Replace pane expanded. Today only Cmd/Ctrl-F is bound.
+- **Ordered list renumber on insert or remove**. `markdownAutoContinue.ts` emits `n+1` correctly on Enter, but does not renumber trailing items when a middle item is inserted or removed, which makes ordered lists drift after editing.
+
+Trigger to elevate any of these from "if-needed" to "need": a user-visible regression where the absence of the binding caused real friction. Skip until then.
+
 ## Why This Matters
 
 This is not just “support horizontal rules.” It is a content trust problem:

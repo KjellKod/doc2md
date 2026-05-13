@@ -93,6 +93,15 @@ Not blocking. Schedule after the four targeted bug-fix branches in
 `useFindHighlight` split first because it removes the DOM-mutation
 contamination that has produced three of the four recent bugs.
 
+## Adjacent gaps the find subsystem extraction should fix
+
+From the `doc2md-ux-hardening-proposal` archive validation (see `docs/ideas-audit-2026-05-14.md` appendix), two sub-claims that live inside `useFindReplace` should be addressed by this refactor:
+
+- **Incremental, cancellable search**. Current code recomputes whole-document matches via `useMemo` on every `[source, query, options]` change with no AbortController and no streaming. The 5,000-match cap is enforced, but a long query against a long document still does the work synchronously. The find-subsystem split should introduce cancellation on input change and chunked tokenization.
+- **Replace All as a single undo step**. The proposal called this non-negotiable; current history-coalescing behavior is unverified. Confirm or add coalescing when extracting the replace path.
+
+These are not blocking. They tag along with the seam the refactor already opens.
+
 ## Out of scope
 
 - Rewriting in another language. The bugs are not language-caused. See
