@@ -144,10 +144,16 @@ export default function WorkingModeBar({
       <button
         type="button"
         className="working-mode-logo"
-        aria-label="Home"
+        aria-label="Show intro and return to landing"
+        aria-pressed={true}
+        title="Show intro and return to landing"
         onClick={handleHome}
       >
-        <span className="working-mode-wordmark">doc2md</span>
+        <span className="working-mode-wordmark">
+          <span className="working-mode-brand">doc2md</span>
+          <span className="working-mode-wordmark-sep" aria-hidden="true"> - </span>
+          <span className="working-mode-tagline">PRIVATE MARKDOWN WORKSPACE</span>
+        </span>
       </button>
 
       <div className="working-mode-actions">

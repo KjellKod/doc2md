@@ -653,7 +653,7 @@ describe("App desktop bridge", () => {
 
     await screen.findByRole("heading", { name: "Alpha" });
     expect(container.querySelector(".page")).toHaveClass("is-working-mode");
-    expect(screen.getByRole("button", { name: "Home" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Show intro and return to landing" })).toBeInTheDocument();
     expect(
       screen.queryByRole("heading", {
         name: "Edit or convert to Markdown, without leaving the browser.",
@@ -676,7 +676,7 @@ describe("App desktop bridge", () => {
         name: "Edit or convert to Markdown, without leaving the browser.",
       }),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Home" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Show intro and return to landing" })).not.toBeInTheDocument();
 
     cleanupShell();
   });
@@ -706,7 +706,7 @@ describe("App desktop bridge", () => {
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
     await screen.findByRole("heading", { name: "Alpha" });
     ensureSidebarVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Home" }));
+    fireEvent.click(screen.getByRole("button", { name: "Show intro and return to landing" }));
 
     expect(container.querySelector(".page")).not.toHaveClass("is-working-mode");
     expect(screen.getByRole("button", { name: "Open Alpha.md" })).toBeInTheDocument();
@@ -809,7 +809,7 @@ describe("App desktop bridge", () => {
       screen.getByRole("button", { name: "Show upload panel" }),
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Home" }));
+    fireEvent.click(screen.getByRole("button", { name: "Show intro and return to landing" }));
     fireEvent.click(screen.getByRole("button", { name: "Show upload panel" }));
     expect(
       screen.getByRole("button", { name: "Hide upload panel" }),
@@ -822,6 +822,47 @@ describe("App desktop bridge", () => {
     expect(
       screen.getByRole("button", { name: "Hide upload panel" }),
     ).toBeInTheDocument();
+
+    cleanupShell();
+  });
+
+  it("eyebrow toggle collapses landing back into working mode when an entry exists", async () => {
+    const openFile = vi.fn().mockResolvedValueOnce({
+      ok: true as const,
+      kind: "markdown" as const,
+      path: "/Users/me/Alpha.md",
+      content: "# Alpha",
+      mtimeMs: 10,
+      lineEnding: "lf" as const,
+    });
+    const cleanupShell = installMockShell({ openFile });
+    const { container } = render(<DesktopApp />);
+
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await screen.findByRole("heading", { name: "Alpha" });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Show intro and return to landing" }),
+    );
+    expect(container.querySelector(".page")).not.toHaveClass("is-working-mode");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Hide intro and return to editor" }),
+    );
+
+    expect(container.querySelector(".page")).toHaveClass("is-working-mode");
+
+    cleanupShell();
+  });
+
+  it("eyebrow toggle is a no-op on landing when no non-scratch entry exists", () => {
+    const cleanupShell = installMockShell();
+    const { container } = render(<DesktopApp />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "doc2md, private markdown workspace" }),
+    );
+
+    expect(container.querySelector(".page")).not.toHaveClass("is-working-mode");
 
     cleanupShell();
   });
@@ -1180,7 +1221,7 @@ describe("App desktop bridge", () => {
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
 
     await waitFor(() => expect(getPersistenceSettings).toHaveBeenCalledTimes(2));
-    fireEvent.click(screen.getByRole("button", { name: "Home" }));
+    fireEvent.click(screen.getByRole("button", { name: "Show intro and return to landing" }));
     fireEvent.click(screen.getByRole("button", { name: "Desktop settings" }));
     let settingsDialog = screen.getByRole("dialog", { name: "Desktop settings" });
     expect(within(settingsDialog).getByText("Opened.md")).toBeInTheDocument();
@@ -1198,7 +1239,7 @@ describe("App desktop bridge", () => {
       expectedMtimeMs: 10,
       lineEnding: "lf",
     });
-    fireEvent.click(screen.getByRole("button", { name: "Home" }));
+    fireEvent.click(screen.getByRole("button", { name: "Show intro and return to landing" }));
     settingsDialog = screen.getByRole("dialog", { name: "Desktop settings" });
     expect(within(settingsDialog).getByText("Saved.md")).toBeInTheDocument();
 

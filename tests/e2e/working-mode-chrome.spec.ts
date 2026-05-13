@@ -31,14 +31,14 @@ test("working-mode bar replaces hero on non-scratch entry select", async ({
 
   await expect(page.locator(".working-mode-bar")).toBeVisible();
   await expect(page.locator(".hero h1")).not.toBeVisible();
-  await expect(page.getByRole("button", { name: "Home" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Show intro and return to landing" })).toBeVisible();
 });
 
 test("logo returns to landing and entries persist", async ({ page }) => {
   await openHostedApp(page);
   await uploadViaLandingBrowse(page, "alpha.md", "# Alpha");
 
-  await page.getByRole("button", { name: "Home" }).click();
+  await page.getByRole("button", { name: "Show intro and return to landing" }).click();
 
   await expect(page.locator(".hero h1")).toBeVisible();
   await expect(
@@ -57,7 +57,7 @@ test("home roundtrip does not re-fire first auto-collapse", async ({ page }) => 
     page.getByRole("button", { name: "Show upload panel" }),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "Home" }).click();
+  await page.getByRole("button", { name: "Show intro and return to landing" }).click();
   await page.getByRole("button", { name: "Show upload panel" }).click();
   await expect(
     page.getByRole("button", { name: "Hide upload panel" }),
@@ -70,6 +70,23 @@ test("home roundtrip does not re-fire first auto-collapse", async ({ page }) => 
   await expect(
     page.getByRole("button", { name: "Hide upload panel" }),
   ).toBeVisible();
+});
+
+test("eyebrow toggle collapses landing when an entry is available", async ({ page }) => {
+  await openHostedApp(page);
+  await uploadViaLandingBrowse(page, "alpha.md", "# Alpha");
+
+  await page
+    .getByRole("button", { name: "Show intro and return to landing" })
+    .click();
+  await expect(page.locator(".hero h1")).toBeVisible();
+
+  await page
+    .getByRole("button", { name: "Hide intro and return to editor" })
+    .click();
+
+  await expect(page.locator(".working-mode-bar")).toBeVisible();
+  await expect(page.locator(".hero h1")).not.toBeVisible();
 });
 
 test("scratch creation does not trigger working-mode chrome", async ({ page }) => {

@@ -38,9 +38,17 @@ describe("WorkingModeBar", () => {
   it("calls onHome from the logo", () => {
     const { onHome } = renderBar();
 
-    fireEvent.click(screen.getByRole("button", { name: "Home" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Show intro and return to landing" }),
+    );
 
     expect(onHome).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders the full wordmark tagline", () => {
+    renderBar();
+    expect(screen.getByText("doc2md")).toBeInTheDocument();
+    expect(screen.getByText("PRIVATE MARKDOWN WORKSPACE")).toBeInTheDocument();
   });
 
   it("opens desktop recent menu with aria-expanded", () => {

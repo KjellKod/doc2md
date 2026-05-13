@@ -190,6 +190,47 @@ a {
   text-transform: uppercase;
 }
 
+button.eyebrow.eyebrow-toggle {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: background-color 150ms ease;
+}
+
+.eyebrow-toggle:hover,
+.eyebrow-toggle:focus-visible {
+  background: rgba(23, 56, 76, 0.08);
+}
+
+.eyebrow-toggle[aria-disabled="true"] {
+  cursor: default;
+}
+
+.eyebrow-toggle[aria-disabled="true"]:hover,
+.eyebrow-toggle[aria-disabled="true"]:focus-visible {
+  background: transparent;
+}
+
+.eyebrow-brand {
+  font-weight: 800;
+}
+
+.eyebrow-sep {
+  margin: 0 0.4em;
+  opacity: 0.55;
+}
+
 .hero h1 {
   margin: 0;
   max-width: 30ch;
@@ -314,8 +355,36 @@ a {
 }
 
 .working-mode-wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0;
   font-size: 1.04rem;
   letter-spacing: 0;
+}
+
+.working-mode-brand {
+  font-weight: 800;
+}
+
+.working-mode-wordmark-sep {
+  margin: 0 0.4em;
+  color: var(--text-secondary);
+  opacity: 0.65;
+}
+
+.working-mode-tagline {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 720px) {
+  .working-mode-wordmark-sep,
+  .working-mode-tagline {
+    display: none;
+  }
 }
 
 .working-mode-actions {

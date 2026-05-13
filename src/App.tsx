@@ -907,6 +907,13 @@ function AppContent() {
     setActivePage("convert");
   }, []);
 
+  const handleCollapseFromHero = useCallback(() => {
+    if (!hasWorkingEntry) {
+      return;
+    }
+    setShowLandingChrome(false);
+  }, [hasWorkingEntry]);
+
   const handleBrowserOpenRequest = useCallback(() => {
     browserFileInputRef.current?.click();
   }, []);
@@ -1005,7 +1012,27 @@ function AppContent() {
             {...landingChromeInertProps}
           >
             <div className="hero-top">
-              <p className="eyebrow">Private markdown workspace</p>
+              <button
+                type="button"
+                className="eyebrow eyebrow-toggle"
+                aria-label={
+                  hasWorkingEntry
+                    ? "Hide intro and return to editor"
+                    : "doc2md, private markdown workspace"
+                }
+                aria-pressed={isWorkingMode}
+                aria-disabled={!hasWorkingEntry}
+                onClick={handleCollapseFromHero}
+                title={
+                  hasWorkingEntry
+                    ? "Hide intro and return to editor"
+                    : undefined
+                }
+              >
+                <span className="eyebrow-brand">doc2md</span>
+                <span className="eyebrow-sep" aria-hidden="true"> - </span>
+                <span className="eyebrow-tagline">PRIVATE MARKDOWN WORKSPACE</span>
+              </button>
               <div className="hero-actions">
                 <ThemeToggle />
               </div>

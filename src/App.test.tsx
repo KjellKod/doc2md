@@ -185,7 +185,7 @@ describe("App", () => {
     await uploadConvertedFiles(container, ["alpha.txt"]);
 
     expect(container.querySelector(".page")).toHaveClass("is-working-mode");
-    expect(screen.getByRole("button", { name: "Home" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Show intro and return to landing" })).toBeInTheDocument();
     expect(
       screen.queryByRole("heading", {
         name: "Edit or convert to Markdown, without leaving the browser.",
@@ -207,14 +207,14 @@ describe("App", () => {
         name: "Edit or convert to Markdown, without leaving the browser.",
       }),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Home" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Show intro and return to landing" })).not.toBeInTheDocument();
   });
 
   it("returns Home without clearing entries and re-enters working mode on another hosted file", async () => {
     const { container } = render(<App />);
 
     await uploadConvertedFiles(container, ["alpha.txt"]);
-    fireEvent.click(screen.getByRole("button", { name: "Home" }));
+    fireEvent.click(screen.getByRole("button", { name: "Show intro and return to landing" }));
 
     expect(container.querySelector(".page")).not.toHaveClass("is-working-mode");
     expect(screen.getByRole("button", { name: "Open alpha.txt" })).toBeInTheDocument();
@@ -257,7 +257,7 @@ describe("App", () => {
       screen.getByRole("button", { name: "Show upload panel" }),
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Home" }));
+    fireEvent.click(screen.getByRole("button", { name: "Show intro and return to landing" }));
     fireEvent.click(screen.getByRole("button", { name: "Show upload panel" }));
     expect(
       screen.getByRole("button", { name: "Hide upload panel" }),
@@ -277,6 +277,32 @@ describe("App", () => {
     expect(
       screen.getByRole("button", { name: "Hide upload panel" }),
     ).toBeInTheDocument();
+  });
+
+  it("eyebrow toggle collapses landing back into working mode when an entry exists", async () => {
+    const { container } = render(<App />);
+
+    await uploadConvertedFiles(container, ["alpha.txt"]);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Show intro and return to landing" }),
+    );
+    expect(container.querySelector(".page")).not.toHaveClass("is-working-mode");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Hide intro and return to editor" }),
+    );
+
+    expect(container.querySelector(".page")).toHaveClass("is-working-mode");
+  });
+
+  it("eyebrow toggle is a no-op on landing when no non-scratch entry exists", () => {
+    const { container } = render(<App />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "doc2md, private markdown workspace" }),
+    );
+
+    expect(container.querySelector(".page")).not.toHaveClass("is-working-mode");
   });
 
   it("collapses and expands the upload sidebar", () => {
