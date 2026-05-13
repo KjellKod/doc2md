@@ -1,0 +1,19 @@
+src/components/preview/useViewportAnchor.ts
+  s_aa1dc5e9102e59::t_91da21db0e6d18 1,11-14,16,23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "80f4ad1f7ceabea113e5f620fd767f4832855dd8",
+  "prompts": {},
+  "sessions": {
+    "s_aa1dc5e9102e59": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e23ab-17d1-7561-8c40-c7fad1deb9e7",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
