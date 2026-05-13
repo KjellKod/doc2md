@@ -10,11 +10,13 @@ import InstallPage from "../components/InstallPage";
 import PreviewPanel from "../components/PreviewPanel";
 import ThemeProvider from "../components/ThemeProvider";
 import ThemeToggle from "../components/ThemeToggle";
+import WorkingModeBar from "../components/WorkingModeBar";
 import { useFileConversion } from "../hooks/useFileConversion";
 import { useTheme } from "../hooks/useTheme";
 import type { FileEntry } from "../types";
 import type {
   DesktopPersistenceSettings,
+  ShellFile,
   ShellConflict,
   ShellError,
   ShellLineEnding,
@@ -322,6 +324,7 @@ function clampKeyboardSidebarWidth(width: number) {
 
 function AppContent() {
   const [activePage, setActivePage] = useState<PageView>("convert");
+  const [showLandingChrome, setShowLandingChrome] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeResizeAxis, setActiveResizeAxis] =
     useState<ResizeAxis | null>(null);
@@ -413,6 +416,8 @@ function AppContent() {
     target: "editor";
   }>({ id: 0, target: "editor" });
   const selectedEntryId = selectedEntry?.id ?? null;
+  const hasWorkingEntry = selectedEntry !== null && !selectedEntry.isScratch;
+  const isWorkingMode = hasWorkingEntry && !showLandingChrome;
   let convertedCount = 0;
   let draftCount = 0;
   let activeCount = 0;
@@ -730,6 +735,12 @@ function AppContent() {
   useEffect(() => {
     saveStateRef.current = saveState.state;
   }, [saveState.state]);
+
+  useEffect(() => {
+    if (selectedEntryId !== null && !selectedEntry?.isScratch) {
+      setShowLandingChrome(false);
+    }
+  }, [selectedEntry?.isScratch, selectedEntryId]);
 
   const setEntryDesktopSaveState = useCallback(
     (entryId: string, nextState: DesktopSaveState) => {
@@ -1525,13 +1536,20 @@ function AppContent() {
     setEditorFocusRequest(({ id }) => ({ id: id + 1, target: "editor" }));
   }, [addScratchEntry]);
 
-  const handleOpenFile = useCallback(async () => {
-    if (!shell) {
+  const handleReturnHome = useCallback(() => {
+    setShowLandingChrome(true);
+    setActivePage("convert");
+  }, []);
+
+  const handleCollapseFromHero = useCallback(() => {
+    if (!hasWorkingEntry) {
       return;
     }
+    setShowLandingChrome(false);
+  }, [hasWorkingEntry]);
 
-    try {
-      const result = await shell.openFile();
+  const handleOpenFileResult = useCallback(
+    async (result: ShellResult<ShellFile>) => {
       if (result.ok) {
         if (result.kind === "markdown") {
           const entryId = addMarkdownEntry({
@@ -1608,6 +1626,25 @@ function AppContent() {
       if (result.code === "error") {
         setDesktopNotice(noticeFromError(result));
       }
+    },
+    [
+      addImportedFileEntry,
+      addMarkdownEntry,
+      clearDesktopProblem,
+      clearDocumentProblem,
+      refreshPersistenceSettings,
+      saveState,
+    ],
+  );
+
+  const handleOpenFile = useCallback(async () => {
+    if (!shell) {
+      return;
+    }
+
+    try {
+      const result = await shell.openFile();
+      await handleOpenFileResult(result);
     } catch (error) {
       saveState.markError();
       setDesktopNotice({
@@ -1617,14 +1654,31 @@ function AppContent() {
       console.error("doc2md desktop openFile transport failure", error);
     }
   }, [
-    addImportedFileEntry,
-    addMarkdownEntry,
-    clearDesktopProblem,
-    clearDocumentProblem,
-    refreshPersistenceSettings,
+    handleOpenFileResult,
     saveState,
     shell,
   ]);
+
+  const handleOpenRecentFile = useCallback(
+    async (path: string) => {
+      if (!shell) {
+        return;
+      }
+
+      try {
+        const result = await shell.openFile({ path });
+        await handleOpenFileResult(result);
+      } catch (error) {
+        saveState.markError();
+        setDesktopNotice({
+          kind: "error",
+          message: "Open failed before the app received a native result.",
+        });
+        console.error("doc2md desktop openFile transport failure", error);
+      }
+    },
+    [handleOpenFileResult, saveState, shell],
+  );
 
   const restoreCancelledSaveState = useCallback(
     (entryId: string, previousState: DesktopSaveState) => {
@@ -2326,6 +2380,16 @@ function AppContent() {
       }
     },
   };
+  const workingModeRecentFiles =
+    isDesktop && shell && persistenceSettings.persistenceEnabled
+      ? persistenceSettings.recentFiles
+      : [];
+  const workingModeBarInertProps = !isWorkingMode
+    ? ({ inert: "" } as Record<string, string>)
+    : {};
+  const landingChromeInertProps = isWorkingMode
+    ? ({ inert: "" } as Record<string, string>)
+    : {};
 
   return (
       <div className="app-shell">
@@ -2337,13 +2401,53 @@ function AppContent() {
           className={`page-frame${activeResizeAxis !== null ? " is-resizing" : ""}`}
           style={pageFrameStyle}
         >
-          <div className="page">
+          <div className={`page${isWorkingMode ? " is-working-mode" : ""}`}>
             <p className="page-version" aria-label="Current release version">
               {DISPLAY_VERSION}
             </p>
-            <header className="hero">
+            <div
+              aria-hidden={!isWorkingMode}
+              {...workingModeBarInertProps}
+            >
+              <WorkingModeBar
+                variant="desktop"
+                onHome={handleReturnHome}
+                onOpen={() => {
+                  void handleOpenFile();
+                }}
+                onNew={handleNewDocument}
+                recentFiles={workingModeRecentFiles}
+                onOpenRecentFile={(path) => {
+                  void handleOpenRecentFile(path);
+                }}
+              />
+            </div>
+            <header
+              className="hero"
+              aria-hidden={isWorkingMode}
+              {...landingChromeInertProps}
+            >
               <div className="hero-top">
-                <p className="eyebrow">Private markdown workspace</p>
+                <button
+                  type="button"
+                  className="eyebrow eyebrow-toggle"
+                  aria-label={
+                    hasWorkingEntry
+                      ? "Hide intro and return to editor"
+                      : "doc2md, private markdown workspace"
+                  }
+                  aria-disabled={!hasWorkingEntry}
+                  onClick={handleCollapseFromHero}
+                  title={
+                    hasWorkingEntry
+                      ? "Hide intro and return to editor"
+                      : undefined
+                  }
+                >
+                  <span className="eyebrow-brand">doc2md</span>
+                  <span className="eyebrow-sep" aria-hidden="true"> - </span>
+                  <span className="eyebrow-tagline">PRIVATE MARKDOWN WORKSPACE</span>
+                </button>
                 <div className="hero-actions">
                   <ThemeToggle />
                   {isDesktop && shell ? (
@@ -2445,7 +2549,11 @@ function AppContent() {
               </p>
             </header>
 
-            <div className="view-switcher-row">
+            <div
+              className="view-switcher-row"
+              aria-hidden={isWorkingMode}
+              {...landingChromeInertProps}
+            >
               <div
                 className="view-switcher"
                 role="tablist"
@@ -2659,7 +2767,7 @@ function AppContent() {
                     <DropZone
                       onFilesAdded={addFiles}
                       onUrlAdded={handleUrlAdded}
-                      onNativeBrowse={shell ? handleOpenFile : undefined}
+                      onBrowseRequest={shell ? handleOpenFile : undefined}
                     />
 
                     <div className="panel-heading panel-heading-tight">

@@ -6,6 +6,7 @@ For the other perspective, see [Dexter's Journal](../dexter-journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 040 | [Celebration: Working-Mode Chrome](040-celebrate-working-mode-chrome.md) | Two-mode layout finished, hero steps aside on file open, logo holds the door back to landing, Mac Recent popover with proper a11y, one-shot guard preserved across Home roundtrip with behavioral proof in both shells, 5 must-fix items absorbed in one plan revision and zero fix iterations after |
 | 039 | [Celebration: Headless DMG Packaging](039-celebrate-headless-dmg-packaging.md) | AppleScript demolition, pinned dmgbuild via pipx, JSON settings, parsed-record .DS_Store determinism, dual-runtime model-diversity catching what single review missed, and a runbook deleted because its failure mode is gone |
 | 038 | [Celebration: CI Supply-Chain Hardening](038-celebrate-ci-supply-chain-hardening.md) | Four guard rules locked in, 15 rule-prefixed tests that fail on the unguarded code, npm cache off the release boundary, --ignore-scripts everywhere, Dependabot with boundaries, and a drift-tracker that watches without becoming drift surface |
 | 037 | [Celebration: Professional DMG Installer](037-celebrate-professional-dmg-installer.md) | Branded DMG window, AppleScript bounded retry, mandatory mount self-test, two-script split for sign vs notarize, runbook for the failure that will happen, and Reviewer B catching detach failure semantics |

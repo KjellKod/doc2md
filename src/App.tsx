@@ -1,12 +1,19 @@
-import type { CSSProperties, KeyboardEvent, MouseEvent, SVGProps } from "react";
+import type {
+  ChangeEvent,
+  CSSProperties,
+  KeyboardEvent,
+  MouseEvent,
+  SVGProps,
+} from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import AboutSection from "./components/AboutSection";
-import DropZone from "./components/DropZone";
+import DropZone, { BROWSER_FILE_ACCEPT } from "./components/DropZone";
 import FileList from "./components/FileList";
 import InstallPage from "./components/InstallPage";
 import PreviewPanel from "./components/PreviewPanel";
 import ThemeProvider from "./components/ThemeProvider";
 import ThemeToggle from "./components/ThemeToggle";
+import WorkingModeBar from "./components/WorkingModeBar";
 import { useFileConversion } from "./hooks/useFileConversion";
 import { useSaveState } from "./hooks/useSaveState";
 import type { FileEntry } from "./types";
@@ -162,6 +169,7 @@ function clampKeyboardSidebarWidth(width: number) {
 
 function AppContent() {
   const [activePage, setActivePage] = useState<PageView>("convert");
+  const [showLandingChrome, setShowLandingChrome] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeResizeAxis, setActiveResizeAxis] =
     useState<ResizeAxis | null>(null);
@@ -176,6 +184,7 @@ function AppContent() {
   const convertTabRef = useRef<HTMLButtonElement>(null);
   const installTabRef = useRef<HTMLButtonElement>(null);
   const previewPanelRef = useRef<HTMLElement | null>(null);
+  const browserFileInputRef = useRef<HTMLInputElement | null>(null);
   const editShellHeightCeilingRef = useRef(editShellHeightCeiling);
   const dragStartXRef = useRef(0);
   const dragStartYRef = useRef(0);
@@ -223,6 +232,8 @@ function AppContent() {
   }>({ id: 0, target: "editor" });
   const convertPageActive = activePage === "convert";
   const selectedEntryId = selectedEntry?.id ?? null;
+  const hasWorkingEntry = selectedEntry !== null && !selectedEntry.isScratch;
+  const isWorkingMode = hasWorkingEntry && !showLandingChrome;
 
   let convertedCount = 0;
   let draftCount = 0;
@@ -301,6 +312,12 @@ function AppContent() {
   useEffect(() => {
     saveStateRef.current = saveState.state;
   }, [saveState.state]);
+
+  useEffect(() => {
+    if (selectedEntryId !== null && !selectedEntry?.isScratch) {
+      setShowLandingChrome(false);
+    }
+  }, [selectedEntry?.isScratch, selectedEntryId]);
 
   const setEntrySaveState = useCallback(
     (entryId: string, nextState: SaveState) => {
@@ -878,6 +895,40 @@ function AppContent() {
     setEditorFocusRequest(({ id }) => ({ id: id + 1, target: "editor" }));
   }, [addScratchEntry]);
 
+  const handleSelectEntry = useCallback(
+    (entryId: string) => {
+      selectEntry(entryId);
+    },
+    [selectEntry],
+  );
+
+  const handleReturnHome = useCallback(() => {
+    setShowLandingChrome(true);
+    setActivePage("convert");
+  }, []);
+
+  const handleCollapseFromHero = useCallback(() => {
+    if (!hasWorkingEntry) {
+      return;
+    }
+    setShowLandingChrome(false);
+  }, [hasWorkingEntry]);
+
+  const handleBrowserOpenRequest = useCallback(() => {
+    browserFileInputRef.current?.click();
+  }, []);
+
+  const handleBrowserFileInputChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const files = event.target.files;
+      if (files && files.length > 0) {
+        addFiles(files);
+      }
+      event.target.value = "";
+    },
+    [addFiles],
+  );
+
   const handleSave = useCallback(() => {
     if (!isDownloadableEntry(selectedEntry)) {
       return;
@@ -919,6 +970,12 @@ function AppContent() {
 
   const saveButtonBusy = saveState.state === "saving";
   const saveButtonDisabled = !isDownloadableEntry(selectedEntry) || saveButtonBusy;
+  const workingModeBarInertProps = !isWorkingMode
+    ? ({ inert: "" } as Record<string, string>)
+    : {};
+  const landingChromeInertProps = isWorkingMode
+    ? ({ inert: "" } as Record<string, string>)
+    : {};
 
   return (
     <div className="app-shell">
@@ -926,13 +983,55 @@ function AppContent() {
         className={`page-frame${activeResizeAxis !== null ? " is-resizing" : ""}`}
         style={pageFrameStyle}
       >
-        <div className="page">
+        <div className={`page${isWorkingMode ? " is-working-mode" : ""}`}>
           <p className="page-version" aria-label="Current release version">
             {DISPLAY_VERSION}
           </p>
-          <header className="hero">
+          <input
+            ref={browserFileInputRef}
+            className="visually-hidden"
+            type="file"
+            accept={BROWSER_FILE_ACCEPT}
+            multiple
+            onChange={handleBrowserFileInputChange}
+          />
+          <div
+            aria-hidden={!isWorkingMode}
+            {...workingModeBarInertProps}
+          >
+            <WorkingModeBar
+              variant="browser"
+              onHome={handleReturnHome}
+              onOpen={handleBrowserOpenRequest}
+              onNew={handleNewDocument}
+            />
+          </div>
+          <header
+            className="hero"
+            aria-hidden={isWorkingMode}
+            {...landingChromeInertProps}
+          >
             <div className="hero-top">
-              <p className="eyebrow">Private markdown workspace</p>
+              <button
+                type="button"
+                className="eyebrow eyebrow-toggle"
+                aria-label={
+                  hasWorkingEntry
+                    ? "Hide intro and return to editor"
+                    : "doc2md, private markdown workspace"
+                }
+                aria-disabled={!hasWorkingEntry}
+                onClick={handleCollapseFromHero}
+                title={
+                  hasWorkingEntry
+                    ? "Hide intro and return to editor"
+                    : undefined
+                }
+              >
+                <span className="eyebrow-brand">doc2md</span>
+                <span className="eyebrow-sep" aria-hidden="true"> - </span>
+                <span className="eyebrow-tagline">PRIVATE MARKDOWN WORKSPACE</span>
+              </button>
               <div className="hero-actions">
                 <ThemeToggle />
               </div>
@@ -954,7 +1053,11 @@ function AppContent() {
             </p>
           </header>
 
-          <div className="view-switcher-row">
+          <div
+            className="view-switcher-row"
+            aria-hidden={isWorkingMode}
+            {...landingChromeInertProps}
+          >
             <div
               className="view-switcher"
               role="tablist"
@@ -1061,7 +1164,11 @@ function AppContent() {
                     </button>
                   </div>
 
-                  <DropZone onFilesAdded={addFiles} onUrlAdded={handleUrlAdded} />
+                  <DropZone
+                    onFilesAdded={addFiles}
+                    onUrlAdded={handleUrlAdded}
+                    onBrowseRequest={handleBrowserOpenRequest}
+                  />
 
                   <div className="panel-heading panel-heading-tight">
                     <div>
@@ -1076,7 +1183,7 @@ function AppContent() {
                     onCheckedChange={toggleCheckedEntry}
                     onClear={handleClear}
                     onDownload={handleDownload}
-                    onSelect={selectEntry}
+                    onSelect={handleSelectEntry}
                     onToggleAllChecked={toggleAllChecked}
                   />
                 </section>
