@@ -1,0 +1,22 @@
+docs/diary/2026-05-12.md
+  s_3c494116950111::t_03ba954a636712 173
+  s_3c494116950111::t_bc1e055f1fff26 125-172
+src/styles/global.css
+  s_3c494116950111::t_ffb7e0152c49c0 2736
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "52cefdad5b89daff2cabb2eeea089b34c2ffd738",
+  "prompts": {},
+  "sessions": {
+    "s_3c494116950111": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9c36ea7e-2a3b-47d8-954a-7a1b2d100d3c",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
