@@ -1,0 +1,22 @@
+src/components/preview/useViewportAnchor.ts
+  s_aa1dc5e9102e59::t_c9338a42803e52 1-75
+src/components/__tests__/useViewportAnchor.test.tsx
+  s_aa1dc5e9102e59::t_f6109baa47afc2 85,115-117
+  s_aa1dc5e9102e59::t_9cff1f9dd3c078 1-84,86-114,118-128
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "4c8ea408f92d666e7351e1db3bba5f8bb774a569",
+  "prompts": {},
+  "sessions": {
+    "s_aa1dc5e9102e59": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e23ab-17d1-7561-8c40-c7fad1deb9e7",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
