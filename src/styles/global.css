@@ -2416,10 +2416,27 @@ body.is-height-resizing * {
 }
 
 :root[data-theme="dark"] .markdown-find-highlight {
-  background: rgba(255, 198, 41, 0.82);
+  /* Edit-mode overlay sits on top of the textarea text. In dark mode
+     the underlying text is light, so a dense yellow fill washes the
+     glyphs out. Drop the fill to a translucent amber and lean on a
+     bright outline so the match is unmistakable without obscuring
+     the characters underneath. */
+  background: rgba(255, 198, 41, 0.32);
   box-shadow:
-    0 0 0 2px rgba(255, 222, 118, 0.46),
-    0 0 16px rgba(255, 198, 41, 0.58);
+    0 0 0 2px rgba(255, 222, 118, 0.85),
+    0 0 14px rgba(255, 198, 41, 0.45);
+}
+
+:root[data-theme="dark"] .markdown-rendered-find-highlight {
+  /* Rendered <mark> wraps actual text in preview/LinkedIn. With the
+     surface's default light text color, light-on-yellow is hard to
+     read — force a dark glyph color while keeping the yellow accent
+     so the match still pops. */
+  background: rgba(255, 198, 41, 0.78);
+  box-shadow:
+    0 0 0 2px rgba(255, 222, 118, 0.5),
+    0 0 14px rgba(255, 198, 41, 0.4);
+  color: #1a1a1a;
 }
 
 :root[data-theme="dark"] .markdown-surface {
