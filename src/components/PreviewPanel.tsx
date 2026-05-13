@@ -65,7 +65,7 @@ function commitTargetedInsert(
   if (typeof exec !== "function") {
     return false;
   }
-  let ok = false;
+  let ok: boolean;
   try {
     ok = exec.call(
       textarea.ownerDocument,
@@ -346,7 +346,12 @@ export default function PreviewPanel({
       entry.isScratch ||
       entry.editedMarkdown !== undefined);
 
+  // Reset everything when the active entry changes: mode, find bar, active
+  // match, rendered-view snapshot, and two pendingAnchor refs. The five
+  // updates are coupled — splitting them across during-render setStates
+  // would risk inconsistent transient states.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- entry-change reset (see comment above)
     setMode(entry?.isScratch ? "edit" : "preview");
     setIsFindOpen(false);
     setActiveFindMatch(null);
@@ -355,18 +360,22 @@ export default function PreviewPanel({
     suppressMatchCenteringForModeSwitchRef.current = false;
   }, [entry?.id, entry?.isScratch]);
 
+  // Close the find bar when the entry stops being findCapable (e.g.
+  // conversion errors out). Two coupled setStates; keep them in an effect
+  // so the find UI tears down atomically after the capability flip.
   useEffect(() => {
     if (!findCapable && isFindOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- find-capability reset (see comment above)
       setIsFindOpen(false);
       setActiveFindMatch(null);
     }
   }, [findCapable, isFindOpen]);
 
-  useEffect(() => {
-    if (mode !== "edit" && showReplace) {
-      setShowReplace(false);
-    }
-  }, [mode, showReplace]);
+  // React 19: drop showReplace during render when the mode is no longer
+  // edit. Single guarded setState, no other coupled effects.
+  if (mode !== "edit" && showReplace) {
+    setShowReplace(false);
+  }
 
   useEffect(() => {
     if (copyState !== "copied") {
@@ -380,6 +389,10 @@ export default function PreviewPanel({
     return () => window.clearTimeout(timeoutId);
   }, [copyState]);
 
+  // Switch to edit mode and focus the textarea when a focus request fires.
+  // The setMode call is coupled to a setTimeout that schedules the focus;
+  // moving the setState to during-render would re-queue the timer on every
+  // render. Keep both inside the effect, gated on focus-request id change.
   useEffect(() => {
     if (
       editorFocusRequestId === undefined ||
@@ -389,6 +402,7 @@ export default function PreviewPanel({
       return;
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- focus-request handler (see comment above)
     setMode("edit");
     const timeoutId = window.setTimeout(() => {
       textareaRef.current?.focus();

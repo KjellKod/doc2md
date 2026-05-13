@@ -296,11 +296,12 @@ export function useFindReplace(
   );
   const activeMatch = result.matches[activeIndex] ?? null;
 
-  useEffect(() => {
-    if (activeIndex > 0 && activeIndex >= result.matches.length) {
-      setActiveIndex(Math.max(result.matches.length - 1, 0));
-    }
-  }, [activeIndex, result.matches.length]);
+  // React 19: clamp activeIndex during render when matches shrink below the
+  // current cursor; React bails out the re-render when the new value equals
+  // the current one, so this is functionally equivalent to the old effect.
+  if (activeIndex > 0 && activeIndex >= result.matches.length) {
+    setActiveIndex(Math.max(result.matches.length - 1, 0));
+  }
 
   useEffect(() => {
     if (!replaceStatus) {

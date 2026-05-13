@@ -213,7 +213,6 @@ export function toggleListLine(
   const prefix = value.slice(0, spans[0].start);
   const suffix = value.slice(spans[spans.length - 1].end);
   const newSelectionStart = prefix.length;
-  let newSelectionEnd = prefix.length;
 
   spans.forEach((span, index) => {
     let nextLine: string;
@@ -229,7 +228,7 @@ export function toggleListLine(
     if (index < spans.length - 1) resultText += "\n";
   });
 
-  newSelectionEnd = prefix.length + resultText.length;
+  const newSelectionEnd = prefix.length + resultText.length;
   return {
     value: `${prefix}${resultText}${suffix}`,
     selectionStart: newSelectionStart,
