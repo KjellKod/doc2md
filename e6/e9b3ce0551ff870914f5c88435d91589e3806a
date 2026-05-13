@@ -1,0 +1,23 @@
+docs/diary/2026-05-14.md
+  s_cd9f1a961ebb24::t_5fe87d7e3d3bfd 1-55
+ideas/README.md
+  s_cd9f1a961ebb24::t_c09b909a387a8b 3-48
+docs/ideas-audit-2026-05-14.md
+  s_cd9f1a961ebb24::t_3dd8c0bb80589c 1-73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "e6e9b3ce0551ff870914f5c88435d91589e3806a",
+  "prompts": {},
+  "sessions": {
+    "s_cd9f1a961ebb24": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1ba4e19f-5254-422f-8aff-552ce4dd5b60",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
