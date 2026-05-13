@@ -1,0 +1,21 @@
+src/vite-env.d.ts
+  s_cd9f1a961ebb24::t_686dc7079e7df9 4-12
+src/converters/pdf.ts
+  s_cd9f1a961ebb24::t_4b867bc2e394ad 6-29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "6bce13cf3a71d785ef0ffee8f78315ddbda4d917",
+  "prompts": {},
+  "sessions": {
+    "s_cd9f1a961ebb24": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1ba4e19f-5254-422f-8aff-552ce4dd5b60",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
