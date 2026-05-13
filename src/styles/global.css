@@ -2733,6 +2733,7 @@ body.is-height-resizing * {
   .page.is-working-mode .view-switcher-row,
   .page.is-working-mode .working-mode-bar {
     transition-duration: 0ms;
+    transition-delay: 0ms;
   }
 }
 
