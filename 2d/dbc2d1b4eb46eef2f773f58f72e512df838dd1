@@ -1,0 +1,48 @@
+tsconfig.json
+  s_cd9f1a961ebb24::t_fe6694b8112f3d 5
+src/desktop/DesktopApp.tsx
+  s_cd9f1a961ebb24::t_f536db33be1932 484
+  s_cd9f1a961ebb24::t_a26784cc7917de 860-864,867
+  s_cd9f1a961ebb24::t_2906218d5ff959 682-685,688
+  s_cd9f1a961ebb24::t_ba21b642df2b2b 745-749,752
+src/desktop/useNativeMenuEvents.ts
+  s_cd9f1a961ebb24::t_04f21134ec137d 27-33
+src/components/WorkingModeBar.tsx
+  s_cd9f1a961ebb24::t_b45d59fea9634b 55-60
+src/components/PreviewPanel.tsx
+  s_cd9f1a961ebb24::t_991224d6fd8573 392-395,405
+  s_cd9f1a961ebb24::t_716957185069e9 349-352,354,363-365,368,374-378
+  s_cd9f1a961ebb24::t_3850b9ef60d879 68
+src/components/useFindReplace.ts
+  s_cd9f1a961ebb24::t_e8930ae5340a48 299-304
+src/components/markdownFormatting.ts
+  s_cd9f1a961ebb24::t_652bf222e80035 231
+packages/core/src/remoteDocument.ts
+  s_cd9f1a961ebb24::t_13e7af4a0376fb 77,80
+  s_cd9f1a961ebb24::t_5166bc9548fc39 93,96
+src/App.tsx
+  s_cd9f1a961ebb24::t_a3e68c42f432a2 275-277
+  s_cd9f1a961ebb24::t_cad2e19e1e8c43 323-327,330
+  s_cd9f1a961ebb24::t_7c7df1892290cb 354-359
+  s_cd9f1a961ebb24::t_18eb10fe0cc01a 388
+  s_cd9f1a961ebb24::t_8859f5397ef18c 278-280,283
+src/utils/remoteDocument.ts
+  s_cd9f1a961ebb24::t_8a86f6aadd6af2 94,97
+  s_cd9f1a961ebb24::t_4d4b7ffb9eb0a7 119,122
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "2ddbc2d1b4eb46eef2f773f58f72e512df838dd1",
+  "prompts": {},
+  "sessions": {
+    "s_cd9f1a961ebb24": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1ba4e19f-5254-422f-8aff-552ce4dd5b60",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
