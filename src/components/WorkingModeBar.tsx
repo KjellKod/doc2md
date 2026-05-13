@@ -145,7 +145,6 @@ export default function WorkingModeBar({
         type="button"
         className="working-mode-logo"
         aria-label="Show intro and return to landing"
-        aria-pressed={true}
         title="Show intro and return to landing"
         onClick={handleHome}
       >

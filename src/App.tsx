@@ -1020,7 +1020,6 @@ function AppContent() {
                     ? "Hide intro and return to editor"
                     : "doc2md, private markdown workspace"
                 }
-                aria-pressed={isWorkingMode}
                 aria-disabled={!hasWorkingEntry}
                 onClick={handleCollapseFromHero}
                 title={
