@@ -1,0 +1,21 @@
+docs/journal/040-celebrate-working-mode-chrome.md
+  s_3c494116950111::t_3f6ca1a8be5db6 1-120
+docs/journal/README.md
+  s_3c494116950111::t_289da36b4dd148 9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "f295a854279ef4cc71070d327f856a4401d1a040",
+  "prompts": {},
+  "sessions": {
+    "s_3c494116950111": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9c36ea7e-2a3b-47d8-954a-7a1b2d100d3c",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
