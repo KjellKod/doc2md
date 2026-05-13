@@ -74,10 +74,10 @@ export async function createInputFileFromUrl(
       });
     } catch (error) {
       if (isAbortError(error)) {
-        throw new Error(REMOTE_DOCUMENT_TIMEOUT_MESSAGE);
+        throw new Error(REMOTE_DOCUMENT_TIMEOUT_MESSAGE, { cause: error });
       }
 
-      throw new Error(REMOTE_DOCUMENT_ACCESS_FAILED_MESSAGE);
+      throw new Error(REMOTE_DOCUMENT_ACCESS_FAILED_MESSAGE, { cause: error });
     }
 
     if (!response.ok) {
@@ -90,10 +90,10 @@ export async function createInputFileFromUrl(
       blob = await response.blob();
     } catch (error) {
       if (isAbortError(error)) {
-        throw new Error(REMOTE_DOCUMENT_TIMEOUT_MESSAGE);
+        throw new Error(REMOTE_DOCUMENT_TIMEOUT_MESSAGE, { cause: error });
       }
 
-      throw new Error(REMOTE_DOCUMENT_ACCESS_FAILED_MESSAGE);
+      throw new Error(REMOTE_DOCUMENT_ACCESS_FAILED_MESSAGE, { cause: error });
     }
 
     const responseUrl = new URL(response.url || parsedUrl.toString());

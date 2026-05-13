@@ -52,11 +52,12 @@ export default function WorkingModeBar({
     return () => document.removeEventListener("mousedown", handleMouseDown);
   }, [isRecentOpen]);
 
-  useEffect(() => {
-    if (!hasDesktopRecentMenu) {
-      setIsRecentOpen(false);
-    }
-  }, [hasDesktopRecentMenu]);
+  // React 19 lets us close the menu during render when the feature becomes
+  // unavailable; this replaces the React-18 useEffect-with-setState pattern
+  // and satisfies eslint-plugin-react-hooks 7's `set-state-in-effect` rule.
+  if (!hasDesktopRecentMenu && isRecentOpen) {
+    setIsRecentOpen(false);
+  }
 
   const closeMenu = () => {
     setIsRecentOpen(false);

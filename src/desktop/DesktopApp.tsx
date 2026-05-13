@@ -481,6 +481,7 @@ function AppContent() {
     firstAutoCollapseFiredRef.current = true;
     restoreSidebarWidthRef.current =
       sidebarWidth ?? measureSidebarWidth() ?? DEFAULT_SIDEBAR_WIDTH;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot first-open auto-collapse coupled to two ref writes above
     setSidebarCollapsed(true);
   }, [selectedEntry?.isScratch, selectedEntryId, sidebarCollapsed, sidebarWidth]);
 
@@ -678,8 +679,13 @@ function AppContent() {
     currentThemeRef.current = theme;
   }, [theme]);
 
+  // Prune five per-entry maps when an entry is removed. The functional
+  // updaters return the same reference when no entry was removed, so React
+  // bails out and there is no cascading render in practice. Same pattern
+  // as the hosted App.tsx.
   useEffect(() => {
     const liveEntryIds = new Set(entries.map((entry) => entry.id));
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- prune-stale-keys (see comment above)
     setCheckedEntryIds((current) => {
       const next = new Set(
         [...current].filter((entryId) => liveEntryIds.has(entryId)),
@@ -736,8 +742,14 @@ function AppContent() {
     saveStateRef.current = saveState.state;
   }, [saveState.state]);
 
+  // Close the landing chrome when a non-scratch entry becomes selected.
+  // Keep this in a post-commit effect (not a during-render guard) so the
+  // user can later re-open the landing chrome via the eyebrow toggle while
+  // an entry is still selected — a during-render guard would refire on the
+  // next render and prevent the re-open. Same pattern as the hosted App.tsx.
   useEffect(() => {
     if (selectedEntryId !== null && !selectedEntry?.isScratch) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- close-on-select (see comment above)
       setShowLandingChrome(false);
     }
   }, [selectedEntry?.isScratch, selectedEntryId]);
@@ -845,8 +857,14 @@ function AppContent() {
     };
   }, [isDesktopSettingsOpen]);
 
+  // Shell-availability lifecycle: reset persistence UI when the shell
+  // disappears, load persistence settings asynchronously when it appears.
+  // Both branches are coupled to ref writes (resetPersistenceLifecycleRefs)
+  // and an async load that flips multiple state values; effect is the
+  // correct seam.
   useEffect(() => {
     if (!shell) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- shell-unavailable reset (see comment above)
       setPersistenceSettings(DEFAULT_DESKTOP_PERSISTENCE_SETTINGS);
       setInitialPersistenceLoaded(false);
       setIsDesktopSettingsOpen(false);

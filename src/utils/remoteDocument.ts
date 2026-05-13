@@ -91,10 +91,10 @@ export async function downloadRemoteDocument(
       });
     } catch (error) {
       if (isAbortError(error)) {
-        throw new Error(REMOTE_DOCUMENT_TIMEOUT_MESSAGE);
+        throw new Error(REMOTE_DOCUMENT_TIMEOUT_MESSAGE, { cause: error });
       }
 
-      throw new Error(REMOTE_DOCUMENT_BROWSER_ACCESS_MESSAGE);
+      throw new Error(REMOTE_DOCUMENT_BROWSER_ACCESS_MESSAGE, { cause: error });
     }
 
     if (!response.ok) {
@@ -116,10 +116,10 @@ export async function downloadRemoteDocument(
       blob = await response.blob();
     } catch (error) {
       if (isAbortError(error)) {
-        throw new Error(REMOTE_DOCUMENT_TIMEOUT_MESSAGE);
+        throw new Error(REMOTE_DOCUMENT_TIMEOUT_MESSAGE, { cause: error });
       }
 
-      throw new Error(REMOTE_DOCUMENT_BROWSER_ACCESS_MESSAGE);
+      throw new Error(REMOTE_DOCUMENT_BROWSER_ACCESS_MESSAGE, { cause: error });
     }
 
     if (blob.size > MAX_BROWSER_FILE_SIZE_BYTES) {

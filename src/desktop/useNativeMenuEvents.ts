@@ -24,7 +24,13 @@ export interface NativeMenuHandlers {
 
 export function useNativeMenuEvents(handlers: NativeMenuHandlers) {
   const handlersRef = useRef(handlers);
-  handlersRef.current = handlers;
+
+  // Keep the ref pointing at the latest handlers without rebinding the
+  // window listeners below. eslint-plugin-react-hooks 7's `react-hooks/refs`
+  // rule rejects ref writes during render, so do the update after commit.
+  useEffect(() => {
+    handlersRef.current = handlers;
+  });
 
   useEffect(() => {
     const listeners: Array<[string, EventListener]> = [

@@ -272,8 +272,15 @@ function AppContent() {
     entriesRef.current = entries;
   }, [entries]);
 
+  // Prune per-entry maps when an entry is removed. Both states are mutated
+  // from many call sites (setEntrySaveState, save handlers, etc.), so they
+  // cannot be derived purely from `entries`; the post-commit effect is the
+  // right place to drop stale keys. The functional updater is a no-op when
+  // no entry was removed, so React bails out and there is no cascading
+  // render in practice.
   useEffect(() => {
     const liveEntryIds = new Set(entries.map((entry) => entry.id));
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- prune-stale-keys (see comment above)
     setEntrySaveStates((current) =>
       Object.fromEntries(
         Object.entries(current).filter(([entryId]) => liveEntryIds.has(entryId)),
@@ -313,8 +320,14 @@ function AppContent() {
     saveStateRef.current = saveState.state;
   }, [saveState.state]);
 
+  // Close the landing chrome when a non-scratch entry becomes selected.
+  // Keep this in a post-commit effect (not a during-render guard) so the
+  // user can later re-open the landing chrome via the eyebrow toggle while
+  // an entry is still selected — a during-render guard would refire on the
+  // next render and prevent the re-open.
   useEffect(() => {
     if (selectedEntryId !== null && !selectedEntry?.isScratch) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- close-on-select (see comment above)
       setShowLandingChrome(false);
     }
   }, [selectedEntry?.isScratch, selectedEntryId]);
@@ -338,6 +351,12 @@ function AppContent() {
   // preference, the layout is desktop-wide, and the selected entry is NOT
   // a scratch draft (scratch drafts are created via "Start writing" and
   // don't imply the user wants the upload panel out of the way).
+  //
+  // This effect performs an imperative one-shot transition (writing
+  // firstAutoCollapseFiredRef and restoreSidebarWidthRef before
+  // setSidebarCollapsed). Restructuring to during-render setState would
+  // separate the ref writes from the state update and could fire the
+  // collapse twice on a same-tick re-render.
   useEffect(() => {
     const previous = previousSelectedEntryIdRef.current;
     previousSelectedEntryIdRef.current = selectedEntryId;
@@ -366,6 +385,7 @@ function AppContent() {
     firstAutoCollapseFiredRef.current = true;
     restoreSidebarWidthRef.current =
       sidebarWidth ?? measureSidebarWidth() ?? DEFAULT_SIDEBAR_WIDTH;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot first-open auto-collapse (see comment above)
     setSidebarCollapsed(true);
   }, [selectedEntry?.isScratch, selectedEntryId, sidebarCollapsed, sidebarWidth]);
 
