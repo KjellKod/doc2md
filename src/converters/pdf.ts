@@ -1338,18 +1338,36 @@ export const convertPdf: Converter = async (file) => {
     await ensureBrowserWorkerConfigured();
     const arrayBuffer = await readFileAsArrayBuffer(file);
 
-    // pdfjs-dist 5 enables several modern-API code paths (ImageDecoder,
-    // OffscreenCanvas, OS font discovery) that throw cryptic
-    // "undefined is not a function" errors in WKWebView's JavaScriptCore.
-    // We only consume text content, so disable every modern-capability
-    // option and stay on the conservative path the v4 default used to be.
+    // pdfjs-dist 5 hard-requires `standardFontDataUrl` for PDFs that use
+    // the standard fonts (Helvetica, Times, Symbol, ZapfDingbats). v4 was
+    // permissive about its absence; v5 fails with a cryptic
+    // "TypeError: undefined is not a function" inside the worker before
+    // any text extraction can complete. Vite's bundlePdfjsStandardFonts
+    // plugin copies node_modules/pdfjs-dist/standard_fonts/ into
+    // dist/standard_fonts/ and serves it in dev, so resolving the URL
+    // relative to the document base works for both hosted and WKWebView
+    // delivery.
+    //
+    // We also disable v5's modern-API code paths (ImageDecoder,
+    // OffscreenCanvas, FontFace fetching) because they throw similarly
+    // cryptic errors in WKWebView's JavaScriptCore and we only consume
+    // text content.
+    const browserDocument =
+      typeof globalThis !== "undefined" && "document" in globalThis
+        ? (globalThis as { document?: { baseURI?: string } }).document
+        : undefined;
+    const standardFontDataUrl =
+      browserDocument && typeof browserDocument.baseURI === "string"
+        ? new URL("./standard_fonts/", browserDocument.baseURI).href
+        : undefined;
+
     loadingTask = getDocument({
       data: new Uint8Array(arrayBuffer),
       useSystemFonts: false,
       isOffscreenCanvasSupported: false,
       isImageDecoderSupported: false,
       disableFontFace: true,
-      standardFontDataUrl: undefined,
+      standardFontDataUrl,
     });
 
     const document = await loadingTask.promise;

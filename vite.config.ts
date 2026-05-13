@@ -1,5 +1,6 @@
 import { defineConfig } from "vitest/config";
-import { readFileSync } from "node:fs";
+import { cpSync, mkdirSync, readFileSync, readdirSync } from "node:fs";
+import { resolve as resolvePath } from "node:path";
 import react from "@vitejs/plugin-react";
 import { getDisplayVersionInfo } from "./packages/core/scripts/release-version.mjs";
 
@@ -69,8 +70,54 @@ const buildRootHtml = (mode: string) => ({
   },
 });
 
+// pdfjs-dist 5 hard-requires `standardFontDataUrl` for PDFs that use the
+// standard fonts (Helvetica, Times, Symbol, ZapfDingbats, etc.). The fonts
+// ship at node_modules/pdfjs-dist/standard_fonts/ but Vite does not include
+// them automatically; without this plugin, real-world PDFs fail to convert
+// with a cryptic JavaScriptCore "TypeError: undefined is not a function"
+// from inside the worker. Bundle the directory into the build and serve
+// it in dev so runtime can fetch fonts by filename.
+const PDFJS_FONT_DIR = "pdfjs-dist/standard_fonts";
+
+function bundlePdfjsStandardFonts() {
+  const sourceDir = resolvePath("node_modules", PDFJS_FONT_DIR);
+
+  return {
+    name: "doc2md-pdfjs-standard-fonts",
+    configureServer(server: {
+      middlewares: { use: (route: string, handler: unknown) => void };
+    }) {
+      server.middlewares.use(
+        "/standard_fonts",
+        // @ts-expect-error -- minimal handler signature compatible with connect
+        (req, res, next) => {
+          try {
+            const url = (req.url as string).split("?")[0];
+            if (!url || url === "/" || url.includes("..")) {
+              return next();
+            }
+            const fontPath = resolvePath(sourceDir, url.replace(/^\//, ""));
+            const data = readFileSync(fontPath);
+            res.setHeader("Content-Type", "application/octet-stream");
+            res.end(data);
+          } catch {
+            next();
+          }
+        },
+      );
+    },
+    closeBundle() {
+      const outDir = resolvePath("dist/standard_fonts");
+      mkdirSync(outDir, { recursive: true });
+      for (const entry of readdirSync(sourceDir)) {
+        cpSync(resolvePath(sourceDir, entry), resolvePath(outDir, entry));
+      }
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), buildRootHtml(mode)],
+  plugins: [react(), buildRootHtml(mode), bundlePdfjsStandardFonts()],
   base: mode === "desktop" ? "./" : "/doc2md/",
   server: {
     strictPort: true,
