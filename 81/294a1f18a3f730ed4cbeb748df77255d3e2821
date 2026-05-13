@@ -1,0 +1,25 @@
+src/components/preview/LinkedInMode.tsx
+  s_aa1dc5e9102e59::t_74f9819364b9bf 1-302
+src/components/PreviewPanel.tsx
+  s_aa1dc5e9102e59::t_72bfadf6afce6f 214-215,225,227
+  s_aa1dc5e9102e59::t_807768b31f1261 504-515,517-529
+  s_aa1dc5e9102e59::t_4fa19966d04c6a 19-22
+src/components/preview/PreviewMode.tsx
+  s_aa1dc5e9102e59::t_040f7f97d4f90e 1-148
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "81294a1f18a3f730ed4cbeb748df77255d3e2821",
+  "prompts": {},
+  "sessions": {
+    "s_aa1dc5e9102e59": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e23ab-17d1-7561-8c40-c7fad1deb9e7",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
