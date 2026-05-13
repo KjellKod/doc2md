@@ -6,7 +6,7 @@ Pre-existing. Not introduced by PR #120 (npm-development bump) or PR #119 (npm-p
 
 ## Symptom
 
-When the user opens an `.xlsx` file (or any source that converts to a markdown table) and toggles to **Preview** mode:
+When the user opens an `.xlsx` or `.csv` file (or any source that converts to a markdown table) and toggles to **Preview** mode:
 
 - Single-cell substring queries match correctly. `Dulce`, `United States`, `First Name` all light up.
 - Multi-cell queries — anything that includes a space the user expects between two cell values — fail to match anything.
