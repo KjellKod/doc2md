@@ -1,10 +1,11 @@
-import { useLayoutEffect, useMemo, type RefObject } from "react";
+import { useLayoutEffect, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { FindMatch } from "../useFindReplace";
 import { sourceLineRehype } from "../sourceLineRehype";
 import { formatPreviewMarkdownWithLineMap } from "../previewFormatting";
 import { useFindHighlight } from "./useFindHighlight";
+import { useViewportAnchor } from "./useViewportAnchor";
 
 interface MutableElementRef<T> {
   current: T | null;
@@ -16,9 +17,10 @@ interface PreviewModeProps {
   activeFindMatch: FindMatch | null;
   previewRef: MutableElementRef<HTMLDivElement>;
   renderedViewRef: MutableElementRef<HTMLElement>;
-  pendingAnchorLineRef: RefObject<number | null>;
-  suppressMatchCenteringForModeSwitchRef: RefObject<boolean>;
+  pendingAnchorLineRef: MutableElementRef<number>;
+  suppressMatchCenteringForModeSwitchRef: MutableElementRef<boolean>;
   renderedViewText: string;
+  viewportTopFloor: () => number;
   onRenderedViewTextChange: (nextText: string) => void;
 }
 
@@ -52,6 +54,7 @@ export default function PreviewMode({
   pendingAnchorLineRef,
   suppressMatchCenteringForModeSwitchRef,
   renderedViewText,
+  viewportTopFloor,
   onRenderedViewTextChange,
 }: PreviewModeProps) {
   const previewWithLineMap = useMemo(
@@ -74,10 +77,29 @@ export default function PreviewMode({
     ],
     [findHighlight, previewWithLineMap.originalLineFor],
   );
+  const { applyAnchorLine } = useViewportAnchor(
+    renderedViewRef,
+    "rendered",
+    { viewportTopFloor },
+  );
 
-  function shouldCenterActiveMatch() {
-    return !suppressMatchCenteringForModeSwitchRef.current;
-  }
+  useLayoutEffect(() => {
+    const anchorLine = pendingAnchorLineRef.current;
+    if (anchorLine === null) {
+      return;
+    }
+    if (!applyAnchorLine(anchorLine)) {
+      return;
+    }
+    pendingAnchorLineRef.current = null;
+    window.setTimeout(() => {
+      suppressMatchCenteringForModeSwitchRef.current = false;
+    }, 0);
+  }, [
+    applyAnchorLine,
+    pendingAnchorLineRef,
+    suppressMatchCenteringForModeSwitchRef,
+  ]);
 
   useLayoutEffect(() => {
     const element = renderedViewRef.current;
@@ -109,7 +131,7 @@ export default function PreviewMode({
     if (pendingAnchorLineRef.current !== null) {
       return;
     }
-    if (!shouldCenterActiveMatch()) {
+    if (suppressMatchCenteringForModeSwitchRef.current) {
       return;
     }
     const highlight = element.querySelector(

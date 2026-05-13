@@ -1,9 +1,10 @@
-import { useLayoutEffect, type RefObject } from "react";
+import { useLayoutEffect } from "react";
 import {
   detectUnsupportedConstructs,
   formatLinkedInUnicodeWithLineMap,
 } from "../linkedinFormatting";
 import type { FindMatch } from "../useFindReplace";
+import { useViewportAnchor } from "./useViewportAnchor";
 
 type LinkedInPreviewTone =
   | "bold"
@@ -32,15 +33,17 @@ interface LinkedInModeProps {
   isFindOpen: boolean;
   activeFindMatch: FindMatch | null;
   renderedViewRef: MutableElementRef<HTMLElement>;
-  pendingAnchorLineRef: RefObject<number | null>;
-  suppressMatchCenteringForModeSwitchRef: RefObject<boolean>;
+  pendingAnchorLineRef: MutableElementRef<number>;
+  suppressMatchCenteringForModeSwitchRef: MutableElementRef<boolean>;
   renderedViewText: string;
+  viewportTopFloor: () => number;
   onRenderedViewTextChange: (nextText: string) => void;
 }
 
 const UNDERLINE_MARK = "\u0332";
 const STRIKE_MARK = "\u0336";
 
+// eslint-disable-next-line react-refresh/only-export-components -- Shell needs copy text while this file owns LinkedIn preview derivation.
 export function getLinkedInPreviewState(
   effectiveMarkdown: string,
 ): LinkedInPreviewState {
@@ -180,16 +183,36 @@ export default function LinkedInMode({
   pendingAnchorLineRef,
   suppressMatchCenteringForModeSwitchRef,
   renderedViewText,
+  viewportTopFloor,
   onRenderedViewTextChange,
 }: LinkedInModeProps) {
   const renderedFindHighlightMatch =
     isFindOpen && activeFindMatch
       ? { start: activeFindMatch.start, end: activeFindMatch.end }
       : null;
+  const { applyAnchorLine } = useViewportAnchor(
+    renderedViewRef,
+    "rendered",
+    { viewportTopFloor },
+  );
 
-  function shouldCenterActiveMatch() {
-    return !suppressMatchCenteringForModeSwitchRef.current;
-  }
+  useLayoutEffect(() => {
+    const anchorLine = pendingAnchorLineRef.current;
+    if (anchorLine === null) {
+      return;
+    }
+    if (!applyAnchorLine(anchorLine)) {
+      return;
+    }
+    pendingAnchorLineRef.current = null;
+    window.setTimeout(() => {
+      suppressMatchCenteringForModeSwitchRef.current = false;
+    }, 0);
+  }, [
+    applyAnchorLine,
+    pendingAnchorLineRef,
+    suppressMatchCenteringForModeSwitchRef,
+  ]);
 
   useLayoutEffect(() => {
     const element = renderedViewRef.current;
@@ -214,7 +237,7 @@ export default function LinkedInMode({
     if (pendingAnchorLineRef.current !== null) {
       return;
     }
-    if (!shouldCenterActiveMatch()) {
+    if (suppressMatchCenteringForModeSwitchRef.current) {
       return;
     }
     const highlight = element.querySelector(

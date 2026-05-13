@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from "react";
+import { useCallback, useLayoutEffect, useRef } from "react";
 import type { FindMatch } from "../useFindReplace";
 import {
   insertLink,
@@ -9,6 +9,7 @@ import {
 } from "../markdownFormatting";
 import { computeAutoContinueEdit } from "../markdownAutoContinue";
 import { scrollTextareaToLine } from "../viewportAnchor";
+import { useViewportAnchor } from "./useViewportAnchor";
 
 interface TargetedInsert {
   start: number;
@@ -144,19 +145,38 @@ export default function EditMode({
   onMarkdownChange,
 }: EditModeProps) {
   const isComposingRef = useRef(false);
-
-  function shouldCenterActiveMatch() {
-    return !suppressMatchCenteringForModeSwitchRef.current;
-  }
-
-  function syncFindHighlightScroll() {
+  const syncFindHighlightScroll = useCallback(() => {
     if (!textareaRef.current || !findHighlightRef.current) {
       return;
     }
 
     findHighlightRef.current.scrollTop = textareaRef.current.scrollTop;
     findHighlightRef.current.scrollLeft = textareaRef.current.scrollLeft;
-  }
+  }, [findHighlightRef, textareaRef]);
+  const { applyAnchorLine } = useViewportAnchor(textareaRef, "textarea", {
+    mirrorRef: findHighlightRef,
+    source: effectiveMarkdown,
+    viewportTopFloor,
+    afterApply: syncFindHighlightScroll,
+  });
+
+  useLayoutEffect(() => {
+    const anchorLine = pendingAnchorLineRef.current;
+    if (anchorLine === null) {
+      return;
+    }
+    if (!applyAnchorLine(anchorLine)) {
+      return;
+    }
+    pendingAnchorLineRef.current = null;
+    window.setTimeout(() => {
+      suppressMatchCenteringForModeSwitchRef.current = false;
+    }, 0);
+  }, [
+    applyAnchorLine,
+    pendingAnchorLineRef,
+    suppressMatchCenteringForModeSwitchRef,
+  ]);
 
   useLayoutEffect(() => {
     if (
@@ -164,7 +184,7 @@ export default function EditMode({
       activeFindMatch &&
       textareaRef.current &&
       pendingAnchorLineRef.current === null &&
-      shouldCenterActiveMatch()
+      !suppressMatchCenteringForModeSwitchRef.current
     ) {
       const textarea = textareaRef.current;
       textarea.setSelectionRange(activeFindMatch.end, activeFindMatch.end);
@@ -189,6 +209,7 @@ export default function EditMode({
     isFindOpen,
     pendingAnchorLineRef,
     suppressMatchCenteringForModeSwitchRef,
+    syncFindHighlightScroll,
     textareaRef,
     findHighlightRef,
     viewportTopFloor,
