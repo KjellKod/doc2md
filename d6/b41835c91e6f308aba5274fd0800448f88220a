@@ -1,0 +1,31 @@
+apps/macos/THIRD_PARTY_NOTICES.md
+  s_cd9f1a961ebb24::t_f04712063abb3d 156
+src/converters/pdf.test.ts
+  s_cd9f1a961ebb24::t_bee93d1fa7d29e 749-757
+src/converters/pdf.ts
+  s_cd9f1a961ebb24::t_bee93d1fa7d29e 2,64-65,67-73,1337-1338,1414,1417
+vite.config.ts
+  s_cd9f1a961ebb24::t_bee93d1fa7d29e 2,73
+package-lock.json
+  ai_agent 18,4463-4465,4468,4471,5728
+package.json
+  s_cd9f1a961ebb24::t_877fe91b2bf93e 33
+packages/core/package.json
+  s_cd9f1a961ebb24::t_877fe91b2bf93e 56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "d6b41835c91e6f308aba5274fd0800448f88220a",
+  "prompts": {},
+  "sessions": {
+    "s_cd9f1a961ebb24": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1ba4e19f-5254-422f-8aff-552ce4dd5b60",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
