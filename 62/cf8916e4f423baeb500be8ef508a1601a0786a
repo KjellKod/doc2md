@@ -1,0 +1,27 @@
+ideas/preview-panel-refactor.md
+  s_cd9f1a961ebb24::t_4e849858a430be 96-104
+docs/ideas-audit-2026-05-14.md
+  s_cd9f1a961ebb24::t_bee63c60ca29da 79-154
+ideas/paste-to-markdown-in-editor.md
+  s_cd9f1a961ebb24::t_45af8ed53ff208 35
+ideas/markdown-editing-and-rendering-stack.md
+  s_cd9f1a961ebb24::t_f643e95b3967d1 213-224
+docs/diary/2026-05-14.md
+  s_cd9f1a961ebb24::t_435a0f8cfbd016 56-77
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "62cf8916e4f423baeb500be8ef508a1601a0786a",
+  "prompts": {},
+  "sessions": {
+    "s_cd9f1a961ebb24": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1ba4e19f-5254-422f-8aff-552ce4dd5b60",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
