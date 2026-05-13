@@ -24,102 +24,7 @@ import SaveButton from "./SaveButton";
 import SaveStatePill from "./SaveStatePill";
 import FindReplaceBar from "./FindReplaceBar";
 import type { FindMatch } from "./useFindReplace";
-import {
-  insertLink,
-  smartWrapInsert,
-  toggleListLine,
-  wrapSelection,
-  type ListKind,
-} from "./markdownFormatting";
-import { computeAutoContinueEdit } from "./markdownAutoContinue";
-
-interface TargetedInsert {
-  start: number;
-  end: number;
-  text: string;
-  caretStart: number;
-  caretEnd: number;
-}
-
-/**
- * Replace [start, end) in `textarea.value` with `text` via a native input
- * event so the browser records ONE undo step. Synchronously sets the
- * post-insertion selection. Returns true on success.
- *
- * This is the workhorse for auto-continue and formatting shortcuts. It
- * intentionally NEVER touches selection outside [start, end] so we don't
- * cause viewport jumps or fight with the user's caret.
- */
-function commitTargetedInsert(
-  textarea: HTMLTextAreaElement,
-  insert: TargetedInsert,
-): boolean {
-  if (textarea.ownerDocument?.activeElement !== textarea) {
-    textarea.focus();
-  }
-  if (textarea.ownerDocument?.activeElement !== textarea) {
-    return false;
-  }
-  textarea.setSelectionRange(insert.start, insert.end);
-  const exec = textarea.ownerDocument?.execCommand;
-  if (typeof exec !== "function") {
-    return false;
-  }
-  let ok: boolean;
-  try {
-    ok = exec.call(
-      textarea.ownerDocument,
-      "insertText",
-      false,
-      insert.text,
-    );
-  } catch {
-    return false;
-  }
-  if (!ok) {
-    return false;
-  }
-  textarea.setSelectionRange(insert.caretStart, insert.caretEnd);
-  return true;
-}
-
-/**
- * Derive a TargetedInsert from a SelectionEdit (full-doc new value) by
- * finding the longest common prefix/suffix between the old and new values
- * — the replaced span is what's between them. Falls back to a full-doc
- * insert when the diff cannot be localized (multi-region change).
- */
-function targetedFromSelectionEdit(
-  oldValue: string,
-  newValue: string,
-  selectionStart: number,
-  selectionEnd: number,
-): TargetedInsert {
-  let prefixLen = 0;
-  const minLen = Math.min(oldValue.length, newValue.length);
-  while (
-    prefixLen < minLen &&
-    oldValue.charCodeAt(prefixLen) === newValue.charCodeAt(prefixLen)
-  ) {
-    prefixLen += 1;
-  }
-  let suffixLen = 0;
-  while (
-    suffixLen < oldValue.length - prefixLen &&
-    suffixLen < newValue.length - prefixLen &&
-    oldValue.charCodeAt(oldValue.length - 1 - suffixLen) ===
-      newValue.charCodeAt(newValue.length - 1 - suffixLen)
-  ) {
-    suffixLen += 1;
-  }
-  return {
-    start: prefixLen,
-    end: oldValue.length - suffixLen,
-    text: newValue.slice(prefixLen, newValue.length - suffixLen),
-    caretStart: selectionStart,
-    caretEnd: selectionEnd,
-  };
-}
+import EditMode from "./preview/EditMode";
 
 type LinkedInPreviewTone =
   | "bold"
@@ -257,34 +162,6 @@ function fallbackCopyText(text: string) {
   document.body.removeChild(element);
 }
 
-function renderFindHighlight(source: string, match: FindMatch | null) {
-  if (!match) {
-    return source;
-  }
-
-  if (match.start === match.end) {
-    return (
-      <>
-        {source.slice(0, match.start)}
-        <mark className="markdown-find-highlight markdown-find-highlight-zero">
-          {" "}
-        </mark>
-        {source.slice(match.end)}
-      </>
-    );
-  }
-
-  return (
-    <>
-      {source.slice(0, match.start)}
-      <mark className="markdown-find-highlight">
-        {source.slice(match.start, match.end)}
-      </mark>
-      {source.slice(match.end)}
-    </>
-  );
-}
-
 function clampScrollTop(element: HTMLElement, scrollTop: number) {
   const maxScroll = Math.max(element.scrollHeight - element.clientHeight, 0);
 
@@ -338,7 +215,6 @@ export default function PreviewPanel({
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const pendingAnchorLineRef = useRef<number | null>(null);
   const suppressMatchCenteringForModeSwitchRef = useRef(false);
-  const isComposingRef = useRef(false);
   const findCapable =
     entry !== null &&
     (entry.status === "success" || entry.status === "warning") &&
@@ -582,47 +458,6 @@ export default function PreviewPanel({
   ]);
 
   useLayoutEffect(() => {
-    if (
-      mode === "edit" &&
-      isFindOpen &&
-      activeFindMatch &&
-      textareaRef.current &&
-      pendingAnchorLineRef.current === null &&
-      shouldCenterActiveMatch()
-    ) {
-      const textarea = textareaRef.current;
-      // Caret-collapse-at-match-end. Previously lived inside
-      // `scrollTextareaToMatch`. Keeping the behavior so Escape/Tab/click
-      // from the find bar inserts the user's next keystroke AFTER the
-      // match instead of replacing it.
-      textarea.setSelectionRange(activeFindMatch.end, activeFindMatch.end);
-
-      // Route through the measured-mirror helper so soft-wrapped
-      // paragraphs above the match no longer skew the scroll position.
-      // `offsetFraction = 0.5` centers the match in the visible
-      // viewport — the centering UX the old helper aimed at.
-      const matchLine =
-        effectiveMarkdown.slice(0, activeFindMatch.start).split("\n").length;
-      scrollTextareaToLine(
-        textarea,
-        findHighlightRef.current,
-        effectiveMarkdown,
-        matchLine,
-        viewportTopFloor(),
-        0.5,
-      );
-      syncFindHighlightScroll();
-    }
-  }, [
-    activeFindMatch?.end,
-    activeFindMatch?.start,
-    activeFindMatch,
-    effectiveMarkdown,
-    isFindOpen,
-    mode,
-  ]);
-
-  useLayoutEffect(() => {
     const anchorLine = pendingAnchorLineRef.current;
 
     if (anchorLine === null) {
@@ -813,153 +648,6 @@ export default function PreviewPanel({
     findHighlightRef.current.scrollLeft = textareaRef.current.scrollLeft;
   }
 
-  function handleEditorScroll() {
-    if (!textareaRef.current) {
-      return;
-    }
-
-    syncFindHighlightScroll();
-  }
-
-  function commitTargeted(insert: TargetedInsert, fallbackValue: string) {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-    const ok = commitTargetedInsert(textarea, insert);
-    if (!ok) {
-      onMarkdownChange?.(fallbackValue);
-      // React-reconciled fallback: set selection on the next tick because
-      // the controlled re-render is the only path that mutates the textarea
-      // value here.
-      window.setTimeout(() => {
-        const ta = textareaRef.current;
-        if (ta) ta.setSelectionRange(insert.caretStart, insert.caretEnd);
-      }, 0);
-    }
-  }
-
-  function commitSelectionEditTargeted(
-    oldValue: string,
-    edit: { value: string; selectionStart: number; selectionEnd: number },
-  ) {
-    commitTargeted(
-      targetedFromSelectionEdit(
-        oldValue,
-        edit.value,
-        edit.selectionStart,
-        edit.selectionEnd,
-      ),
-      edit.value,
-    );
-  }
-
-  function handleTextareaKeyDown(
-    event: React.KeyboardEvent<HTMLTextAreaElement>,
-  ) {
-    // IME composition guard — checks both signals before any edit.
-    if (event.nativeEvent.isComposing || isComposingRef.current) {
-      return;
-    }
-
-    const textarea = event.currentTarget;
-    const selectionStart = textarea.selectionStart;
-    const selectionEnd = textarea.selectionEnd;
-    const value = textarea.value;
-    const isMeta = event.metaKey || event.ctrlKey;
-
-    // Auto-continue lists on Enter (not Shift-Enter). Compute the targeted
-    // insertion directly from the parsed marker so we never touch the rest
-    // of the document — full-document replacement here was the slow path.
-    if (event.key === "Enter" && !event.shiftKey && !event.altKey && !isMeta) {
-      const edit = computeAutoContinueEdit(value, selectionStart, selectionEnd);
-      if (edit) {
-        event.preventDefault();
-        const insert = targetedFromSelectionEdit(
-          value,
-          edit.value,
-          edit.caretPos,
-          edit.caretPos,
-        );
-        commitTargeted(insert, edit.value);
-      }
-      return;
-    }
-
-    // Inline formatting shortcuts (Cmd/Ctrl + B, I, K).
-    if (isMeta && !event.altKey && !event.shiftKey) {
-      const key = event.key.toLowerCase();
-      if (key === "b") {
-        event.preventDefault();
-        commitSelectionEditTargeted(
-          value,
-          wrapSelection(value, selectionStart, selectionEnd, "**"),
-        );
-        return;
-      }
-      if (key === "i") {
-        event.preventDefault();
-        commitSelectionEditTargeted(
-          value,
-          wrapSelection(value, selectionStart, selectionEnd, "_"),
-        );
-        return;
-      }
-      if (key === "k") {
-        event.preventDefault();
-        commitSelectionEditTargeted(
-          value,
-          insertLink(value, selectionStart, selectionEnd),
-        );
-        return;
-      }
-    }
-
-    // List toggles: Cmd-Shift-7/8/9 (ordered / unordered / task).
-    if (isMeta && event.shiftKey && !event.altKey) {
-      let kind: ListKind | null = null;
-      if (event.key === "7" || event.key === "&") kind = "ordered";
-      else if (event.key === "8" || event.key === "*") kind = "unordered";
-      else if (event.key === "9" || event.key === "(") kind = "task";
-      if (kind !== null) {
-        event.preventDefault();
-        commitSelectionEditTargeted(
-          value,
-          toggleListLine(value, selectionStart, selectionEnd, kind),
-        );
-        return;
-      }
-    }
-
-    // Smart-wrap for `* _ ` [ ( "` with a non-empty selection. Skip when Cmd/Ctrl
-    // or Alt is pressed (those are shortcut combinations).
-    if (
-      !isMeta &&
-      !event.altKey &&
-      selectionStart !== selectionEnd &&
-      event.key.length === 1 &&
-      "*_`[(\"".includes(event.key)
-    ) {
-      const edit = smartWrapInsert(
-        value,
-        selectionStart,
-        selectionEnd,
-        event.key,
-      );
-      if (edit) {
-        event.preventDefault();
-        commitSelectionEditTargeted(value, edit);
-        return;
-      }
-    }
-  }
-
-  function handleTextareaCompositionStart() {
-    isComposingRef.current = true;
-  }
-
-  function handleTextareaCompositionEnd() {
-    isComposingRef.current = false;
-  }
-
   async function copyRenderedContent() {
     const previewElement = previewRef.current;
 
@@ -1026,29 +714,19 @@ export default function PreviewPanel({
   const showQualityIndicator = entry.format === "pdf" && entry.quality;
   const body =
     mode === "edit" ? (
-      <div className="markdown-edit-shell">
-        <pre
-          ref={findHighlightRef}
-          className="markdown-find-overlay"
-          aria-hidden="true"
-        >
-          {renderFindHighlight(
-            effectiveMarkdown,
-            isFindOpen ? activeFindMatch : null,
-          )}
-        </pre>
-        <textarea
-          ref={textareaRef}
-          className="markdown-edit-area"
-          value={effectiveMarkdown}
-          onChange={(event) => onMarkdownChange?.(event.target.value)}
-          onScroll={handleEditorScroll}
-          onKeyDown={handleTextareaKeyDown}
-          onCompositionStart={handleTextareaCompositionStart}
-          onCompositionEnd={handleTextareaCompositionEnd}
-          aria-label="Edit markdown"
-        />
-      </div>
+      <EditMode
+        effectiveMarkdown={effectiveMarkdown}
+        isFindOpen={isFindOpen}
+        activeFindMatch={activeFindMatch}
+        textareaRef={textareaRef}
+        findHighlightRef={findHighlightRef}
+        pendingAnchorLineRef={pendingAnchorLineRef}
+        suppressMatchCenteringForModeSwitchRef={
+          suppressMatchCenteringForModeSwitchRef
+        }
+        viewportTopFloor={viewportTopFloor}
+        onMarkdownChange={onMarkdownChange}
+      />
     ) : mode === "linkedin" ? (
       linkedinRefusal ? (
         <div className="linkedin-refusal" role="status">

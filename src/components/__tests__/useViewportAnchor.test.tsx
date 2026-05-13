@@ -106,11 +106,11 @@ function MissingRefHarness({
 
 describe("useViewportAnchor", () => {
   it("wraps rendered anchor capture and apply without owning scroll math", () => {
-    let api: ViewportAnchorApi | null = null;
-    render(<RenderedHarness onReady={(nextApi) => (api = nextApi)} />);
+    const api: { current: ViewportAnchorApi | null } = { current: null };
+    render(<RenderedHarness onReady={(nextApi) => (api.current = nextApi)} />);
 
-    expect(api?.captureAnchorLine()).toBe(7);
-    expect(api?.applyAnchorLine(7)).toBe(true);
+    expect(api.current?.captureAnchorLine()).toBe(7);
+    expect(api.current?.applyAnchorLine(7)).toBe(true);
 
     const container = document.querySelector(
       "[data-testid='surface']",
@@ -119,10 +119,10 @@ describe("useViewportAnchor", () => {
   });
 
   it("returns false when the destination ref is unavailable", () => {
-    let api: ViewportAnchorApi | null = null;
-    render(<MissingRefHarness onReady={(nextApi) => (api = nextApi)} />);
+    const api: { current: ViewportAnchorApi | null } = { current: null };
+    render(<MissingRefHarness onReady={(nextApi) => (api.current = nextApi)} />);
 
-    expect(api?.captureAnchorLine()).toBeNull();
-    expect(api?.applyAnchorLine(3)).toBe(false);
+    expect(api.current?.captureAnchorLine()).toBeNull();
+    expect(api.current?.applyAnchorLine(3)).toBe(false);
   });
 });

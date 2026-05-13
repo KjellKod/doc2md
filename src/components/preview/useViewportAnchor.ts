@@ -34,7 +34,7 @@ export function useViewportAnchor<T extends HTMLElement>(
     const floor = viewportTopFloor();
     if (kind === "textarea") {
       return topLineFromTextareaMirror(
-        element as HTMLTextAreaElement,
+        element as unknown as HTMLTextAreaElement,
         mirrorRef?.current ?? null,
         source,
         floor,
@@ -54,7 +54,7 @@ export function useViewportAnchor<T extends HTMLElement>(
       const floor = viewportTopFloor();
       if (kind === "textarea") {
         scrollTextareaToLine(
-          element as HTMLTextAreaElement,
+          element as unknown as HTMLTextAreaElement,
           mirrorRef?.current ?? null,
           source,
           line,
