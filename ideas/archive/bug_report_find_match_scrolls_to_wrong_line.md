@@ -1,5 +1,9 @@
 # Bug: Find match scrolls to the wrong line in the editor
 
+## Status
+
+Fixed and merged in PR #123 (`ux-bugfixes-May12`, merged 2026-05-13). `scrollTextareaToMatch` was deleted; the find-match effect now routes through `scrollTextareaToLine` with the new `offsetFraction` parameter (centers via the measured mirror). A follow-up commit on the same PR also added `scrollbar-gutter: stable` to `.markdown-edit-area` and `.markdown-find-overlay` so the overlay <mark> stays glued to the matched text on macOS with classic scrollbars. Regression covered by `tests/e2e/find-match-scroll.spec.ts` and `tests/e2e/find-edit-overlay-wrap.spec.ts`.
+
 ## Symptom
 
 In Edit mode, open find (Cmd+F), search for a term, and navigate to a
