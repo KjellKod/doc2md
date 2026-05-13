@@ -1,0 +1,19 @@
+src/styles/global.css
+  s_905dfb6806d57a::t_2bbb5edb231284 2419-2424,2426-2439
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "0d17f485f5a0af070622db8c4836d376b517df6d",
+  "prompts": {},
+  "sessions": {
+    "s_905dfb6806d57a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "617e3081-9563-45a0-9b55-cc30887e26a9",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
