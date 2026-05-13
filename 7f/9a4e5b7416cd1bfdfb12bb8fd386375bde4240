@@ -1,0 +1,21 @@
+ideas/archive/bug_report_find_highlight_dom_leaks.md
+  s_905dfb6806d57a::t_f617bfef6b1e3e 3-6
+ideas/archive/bug_report_find_match_scrolls_to_wrong_line.md
+  s_905dfb6806d57a::t_45ade564160e9d 3-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "7f9a4e5b7416cd1bfdfb12bb8fd386375bde4240",
+  "prompts": {},
+  "sessions": {
+    "s_905dfb6806d57a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "617e3081-9563-45a0-9b55-cc30887e26a9",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
