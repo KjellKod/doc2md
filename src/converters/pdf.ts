@@ -1,36 +1,8 @@
 import {
+  GlobalWorkerOptions,
   OPS,
   getDocument
 } from "pdfjs-dist/legacy/build/pdf.mjs";
-// Statically import the worker module and expose it on globalThis so pdfjs 5
-// detects a main-thread handler at `globalThis.pdfjsWorker?.WorkerMessageHandler`
-// and skips its dynamic-import worker bootstrap. In WKWebView the
-// dynamic-import path fails ("TypeError: undefined is not a function") because
-// the custom doc2md:// URL scheme does not support module loading from a
-// worker context, and the fake-worker fallback then dynamically re-imports
-// the same broken URL. Pre-registering the worker module sidesteps both
-// failure modes — pdfjs runs the worker logic in the main thread.
-import * as pdfWorkerModule from "pdfjs-dist/legacy/build/pdf.worker.mjs";
-
-interface PdfWorkerGlobal {
-  pdfjsWorker?: { WorkerMessageHandler?: unknown };
-}
-
-const pdfWorkerGlobal = globalThis as PdfWorkerGlobal;
-if (
-  typeof pdfWorkerGlobal === "object" &&
-  pdfWorkerGlobal !== null &&
-  !pdfWorkerGlobal.pdfjsWorker
-) {
-  // Expose as a plain object, not the ES module namespace object directly.
-  // Module namespace objects are frozen and have a [Symbol.toStringTag] of
-  // "Module" which can interact poorly with engines (notably JSCore in
-  // WKWebView) when pdfjs probes properties on the registered handler.
-  const namespace = pdfWorkerModule as { WorkerMessageHandler?: unknown };
-  pdfWorkerGlobal.pdfjsWorker = {
-    WorkerMessageHandler: namespace.WorkerMessageHandler,
-  };
-}
 import type {
   TextItem,
   TextMarkedContent
@@ -89,18 +61,16 @@ const IS_NODE_LIKE =
   !PROCESS_INFO.versions?.nw &&
   !(PROCESS_INFO.versions?.electron && PROCESS_INFO.type !== "browser");
 
-// We do NOT set GlobalWorkerOptions.workerSrc. Setting it makes pdfjs try
-// to spawn a real Web Worker first, and that Worker construction fails in
-// WKWebView because the custom doc2md:// URL scheme cannot back a Worker
-// global scope. The failed spawn surfaces as the cryptic
-// "TypeError: undefined is not a function (near '...e of t...')" inside
-// pdfjs's fake-worker fallback. By leaving workerSrc unset we force pdfjs
-// straight into its main-thread fake worker, which uses the
-// globalThis.pdfjsWorker.WorkerMessageHandler we pre-registered above.
+let browserWorkerConfigured = false;
+
 async function ensureBrowserWorkerConfigured() {
-  // No-op: the static worker import at the top of this file already
-  // populates globalThis.pdfjsWorker for the main-thread handler path.
-  return;
+  if (IS_NODE_LIKE || browserWorkerConfigured) {
+    return;
+  }
+
+  const pdfWorker = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
+  GlobalWorkerOptions.workerSrc = pdfWorker.default;
+  browserWorkerConfigured = true;
 }
 
 function isTextItem(item: TextItem | TextMarkedContent): item is TextItem {
@@ -1362,36 +1332,10 @@ export const convertPdf: Converter = async (file) => {
     await ensureBrowserWorkerConfigured();
     const arrayBuffer = await readFileAsArrayBuffer(file);
 
-    // pdfjs-dist 5 hard-requires `standardFontDataUrl` for PDFs that use
-    // the standard fonts (Helvetica, Times, Symbol, ZapfDingbats). v4 was
-    // permissive about its absence; v5 fails with a cryptic
-    // "TypeError: undefined is not a function" inside the worker before
-    // any text extraction can complete. Vite's bundlePdfjsStandardFonts
-    // plugin copies node_modules/pdfjs-dist/standard_fonts/ into
-    // dist/standard_fonts/ and serves it in dev, so resolving the URL
-    // relative to the document base works for both hosted and WKWebView
-    // delivery.
-    //
-    // We also disable v5's modern-API code paths (ImageDecoder,
-    // OffscreenCanvas, FontFace fetching) because they throw similarly
-    // cryptic errors in WKWebView's JavaScriptCore and we only consume
-    // text content.
-    const browserDocument =
-      typeof globalThis !== "undefined" && "document" in globalThis
-        ? (globalThis as { document?: { baseURI?: string } }).document
-        : undefined;
-    const standardFontDataUrl =
-      browserDocument && typeof browserDocument.baseURI === "string"
-        ? new URL("./standard_fonts/", browserDocument.baseURI).href
-        : undefined;
-
     loadingTask = getDocument({
       data: new Uint8Array(arrayBuffer),
-      useSystemFonts: false,
-      isOffscreenCanvasSupported: false,
-      isImageDecoderSupported: false,
-      disableFontFace: true,
-      standardFontDataUrl,
+      useSystemFonts: true,
+      standardFontDataUrl: undefined,
     });
 
     const document = await loadingTask.promise;
@@ -1467,60 +1411,10 @@ export const convertPdf: Converter = async (file) => {
       status: quality.status,
       quality: quality.quality
     };
-  } catch (error) {
-    if (typeof console !== "undefined") {
-      // eslint-disable-next-line no-console -- diagnostic for PDF.js failures
-      console.warn("doc2md PDF conversion failed:", error);
-    }
-    // Surface the underlying error in the user-visible warning so future
-    // pdfjs regressions are diagnosable from the UI without opening dev
-    // tools. The generic CORRUPT_FILE_MESSAGE stays as the primary message
-    // (existing tests rely on it as the corrupt-file signal) and the
-    // specific cause is appended in parentheses.
-    const errorName =
-      error instanceof Error ? error.name : typeof error;
-    const errorMessage =
-      error instanceof Error ? error.message : String(error);
-    // JSCore truncates Error.message; the location lives on `error.sourceURL`,
-    // `error.line`, and `error.column` (non-standard but present on JSCore
-    // errors). Surface them so a future regression names the failing line in
-    // the bundle without dev tools.
-    const errorAny = error as {
-      sourceURL?: string;
-      line?: number;
-      column?: number;
-      stack?: string;
-    };
-    const locationParts: string[] = [];
-    if (typeof errorAny.sourceURL === "string") {
-      const fileName = errorAny.sourceURL.split("/").pop() || errorAny.sourceURL;
-      locationParts.push(fileName);
-    }
-    if (typeof errorAny.line === "number") {
-      locationParts.push(`L${errorAny.line}`);
-    }
-    if (typeof errorAny.column === "number") {
-      locationParts.push(`C${errorAny.column}`);
-    }
-    const firstStackFrame =
-      typeof errorAny.stack === "string"
-        ? errorAny.stack.split("\n").find((line) => line.trim().length > 0)?.trim()
-        : undefined;
-    const location =
-      locationParts.length > 0
-        ? ` @ ${locationParts.join(":")}`
-        : firstStackFrame
-          ? ` @ ${firstStackFrame.slice(0, 120)}`
-          : "";
-    const detail = `${errorName}: ${errorMessage}${location}`.trim();
-    const diagnosticWarning =
-      detail && detail !== ": "
-        ? `${CORRUPT_FILE_MESSAGE} (PDF.js: ${detail})`
-        : CORRUPT_FILE_MESSAGE;
-
+  } catch {
     return {
       markdown: "",
-      warnings: [diagnosticWarning],
+      warnings: [CORRUPT_FILE_MESSAGE],
       status: "error",
       quality: {
         level: "poor",

@@ -746,20 +746,16 @@ describe("convertPdf", () => {
     const { convertPdf } = await import("./pdf");
     const result = await convertPdf(createPdfFile([new Uint8Array([37, 80, 68, 70])], "bad.pdf"));
 
-    // The warning now includes the underlying PDF.js diagnostic so future
-    // regressions in pdfjs-dist surface as actionable error messages in the
-    // UI instead of the generic "corrupt file" string.
-    expect(result.markdown).toBe("");
-    expect(result.status).toBe("error");
-    expect(result.quality).toEqual({
-      level: "poor",
-      summary:
-        "Poor: Could not assess PDF quality because this PDF could not be read.",
+    expect(result).toEqual({
+      markdown: "",
+      warnings: [CORRUPT_FILE_MESSAGE],
+      status: "error",
+      quality: {
+        level: "poor",
+        summary:
+          "Poor: Could not assess PDF quality because this PDF could not be read.",
+      },
     });
-    expect(result.warnings).toHaveLength(1);
-    expect(result.warnings[0]).toContain(CORRUPT_FILE_MESSAGE);
-    expect(result.warnings[0]).toContain("PDF.js:");
-    expect(result.warnings[0]).toContain("bad pdf");
   });
 
   it("does not wait forever for PDF.js worker cleanup after a successful conversion", async () => {
