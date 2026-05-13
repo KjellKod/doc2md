@@ -1,5 +1,9 @@
 # Bug: Find highlight DOM mutation leaks between Preview and Edit
 
+## Status
+
+Fixed and merged in PR #123 (`ux-bugfixes-May12`, merged 2026-05-13). The direct-DOM mutation helpers (`applyRenderedFindHighlight`, `clearRenderedFindHighlight`, `findTextPosition`, `textNodesFor`, `removeEmptyRenderedInlineElements`) were deleted and replaced with the `findHighlightRehype` plugin that injects `<mark>` into the hast AST. Regression covered by `tests/e2e/find-highlight-leak.spec.ts`.
+
 ## Symptoms
 
 Two related symptoms, both observed in the Mac app, both rooted in
