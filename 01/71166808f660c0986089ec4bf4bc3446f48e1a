@@ -1,0 +1,19 @@
+ideas/bug_report_find_preview_table_cells.md
+  s_cd9f1a961ebb24::t_0d4c868783b9ed 1-91
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "0171166808f660c0986089ec4bf4bc3446f48e1a",
+  "prompts": {},
+  "sessions": {
+    "s_cd9f1a961ebb24": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1ba4e19f-5254-422f-8aff-552ce4dd5b60",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
