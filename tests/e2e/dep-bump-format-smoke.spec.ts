@@ -37,6 +37,13 @@ async function uploadFixture(
     .click();
   const fileChooser = await fileChooserPromise;
   await fileChooser.setFiles(fixture);
+  // Upload triggers working-mode auto-collapse (PR #121); if the upload
+  // panel collapses into a rail, re-expand it so the file-list buttons
+  // remain locatable. Mirrors tests/e2e/hosted-browser-baseline.spec.ts.
+  const showUpload = page.getByRole("button", { name: "Show upload panel" });
+  if (await showUpload.isVisible().catch(() => false)) {
+    await showUpload.click();
+  }
   await expect(
     page.getByRole("button", { name: `Open ${fixture.name}` }),
   ).toBeVisible();
