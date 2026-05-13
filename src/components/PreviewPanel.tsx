@@ -1,19 +1,10 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { FilePlus, Search } from "lucide-react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import type { FileEntry } from "../types";
 import type { SaveState } from "../types/saveState";
 import { entryDisplayName } from "../utils/displayName";
 import ErrorMessage from "./ErrorMessage";
-import {
-  detectUnsupportedConstructs,
-  formatLinkedInUnicodeWithLineMap,
-} from "./linkedinFormatting";
 import PdfQualityIndicator from "./PdfQualityIndicator";
-import { formatPreviewMarkdownWithLineMap } from "./previewFormatting";
-import { findHighlightRehype } from "./findHighlightRehype";
-import { sourceLineRehype } from "./sourceLineRehype";
 import {
   scrollRenderedToLine,
   scrollTextareaToLine,
@@ -25,114 +16,10 @@ import SaveStatePill from "./SaveStatePill";
 import FindReplaceBar from "./FindReplaceBar";
 import type { FindMatch } from "./useFindReplace";
 import EditMode from "./preview/EditMode";
-
-type LinkedInPreviewTone =
-  | "bold"
-  | "italic"
-  | "bold-italic"
-  | "underline"
-  | "strike";
-
-interface LinkedInPreviewSegment {
-  text: string;
-  tone: LinkedInPreviewTone | null;
-}
-
-const UNDERLINE_MARK = "\u0332";
-const STRIKE_MARK = "\u0336";
-
-function toneForLinkedInCluster(cluster: string): LinkedInPreviewTone | null {
-  if (cluster.includes(STRIKE_MARK)) {
-    return "strike";
-  }
-
-  if (cluster.includes(UNDERLINE_MARK)) {
-    return "underline";
-  }
-
-  const codePoint = cluster.codePointAt(0);
-
-  if (!codePoint) {
-    return null;
-  }
-
-  if (
-    (codePoint >= 0x1d400 && codePoint <= 0x1d433) ||
-    (codePoint >= 0x1d468 && codePoint <= 0x1d49b)
-  ) {
-    return codePoint >= 0x1d468 ? "bold-italic" : "bold";
-  }
-
-  if (
-    codePoint === 0x210e ||
-    (codePoint >= 0x1d434 && codePoint <= 0x1d467)
-  ) {
-    return "italic";
-  }
-
-  return null;
-}
-
-function renderLinkedInSegmentChildren(
-  text: string,
-  segmentOffset: number,
-  match: { start: number; end: number } | null,
-) {
-  if (!match) {
-    return text;
-  }
-  const segEnd = segmentOffset + text.length;
-  if (match.end <= segmentOffset || match.start >= segEnd) {
-    return text;
-  }
-  const overlapStart = Math.max(0, match.start - segmentOffset);
-  const overlapEnd = Math.min(text.length, match.end - segmentOffset);
-  if (overlapStart >= overlapEnd) {
-    return text;
-  }
-  const before = text.slice(0, overlapStart);
-  const matched = text.slice(overlapStart, overlapEnd);
-  const after = text.slice(overlapEnd);
-  return (
-    <>
-      {before}
-      <mark className="markdown-rendered-find-highlight">{matched}</mark>
-      {after}
-    </>
-  );
-}
-
-function segmentLinkedInPreview(text: string) {
-  const clusters: string[] = [];
-
-  for (const char of Array.from(text)) {
-    if (
-      (char === UNDERLINE_MARK || char === STRIKE_MARK) &&
-      clusters.length > 0
-    ) {
-      clusters[clusters.length - 1] += char;
-      continue;
-    }
-
-    clusters.push(char);
-  }
-
-  const segments: LinkedInPreviewSegment[] = [];
-
-  for (const cluster of clusters) {
-    const tone = toneForLinkedInCluster(cluster);
-    const previous = segments[segments.length - 1];
-
-    if (previous && previous.tone === tone) {
-      previous.text += cluster;
-      continue;
-    }
-
-    segments.push({ text: cluster, tone });
-  }
-
-  return segments;
-}
+import LinkedInMode, {
+  getLinkedInPreviewState,
+} from "./preview/LinkedInMode";
+import PreviewMode from "./preview/PreviewMode";
 
 interface PreviewPanelProps {
   entry: FileEntry | null;
@@ -160,27 +47,6 @@ function fallbackCopyText(text: string) {
   element.select();
   document.execCommand("copy");
   document.body.removeChild(element);
-}
-
-function clampScrollTop(element: HTMLElement, scrollTop: number) {
-  const maxScroll = Math.max(element.scrollHeight - element.clientHeight, 0);
-
-  return Math.min(Math.max(scrollTop, 0), maxScroll);
-}
-
-function centerElementInScrollContainer(
-  container: HTMLElement,
-  element: HTMLElement,
-) {
-  const containerRect = container.getBoundingClientRect();
-  const elementRect = element.getBoundingClientRect();
-  const targetScroll =
-    container.scrollTop +
-    elementRect.top -
-    containerRect.top -
-    (container.clientHeight - elementRect.height) / 2;
-
-  container.scrollTop = clampScrollTop(container, targetScroll);
 }
 
 export default function PreviewPanel({
@@ -345,48 +211,10 @@ export default function PreviewPanel({
   const canEditFromEmptyState = Boolean(
     entry && (entry.isScratch || entry.editedMarkdown !== undefined),
   );
-  // Heavy work: full-document parsing, line-mapping, refusal scanning,
-  // and rehype plugin instantiation. Memoize on `effectiveMarkdown`
-  // (and mode where applicable) so a parent re-render — including a
-  // mode switch that doesn't change the source — does not re-parse
-  // the whole document. Without these memos a multi-thousand-line
-  // doc takes several seconds to switch into preview because every
-  // render builds a fresh rehype plugin reference, which busts
-  // ReactMarkdown's internal parse cache.
-  const previewWithLineMap = useMemo(
-    () => formatPreviewMarkdownWithLineMap(effectiveMarkdown),
+  const linkedinPreviewState = useMemo(
+    () => getLinkedInPreviewState(effectiveMarkdown),
     [effectiveMarkdown],
   );
-  const previewMarkdown = previewWithLineMap.markdown;
-  const previewOriginalLineFor = previewWithLineMap.originalLineFor;
-  const renderedFindHighlightMatch = useMemo(
-    () =>
-      mode !== "edit" && isFindOpen && activeFindMatch
-        ? { start: activeFindMatch.start, end: activeFindMatch.end }
-        : null,
-    [activeFindMatch, isFindOpen, mode],
-  );
-  const previewRehypePlugins = useMemo(
-    () => [
-      sourceLineRehype(previewOriginalLineFor),
-      findHighlightRehype(renderedFindHighlightMatch),
-    ],
-    [previewOriginalLineFor, renderedFindHighlightMatch],
-  );
-  const linkedinRefusal = useMemo(
-    () =>
-      mode === "linkedin" ? detectUnsupportedConstructs(effectiveMarkdown) : null,
-    [effectiveMarkdown, mode],
-  );
-  const linkedinWithLineMap = useMemo(
-    () =>
-      linkedinRefusal === null && mode === "linkedin"
-        ? formatLinkedInUnicodeWithLineMap(effectiveMarkdown)
-        : null,
-    [effectiveMarkdown, linkedinRefusal, mode],
-  );
-  const linkedinPreview = linkedinWithLineMap?.text ?? null;
-  const linkedinOriginalLineFor = linkedinWithLineMap?.originalLineFor ?? [];
   const showToggle = Boolean(
     entry &&
       (entry.status === "success" || entry.status === "warning") &&
@@ -394,68 +222,13 @@ export default function PreviewPanel({
   );
   const copyText =
     mode === "linkedin"
-      ? linkedinRefusal
+      ? linkedinPreviewState.refusal
         ? null
-        : linkedinPreview
+        : linkedinPreviewState.text
       : effectiveMarkdown;
   const showCopyButton = showToggle && typeof copyText === "string";
   const activeFindSource =
     mode === "edit" ? effectiveMarkdown : renderedViewText;
-
-  function shouldCenterActiveMatch() {
-    return !suppressMatchCenteringForModeSwitchRef.current;
-  }
-
-  useLayoutEffect(() => {
-    const element = renderedViewRef.current;
-
-    if (!element || mode === "edit") {
-      setRenderedViewText("");
-      return;
-    }
-
-    // The find-highlight rehype plugin inserts a zero-width <mark> (with
-    // a U+200B sentinel character) for zero-width regex matches. Strip
-    // U+200B from the snapshot so renderedViewText reflects what the
-    // user perceives as the searchable corpus — otherwise the sentinel
-    // would shift offsets for subsequent find queries (bug 2 reviewer-B
-    // finding).
-    const nextText = (element.textContent ?? "").replace(/\u200B/g, "");
-    setRenderedViewText((current) => (current === nextText ? current : nextText));
-  }, [effectiveMarkdown, isFindOpen, linkedinPreview, mode, previewMarkdown]);
-
-  // Center the active match within the rendered surface AFTER the rehype
-  // plugin has injected the <mark>. This is a READ of React-rendered DOM,
-  // never a mutation — the bug previously fixed via direct DOM mutation
-  // (which corrupted React's tree) now lives in `findHighlightRehype`.
-  useLayoutEffect(() => {
-    const element = renderedViewRef.current;
-    if (!element || mode === "edit") {
-      return;
-    }
-    if (!isFindOpen || !activeFindMatch) {
-      return;
-    }
-    if (pendingAnchorLineRef.current !== null) {
-      return;
-    }
-    if (!shouldCenterActiveMatch()) {
-      return;
-    }
-    const highlight = element.querySelector(
-      "mark.markdown-rendered-find-highlight",
-    ) as HTMLElement | null;
-    if (highlight) {
-      centerElementInScrollContainer(element, highlight);
-    }
-  }, [
-    activeFindMatch?.end,
-    activeFindMatch?.start,
-    activeFindMatch,
-    isFindOpen,
-    mode,
-    renderedViewText,
-  ]);
 
   useLayoutEffect(() => {
     const anchorLine = pendingAnchorLineRef.current;
@@ -728,90 +501,32 @@ export default function PreviewPanel({
         onMarkdownChange={onMarkdownChange}
       />
     ) : mode === "linkedin" ? (
-      linkedinRefusal ? (
-        <div className="linkedin-refusal" role="status">
-          <p>{linkedinRefusal}</p>
-          <p>
-            Remove tables or HTML from this draft to preview a LinkedIn-ready
-            plain-text version.
-          </p>
-        </div>
-      ) : (
-        <pre
-          ref={(element) => {
-            renderedViewRef.current = element;
-          }}
-          className="linkedin-surface"
-          aria-label="LinkedIn preview"
-        >
-          {(() => {
-            const lines = (linkedinPreview ?? "").split("\n");
-            // Compute the absolute offset of each line's first character in
-            // the rendered textContent so we can intersect the active find
-            // match (which uses rendered-text offsets — see
-            // `findHighlightRehype` and the `renderedViewText` snapshot) and
-            // wrap the matching span in <mark> declaratively. The old DOM-
-            // mutation path also highlighted LinkedIn mode; the new rehype-
-            // plugin path only covers Preview, so LinkedIn parity is restored
-            // here without mutating React-managed DOM.
-            let cursor = 0;
-            const lineStarts = lines.map((line) => {
-              const start = cursor;
-              cursor += line.length + 1;
-              return start;
-            });
-            return lines.map((line, lineIndex, all) => {
-              const sourceLine =
-                linkedinOriginalLineFor[lineIndex] ?? lineIndex + 1;
-              const segments = segmentLinkedInPreview(line);
-              let segOffset = lineStarts[lineIndex];
-              return (
-                <span key={`linkedin-line-${lineIndex}`}>
-                  <span
-                    className="linkedin-line"
-                    data-source-line={String(sourceLine)}
-                  >
-                    {segments.map(({ text, tone }, segmentIndex) => {
-                      const children = renderLinkedInSegmentChildren(
-                        text,
-                        segOffset,
-                        renderedFindHighlightMatch,
-                      );
-                      segOffset += text.length;
-                      return tone ? (
-                        <span
-                          key={`${tone}-${segmentIndex}`}
-                          className={`linkedin-emphasis linkedin-emphasis-${tone}`}
-                        >
-                          {children}
-                        </span>
-                      ) : (
-                        <span key={`plain-${segmentIndex}`}>{children}</span>
-                      );
-                    })}
-                  </span>
-                  {lineIndex < all.length - 1 ? "\n" : null}
-                </span>
-              );
-            });
-          })()}
-        </pre>
-      )
+      <LinkedInMode
+        state={linkedinPreviewState}
+        isFindOpen={isFindOpen}
+        activeFindMatch={activeFindMatch}
+        renderedViewRef={renderedViewRef}
+        pendingAnchorLineRef={pendingAnchorLineRef}
+        suppressMatchCenteringForModeSwitchRef={
+          suppressMatchCenteringForModeSwitchRef
+        }
+        renderedViewText={renderedViewText}
+        onRenderedViewTextChange={setRenderedViewText}
+      />
     ) : (
-      <div
-        className="markdown-surface"
-        ref={(element) => {
-          previewRef.current = element;
-          renderedViewRef.current = element;
-        }}
-      >
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          rehypePlugins={previewRehypePlugins}
-        >
-          {previewMarkdown}
-        </ReactMarkdown>
-      </div>
+      <PreviewMode
+        effectiveMarkdown={effectiveMarkdown}
+        isFindOpen={isFindOpen}
+        activeFindMatch={activeFindMatch}
+        previewRef={previewRef}
+        renderedViewRef={renderedViewRef}
+        pendingAnchorLineRef={pendingAnchorLineRef}
+        suppressMatchCenteringForModeSwitchRef={
+          suppressMatchCenteringForModeSwitchRef
+        }
+        renderedViewText={renderedViewText}
+        onRenderedViewTextChange={setRenderedViewText}
+      />
     );
 
   return (
