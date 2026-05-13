@@ -12,6 +12,7 @@ import {
 } from "./linkedinFormatting";
 import PdfQualityIndicator from "./PdfQualityIndicator";
 import { formatPreviewMarkdownWithLineMap } from "./previewFormatting";
+import { findHighlightRehype } from "./findHighlightRehype";
 import { sourceLineRehype } from "./sourceLineRehype";
 import {
   scrollRenderedToLine,
@@ -167,6 +168,35 @@ function toneForLinkedInCluster(cluster: string): LinkedInPreviewTone | null {
   return null;
 }
 
+function renderLinkedInSegmentChildren(
+  text: string,
+  segmentOffset: number,
+  match: { start: number; end: number } | null,
+) {
+  if (!match) {
+    return text;
+  }
+  const segEnd = segmentOffset + text.length;
+  if (match.end <= segmentOffset || match.start >= segEnd) {
+    return text;
+  }
+  const overlapStart = Math.max(0, match.start - segmentOffset);
+  const overlapEnd = Math.min(text.length, match.end - segmentOffset);
+  if (overlapStart >= overlapEnd) {
+    return text;
+  }
+  const before = text.slice(0, overlapStart);
+  const matched = text.slice(overlapStart, overlapEnd);
+  const after = text.slice(overlapEnd);
+  return (
+    <>
+      {before}
+      <mark className="markdown-rendered-find-highlight">{matched}</mark>
+      {after}
+    </>
+  );
+}
+
 function segmentLinkedInPreview(text: string) {
   const clusters: string[] = [];
 
@@ -255,28 +285,6 @@ function renderFindHighlight(source: string, match: FindMatch | null) {
   );
 }
 
-function scrollTextareaToMatch(
-  textarea: HTMLTextAreaElement,
-  source: string,
-  match: FindMatch,
-) {
-  // Place the caret at the end of the match with no selection so that
-  // when focus lands on the textarea (Escape from find, Tab, click) the
-  // user's next keystroke inserts after the match instead of replacing
-  // it. The visible highlight is painted by the find-overlay <mark>;
-  // it does not depend on the textarea's selection.
-  textarea.setSelectionRange(match.end, match.end);
-
-  const linesBeforeMatch = source.slice(0, match.start).split("\n").length;
-  const lineHeight = Number.parseFloat(getComputedStyle(textarea).lineHeight);
-  const estimatedLineHeight = Number.isFinite(lineHeight) ? lineHeight : 20;
-  const lineTop = (linesBeforeMatch - 1) * estimatedLineHeight;
-  const targetScroll =
-    lineTop - (textarea.clientHeight - estimatedLineHeight) / 2;
-
-  textarea.scrollTop = clampScrollTop(textarea, targetScroll);
-}
-
 function clampScrollTop(element: HTMLElement, scrollTop: number) {
   const maxScroll = Math.max(element.scrollHeight - element.clientHeight, 0);
 
@@ -296,97 +304,6 @@ function centerElementInScrollContainer(
     (container.clientHeight - elementRect.height) / 2;
 
   container.scrollTop = clampScrollTop(container, targetScroll);
-}
-
-function clearRenderedFindHighlight(root: HTMLElement) {
-  const highlights = Array.from(
-    root.querySelectorAll("mark.markdown-rendered-find-highlight"),
-  );
-
-  for (const highlight of highlights) {
-    if (highlight.classList.contains("markdown-rendered-find-highlight-zero")) {
-      highlight.remove();
-      continue;
-    }
-
-    highlight.replaceWith(...Array.from(highlight.childNodes));
-  }
-
-  root.normalize();
-  removeEmptyRenderedInlineElements(root);
-}
-
-function removeEmptyRenderedInlineElements(root: HTMLElement) {
-  const elements = Array.from(root.querySelectorAll("strong, em, span"));
-
-  for (const element of elements) {
-    if (element.textContent === "" && element.children.length === 0) {
-      element.remove();
-    }
-  }
-}
-
-function textNodesFor(root: HTMLElement) {
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  const nodes: Text[] = [];
-  let current = walker.nextNode();
-
-  while (current) {
-    nodes.push(current as Text);
-    current = walker.nextNode();
-  }
-
-  return nodes;
-}
-
-function findTextPosition(root: HTMLElement, offset: number) {
-  let cursor = 0;
-
-  for (const node of textNodesFor(root)) {
-    const nextCursor = cursor + node.data.length;
-
-    if (offset >= cursor && offset <= nextCursor) {
-      return { node, offset: offset - cursor };
-    }
-
-    cursor = nextCursor;
-  }
-
-  return null;
-}
-
-function applyRenderedFindHighlight(
-  root: HTMLElement,
-  match: FindMatch,
-  centerMatch: boolean,
-) {
-  const start = findTextPosition(root, match.start);
-  const end = findTextPosition(root, match.end);
-
-  if (!start || !end) {
-    return;
-  }
-
-  const highlight = document.createElement("mark");
-  highlight.className = "markdown-rendered-find-highlight";
-
-  const range = document.createRange();
-  range.setStart(start.node, start.offset);
-  range.setEnd(end.node, end.offset);
-
-  if (match.start === match.end) {
-    highlight.classList.add("markdown-rendered-find-highlight-zero");
-    highlight.textContent = "\u200b";
-    range.insertNode(highlight);
-  } else {
-    highlight.append(range.extractContents());
-    range.insertNode(highlight);
-  }
-
-  removeEmptyRenderedInlineElements(root);
-  if (centerMatch) {
-    centerElementInScrollContainer(root, highlight);
-  }
 }
 
 export default function PreviewPanel({
@@ -552,9 +469,19 @@ export default function PreviewPanel({
   );
   const previewMarkdown = previewWithLineMap.markdown;
   const previewOriginalLineFor = previewWithLineMap.originalLineFor;
+  const renderedFindHighlightMatch = useMemo(
+    () =>
+      mode !== "edit" && isFindOpen && activeFindMatch
+        ? { start: activeFindMatch.start, end: activeFindMatch.end }
+        : null,
+    [activeFindMatch, isFindOpen, mode],
+  );
   const previewRehypePlugins = useMemo(
-    () => [sourceLineRehype(previewOriginalLineFor)],
-    [previewOriginalLineFor],
+    () => [
+      sourceLineRehype(previewOriginalLineFor),
+      findHighlightRehype(renderedFindHighlightMatch),
+    ],
+    [previewOriginalLineFor, renderedFindHighlightMatch],
   );
   const linkedinRefusal = useMemo(
     () =>
@@ -597,26 +524,39 @@ export default function PreviewPanel({
       return;
     }
 
-    const nextText = element.textContent ?? "";
+    // The find-highlight rehype plugin inserts a zero-width <mark> (with
+    // a U+200B sentinel character) for zero-width regex matches. Strip
+    // U+200B from the snapshot so renderedViewText reflects what the
+    // user perceives as the searchable corpus — otherwise the sentinel
+    // would shift offsets for subsequent find queries (bug 2 reviewer-B
+    // finding).
+    const nextText = (element.textContent ?? "").replace(/\u200B/g, "");
     setRenderedViewText((current) => (current === nextText ? current : nextText));
   }, [effectiveMarkdown, isFindOpen, linkedinPreview, mode, previewMarkdown]);
 
+  // Center the active match within the rendered surface AFTER the rehype
+  // plugin has injected the <mark>. This is a READ of React-rendered DOM,
+  // never a mutation — the bug previously fixed via direct DOM mutation
+  // (which corrupted React's tree) now lives in `findHighlightRehype`.
   useLayoutEffect(() => {
     const element = renderedViewRef.current;
-
     if (!element || mode === "edit") {
       return;
     }
-
-    clearRenderedFindHighlight(element);
-
-    if (isFindOpen && activeFindMatch) {
-      applyRenderedFindHighlight(
-        element,
-        activeFindMatch,
-        pendingAnchorLineRef.current === null &&
-          shouldCenterActiveMatch(),
-      );
+    if (!isFindOpen || !activeFindMatch) {
+      return;
+    }
+    if (pendingAnchorLineRef.current !== null) {
+      return;
+    }
+    if (!shouldCenterActiveMatch()) {
+      return;
+    }
+    const highlight = element.querySelector(
+      "mark.markdown-rendered-find-highlight",
+    ) as HTMLElement | null;
+    if (highlight) {
+      centerElementInScrollContainer(element, highlight);
     }
   }, [
     activeFindMatch?.end,
@@ -636,7 +576,27 @@ export default function PreviewPanel({
       pendingAnchorLineRef.current === null &&
       shouldCenterActiveMatch()
     ) {
-      scrollTextareaToMatch(textareaRef.current, effectiveMarkdown, activeFindMatch);
+      const textarea = textareaRef.current;
+      // Caret-collapse-at-match-end. Previously lived inside
+      // `scrollTextareaToMatch`. Keeping the behavior so Escape/Tab/click
+      // from the find bar inserts the user's next keystroke AFTER the
+      // match instead of replacing it.
+      textarea.setSelectionRange(activeFindMatch.end, activeFindMatch.end);
+
+      // Route through the measured-mirror helper so soft-wrapped
+      // paragraphs above the match no longer skew the scroll position.
+      // `offsetFraction = 0.5` centers the match in the visible
+      // viewport — the centering UX the old helper aimed at.
+      const matchLine =
+        effectiveMarkdown.slice(0, activeFindMatch.start).split("\n").length;
+      scrollTextareaToLine(
+        textarea,
+        findHighlightRef.current,
+        effectiveMarkdown,
+        matchLine,
+        viewportTopFloor(),
+        0.5,
+      );
       syncFindHighlightScroll();
     }
   }, [
@@ -797,15 +757,10 @@ export default function PreviewPanel({
       return;
     }
 
-    // Clear DOM mutations applied to the rendered surface (find
-    // highlights, <mark> wrappers) BEFORE the surface unmounts. If we
-    // leave the mutations in place, React's reconciler can leak
-    // remnants of the rendered markdown into the editor's DOM when it
-    // diffs against its virtual tree, and stale <mark> nodes can
-    // produce phantom selections that look like rogue edits.
-    if (mode !== "edit" && renderedViewRef.current) {
-      clearRenderedFindHighlight(renderedViewRef.current);
-    }
+    // Note: no DOM-mutation cleanup needed anymore. The find highlight
+    // is rendered through the `findHighlightRehype` rehype plugin so
+    // React owns the `<mark>` wrapper from creation to unmount; there
+    // are no orphaned mutations to clean up before a mode switch.
 
     const captured = captureAnchorLine();
     if (captured !== null) {
@@ -1097,33 +1052,57 @@ export default function PreviewPanel({
           className="linkedin-surface"
           aria-label="LinkedIn preview"
         >
-          {(linkedinPreview ?? "").split("\n").map((line, lineIndex, all) => {
-            const sourceLine =
-              linkedinOriginalLineFor[lineIndex] ?? lineIndex + 1;
-            const segments = segmentLinkedInPreview(line);
-            return (
-              <span key={`linkedin-line-${lineIndex}`}>
-                <span
-                  className="linkedin-line"
-                  data-source-line={String(sourceLine)}
-                >
-                  {segments.map(({ text, tone }, segmentIndex) =>
-                    tone ? (
-                      <span
-                        key={`${tone}-${segmentIndex}`}
-                        className={`linkedin-emphasis linkedin-emphasis-${tone}`}
-                      >
-                        {text}
-                      </span>
-                    ) : (
-                      <span key={`plain-${segmentIndex}`}>{text}</span>
-                    ),
-                  )}
+          {(() => {
+            const lines = (linkedinPreview ?? "").split("\n");
+            // Compute the absolute offset of each line's first character in
+            // the rendered textContent so we can intersect the active find
+            // match (which uses rendered-text offsets — see
+            // `findHighlightRehype` and the `renderedViewText` snapshot) and
+            // wrap the matching span in <mark> declaratively. The old DOM-
+            // mutation path also highlighted LinkedIn mode; the new rehype-
+            // plugin path only covers Preview, so LinkedIn parity is restored
+            // here without mutating React-managed DOM.
+            let cursor = 0;
+            const lineStarts = lines.map((line) => {
+              const start = cursor;
+              cursor += line.length + 1;
+              return start;
+            });
+            return lines.map((line, lineIndex, all) => {
+              const sourceLine =
+                linkedinOriginalLineFor[lineIndex] ?? lineIndex + 1;
+              const segments = segmentLinkedInPreview(line);
+              let segOffset = lineStarts[lineIndex];
+              return (
+                <span key={`linkedin-line-${lineIndex}`}>
+                  <span
+                    className="linkedin-line"
+                    data-source-line={String(sourceLine)}
+                  >
+                    {segments.map(({ text, tone }, segmentIndex) => {
+                      const children = renderLinkedInSegmentChildren(
+                        text,
+                        segOffset,
+                        renderedFindHighlightMatch,
+                      );
+                      segOffset += text.length;
+                      return tone ? (
+                        <span
+                          key={`${tone}-${segmentIndex}`}
+                          className={`linkedin-emphasis linkedin-emphasis-${tone}`}
+                        >
+                          {children}
+                        </span>
+                      ) : (
+                        <span key={`plain-${segmentIndex}`}>{children}</span>
+                      );
+                    })}
+                  </span>
+                  {lineIndex < all.length - 1 ? "\n" : null}
                 </span>
-                {lineIndex < all.length - 1 ? "\n" : null}
-              </span>
-            );
-          })}
+              );
+            });
+          })()}
         </pre>
       )
     ) : (

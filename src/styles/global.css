@@ -1829,6 +1829,15 @@ body.is-height-resizing * {
   line-height: 1.5;
   white-space: pre-wrap;
   overflow-wrap: break-word;
+  /* Always reserve scrollbar gutter so the textarea and the find-overlay
+     <pre> have identical wrap widths. Without this, on macOS with
+     "Always" classic scrollbars (System Settings → Appearance → Show
+     scroll bars) the textarea reserves scrollbar width while the
+     overlay (overflow: hidden) does not. Lines then wrap at different
+     column positions and the find <mark> drifts above/below the matched
+     word in the editor — and the drift "follows" the scroll because
+     each wrapped paragraph adds another offset. */
+  scrollbar-gutter: stable;
 }
 
 .markdown-edit-area {
@@ -2407,10 +2416,27 @@ body.is-height-resizing * {
 }
 
 :root[data-theme="dark"] .markdown-find-highlight {
-  background: rgba(255, 198, 41, 0.82);
+  /* Edit-mode overlay sits on top of the textarea text. In dark mode
+     the underlying text is light, so a dense yellow fill washes the
+     glyphs out. Drop the fill to a translucent amber and lean on a
+     bright outline so the match is unmistakable without obscuring
+     the characters underneath. */
+  background: rgba(255, 198, 41, 0.32);
   box-shadow:
-    0 0 0 2px rgba(255, 222, 118, 0.46),
-    0 0 16px rgba(255, 198, 41, 0.58);
+    0 0 0 2px rgba(255, 222, 118, 0.85),
+    0 0 14px rgba(255, 198, 41, 0.45);
+}
+
+:root[data-theme="dark"] .markdown-rendered-find-highlight {
+  /* Rendered <mark> wraps actual text in preview/LinkedIn. With the
+     surface's default light text color, light-on-yellow is hard to
+     read — force a dark glyph color while keeping the yellow accent
+     so the match still pops. */
+  background: rgba(255, 198, 41, 0.78);
+  box-shadow:
+    0 0 0 2px rgba(255, 222, 118, 0.5),
+    0 0 14px rgba(255, 198, 41, 0.4);
+  color: #1a1a1a;
 }
 
 :root[data-theme="dark"] .markdown-surface {
