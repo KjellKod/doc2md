@@ -1677,9 +1677,12 @@ describe("App desktop bridge", () => {
     render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
 
-    await waitFor(() =>
-      expect(screen.getByRole("button", { name: /imported\.md/i })).toBeInTheDocument(),
-    );
+    // Use the same auto-collapse-aware helper the other imported-file tests
+    // use. PR #121 introduced the working-mode auto-collapse, which hides
+    // file buttons behind the rail; under React 19's tighter batching the
+    // old `waitFor(getByRole)` races against the collapse and the button
+    // is gone by the time the assertion runs.
+    await awaitOpenButton(/imported\.md/i);
     await waitFor(() =>
       expect(convertFileMock).toHaveBeenCalledWith(
         expect.objectContaining({ name: "imported.txt" }),
@@ -1703,7 +1706,7 @@ describe("App desktop bridge", () => {
     // Save As resolves with path /Users/me/Imported.md the label updates to
     // "Open Imported.md" (capital I). Match case-sensitively so this wait
     // actually anchors on the post-Save-As state, not the pre-existing button.
-    await screen.findByRole("button", { name: /Open Imported\.md/ });
+    await awaitOpenButton(/Open Imported\.md/);
 
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.save));
 
