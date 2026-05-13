@@ -13,7 +13,10 @@ import type { FindMatch } from "./useFindReplace";
 interface FindReplaceBarProps {
   source: string;
   onSourceChange: (next: string) => void;
-  textareaRef?: RefObject<HTMLTextAreaElement>;
+  // React 19's useRef<HTMLTextAreaElement>(null) returns RefObject<T | null>,
+  // so widen the prop type to accept the new shape instead of forcing callers
+  // to cast or special-case the type at every call site.
+  textareaRef?: RefObject<HTMLTextAreaElement | null>;
   onClose: () => void;
   showReplace: boolean;
   onShowReplaceChange: (showReplace: boolean) => void;

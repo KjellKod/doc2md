@@ -1221,7 +1221,12 @@ describe("App desktop bridge", () => {
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
 
     await waitFor(() => expect(getPersistenceSettings).toHaveBeenCalledTimes(2));
-    fireEvent.click(screen.getByRole("button", { name: "Show intro and return to landing" }));
+    // The "Show intro and return to landing" working-mode button (added by
+    // PR #122) is rendered async relative to getPersistenceSettings under
+    // React 19's batching, so wait for it rather than fetching synchronously.
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Show intro and return to landing" }),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Desktop settings" }));
     let settingsDialog = screen.getByRole("dialog", { name: "Desktop settings" });
     expect(within(settingsDialog).getByText("Opened.md")).toBeInTheDocument();
@@ -1239,7 +1244,9 @@ describe("App desktop bridge", () => {
       expectedMtimeMs: 10,
       lineEnding: "lf",
     });
-    fireEvent.click(screen.getByRole("button", { name: "Show intro and return to landing" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Show intro and return to landing" }),
+    );
     settingsDialog = screen.getByRole("dialog", { name: "Desktop settings" });
     expect(within(settingsDialog).getByText("Saved.md")).toBeInTheDocument();
 
@@ -1677,9 +1684,12 @@ describe("App desktop bridge", () => {
     render(<DesktopApp />);
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
 
-    await waitFor(() =>
-      expect(screen.getByRole("button", { name: /imported\.md/i })).toBeInTheDocument(),
-    );
+    // Use the same auto-collapse-aware helper the other imported-file tests
+    // use. PR #121 introduced the working-mode auto-collapse, which hides
+    // file buttons behind the rail; under React 19's tighter batching the
+    // old `waitFor(getByRole)` races against the collapse and the button
+    // is gone by the time the assertion runs.
+    await awaitOpenButton(/imported\.md/i);
     await waitFor(() =>
       expect(convertFileMock).toHaveBeenCalledWith(
         expect.objectContaining({ name: "imported.txt" }),
@@ -1695,6 +1705,15 @@ describe("App desktop bridge", () => {
       lineEnding: "lf",
     });
     expect(saveFile).not.toHaveBeenCalled();
+
+    // React 19 batches the post-Save-As state updates (path + mtimeMs anchor)
+    // more aggressively than 18; wait for the anchored saved-file button to
+    // appear so the next save event routes to saveFile, not another saveFileAs.
+    // The pre-Save-As button label is "Open imported.md" (lowercase i); after
+    // Save As resolves with path /Users/me/Imported.md the label updates to
+    // "Open Imported.md" (capital I). Match case-sensitively so this wait
+    // actually anchors on the post-Save-As state, not the pre-existing button.
+    await awaitOpenButton(/Open Imported\.md/);
 
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.save));
 
