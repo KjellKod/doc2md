@@ -22,8 +22,13 @@ if (
   pdfWorkerGlobal !== null &&
   !pdfWorkerGlobal.pdfjsWorker
 ) {
-  pdfWorkerGlobal.pdfjsWorker = pdfWorkerModule as {
-    WorkerMessageHandler?: unknown;
+  // Expose as a plain object, not the ES module namespace object directly.
+  // Module namespace objects are frozen and have a [Symbol.toStringTag] of
+  // "Module" which can interact poorly with engines (notably JSCore in
+  // WKWebView) when pdfjs probes properties on the registered handler.
+  const namespace = pdfWorkerModule as { WorkerMessageHandler?: unknown };
+  pdfWorkerGlobal.pdfjsWorker = {
+    WorkerMessageHandler: namespace.WorkerMessageHandler,
   };
 }
 import type {
@@ -1476,7 +1481,38 @@ export const convertPdf: Converter = async (file) => {
       error instanceof Error ? error.name : typeof error;
     const errorMessage =
       error instanceof Error ? error.message : String(error);
-    const detail = `${errorName}: ${errorMessage}`.trim();
+    // JSCore truncates Error.message; the location lives on `error.sourceURL`,
+    // `error.line`, and `error.column` (non-standard but present on JSCore
+    // errors). Surface them so a future regression names the failing line in
+    // the bundle without dev tools.
+    const errorAny = error as {
+      sourceURL?: string;
+      line?: number;
+      column?: number;
+      stack?: string;
+    };
+    const locationParts: string[] = [];
+    if (typeof errorAny.sourceURL === "string") {
+      const fileName = errorAny.sourceURL.split("/").pop() || errorAny.sourceURL;
+      locationParts.push(fileName);
+    }
+    if (typeof errorAny.line === "number") {
+      locationParts.push(`L${errorAny.line}`);
+    }
+    if (typeof errorAny.column === "number") {
+      locationParts.push(`C${errorAny.column}`);
+    }
+    const firstStackFrame =
+      typeof errorAny.stack === "string"
+        ? errorAny.stack.split("\n").find((line) => line.trim().length > 0)?.trim()
+        : undefined;
+    const location =
+      locationParts.length > 0
+        ? ` @ ${locationParts.join(":")}`
+        : firstStackFrame
+          ? ` @ ${firstStackFrame.slice(0, 120)}`
+          : "";
+    const detail = `${errorName}: ${errorMessage}${location}`.trim();
     const diagnosticWarning =
       detail && detail !== ": "
         ? `${CORRUPT_FILE_MESSAGE} (PDF.js: ${detail})`
