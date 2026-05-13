@@ -1,0 +1,28 @@
+ideas/README.md
+  s_cd9f1a961ebb24::t_c09b909a387a8b 3-21,23-47
+  s_cd9f1a961ebb24::t_cb349301067099 22
+docs/ideas-audit-2026-05-14.md
+  s_cd9f1a961ebb24::t_3dd8c0bb80589c 1-52,59-62,64-78
+  s_cd9f1a961ebb24::t_1f65a52add9d20 53-58,63
+docs/diary/2026-05-14.md
+  s_cd9f1a961ebb24::t_5fe87d7e3d3bfd 1-55
+ideas/mac-desktop-app-roadmap.md
+  s_cd9f1a961ebb24::t_9757246d3c4b99 471-489
+  s_cd9f1a961ebb24::t_88f613048f067b 38-40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "cc7126313f275716eb7b377fe7c484d7f0f30f87",
+  "prompts": {},
+  "sessions": {
+    "s_cd9f1a961ebb24": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1ba4e19f-5254-422f-8aff-552ce4dd5b60",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": null
+    }
+  }
+}
