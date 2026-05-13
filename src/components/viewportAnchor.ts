@@ -373,10 +373,19 @@ export function scrollTextareaToLine(
   source: string,
   line: number,
   viewportTopFloor = 0,
+  /**
+   * Where, vertically within the textarea's content area, to place the
+   * target line. 0 = at the top (default — used by the view-anchor
+   * mode-switch path). 0.5 = centered (used by the find-match path so
+   * an active match lands in the middle of the viewport instead of at
+   * its top). Values outside [0, 1] are clamped.
+   */
+  offsetFraction = 0,
 ) {
   const offset = offsetForLine(source, line);
   const measureMirror = mirror ?? buildShadowMirror(textarea);
   const cleanup = mirror ? null : measureMirror;
+  const fraction = Math.min(Math.max(offsetFraction, 0), 1);
 
   try {
     measureMirror.scrollTop = 0;
@@ -390,9 +399,11 @@ export function scrollTextareaToLine(
     const internalTarget = top - mirrorTop;
 
     if (isOwnScrollContainer(textarea)) {
-      // Textarea is its own scroll container: line up the chosen line
-      // at its internal top.
-      textarea.scrollTop = clampScrollTop(textarea, internalTarget);
+      // Textarea is its own scroll container: place the chosen line at
+      // `offsetFraction` of the visible content height. fraction=0 keeps
+      // the existing top-aligned behavior; fraction=0.5 centers.
+      const adjusted = internalTarget - fraction * textarea.clientHeight;
+      textarea.scrollTop = clampScrollTop(textarea, adjusted);
       return;
     }
 
@@ -403,9 +414,15 @@ export function scrollTextareaToLine(
     // Textarea is laid out at full content height (no internal
     // scrollbar). Scroll the window so the line we want sits just
     // below the sticky toolbar (viewportTopFloor) — or at the
-    // textarea's own top when that is lower on screen.
+    // textarea's own top when that is lower on screen. The
+    // offsetFraction shifts that target down by the same fraction of
+    // the viewport so the match centers in the visible region.
     const textareaRect = textarea.getBoundingClientRect();
-    const targetViewportTop = Math.max(textareaRect.top, viewportTopFloor);
+    const baseTargetTop = Math.max(textareaRect.top, viewportTopFloor);
+    const viewportHeight =
+      typeof window.innerHeight === "number" ? window.innerHeight : 0;
+    const targetViewportTop =
+      baseTargetTop + fraction * Math.max(viewportHeight - baseTargetTop, 0);
     const lineViewportTop = mirrorTop + internalTarget;
     const delta = lineViewportTop - targetViewportTop;
     window.scrollBy(0, delta);

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export const MAX_MATCHES = 5_000;
 export const INVALID_REGEX_ERROR = "Invalid regex";
@@ -463,26 +463,6 @@ export function useFindReplace(
     setReplaceStatus(`Replaced ${replaced}`);
   }
 
-  const setActiveSelection = useCallback((textarea: HTMLTextAreaElement | null) => {
-    if (!textarea || !activeMatch) {
-      return;
-    }
-
-    // Collapsed caret at the end of the match — see scrollTextareaToMatch
-    // in PreviewPanel.tsx for the rationale.
-    textarea.setSelectionRange(activeMatch.end, activeMatch.end);
-
-    const linesBeforeMatch = source.slice(0, activeMatch.start).split("\n").length;
-    const lineHeight = Number.parseFloat(getComputedStyle(textarea).lineHeight);
-    const estimatedLineHeight = Number.isFinite(lineHeight) ? lineHeight : 20;
-    const lineTop = (linesBeforeMatch - 1) * estimatedLineHeight;
-    const targetScroll =
-      lineTop - (textarea.clientHeight - estimatedLineHeight) / 2;
-    const maxScroll = Math.max(textarea.scrollHeight - textarea.clientHeight, 0);
-
-    textarea.scrollTop = Math.min(Math.max(targetScroll, 0), maxScroll);
-  }, [activeMatch, source]);
-
   return {
     query,
     setQuery,
@@ -505,6 +485,5 @@ export function useFindReplace(
     previous,
     replaceCurrent,
     replaceAll,
-    setActiveSelection,
   };
 }

@@ -576,4 +576,127 @@ describe("scrollTextareaToLine", () => {
     document.createRange = originalCreateRange;
     document.body.appendChild = originalAppend;
   });
+
+  it("offsetFraction=0.5 centers the target line in the textarea viewport", () => {
+    // The find-match path passes 0.5 so the active match lands in the
+    // middle of the visible viewport instead of at its top. Regression
+    // guard for Bug 1's centering preservation.
+    const source = "one\ntwo\nthree\nfour\nfive";
+    const textarea = document.createElement("textarea");
+    textarea.value = source;
+    document.body.appendChild(textarea);
+    Object.defineProperty(textarea, "scrollTop", {
+      configurable: true,
+      writable: true,
+      value: 0,
+    });
+    Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
+      configurable: true,
+      get: () => 2000,
+    });
+    Object.defineProperty(HTMLElement.prototype, "clientHeight", {
+      configurable: true,
+      get: () => 300,
+    });
+
+    const mirror = document.createElement("pre");
+    document.body.appendChild(mirror);
+    Object.defineProperty(mirror, "scrollTop", {
+      configurable: true,
+      writable: true,
+      value: 0,
+    });
+    setRect(mirror, {
+      top: 100,
+      bottom: 400,
+      left: 0,
+      right: 400,
+      width: 400,
+      height: 300,
+    });
+    mirror.appendChild(document.createTextNode(source));
+
+    const originalCreateRange = document.createRange;
+    document.createRange = function () {
+      const range = originalCreateRange.call(document);
+      // Pretend the target character renders at y=600 (well below the
+      // viewport bottom at y=400).
+      setRangeRect(range, {
+        top: 600,
+        bottom: 620,
+        left: 0,
+        right: 10,
+        width: 10,
+        height: 20,
+      });
+      return range;
+    };
+
+    scrollTextareaToLine(textarea, mirror, source, 3, 0, 0.5);
+    // Internal target = measured top (600) - mirror top (100) = 500.
+    // With offsetFraction=0.5, adjusted = 500 - 0.5 * clientHeight (300)
+    //                                   = 500 - 150 = 350.
+    expect(textarea.scrollTop).toBe(350);
+
+    document.createRange = originalCreateRange;
+  });
+
+  it("clamps offsetFraction values outside [0, 1]", () => {
+    const source = "alpha";
+    const textarea = document.createElement("textarea");
+    textarea.value = source;
+    document.body.appendChild(textarea);
+    Object.defineProperty(textarea, "scrollTop", {
+      configurable: true,
+      writable: true,
+      value: 0,
+    });
+    Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
+      configurable: true,
+      get: () => 1000,
+    });
+    Object.defineProperty(HTMLElement.prototype, "clientHeight", {
+      configurable: true,
+      get: () => 200,
+    });
+
+    const mirror = document.createElement("pre");
+    document.body.appendChild(mirror);
+    setRect(mirror, {
+      top: 50,
+      bottom: 250,
+      left: 0,
+      right: 400,
+      width: 400,
+      height: 200,
+    });
+    mirror.appendChild(document.createTextNode(source));
+
+    const originalCreateRange = document.createRange;
+    document.createRange = function () {
+      const range = originalCreateRange.call(document);
+      setRangeRect(range, {
+        top: 250,
+        bottom: 270,
+        left: 0,
+        right: 10,
+        width: 10,
+        height: 20,
+      });
+      return range;
+    };
+
+    // offsetFraction > 1 → clamp to 1.
+    scrollTextareaToLine(textarea, mirror, source, 1, 0, 5);
+    // target = 250 - 50 = 200; clamped fraction = 1 → 200 - 1*200 = 0.
+    // clampScrollTop clamps to [0, scrollHeight - clientHeight] = [0, 800].
+    expect(textarea.scrollTop).toBe(0);
+
+    // offsetFraction < 0 → clamp to 0, top-aligned.
+    (textarea as unknown as { scrollTop: number }).scrollTop = 0;
+    scrollTextareaToLine(textarea, mirror, source, 1, 0, -1);
+    expect(textarea.scrollTop).toBe(200);
+
+    document.createRange = originalCreateRange;
+  });
 });
