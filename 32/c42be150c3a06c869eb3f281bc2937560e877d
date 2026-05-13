@@ -1,0 +1,19 @@
+src/__tests__/App.desktop.test.tsx
+  s_cd9f1a961ebb24::t_ea067a0d35f80b 1224-1229,1247-1249
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "32c42be150c3a06c869eb3f281bc2937560e877d",
+  "prompts": {},
+  "sessions": {
+    "s_cd9f1a961ebb24": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1ba4e19f-5254-422f-8aff-552ce4dd5b60",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
