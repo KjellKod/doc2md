@@ -1,5 +1,4 @@
 import {
-  GlobalWorkerOptions,
   OPS,
   getDocument
 } from "pdfjs-dist/legacy/build/pdf.mjs";
@@ -85,22 +84,18 @@ const IS_NODE_LIKE =
   !PROCESS_INFO.versions?.nw &&
   !(PROCESS_INFO.versions?.electron && PROCESS_INFO.type !== "browser");
 
-let browserWorkerConfigured = false;
-
+// We do NOT set GlobalWorkerOptions.workerSrc. Setting it makes pdfjs try
+// to spawn a real Web Worker first, and that Worker construction fails in
+// WKWebView because the custom doc2md:// URL scheme cannot back a Worker
+// global scope. The failed spawn surfaces as the cryptic
+// "TypeError: undefined is not a function (near '...e of t...')" inside
+// pdfjs's fake-worker fallback. By leaving workerSrc unset we force pdfjs
+// straight into its main-thread fake worker, which uses the
+// globalThis.pdfjsWorker.WorkerMessageHandler we pre-registered above.
 async function ensureBrowserWorkerConfigured() {
-  if (IS_NODE_LIKE || browserWorkerConfigured) {
-    return;
-  }
-
-  // Pair the legacy worker with the legacy main bundle imported above.
-  // pdfjs-dist 5 enforces stricter version/format alignment between main
-  // and worker; mixing legacy main + non-legacy worker can reject some
-  // valid PDFs at the parsing stage.
-  const pdfWorker = await import(
-    "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url"
-  );
-  GlobalWorkerOptions.workerSrc = pdfWorker.default;
-  browserWorkerConfigured = true;
+  // No-op: the static worker import at the top of this file already
+  // populates globalThis.pdfjsWorker for the main-thread handler path.
+  return;
 }
 
 function isTextItem(item: TextItem | TextMarkedContent): item is TextItem {
