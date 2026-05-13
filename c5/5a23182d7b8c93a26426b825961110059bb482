@@ -1,0 +1,26 @@
+vite.config.ts
+  s_cd9f1a961ebb24::t_d7ddef9742df02 2-3
+  s_cd9f1a961ebb24::t_ad4d6ffb499a21 73-118,120
+tests/e2e/dep-bump-format-smoke.spec.ts
+  s_cd9f1a961ebb24::t_81c529a6ba03a2 1-7,10-16,19-160
+  s_cd9f1a961ebb24::t_116803e5d3da16 8-9,17-18
+src/converters/pdf.ts
+  s_cd9f1a961ebb24::t_6733fb86aca922 1341-1354,1359,1362-1363,1370
+  s_cd9f1a961ebb24::t_452b1aac798f8c 1355-1358,1360-1361
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "c55a23182d7b8c93a26426b825961110059bb482",
+  "prompts": {},
+  "sessions": {
+    "s_cd9f1a961ebb24": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1ba4e19f-5254-422f-8aff-552ce4dd5b60",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
