@@ -1,0 +1,25 @@
+tests/e2e/find-linkedin-highlight.spec.ts
+  s_905dfb6806d57a::t_fbe56e1ed4dbde 60-61
+  s_905dfb6806d57a::t_00c83a9fadbcb5 14-17,23,25
+  s_905dfb6806d57a::t_82a589a4a1e2fe 1-13,18-22,24,26-59,62-87,89-99
+  s_905dfb6806d57a::t_79423a7dea15bc 88
+src/components/PreviewPanel.tsx
+  s_905dfb6806d57a::t_c8aeab030b6148 171-199
+  s_905dfb6806d57a::t_dd375b6791d299 1055-1101,1103-1105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "768741778ce93281c3c9a0a19f019508367f0844",
+  "prompts": {},
+  "sessions": {
+    "s_905dfb6806d57a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "617e3081-9563-45a0-9b55-cc30887e26a9",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
