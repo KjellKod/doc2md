@@ -1,4 +1,4 @@
-import { useCallback, type RefObject } from "react";
+import { useCallback } from "react";
 import {
   scrollRenderedToLine,
   scrollTextareaToLine,
@@ -8,15 +8,19 @@ import {
 
 export type ViewportAnchorKind = "rendered" | "textarea";
 
+interface ReadableRef<T> {
+  current: T | null;
+}
+
 interface UseViewportAnchorOptions {
-  mirrorRef?: RefObject<HTMLElement | null>;
+  mirrorRef?: ReadableRef<HTMLElement>;
   source?: string;
   viewportTopFloor?: () => number;
   afterApply?: () => void;
 }
 
 export function useViewportAnchor<T extends HTMLElement>(
-  ref: RefObject<T | null>,
+  ref: ReadableRef<T>,
   kind: ViewportAnchorKind,
   {
     mirrorRef,
