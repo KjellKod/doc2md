@@ -1,0 +1,19 @@
+tests/e2e/dep-bump-format-smoke.spec.ts
+  s_cd9f1a961ebb24::t_36a9aff38abe0b 40-46
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "09c122e0faed308e77d38347518cf56ea36af181",
+  "prompts": {},
+  "sessions": {
+    "s_cd9f1a961ebb24": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1ba4e19f-5254-422f-8aff-552ce4dd5b60",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
