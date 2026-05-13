@@ -1,0 +1,20 @@
+src/converters/pdf.ts
+  s_cd9f1a961ebb24::t_d00b1fbfe338f2 25-31
+  s_cd9f1a961ebb24::t_bd6878bf26cb04 1484-1515
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "0af3800bce0cb8362b46f63b18971cf134dabd2e",
+  "prompts": {},
+  "sessions": {
+    "s_cd9f1a961ebb24": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1ba4e19f-5254-422f-8aff-552ce4dd5b60",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
