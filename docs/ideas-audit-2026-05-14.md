@@ -106,7 +106,7 @@ The parent proposal was archived above on the strength of WorkingModeBar, Find/R
 | Cmd/Ctrl-B, I, K wrap selection | DONE | `src/components/markdownFormatting.ts:18-110` |
 | Selection-wrap on `*` `_` backtick `[` `(` `"` | DONE | `markdownFormatting.ts` smart-wrap branches | n/a |
 | Cmd-Shift-7 / 8 / 9 list toggles | DONE | `markdownFormatting.ts` list-toggle helpers | n/a |
-| Cmd/Ctrl-H opens with Replace expanded | PARTIAL | Cmd-F opens; binding for Cmd-H not present | small note in `markdown-editing-and-rendering-stack` |
+| Open Find/Replace with Replace expanded (Cmd-Alt-F on Mac, Ctrl-H on Windows/Linux; avoid global Ctrl-H on Mac, conflicts with Cocoa delete-backward) | PARTIAL | Cmd-F opens; the Replace-expanded variant is not bound on either platform | small note in `markdown-editing-and-rendering-stack` |
 | Block move Alt-Up / Alt-Down | NOT DONE | No handler in textarea | small note in `markdown-editing-and-rendering-stack` |
 | Cmd-D select next occurrence | NOT DONE | No handler | same note |
 
@@ -147,7 +147,7 @@ Three claims from this proposal were not tracked anywhere else and are folded in
 
 1. **200-character paste auto-fence into working mode** → notional sub-claim added to [`paste-to-markdown-in-editor`](../ideas/paste-to-markdown-in-editor.md).
 2. **Find/Replace incremental + cancellable search** (cap is shipped, streaming is not) → folded into [`preview-panel-refactor`](../ideas/preview-panel-refactor.md) since the find subsystem is being extracted there.
-3. **Editor keybinding gaps** (Tab indent, Alt-Up/Down, Cmd-D, Cmd-H Replace, ordered renumber on edits) → folded into [`markdown-editing-and-rendering-stack`](../ideas/markdown-editing-and-rendering-stack.md). None of these are individually load-bearing, and the proposal itself flagged them as "nice if free." They earn a `need` only if a user-visible regression lands.
+3. **Editor keybinding gaps** (Tab indent, Alt-Up/Down, Cmd-D, Replace-pane binding via Cmd-Alt-F on Mac or Ctrl-H on Windows/Linux, ordered renumber on edits) → folded into [`markdown-editing-and-rendering-stack`](../ideas/markdown-editing-and-rendering-stack.md). None of these are individually load-bearing, and the proposal itself flagged them as "nice if free." They earn a `need` only if a user-visible regression lands.
 
 ### Net effect
 
