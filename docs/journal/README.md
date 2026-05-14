@@ -6,6 +6,7 @@ For the other perspective, see [Dexter's Journal](../dexter-journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 041 | [PreviewPanel Refactor, Phase 1](041-celebrate-preview-panel-refactor-phase-1.md) | 1285-line load-bearing component split into shell + 3 modes + 2 hooks across 8 commits, test-first ordering held throughout, two-iteration plan loop caught a 200-line shell-budget gap and an anchor-handoff invariant, three flat extractions kept the shell at exactly 350, baseline rot correctly fenced as a separate concern |
 | 040 | [Celebration: Working-Mode Chrome](040-celebrate-working-mode-chrome.md) | Two-mode layout finished, hero steps aside on file open, logo holds the door back to landing, Mac Recent popover with proper a11y, one-shot guard preserved across Home roundtrip with behavioral proof in both shells, 5 must-fix items absorbed in one plan revision and zero fix iterations after |
 | 039 | [Celebration: Headless DMG Packaging](039-celebrate-headless-dmg-packaging.md) | AppleScript demolition, pinned dmgbuild via pipx, JSON settings, parsed-record .DS_Store determinism, dual-runtime model-diversity catching what single review missed, and a runbook deleted because its failure mode is gone |
 | 038 | [Celebration: CI Supply-Chain Hardening](038-celebrate-ci-supply-chain-hardening.md) | Four guard rules locked in, 15 rule-prefixed tests that fail on the unguarded code, npm cache off the release boundary, --ignore-scripts everywhere, Dependabot with boundaries, and a drift-tracker that watches without becoming drift surface |
