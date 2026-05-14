@@ -1,0 +1,23 @@
+docs/diary/2026-05-13.md
+  s_a194dad0ec0486::t_626e1a37a72543 52-113
+docs/journal/README.md
+  s_a194dad0ec0486::t_17f6e288c330af 9
+docs/journal/041-celebrate-preview-panel-refactor-phase-1.md
+  s_a194dad0ec0486::t_e4cada8c369727 1-48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "45e15c69ab73831bed83f89393f80c1d7d92e9d3",
+  "prompts": {},
+  "sessions": {
+    "s_a194dad0ec0486": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6722860d-3d2b-40f7-9bf9-c3627ac3d8dc",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
