@@ -1,0 +1,19 @@
+src/desktop/DesktopApp.tsx
+  s_a194dad0ec0486::t_f84f396d2e1b38 2405-2406
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "ecf956c21029d7408053e173ad6b17362518611b",
+  "prompts": {},
+  "sessions": {
+    "s_a194dad0ec0486": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6722860d-3d2b-40f7-9bf9-c3627ac3d8dc",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
