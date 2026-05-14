@@ -32,6 +32,7 @@ If full HTML-to-markdown is too ambitious for a first pass, the unicode reverse 
 
 - IN: Unicode formatting reversal on paste (LinkedIn round-trip)
 - IN: Basic rich text to markdown on paste (bold, italic, headings, lists, links)
+- IN: 200-character paste auto-fence into Working Mode (from the archived `doc2md-ux-hardening-proposal`: a paste over ~200 chars should be treated as "user is working on a doc" and trigger the Working Mode transition the same way file-open does). Wire this in the same `onPaste` handler.
 - OUT: Complex HTML structures (nested tables, embedded media)
 - OUT: Changes to copy behavior (already handled by separate quest)
 

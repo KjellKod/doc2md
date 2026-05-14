@@ -1,19 +1,47 @@
 # Ideas
 
-| Status | Idea | Notes |
-|--------|------|-------|
-| active | `ci-trustworthiness` | Decompose CI, make Codex review outcomes visible, and separate advisory vs required signals. |
-| active | `paste-to-markdown-in-editor` | Convert pasted unicode formatting (LinkedIn) and rich text (HTML) to markdown in edit mode. |
-| active | `markdown-editing-and-rendering-stack` | Unimplemented markdown authoring/rendering unification idea. |
-| active | `mac-desktop-app-roadmap` | Mac-only Swift/WKWebView/Sparkle desktop app roadmap across multiple quests and PRs. |
-| done | ~~`release-pinned-notice-links`~~ | Bundled Mac notice links can be pinned with `DOC2MD_RELEASE_REF=vX.Y.Z` during release builds without dirtying committed dev notices. Shipped in PR #107. |
-| done | ~~`mac-license-menu-and-about-source-visible-terms`~~ | Help/About license surfaces and bundled notice/license resources shipped in PR #106. |
-| done | ~~`mac-app-license-and-notice-surfacing`~~ | Help menu Acknowledgments and License, About panel Credits, deterministic notice generator with Vitest drift gate shipped. See [archived proposal](archive/mac-app-license-and-notice-surfacing.md) and [journal](../docs/quest-journal/mac-license-notice-surface_2026-05-04.md). |
-| done | ~~`doc2md-dual-licensing`~~ | Mixed-license boundary shipped in PR #103. See [archived proposal](archive/doc2md-dual-licensing.md), [license guide](../docs/licensing.md), and [journal](../docs/quest-journal/dual-licensing-boundary_2026-05-02.md). |
-| done | ~~`desktop-persistence-settings`~~ | Desktop-only settings persistence shipped. See [archived proposal](archive/desktop-persistence-settings.md) and [journal](../docs/quest-journal/desktop-persistence-settings_2026-04-30.md). |
-| active | `mac-commercial-distribution-and-licensing` | Phase 7 research for `doc2md.dev`, direct DMG distribution, merchant-of-record licensing, and honest-user reminder licensing. See [research](../docs/implementation/mac-commercial-distribution-and-licensing.md); the binding Phase 7b reference is the [decision record](../docs/implementation/mac-commercial-distribution-decision-record.md). |
-| done | ~~`playwright-browser-baseline`~~ | Chromium-only hosted-browser baseline shipped. See [journal](../docs/quest-journal/playwright-browser-baseline_2026-05-02.md). |
-| done | ~~`ci-review-hardening-patterns`~~ | 6 CI hardening patterns shipped. See [journal](../docs/quest-journal/ci-review-hardening_2026-04-08.md). |
-| done | ~~`desktop-persistence-settings`~~ | Desktop-only settings file for remembering theme and last 10 recent files shipped. See [journal](../docs/quest-journal/desktop-persistence-settings_2026-04-30.md). |
-| active | `pdf-multi-line-cell-tables` | Table detection fails on multi-line cells; column-boundary approach proposed. |
-| done | ~~`idea-pdf-quality-signals-and-warnings`~~ | Added PDF-only quality metadata and preview signaling. See [journal](../docs/quest-journal/pdf-quality-signals_2026-03-30.md). |
+Index of active proposals plus a pointer to the most recent audit. The full per-idea reasoning (value, risk, gut) lives in [`../docs/ideas-audit-2026-05-14.md`](../docs/ideas-audit-2026-05-14.md).
+
+## Active
+
+| Gut | Idea | Notes |
+|---|---|---|
+| `need` | `preview-panel-refactor` | `PreviewPanel.tsx` is 1285 lines; App.tsx 1306; DesktopApp.tsx 2911. Recurring find/anchor bugs (#114, #123, the table-cells bug in `bug_report_find_preview_table_cells.md`) all live here. |
+| `need` | `doc2md-mac-session-restore` | Apple-blessed APIs: `NSDocumentController.noteNewRecentDocumentURL` + `Open Recent` submenu + `session.json` reopen. Data already in `PersistenceStore.recentFiles`. |
+| `need` | `paste-to-markdown-in-editor` | Reverse-table of `formatLinkedInUnicode` + HTML→markdown (turndown already a dep). Closes the LinkedIn round-trip workflow. |
+| `need` (track) | `bug_report_find_preview_table_cells` | Maintainer-reported in PR #120. Find/Replace in Preview misses cross-cell queries on xlsx-converted tables because `element.textContent` strips td/tr separators. |
+| `if-needed` | `doc2md-browser-crash-recovery` | Hosted-tab crash recovery via persisted drafts + stable identity. Trigger: first real-world data-loss report. |
+| `if-needed` | `doc2md-mac-file-watchers` | `NSFilePresenter` live watcher. Trigger: silent overwrite from iCloud/Dropbox racing with Save. |
+| `if-needed` | `pdf-multi-line-cell-tables` | Multi-line cell table detection. Trigger: customer use case where current PDF table conversion is the blocker. |
+| `if-needed` | `ci-trustworthiness` | Decompose CI, expose Codex review signal, separate advisory vs required. Trigger: next PR where signal opacity slows a decision. |
+| `if-needed` | `doc2md-folder-view` | Active/Folder rail + browser FS API + Mac `chooseDirectory`. Trigger: pivot toward "doc2md is your local markdown workspace". |
+| `if-needed` | `markdown-editing-and-rendering-stack` | Pipeline unification across edit/preview/read. Trigger: next time edit and preview render the same input differently. |
+| `if-needed` | `remove-url-import` | Delete URL import path (still wired in `DropZone.tsx` + `remoteDocument.ts`). Trigger: next user-support thread where it's the cause. |
+| `if-needed` | `doc2md-editor-engine-evaluation` | Decision doc for textarea vs CodeMirror 6 vs ProseMirror. Read before the next big editor feature. |
+| `yagni` | `doc2md-multibrowser-playwright` | Firefox + WebKit in CI. Single-engine Chromium has caught everything that mattered; CI runtime would triple. |
+| index | `mac-desktop-app-roadmap` | Planning artifact updated 2026-05-14. Phases 1–5c + 6 (MVP scope) + 7a done; **Phase 7b blocked on out-of-repo operational setup** (Cloudflare Worker, Lemon Squeezy, `doc2md.dev` DNS, support email, go-live approval). 6e/6f deferred. |
+| active | `mac-commercial-distribution-and-licensing` | Phase 7b research for `doc2md.dev`, direct-DMG distribution, merchant-of-record licensing, honest-user reminders. Binding: [decision record](../docs/implementation/mac-commercial-distribution-decision-record.md). |
+
+## Archived (shipped or absorbed)
+
+Pointers below link to the archive copy or to the journal entry that documents what shipped. Items listed in chronological order, most recent first.
+
+| Archived | Idea | Shipped via |
+|---|---|---|
+| 2026-05-14 | ~~`doc2md-working-mode-chrome`~~ | PRs #121, #122 — `WorkingModeBar.tsx`, hero hide, Home affordance. See [archive](archive/doc2md-working-mode-chrome.md). |
+| 2026-05-14 | ~~`doc2md-ux-hardening-proposal`~~ | Phase 1 shipped across #114, #115, #121, #122; subsequent phases promoted to standalone ideas (folder-view, mac-file-watchers, mac-session-restore, browser-crash-recovery, editor-engine-evaluation). See [archive](archive/doc2md-ux-hardening-proposal.md). |
+| 2026-05-14 | ~~`actions-node24-refresh-followup`~~ | Workflows on `actions/checkout@v6` and `actions/setup-node@v6`; no Node-24 bridge env. See [archive](archive/actions-node24-refresh-followup.md). |
+| 2026-05-14 | ~~`markdown_plan` (LinkedIn/Unicode preview)~~ | `src/components/linkedinFormatting.ts` + `mode === "linkedin"` in `PreviewPanel.tsx`. See [archive](archive/linkedin-unicode-preview-plan.md). |
+| 2026-05-14 | ~~`resize-handle-rework`~~ | PR #115 "Split-pane resize handles" — `role="separator"` + `aria-orientation`. See [archive](archive/resize-handle-rework.md). |
+| (prior) | ~~`mac-license-menu-and-about-source-visible-terms`~~ | PR #106. See [archive](archive/mac-license-menu-and-about-source-visible-terms.md). |
+| (prior) | ~~`release-pinned-notice-links`~~ | PR #107. See [archive](archive/release-pinned-notice-links.md). |
+| (prior) | ~~`mac-app-license-and-notice-surfacing`~~ | See [archive](archive/mac-app-license-and-notice-surfacing.md) and the [quest journal](../docs/quest-journal/mac-license-notice-surface_2026-05-04.md). |
+| (prior) | ~~`doc2md-dual-licensing`~~ | PR #103. See [archive](archive/doc2md-dual-licensing.md), [license guide](../docs/licensing.md), [quest journal](../docs/quest-journal/dual-licensing-boundary_2026-05-02.md). |
+| (prior) | ~~`desktop-persistence-settings`~~ | See [archive](archive/desktop-persistence-settings.md), [quest journal](../docs/quest-journal/desktop-persistence-settings_2026-04-30.md). |
+| (prior) | ~~`playwright-browser-baseline`~~ | See [quest journal](../docs/quest-journal/playwright-browser-baseline_2026-05-02.md). |
+| (prior) | ~~`ci-review-hardening-patterns`~~ | See [quest journal](../docs/quest-journal/ci-review-hardening_2026-04-08.md). |
+| (prior) | ~~`idea-pdf-quality-signals-and-warnings`~~ | See [quest journal](../docs/quest-journal/pdf-quality-signals_2026-03-30.md). |
+
+## Audit doc
+
+[`../docs/ideas-audit-2026-05-14.md`](../docs/ideas-audit-2026-05-14.md) — full per-idea scoring rationale.
