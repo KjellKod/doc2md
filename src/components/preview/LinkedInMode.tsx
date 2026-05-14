@@ -5,6 +5,11 @@ import {
 } from "../linkedinFormatting";
 import type { FindMatch } from "../useFindReplace";
 import { useViewportAnchor } from "./useViewportAnchor";
+import {
+  snapshotRenderedViewText,
+  useRenderedActiveMatchCentering,
+  useRenderedAnchorApply,
+} from "./renderedSurfaceEffects";
 
 type LinkedInPreviewTone =
   | "bold"
@@ -154,27 +159,6 @@ function segmentLinkedInPreview(text: string) {
   return segments;
 }
 
-function clampScrollTop(element: HTMLElement, scrollTop: number) {
-  const maxScroll = Math.max(element.scrollHeight - element.clientHeight, 0);
-
-  return Math.min(Math.max(scrollTop, 0), maxScroll);
-}
-
-function centerElementInScrollContainer(
-  container: HTMLElement,
-  element: HTMLElement,
-) {
-  const containerRect = container.getBoundingClientRect();
-  const elementRect = element.getBoundingClientRect();
-  const targetScroll =
-    container.scrollTop +
-    elementRect.top -
-    containerRect.top -
-    (container.clientHeight - elementRect.height) / 2;
-
-  container.scrollTop = clampScrollTop(container, targetScroll);
-}
-
 export default function LinkedInMode({
   state,
   isFindOpen,
@@ -196,66 +180,24 @@ export default function LinkedInMode({
     { viewportTopFloor },
   );
 
-  useLayoutEffect(() => {
-    const anchorLine = pendingAnchorLineRef.current;
-    if (anchorLine === null) {
-      return;
-    }
-    if (!applyAnchorLine(anchorLine)) {
-      return;
-    }
-    pendingAnchorLineRef.current = null;
-    window.setTimeout(() => {
-      suppressMatchCenteringForModeSwitchRef.current = false;
-    }, 0);
-  }, [
-    applyAnchorLine,
+  useRenderedAnchorApply({
     pendingAnchorLineRef,
     suppressMatchCenteringForModeSwitchRef,
-  ]);
+    applyAnchorLine,
+  });
 
   useLayoutEffect(() => {
-    const element = renderedViewRef.current;
-
-    if (!element) {
-      onRenderedViewTextChange("");
-      return;
-    }
-
-    const nextText = (element.textContent ?? "").replace(/\u200B/g, "");
-    onRenderedViewTextChange(nextText);
+    snapshotRenderedViewText(renderedViewRef.current, onRenderedViewTextChange);
   }, [onRenderedViewTextChange, renderedViewRef, state.text]);
 
-  useLayoutEffect(() => {
-    const element = renderedViewRef.current;
-    if (!element) {
-      return;
-    }
-    if (!isFindOpen || !activeFindMatch) {
-      return;
-    }
-    if (pendingAnchorLineRef.current !== null) {
-      return;
-    }
-    if (suppressMatchCenteringForModeSwitchRef.current) {
-      return;
-    }
-    const highlight = element.querySelector(
-      "mark.markdown-rendered-find-highlight",
-    ) as HTMLElement | null;
-    if (highlight) {
-      centerElementInScrollContainer(element, highlight);
-    }
-  }, [
-    activeFindMatch?.end,
-    activeFindMatch?.start,
-    activeFindMatch,
-    isFindOpen,
-    pendingAnchorLineRef,
+  useRenderedActiveMatchCentering({
     renderedViewRef,
-    renderedViewText,
+    isFindOpen,
+    activeFindMatch,
+    pendingAnchorLineRef,
     suppressMatchCenteringForModeSwitchRef,
-  ]);
+    renderedViewText,
+  });
 
   if (state.refusal) {
     return (
