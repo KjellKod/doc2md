@@ -1,0 +1,19 @@
+docs/quest-journal/preview-panel-refactor-phase-1_2026-05-14.md
+  s_a194dad0ec0486::t_86365763bfb888 36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "7c12e9e02f2990b94267963ad6785323f0e75b8b",
+  "prompts": {},
+  "sessions": {
+    "s_a194dad0ec0486": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6722860d-3d2b-40f7-9bf9-c3627ac3d8dc",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
