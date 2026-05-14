@@ -279,17 +279,26 @@ export default function LinkedInMode({
     >
       {(() => {
         const lines = (state.text ?? "").split("\n");
-        let cursor = 0;
-        const lineStarts = lines.map((line) => {
-          const start = cursor;
-          cursor += line.length + 1;
-          return start;
-        });
+        const lineStarts: number[] = [];
+        {
+          let acc = 0;
+          for (const line of lines) {
+            lineStarts.push(acc);
+            acc += line.length + 1;
+          }
+        }
         return lines.map((line, lineIndex, all) => {
           const sourceLine =
             state.originalLineFor[lineIndex] ?? lineIndex + 1;
           const segments = segmentLinkedInPreview(line);
-          let segOffset = lineStarts[lineIndex];
+          const segmentOffsets: number[] = [];
+          {
+            let acc = lineStarts[lineIndex];
+            for (const segment of segments) {
+              segmentOffsets.push(acc);
+              acc += segment.text.length;
+            }
+          }
           return (
             <span key={`linkedin-line-${lineIndex}`}>
               <span
@@ -299,10 +308,9 @@ export default function LinkedInMode({
                 {segments.map(({ text, tone }, segmentIndex) => {
                   const children = renderLinkedInSegmentChildren(
                     text,
-                    segOffset,
+                    segmentOffsets[segmentIndex],
                     renderedFindHighlightMatch,
                   );
-                  segOffset += text.length;
                   return tone ? (
                     <span
                       key={`${tone}-${segmentIndex}`}

@@ -65,7 +65,13 @@ export default function PreviewPanel({
       entry.isScratch ||
       entry.editedMarkdown !== undefined);
 
+  // Reset shell state coupled to two ref writes when the loaded entry
+  // changes. mode/find state belong to the previous file; the refs encode
+  // anchor-handoff sentinels that must reset in lockstep with the React
+  // state. This is a one-shot synchronization to an external identity
+  // (entry?.id), not a derivable value.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- entry-reset (see comment above)
     setMode(entry?.isScratch ? "edit" : "preview");
     setIsFindOpen(false);
     setActiveFindMatch(null);
@@ -74,8 +80,12 @@ export default function PreviewPanel({
     suppressMatchCenteringForModeSwitchRef.current = false;
   }, [entry?.id, entry?.isScratch]);
 
+  // Close find when the active source loses find-capability (e.g. the
+  // entry transitions to an error status). The render path cannot derive
+  // this because closing must clear activeFindMatch too.
   useEffect(() => {
     if (!findCapable && isFindOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- close-on-source-loss (see comment above)
       setIsFindOpen(false);
       setActiveFindMatch(null);
     }
@@ -97,6 +107,10 @@ export default function PreviewPanel({
     return () => window.clearTimeout(timeoutId);
   }, [copyState]);
 
+  // External (App-shell) focus requests come in as an incrementing id +
+  // target pair. When a fresh request lands, sync mode to edit and focus
+  // the textarea after commit. The mode flip is a state sync to an
+  // external event signal, not a derived value.
   useEffect(() => {
     if (
       editorFocusRequestId === undefined ||
@@ -106,6 +120,7 @@ export default function PreviewPanel({
       return;
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- external-focus-request (see comment above)
     setMode("edit");
     const timeoutId = window.setTimeout(() => {
       textareaRef.current?.focus();
