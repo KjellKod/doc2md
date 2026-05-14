@@ -1,0 +1,30 @@
+src/components/preview/PreviewPanel.tsx
+  s_a194dad0ec0486::t_56326eafee9884 299-302
+  s_a194dad0ec0486::t_e42a440726d14b 13
+  s_a194dad0ec0486::t_447e533bd7f64b 322-347
+  s_a194dad0ec0486::t_9bd47b1a71eadf 112-113
+  s_a194dad0ec0486::t_14de83ad4e912e 311-312
+  s_a194dad0ec0486::t_b3a3d45ae28ee9 68-69
+  s_a194dad0ec0486::t_36abee8e8b0327 284-291
+  s_a194dad0ec0486::t_d8a9c79acacf35 91-92
+  s_a194dad0ec0486::t_ac2039fb8abced 188-191,193-195,204,206
+  s_a194dad0ec0486::t_33a9b3b042e28c 279-283
+src/components/preview/previewCopy.ts
+  s_a194dad0ec0486::t_cc04499c4a97a6 58-83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "b82e1194aee8fc77909ef58d61bda874f99ed675",
+  "prompts": {},
+  "sessions": {
+    "s_a194dad0ec0486": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6722860d-3d2b-40f7-9bf9-c3627ac3d8dc",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
