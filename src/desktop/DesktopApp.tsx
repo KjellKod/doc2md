@@ -2402,12 +2402,8 @@ function AppContent() {
     isDesktop && shell && persistenceSettings.persistenceEnabled
       ? persistenceSettings.recentFiles
       : [];
-  const workingModeBarInertProps = !isWorkingMode
-    ? ({ inert: "" } as Record<string, string>)
-    : {};
-  const landingChromeInertProps = isWorkingMode
-    ? ({ inert: "" } as Record<string, string>)
-    : {};
+  const workingModeBarInertProps = { inert: !isWorkingMode || undefined };
+  const landingChromeInertProps = { inert: isWorkingMode || undefined };
 
   return (
       <div className="app-shell">

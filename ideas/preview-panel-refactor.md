@@ -1,32 +1,40 @@
 # PreviewPanel Refactor: Split Modes + Dedup App Shells
 
+## Status
+
+- **Phase 1: DONE.** Landed in PR (link TBD when merged) via quest
+  `preview-panel-refactor-phase-1_2026-05-13__2241`. Journal:
+  `docs/journal/041-celebrate-preview-panel-refactor-phase-1.md`.
+- **Phase 2: NOT STARTED.** Quest brief at
+  `ideas/quest-briefs/preview-panel-refactor-phase-2.md`. Run when ready.
+
 ## Why
 
-`src/components/PreviewPanel.tsx` is 1038 lines, 29 hooks, 10 `useEffect`/
-`useLayoutEffect`. It owns nine distinct concerns: view-mode state, find
-bar wiring, DOM-mutation highlighting, viewport anchor capture/apply,
-LinkedIn segmentation, copy-to-clipboard, Cmd+F interception, source-line
-metadata, and find-overlay scroll sync. Every find or anchor bug ends up
-forcing a change inside this one component, and the change has to be
-tested against three view modes plus find-on/find-off plus
-edit-mode/preview-mode/linkedin-mode. The blast radius per change is too
+`src/components/PreviewPanel.tsx` was 1038 lines at the time of the original
+proposal and had grown to 1285 lines a year later. It owned nine distinct
+concerns: view-mode state, find bar wiring, DOM-mutation highlighting (since
+removed by PR #123), viewport anchor capture/apply, LinkedIn segmentation,
+copy-to-clipboard, Cmd+F interception, source-line metadata, and find-overlay
+scroll sync. Every find or anchor bug ended up forcing a change inside this one
+component, against three view modes plus find-on/find-off plus
+edit-mode/preview-mode/linkedin-mode. The blast radius per change was too
 large.
 
-`src/desktop/DesktopApp.tsx` (2239 lines) and `src/App.tsx` (756 lines)
-are a copy-paste pair. They share: page-width state, edit-shell-height
-state, drag-handle handlers, view-switcher + dynamic pill, hero copy,
-preview-panel wiring, drop-zone wiring, install page. Every desktop
+`src/desktop/DesktopApp.tsx` (2911 lines at the time of the Phase 1 quest) and
+`src/App.tsx` (1306 lines) are a copy-paste pair. They share: page-width state,
+edit-shell-height state, drag-handle handlers, view-switcher + dynamic pill,
+hero copy, preview-panel wiring, drop-zone wiring, install page. Every desktop
 fix lands twice.
 
-These structural choices are the load-bearing reason recent bugs
+These structural choices were the load-bearing reason recent bugs
 (rendered-surface find leaks, find-match drift, edit-leaks-into-preview)
-keep recurring near the find / mode-switch seam.
+kept recurring near the find / mode-switch seam. Phase 1 fixed the
+PreviewPanel half. Phase 2 needs to fix the App-shell half.
 
-## What
+## Phase 1 (done)
 
-Two follow-up refactors, in this order:
-
-### 1. Split `PreviewPanel` into mode components
+`src/components/PreviewPanel.tsx` split into a thin shell plus three mode
+components and two hooks:
 
 ```
 src/components/preview/
@@ -34,28 +42,37 @@ src/components/preview/
   EditMode.tsx              // textarea + mirror + edit-mode anchor wiring
   PreviewMode.tsx           // markdown-surface + rehype + preview-mode anchor wiring
   LinkedInMode.tsx          // per-line spans + linkedin-mode anchor wiring
-  useViewportAnchor.ts      // capture/apply hook (wraps viewportAnchor helpers)
-  useFindHighlight.tsx      // remark plugin + match-overlay rendering (no DOM mutation)
+  PreviewToolbar.tsx        // flat colocated toolbar JSX
+  PreviewEmptyStates.tsx    // flat colocated empty/pending/error branches
+  previewCopy.ts            // flat helpers for plain and rich copy
+  useViewportAnchor.ts      // capture/apply hook (wraps viewportAnchor.ts helpers)
+  useFindHighlight.tsx      // stabilizes rehype plugin reference (byte-identical output)
 ```
 
-The three `<Mode>` components are siblings, conditionally mounted by
-`PreviewPanel`. Each one owns its surface, its ref, its anchor capture,
-and its highlight rendering. They share state via a small props
-contract: `entry`, `effectiveMarkdown`, `activeFindMatch`,
-`isFindOpen`, `onMarkdownChange`. Nothing else.
+Final sizes (all under ceilings):
 
-`useViewportAnchor()` returns `{ captureAnchorLine, applyAnchorLine }`
-keyed off a ref the mode component owns. The hook hides whether the
-mirror or the rendered surface is in scope; the mode component just
-calls capture before unmount and apply after mount.
+| File                              | Lines | Ceiling |
+| --------------------------------- | ----: | ------: |
+| `preview/PreviewPanel.tsx`        |   350 |     350 |
+| `preview/EditMode.tsx`            |   373 |     500 |
+| `preview/LinkedInMode.tsx`        |   325 |     500 |
+| `preview/PreviewMode.tsx`         |   170 |     500 |
+| `preview/useViewportAnchor.ts`    |    79 |     200 |
+| `preview/useFindHighlight.tsx`    |     9 |     200 |
+| `preview/PreviewToolbar.tsx`      |   167 |   (n/a) |
+| `preview/PreviewEmptyStates.tsx`  |   102 |   (n/a) |
+| `preview/previewCopy.ts`          |    57 |   (n/a) |
+| `components/PreviewPanel.tsx`     |     2 |   (n/a) |
 
-`useFindHighlight()` returns a remark plugin that wraps the active
-match's character range in a `<mark>` AST node during the React
-render. **No `document.createRange`, no `extractContents`, no
-`replaceWith`.** React owns the highlight; mode switches and re-renders
-no longer fight the reconciler.
+`PreviewPanelProps` unchanged. `git diff main -- src/App.tsx
+src/desktop/DesktopApp.tsx` empty. Import path preserved via the 2-line
+compat shim at `src/components/PreviewPanel.tsx`. Characterization tests
+landed in commit 1 and passed against pre-refactor `main`.
 
-### 2. Collapse `App.tsx` + `DesktopApp.tsx` into an `AppShell`
+## Phase 2 (next)
+
+Collapse `App.tsx` and `DesktopApp.tsx` into a shared `AppShell` with two
+thin platform adapters:
 
 ```
 src/shell/
@@ -69,29 +86,35 @@ src/shell/
 reload affordance) from whichever adapter mounts it. The 99% copy-paste
 across the two top-level components disappears.
 
+**Current sizes (as of 2026-05-13):**
+
+- `src/App.tsx`: 1306 lines (was 756 in the original proposal)
+- `src/desktop/DesktopApp.tsx`: 2911 lines (was 2239 in the original proposal)
+
+Both grew by roughly 40 to 50 percent during the year. The dup is real
+and getting worse; every desktop chrome fix has to land twice.
+
 ## Risk
 
-Both refactors are mechanical once the contracts are written. Risks:
+Phase 1 risk was contained by test-first ordering and a load-bearing
+proposal that turned out to be exactly right. Phase 2 risk profile:
 
-- **Find highlight remark plugin** must preserve current visuals (mark
-  color, zero-width-match indicator, scroll-into-view behavior). Test
-  the four cases: plain match, zero-width match, regex match across
-  inline emphasis (`**bold** text`), match at start-of-document.
-- **Viewport anchor hook** must continue to work across resize +
-  mode switch + soft-wrapped paragraphs. The existing
-  `tests/e2e/view-anchor-mode-switch.spec.ts` covers most of this; add
-  a fixture that opens find and verifies highlight survives mode switch
-  without DOM contamination.
-- **`AppShell` dedup** has the most surface area but the lowest
-  per-change risk because the underlying logic is already proven; this
-  is purely deduplication.
+- **Dedup has the most surface area but the lowest per-change risk**
+  because the underlying logic is already proven; this is purely
+  deduplication.
+- **Platform adapter boundary** is the new design surface. The risk is
+  that an over-eager AppShell tries to model "platform" as a generic
+  abstraction. The right shape is two adapters that own platform-specific
+  slots, not a runtime platform feature flag inside AppShell.
+- **State ownership** for the resize hook and the view switcher needs to
+  match the existing Web/Desktop semantics. Desktop has session restore
+  for resize geometry, Web does not; the hook should own resize math, not
+  persistence.
 
 ## When
 
-Not blocking. Schedule after the four targeted bug-fix branches in
-`ideas/bug_report_*` land and stabilize. Recommend doing the
-`useFindHighlight` split first because it removes the DOM-mutation
-contamination that has produced three of the four recent bugs.
+Run after Phase 1 lands and stabilizes. The Phase 2 quest brief at
+`ideas/quest-briefs/preview-panel-refactor-phase-2.md` is the entry point.
 
 ## Adjacent gaps the find subsystem extraction should fix
 
@@ -100,13 +123,16 @@ From the `doc2md-ux-hardening-proposal` archive validation (see `docs/ideas-audi
 - **Incremental, cancellable search**. Current code recomputes whole-document matches via `useMemo` on every `[source, query, options]` change with no AbortController and no streaming. The 5,000-match cap is enforced, but a long query against a long document still does the work synchronously. The find-subsystem split should introduce cancellation on input change and chunked tokenization.
 - **Replace All as a single undo step**. The proposal called this non-negotiable; current history-coalescing behavior is unverified. Confirm or add coalescing when extracting the replace path.
 
-These are not blocking. They tag along with the seam the refactor already opens.
+These are not blocking. They tag along with the seam the refactor already opens. Phase 1 did not address them (the hook split was structural only); fold them into the Phase 2 quest brief or a separate find-subsystem-polish quest.
 
-## Out of scope
+## Out of scope (for both phases)
 
-- Rewriting in another language. The bugs are not language-caused. See
-  the architectural analysis attached to the conversation that produced
-  this doc; the path forward is a surgical refactor, not a rewrite.
+- Rewriting in another language. The bugs were not language-caused; the
+  Phase 1 results confirm that.
 - Changing the converter pipeline, save semantics, Sparkle/notarization
   plumbing, or licensing boundary.
 - Theme system changes.
+- Fixing the open table-cell preview-find bug
+  (`ideas/bug_report_find_preview_table_cells.md`). Phase 1 made that
+  fix smaller by colocating the rendered corpus computation in
+  `PreviewMode.tsx`; the fix itself is a separate quest.

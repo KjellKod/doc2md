@@ -990,12 +990,8 @@ function AppContent() {
 
   const saveButtonBusy = saveState.state === "saving";
   const saveButtonDisabled = !isDownloadableEntry(selectedEntry) || saveButtonBusy;
-  const workingModeBarInertProps = !isWorkingMode
-    ? ({ inert: "" } as Record<string, string>)
-    : {};
-  const landingChromeInertProps = isWorkingMode
-    ? ({ inert: "" } as Record<string, string>)
-    : {};
+  const workingModeBarInertProps = { inert: !isWorkingMode || undefined };
+  const landingChromeInertProps = { inert: isWorkingMode || undefined };
 
   return (
     <div className="app-shell">
