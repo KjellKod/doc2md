@@ -1,0 +1,19 @@
+src/components/preview/PreviewPanel.tsx
+  s_74c311f7cfd008::t_013132f03c53b3 165-168
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "14731eb156c5c8505d5098b03a20eb16c912dd6e",
+  "prompts": {},
+  "sessions": {
+    "s_74c311f7cfd008": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e23cf-5c7f-7e63-b863-f4bba6612510",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
