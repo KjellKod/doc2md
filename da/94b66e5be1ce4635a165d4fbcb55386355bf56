@@ -1,0 +1,26 @@
+src/components/preview/LinkedInMode.tsx
+  s_a194dad0ec0486::t_8ad255948167c0 183,186-187,190,193-194,196,199-200
+  s_a194dad0ec0486::t_dc766b5b2fe650 8-12
+src/components/preview/PreviewMode.tsx
+  s_a194dad0ec0486::t_081e04ad4ddf70 70,73-74,77,87-88,90,93-94
+  s_a194dad0ec0486::t_07bece71fcbff1 9-13
+src/components/preview/renderedSurfaceEffects.ts
+  s_a194dad0ec0486::t_89dd32379d5075 1-38,40-129
+  s_a194dad0ec0486::t_297e24c0e59d04 39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "da94b66e5be1ce4635a165d4fbcb55386355bf56",
+  "prompts": {},
+  "sessions": {
+    "s_a194dad0ec0486": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6722860d-3d2b-40f7-9bf9-c3627ac3d8dc",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
