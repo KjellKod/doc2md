@@ -162,6 +162,10 @@ export default function PreviewPanel({
     return () => window.removeEventListener("keydown", handleFindShortcut);
   }, [findCapable, isFindOpen, mode]);
 
+  function viewportTopFloor(): number {
+    return toolbarRef.current?.getBoundingClientRect().bottom ?? 0;
+  }
+
   const effectiveMarkdown = entry?.editedMarkdown ?? entry?.markdown ?? "";
   const canEditFromEmptyState = Boolean(
     entry && (entry.isScratch || entry.editedMarkdown !== undefined),
@@ -207,10 +211,6 @@ export default function PreviewPanel({
         onStartWriting={onStartWriting}
       />
     );
-  }
-
-  function viewportTopFloor(): number {
-    return toolbarRef.current?.getBoundingClientRect().bottom ?? 0;
   }
 
   function captureAnchorLine(): number | null {
