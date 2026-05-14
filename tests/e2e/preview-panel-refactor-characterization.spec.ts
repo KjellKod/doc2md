@@ -191,4 +191,45 @@ test.describe("PreviewPanel refactor characterization", () => {
     await expect(page.locator(".find-replace-count")).toHaveText("1 of 2");
     await expect(page.locator(".linkedin-surface mark")).toHaveCount(1);
   });
+
+  test("LinkedIn refusal interlude preserves the pending anchor across the round trip", async ({
+    page,
+  }) => {
+    // The markdown table forces a LinkedIn refusal screen (no .linkedin-surface
+    // is rendered), so applyAnchorLine returns false on the LinkedIn mount and
+    // the pending anchor MUST be preserved for the Preview mount to consume.
+    // Trailing paragraphs give the rendered surface enough height to scroll.
+    const fixture = [
+      "# Characterization",
+      "",
+      "| Name | Role |",
+      "| --- | --- |",
+      "| Anna | Admin |",
+      "",
+      ...Array.from({ length: 30 }, (_, index) => `Paragraph ${index + 1}.`),
+    ].join("\n");
+    await openMarkdown(page, fixture);
+
+    await page.evaluate(() => {
+      const surface = document.querySelector(
+        ".markdown-surface",
+      ) as HTMLElement | null;
+      if (surface) {
+        surface.scrollTop = 200;
+      }
+    });
+    const captured = await renderedTopSourceLine(page, ".markdown-surface");
+
+    await page.getByRole("button", { name: "LinkedIn", exact: true }).click();
+    await expect(
+      page.getByText("LinkedIn view is unavailable for Markdown tables."),
+    ).toBeVisible();
+    await expect(page.locator(".linkedin-surface")).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Preview", exact: true }).click();
+    await expect(page.locator(".markdown-surface")).toHaveCount(1);
+
+    const landed = await renderedTopSourceLine(page, ".markdown-surface");
+    expect(Math.abs(landed - captured)).toBeLessThanOrEqual(3);
+  });
 });
