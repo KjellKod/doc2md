@@ -1,0 +1,19 @@
+src/__tests__/noticeInventoryDrift.test.ts
+  s_9cdd1f4a516db5::t_83fd1ab40177ad 37-42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "39a1655267d3730f0e7151ebaa73e7d0ceaed9ea",
+  "prompts": {},
+  "sessions": {
+    "s_9cdd1f4a516db5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ad3d7e00-6852-482c-bf33-1629c8355b02",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
