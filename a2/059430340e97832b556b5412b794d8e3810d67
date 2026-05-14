@@ -1,0 +1,19 @@
+src/components/preview/PreviewPanel.tsx
+  s_a194dad0ec0486::t_34abe702f37b32 94-104
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "a2059430340e97832b556b5412b794d8e3810d67",
+  "prompts": {},
+  "sessions": {
+    "s_a194dad0ec0486": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6722860d-3d2b-40f7-9bf9-c3627ac3d8dc",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
