@@ -1,0 +1,24 @@
+docs/diary/2026-05-14.md
+  s_cd9f1a961ebb24::t_66c1afee006bf1 5
+docs/ideas-audit-2026-05-14.md
+  s_cd9f1a961ebb24::t_2e06a82c4da0a9 150
+  s_cd9f1a961ebb24::t_591e1111ace1b0 109
+ideas/markdown-editing-and-rendering-stack.md
+  s_cd9f1a961ebb24::t_f04275eff3d74c 220
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "769b32c482a09de689c6b7757c0a697237dda5b6",
+  "prompts": {},
+  "sessions": {
+    "s_cd9f1a961ebb24": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1ba4e19f-5254-422f-8aff-552ce4dd5b60",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
