@@ -1,0 +1,21 @@
+src/components/preview/useFindHighlight.tsx
+  s_aa1dc5e9102e59::t_3a7df7f39078f9 1-9
+src/components/__tests__/useFindHighlight.test.tsx
+  s_aa1dc5e9102e59::t_19a5f8eb0e4a0b 1-67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "195f4b8902c272b89b62df1ce39b80e949db84da",
+  "prompts": {},
+  "sessions": {
+    "s_aa1dc5e9102e59": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e23ab-17d1-7561-8c40-c7fad1deb9e7",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
