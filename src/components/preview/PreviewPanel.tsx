@@ -10,7 +10,7 @@ import LinkedInMode, { getLinkedInPreviewState } from "./LinkedInMode";
 import PreviewEmptyStates from "./PreviewEmptyStates";
 import PreviewMode from "./PreviewMode";
 import PreviewToolbar from "./PreviewToolbar";
-import { copyMarkdownText, copyRenderedContent } from "./previewCopy";
+import { performPreviewCopy } from "./previewCopy";
 export interface PreviewPanelProps {
   entry: FileEntry | null;
   onMarkdownChange?: (markdown: string) => void;
@@ -65,11 +65,8 @@ export default function PreviewPanel({
       entry.isScratch ||
       entry.editedMarkdown !== undefined);
 
-  // Reset shell state coupled to two ref writes when the loaded entry
-  // changes. mode/find state belong to the previous file; the refs encode
-  // anchor-handoff sentinels that must reset in lockstep with the React
-  // state. This is a one-shot synchronization to an external identity
-  // (entry?.id), not a derivable value.
+  // Reset shell state when the loaded entry changes. The two refs are
+  // anchor-handoff sentinels that must reset in lockstep with React state.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- entry-reset (see comment above)
     setMode(entry?.isScratch ? "edit" : "preview");
@@ -91,11 +88,8 @@ export default function PreviewPanel({
     }
   }, [findCapable, isFindOpen]);
 
-  // Collapse the replace row when the user leaves edit mode. Effect
-  // form (not render-body setState) so React commits the mode change
-  // first, then this runs and updates derived UI state in a separate
-  // commit. The replace row is only meaningful in edit mode; in
-  // preview / linkedin we drop back to find-only.
+  // Collapse replace row when leaving edit mode (preview/linkedin show
+  // find-only). Effect form because the change is derived from mode.
   useEffect(() => {
     if (mode !== "edit" && showReplace) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- collapse-replace-on-mode-leave (see comment above)
@@ -115,10 +109,8 @@ export default function PreviewPanel({
     return () => window.clearTimeout(timeoutId);
   }, [copyState]);
 
-  // External (App-shell) focus requests come in as an incrementing id +
-  // target pair. When a fresh request lands, sync mode to edit and focus
-  // the textarea after commit. The mode flip is a state sync to an
-  // external event signal, not a derived value.
+  // External focus-request id+target lands as a prop change; sync mode
+  // to edit and focus the textarea after commit.
   useEffect(() => {
     if (
       editorFocusRequestId === undefined ||
@@ -193,9 +185,14 @@ export default function PreviewPanel({
   const canEditFromEmptyState = Boolean(
     entry && (entry.isScratch || entry.editedMarkdown !== undefined),
   );
+  // Only segment LinkedIn output when LinkedIn mode is mounted. The
+  // refusal scan + Unicode line-map work is O(document) and used to be
+  // gated on `mode === "linkedin"` before the split; without this gate,
+  // every keystroke in Edit/Preview triggered the full computation.
   const linkedinPreviewState = useMemo(
-    () => getLinkedInPreviewState(effectiveMarkdown),
-    [effectiveMarkdown],
+    () =>
+      mode === "linkedin" ? getLinkedInPreviewState(effectiveMarkdown) : null,
+    [mode, effectiveMarkdown],
   );
   const showToggle = Boolean(
     entry &&
@@ -204,9 +201,9 @@ export default function PreviewPanel({
   );
   const copyText =
     mode === "linkedin"
-      ? linkedinPreviewState.refusal
+      ? linkedinPreviewState?.refusal
         ? null
-        : linkedinPreviewState.text
+        : (linkedinPreviewState?.text ?? null)
       : effectiveMarkdown;
   const showCopyButton = showToggle && typeof copyText === "string";
   const activeFindSource =
@@ -255,38 +252,6 @@ export default function PreviewPanel({
     setMode(nextMode);
   }
 
-  function openFind(replace = false) {
-    setIsFindOpen(true);
-    setShowReplace(mode === "edit" || replace);
-    setFindFocusRequest(({ id }) => ({
-      id: id + 1,
-      target: replace && mode === "edit" ? "replace" : "find",
-    }));
-  }
-
-  function closeFind() {
-    setIsFindOpen(false);
-    setActiveFindMatch(null);
-  }
-
-  async function handleCopy() {
-    if (!copyText) {
-      return;
-    }
-
-    if (mode === "preview") {
-      if (await copyRenderedContent(previewRef.current)) {
-        setCopyState("copied");
-      }
-
-      return;
-    }
-
-    await copyMarkdownText(copyText);
-    setCopyState("copied");
-  }
-
-  const showQualityIndicator = entry.format === "pdf" && entry.quality;
   const commonModeProps = {
     activeFindMatch,
     isFindOpen,
@@ -294,33 +259,6 @@ export default function PreviewPanel({
     suppressMatchCenteringForModeSwitchRef,
     viewportTopFloor,
   };
-  const body =
-    mode === "edit" ? (
-      <EditMode
-        {...commonModeProps}
-        effectiveMarkdown={effectiveMarkdown}
-        textareaRef={textareaRef}
-        findHighlightRef={findHighlightRef}
-        onMarkdownChange={onMarkdownChange}
-      />
-    ) : mode === "linkedin" ? (
-      <LinkedInMode
-        {...commonModeProps}
-        state={linkedinPreviewState}
-        renderedViewRef={renderedViewRef}
-        renderedViewText={renderedViewText}
-        onRenderedViewTextChange={setRenderedViewText}
-      />
-    ) : (
-      <PreviewMode
-        {...commonModeProps}
-        effectiveMarkdown={effectiveMarkdown}
-        previewRef={previewRef}
-        renderedViewRef={renderedViewRef}
-        renderedViewText={renderedViewText}
-        onRenderedViewTextChange={setRenderedViewText}
-      />
-    );
 
   return (
     <div className="preview-body">
@@ -338,8 +276,19 @@ export default function PreviewPanel({
         lastSavedAt={lastSavedAt}
         onNewDocument={onNewDocument}
         onModeChange={switchMode}
-        onOpenFind={() => openFind(false)}
-        onCopy={handleCopy}
+        onOpenFind={() => {
+          setIsFindOpen(true);
+          setShowReplace(mode === "edit");
+          setFindFocusRequest(({ id }) => ({ id: id + 1, target: "find" }));
+        }}
+        onCopy={() =>
+          performPreviewCopy({
+            mode,
+            copyText,
+            previewElement: previewRef.current,
+            onCopied: () => setCopyState("copied"),
+          })
+        }
       />
 
       {isFindOpen ? (
@@ -347,7 +296,10 @@ export default function PreviewPanel({
           source={activeFindSource}
           onSourceChange={(nextMarkdown) => onMarkdownChange?.(nextMarkdown)}
           textareaRef={mode === "edit" ? textareaRef : undefined}
-          onClose={closeFind}
+          onClose={() => {
+            setIsFindOpen(false);
+            setActiveFindMatch(null);
+          }}
           showReplace={showReplace}
           onShowReplaceChange={setShowReplace}
           allowReplace={mode === "edit"}
@@ -356,8 +308,8 @@ export default function PreviewPanel({
         />
       ) : null}
 
-      {showQualityIndicator ? (
-        <PdfQualityIndicator quality={entry.quality!} />
+      {entry.format === "pdf" && entry.quality ? (
+        <PdfQualityIndicator quality={entry.quality} />
       ) : null}
 
       {entry.warnings.length > 0 ? (
@@ -367,7 +319,32 @@ export default function PreviewPanel({
           ))}
         </div>
       ) : null}
-      {body}
+      {mode === "edit" ? (
+        <EditMode
+          {...commonModeProps}
+          effectiveMarkdown={effectiveMarkdown}
+          textareaRef={textareaRef}
+          findHighlightRef={findHighlightRef}
+          onMarkdownChange={onMarkdownChange}
+        />
+      ) : mode === "linkedin" && linkedinPreviewState ? (
+        <LinkedInMode
+          {...commonModeProps}
+          state={linkedinPreviewState}
+          renderedViewRef={renderedViewRef}
+          renderedViewText={renderedViewText}
+          onRenderedViewTextChange={setRenderedViewText}
+        />
+      ) : (
+        <PreviewMode
+          {...commonModeProps}
+          effectiveMarkdown={effectiveMarkdown}
+          previewRef={previewRef}
+          renderedViewRef={renderedViewRef}
+          renderedViewText={renderedViewText}
+          onRenderedViewTextChange={setRenderedViewText}
+        />
+      )}
     </div>
   );
 }

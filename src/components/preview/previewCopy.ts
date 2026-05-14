@@ -55,3 +55,29 @@ export async function copyMarkdownText(text: string) {
     fallbackCopyText(text);
   }
 }
+
+interface PerformPreviewCopyOptions {
+  mode: "edit" | "preview" | "linkedin";
+  copyText: string | null;
+  previewElement: HTMLElement | null;
+  onCopied: () => void;
+}
+
+export async function performPreviewCopy({
+  mode,
+  copyText,
+  previewElement,
+  onCopied,
+}: PerformPreviewCopyOptions): Promise<void> {
+  if (!copyText) {
+    return;
+  }
+  if (mode === "preview") {
+    if (await copyRenderedContent(previewElement)) {
+      onCopied();
+    }
+    return;
+  }
+  await copyMarkdownText(copyText);
+  onCopied();
+}
