@@ -91,9 +91,17 @@ export default function PreviewPanel({
     }
   }, [findCapable, isFindOpen]);
 
-  if (mode !== "edit" && showReplace) {
-    setShowReplace(false);
-  }
+  // Collapse the replace row when the user leaves edit mode. Effect
+  // form (not render-body setState) so React commits the mode change
+  // first, then this runs and updates derived UI state in a separate
+  // commit. The replace row is only meaningful in edit mode; in
+  // preview / linkedin we drop back to find-only.
+  useEffect(() => {
+    if (mode !== "edit" && showReplace) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- collapse-replace-on-mode-leave (see comment above)
+      setShowReplace(false);
+    }
+  }, [mode, showReplace]);
 
   useEffect(() => {
     if (copyState !== "copied") {
