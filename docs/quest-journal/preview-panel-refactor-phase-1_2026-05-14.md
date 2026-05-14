@@ -33,7 +33,7 @@
 
 ## Agents
 
-- **The A Code Critic** (code-reviewer-a): 
+- **The A Code Critic** (code-reviewer-a):
 
 ## Quest Brief
 
