@@ -1,0 +1,21 @@
+docs/diary/2026-05-13.md
+  s_9cdd1f4a516db5::t_528322325faf47 52-95
+ideas/quest-briefs/paste-to-markdown-in-editor.md
+  s_9cdd1f4a516db5::t_f0c04775b112df 1-115
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "b7a6740c8cc6324374395866cdb7ebf55fd91bdf",
+  "prompts": {},
+  "sessions": {
+    "s_9cdd1f4a516db5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ad3d7e00-6852-482c-bf33-1629c8355b02",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
