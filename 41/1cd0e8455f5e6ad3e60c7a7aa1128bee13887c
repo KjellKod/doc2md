@@ -1,0 +1,22 @@
+src/components/preview/PreviewPanel.tsx
+  s_a194dad0ec0486::t_54eac09e03b95e 110-113,123
+  s_a194dad0ec0486::t_0d7ef71c76d227 68-72,74,83-85,88
+src/components/preview/LinkedInMode.tsx
+  s_a194dad0ec0486::t_701a855cfba23b 282-289,294-301,311
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "411cd0e8455f5e6ad3e60c7a7aa1128bee13887c",
+  "prompts": {},
+  "sessions": {
+    "s_a194dad0ec0486": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6722860d-3d2b-40f7-9bf9-c3627ac3d8dc",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
