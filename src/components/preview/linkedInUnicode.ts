@@ -180,11 +180,35 @@ function isWordCharacter(char: string | undefined) {
   return char !== undefined && /^[A-Za-z0-9]$/.test(char);
 }
 
-function isIntrawordUnderscore(markdown: string, index: number, markerLength: number) {
-  return (
-    isWordCharacter(markdown[index - 1]) &&
-    isWordCharacter(markdown[index + markerLength])
-  );
+function underscoreRunBounds(markdown: string, index: number) {
+  let start = index;
+  let end = index + 1;
+
+  while (start > 0 && markdown[start - 1] === "_") {
+    start -= 1;
+  }
+
+  while (markdown[end] === "_") {
+    end += 1;
+  }
+
+  return { start, end };
+}
+
+function canUseUnderscoreMarker(
+  markdown: string,
+  index: number,
+  markerLength: number,
+  markerActive: boolean,
+) {
+  const { start, end } = underscoreRunBounds(markdown, index);
+  const wordBeforeRun = isWordCharacter(markdown[start - 1]);
+  const wordAfterRun = isWordCharacter(markdown[end]);
+
+  if (wordBeforeRun && wordAfterRun) return false;
+  if (!markerActive && wordBeforeRun) return false;
+
+  return markdown.startsWith("_".repeat(markerLength), index);
 }
 
 export function convertLinkedInUnicodeToMarkdown(
@@ -341,10 +365,15 @@ export function convertLinkedInUnicodeInMarkdown(markdown: string) {
       continue;
     }
 
-    const startsDoubleUnderscore =
-      markdown.startsWith("__", index) && !isIntrawordUnderscore(markdown, index, 2);
+    const startsDoubleUnderscore = canUseUnderscoreMarker(
+      markdown,
+      index,
+      2,
+      boldActive,
+    );
     const startsSingleUnderscore =
-      markdown[index] === "_" && !isIntrawordUnderscore(markdown, index, 1);
+      markdown[index] === "_" &&
+      canUseUnderscoreMarker(markdown, index, 1, italicActive);
     const marker = markdown.startsWith("***", index)
       ? "***"
       : markdown.startsWith("**", index) || startsDoubleUnderscore

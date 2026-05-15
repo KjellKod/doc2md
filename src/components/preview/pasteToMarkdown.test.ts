@@ -3,6 +3,7 @@ import {
   convertClipboardPasteToMarkdown,
   convertLinkedInUnicodeToMarkdown,
 } from "./pasteToMarkdown";
+import { convertLinkedInUnicodeInMarkdown } from "./linkedInUnicode";
 
 describe("convertLinkedInUnicodeToMarkdown", () => {
   it("converts linkedin unicode emphasis to markdown", () => {
@@ -25,6 +26,17 @@ describe("convertLinkedInUnicodeToMarkdown", () => {
         "𝐁̶𝐨̶𝐥̶𝐝̶ and 𝑖̶𝑡̶𝑎̶𝑙̶𝑖̶𝑐̶ and 𝑩̶𝒐̶𝒍̶𝒅̶ 𝒊̶𝒕̶𝒂̶𝒍̶𝒊̶𝒄̶",
       ),
     ).toBe("**~~Bold~~** and *~~italic~~* and ***~~Bold italic~~***");
+  });
+});
+
+describe("convertLinkedInUnicodeInMarkdown", () => {
+  it("does not treat intraword underscore runs as markdown emphasis", () => {
+    expect(convertLinkedInUnicodeInMarkdown("snake_case 𝑖𝑡𝑎𝑙𝑖𝑐")).toBe(
+      "snake_case *italic*",
+    );
+    expect(convertLinkedInUnicodeInMarkdown("a__b__ 𝑖𝑡𝑎𝑙𝑖𝑐")).toBe(
+      "a__b__ *italic*",
+    );
   });
 });
 
