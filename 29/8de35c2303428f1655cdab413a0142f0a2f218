@@ -1,0 +1,21 @@
+src/components/preview/pasteToMarkdown.test.ts
+  s_58728568bc1253::t_0b6688fdb20050 69-80
+src/components/preview/pasteToMarkdown.ts
+  s_58728568bc1253::t_0b6688fdb20050 198-237,245-271
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "298de35c2303428f1655cdab413a0142f0a2f218",
+  "prompts": {},
+  "sessions": {
+    "s_58728568bc1253": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e29b3-1f93-7c82-8700-7329ae773331",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
