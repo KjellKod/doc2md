@@ -1,0 +1,122 @@
+src/components/WorkingModeBar.test.tsx
+  s_37c7d239f649c0::t_686eaa8603087f 2-3,6,23-27,187-189,194
+  s_37c7d239f649c0::t_0474667b2c7c7d 28-33,190-193,195-197
+  s_9faa9e61d4ab5c::t_0dd7541acc3acd 68-93
+src/App.tsx
+  s_9faa9e61d4ab5c::t_410eb829206891 1023
+docs/quest-journal/ux-improvements-v2_2026-05-15.md
+  s_f00585f6db12ae::t_7beef3e0f46ad6 1-215
+src/desktop/DesktopApp.tsx
+  s_9faa9e61d4ab5c::t_468e0bf833b0cf 19,61,201-206,405-410
+  s_9faa9e61d4ab5c::t_97250acb8ff0f0 428,1809,1868
+  s_9faa9e61d4ab5c::t_0e379e8373ce71 886-888,895-897
+  s_9faa9e61d4ab5c::t_5a568c90f8371f 1738-1778,1780-1794,1796-1808,1810-1867,1869-1871
+  s_9faa9e61d4ab5c::t_e00104aa734c46 1688,1692-1693,1795
+  s_9faa9e61d4ab5c::t_09d9ef21d2ff1a 175
+  s_9faa9e61d4ab5c::t_3545695d3cdd4c 2604
+  s_9faa9e61d4ab5c::t_b41e9f8c8fadd8 1591-1595,1618-1621,1624-1626,1634,1645,1661,1665,1670,1676
+  s_9faa9e61d4ab5c::t_c7d4df88e68906 1687,1690-1691,1779
+apps/macos/doc2mdTests/PersistenceStoreTests.swift
+  s_9faa9e61d4ab5c::t_b1d75c400a59e4 4-19,48-52,61-62,68-69,75-79,83-84,88,96-100,107-108,110-111,113,116,119,122-123,127-131,136-139,144,151,158-180
+apps/macos/doc2md/PersistenceStore.swift
+  s_9faa9e61d4ab5c::t_e59138f2e2c7d4 1,20-25,31-49,58,61,65-72,78,80-84,87,102,123-134,136,138-141,144
+apps/macos/doc2mdTests/SessionStoreTests.swift
+  s_9faa9e61d4ab5c::t_c972fc11a20bbe 68-105
+  s_f0443bcae34ee0::t_34eaeced65b426 2,149-239,277,280-283,285-286,288-289,293-308,310-375,377-382,385,387-391,406-410,412-433
+  s_9faa9e61d4ab5c::t_75ed682cdfa6e6 1,3-67,106-148,434-435
+  s_d90e75ab708da7::t_510c30b90f2e49 240-276,278-279,284,287,290-292,309,376,383-384,386
+  s_f0443bcae34ee0::t_b17b1deb4ca8eb 392-405,411
+apps/macos/doc2md/SessionStore.swift
+  s_9faa9e61d4ab5c::t_d97b77d7bc4089 44-59
+  s_9faa9e61d4ab5c::t_cbdb094f741670 1-43,60-186
+apps/macos/doc2md.xcodeproj/project.pbxproj
+  s_f0443bcae34ee0::t_58fb7631bfa23c 34-35,423-424
+  s_9faa9e61d4ab5c::t_ae85b86ac176af 31-33,102-103,166,224,391,421-422
+docs/journal/043-celebrate-ux-improvements-v2.md
+  s_f00585f6db12ae::t_829ebd698cc463 1-92
+docs/dexter-journal/045-ux-improvements-v2.md
+  s_f00585f6db12ae::t_bc69c98dd4653f 1-11
+docs/dexter-journal/README.md
+  s_f00585f6db12ae::t_bc69c98dd4653f 9
+docs/diary/2026-05-15.md
+  s_f00585f6db12ae::t_bc69c98dd4653f 1-37
+src/desktop/__tests__/bridgeFlows.test.ts
+  s_9faa9e61d4ab5c::t_14573bbb21e660 37-41,136-146,150-151,171-180,202-210
+src/__tests__/App.desktop.test.tsx
+  s_9faa9e61d4ab5c::t_342c2ab5e27682 1257-1392
+  s_9faa9e61d4ab5c::t_0dd81727dba62c 114
+src/styles/global.css
+  s_9faa9e61d4ab5c::t_a17a936a5ae300 705-710,721,728
+  s_37c7d239f649c0::t_e41db451866df5 326
+  s_9faa9e61d4ab5c::t_ab4e27be926448 323,343,345,364,397-399,401,406,422-427,596-597,2870,2882-2892,2923-2939,2976-2977,2984-2986
+src/desktop/bridgeClient.ts
+  s_9faa9e61d4ab5c::t_6389c58f15991e 23-25
+src/desktop/mockShellBridge.ts
+  s_9faa9e61d4ab5c::t_e050a44e18aa2b 6,66-71,131-138
+src/types/doc2mdShell.d.ts
+  s_9faa9e61d4ab5c::t_62a643b268fb5b 60-66,132-136,153-156
+docs/quest-journal/README.md
+  s_f00585f6db12ae::t_d111a3bda3f61b 5
+ideas/README.md
+  s_f00585f6db12ae::t_defbb9f2e768e7 29
+docs/journal/README.md
+  s_f00585f6db12ae::t_829ebd698cc463 9
+apps/macos/doc2md/ShellBridge.swift
+  s_d90e75ab708da7::t_72a34a78645da4 77,165-167,350,458-464,482,495-497,584-597,599
+  s_9faa9e61d4ab5c::t_0d1fa0d4d8337f 16-17,27-29,64-68,71-73,76,80-88,91,141-144,159-164,168,201,212,251,284,334-340,347-349,351-360,370-426,431-439,456,473-475,479-481,483-494,668-670
+  s_9faa9e61d4ab5c::t_232933dc25da85 427-430
+  s_9faa9e61d4ab5c::t_847b81967a0f9c 90
+src/components/WorkingModeBar.tsx
+  s_9faa9e61d4ab5c::t_fea736b502b748 3-7,17
+  s_9faa9e61d4ab5c::t_858c073b6f8511 27,226,232-236
+src/desktop/__tests__/mockShellBridge.test.ts
+  s_9faa9e61d4ab5c::t_9af47a7ebef72a 64-79,88-89,112
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "a9423fa2ddc0ac97496754148b665af99d49ae3f",
+  "prompts": {},
+  "sessions": {
+    "s_37c7d239f649c0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e2c9c-0928-7b70-8ec2-8a9c66083f37",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_9faa9e61d4ab5c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e2c2a-6ace-7d33-88ab-12f3d532cc9c",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_d90e75ab708da7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e2c52-c243-76a0-83f4-3bcbd2a493d7",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_f00585f6db12ae": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e2c99-3ab6-75f0-a5d3-13603768d478",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_f0443bcae34ee0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e2c45-79de-72c2-95c8-1d385ee76dc3",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
