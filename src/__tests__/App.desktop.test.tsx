@@ -1271,6 +1271,66 @@ describe("App desktop bridge", () => {
     cleanupShell();
   });
 
+  it("ignores repeated settings recent clicks while native open is pending", async () => {
+    const pendingOpen = createDeferred<{
+      ok: true;
+      kind: "markdown";
+      path: string;
+      content: string;
+      mtimeMs: number;
+      lineEnding: "lf";
+    }>();
+    const openFile = vi.fn(() => pendingOpen.promise);
+    const cleanupShell = installMockShell({
+      openFile,
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: true,
+        recentFiles: [
+          {
+            path: "/Users/me/Recent.md",
+            displayName: "Recent.md",
+            lastOpenedAt: "2026-05-12T22:11:00.000Z",
+          },
+        ],
+      })),
+    });
+
+    render(<DesktopApp />);
+    fireEvent.click(await screen.findByRole("button", { name: "Desktop settings" }));
+    const settingsDialog = screen.getByRole("dialog", { name: "Desktop settings" });
+    const recentButton = within(settingsDialog).getByRole("button", {
+      name: /Recent\.md/,
+    });
+
+    fireEvent.click(recentButton);
+    fireEvent.click(recentButton);
+    fireEvent.click(recentButton);
+    fireEvent.click(recentButton);
+    fireEvent.click(recentButton);
+
+    expect(openFile).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      pendingOpen.resolve({
+        ok: true,
+        kind: "markdown",
+        path: "/Users/me/Recent.md",
+        content: "# Recent",
+        mtimeMs: 20,
+        lineEnding: "lf",
+      });
+      await pendingOpen.promise;
+    });
+
+    await screen.findByRole("heading", { name: "Recent" });
+    expect(openFile).toHaveBeenCalledTimes(1);
+    ensureSidebarVisible();
+    expect(screen.getAllByRole("button", { name: "Open Recent.md" })).toHaveLength(1);
+
+    cleanupShell();
+  });
+
   it("restores persisted light theme after desktop settings load", async () => {
     const cleanupShell = installMockShell({
       getPersistenceSettings: vi.fn(async () => ({

@@ -384,6 +384,7 @@ function AppContent() {
   const saveState = useDesktopSaveState(isDesktop);
   const { theme, setTheme } = useTheme();
   const saveInFlightRef = useRef(false);
+  const recentOpenInFlightPathsRef = useRef<Set<string>>(new Set());
   const settingsPopoverRef = useRef<HTMLDivElement>(null);
   const restoredThemeRef = useRef<Theme | null>(null);
   const themeBaselineRef = useRef<Theme>(theme);
@@ -1788,6 +1789,11 @@ function AppContent() {
         return true;
       }
 
+      if (recentOpenInFlightPathsRef.current.has(path)) {
+        return false;
+      }
+
+      recentOpenInFlightPathsRef.current.add(path);
       try {
         const result = await shell.openFile({ path });
         await handleOpenFileResult(result);
@@ -1808,6 +1814,8 @@ function AppContent() {
         });
         console.error("doc2md desktop openFile transport failure", error);
         return false;
+      } finally {
+        recentOpenInFlightPathsRef.current.delete(path);
       }
     },
     [
