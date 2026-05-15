@@ -180,6 +180,18 @@ describe("convertClipboardPasteToMarkdown", () => {
     });
   });
 
+  it("does not treat intraword underscores as markdown emphasis", () => {
+    const result = convertClipboardPasteToMarkdown({
+      html: "<p>snake_case 𝑖𝑡𝑎𝑙𝑖𝑐</p>",
+      plainText: "Plain fallback",
+    });
+
+    expect(result).toEqual({
+      markdown: "snake\\_case *italic*",
+      source: "html",
+    });
+  });
+
   it("does not convert unicode inside multi-backtick html code spans", () => {
     const result = convertClipboardPasteToMarkdown({
       html: "<p><code>`𝐁𝐨𝐥𝐝`</code> 𝑖𝑡𝑎𝑙𝑖𝑐</p>",

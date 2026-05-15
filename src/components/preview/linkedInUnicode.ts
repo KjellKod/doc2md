@@ -176,6 +176,17 @@ function renderStyledTokens(tokens: StyledToken[]) {
   return output;
 }
 
+function isWordCharacter(char: string | undefined) {
+  return char !== undefined && /^[A-Za-z0-9]$/.test(char);
+}
+
+function isIntrawordUnderscore(markdown: string, index: number, markerLength: number) {
+  return (
+    isWordCharacter(markdown[index - 1]) &&
+    isWordCharacter(markdown[index + markerLength])
+  );
+}
+
 export function convertLinkedInUnicodeToMarkdown(
   text: string,
   suppressedStyles: ReadonlySet<ReverseStyle> = new Set(),
@@ -330,13 +341,17 @@ export function convertLinkedInUnicodeInMarkdown(markdown: string) {
       continue;
     }
 
+    const startsDoubleUnderscore =
+      markdown.startsWith("__", index) && !isIntrawordUnderscore(markdown, index, 2);
+    const startsSingleUnderscore =
+      markdown[index] === "_" && !isIntrawordUnderscore(markdown, index, 1);
     const marker = markdown.startsWith("***", index)
       ? "***"
-      : markdown.startsWith("**", index) || markdown.startsWith("__", index)
+      : markdown.startsWith("**", index) || startsDoubleUnderscore
         ? markdown.slice(index, index + 2)
         : markdown.startsWith("~~", index)
           ? "~~"
-          : markdown[index] === "*" || markdown[index] === "_"
+          : markdown[index] === "*" || startsSingleUnderscore
             ? markdown[index]
             : "";
 
