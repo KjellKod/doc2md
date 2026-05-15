@@ -132,7 +132,8 @@ These are not blocking. They tag along with the seam the refactor already opens.
 - Changing the converter pipeline, save semantics, Sparkle/notarization
   plumbing, or licensing boundary.
 - Theme system changes.
-- Fixing the open table-cell preview-find bug
-  (`ideas/bug_report_find_preview_table_cells.md`). Phase 1 made that
-  fix smaller by colocating the rendered corpus computation in
-  `PreviewMode.tsx`; the fix itself is a separate quest.
+- Re-opening the table-cell preview-find bug. It shipped in PR #128
+  (`ideas/archive/bug_report_find_preview_table_cells.md`) as a
+  follow-up to Phase 1; the fix was a 72-line shared helper plus a
+  hast offset rule, made small precisely because Phase 1 colocated
+  the rendered corpus computation in `PreviewMode.tsx`.
