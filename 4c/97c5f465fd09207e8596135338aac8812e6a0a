@@ -1,0 +1,26 @@
+src/desktop/DesktopApp.tsx
+  s_f00585f6db12ae::t_4d5dd5374f6e8f 1762,1798,1810-1813
+src/__tests__/App.desktop.test.tsx
+  s_f00585f6db12ae::t_6c6ced479874a8 1338-1377
+src/components/preview/pasteToMarkdown.test.ts
+  s_f00585f6db12ae::t_371f6907fced60 6,24-27,29
+  s_f00585f6db12ae::t_0987907b80242a 28,30
+src/components/preview/linkedInUnicode.ts
+  s_f00585f6db12ae::t_95fa7ebb0c4eec 234-255,294
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "4c97c5f465fd09207e8596135338aac8812e6a0a",
+  "prompts": {},
+  "sessions": {
+    "s_f00585f6db12ae": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e2c99-3ab6-75f0-a5d3-13603768d478",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
