@@ -78,6 +78,18 @@ describe("convertClipboardPasteToMarkdown", () => {
     });
   });
 
+  it("does not convert unicode inside multi-backtick html code spans", () => {
+    const result = convertClipboardPasteToMarkdown({
+      html: "<p><code>`𝐁𝐨𝐥𝐝`</code> 𝑖𝑡𝑎𝑙𝑖𝑐</p>",
+      plainText: "Plain fallback",
+    });
+
+    expect(result).toEqual({
+      markdown: "`` `𝐁𝐨𝐥𝐝` `` *italic*",
+      source: "html",
+    });
+  });
+
   it("falls back to plain text when html conversion is empty", () => {
     expect(
       convertClipboardPasteToMarkdown({

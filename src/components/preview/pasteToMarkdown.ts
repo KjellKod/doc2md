@@ -242,11 +242,9 @@ function convertLinkedInUnicodeInMarkdown(markdown: string) {
       continue;
     }
 
-    const codeMarker = markdown.startsWith("```", index)
-      ? "```"
-      : markdown[index] === "`"
-        ? "`"
-        : "";
+    const backtickRun =
+      markdown[index] === "`" ? (markdown.slice(index).match(/^`+/)?.[0] ?? "") : "";
+    const codeMarker = backtickRun.length > 0 ? backtickRun : "";
 
     if (codeMarker.length > 0) {
       flushBuffer();
