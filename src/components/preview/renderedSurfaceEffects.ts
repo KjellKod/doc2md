@@ -1,5 +1,6 @@
 import { useLayoutEffect } from "react";
 import type { FindMatch } from "../useFindReplace";
+import { deriveRenderedText } from "./renderedTextCorpus";
 
 interface MutableElementRef<T> {
   current: T | null;
@@ -27,7 +28,12 @@ function centerElementInScrollContainer(
 // Body of the rendered-text snapshot effect. Caller wraps in
 // useLayoutEffect with the dep array appropriate to its mode (Preview
 // re-snapshots on multiple inputs that mutate rendered text; LinkedIn
-// re-snapshots on the formatted text alone).
+// re-snapshots on the formatted text alone). The corpus comes from
+// deriveRenderedText (a DOM walk that injects a virtual space at
+// td/th/dt/dd/li boundaries and a newline at tr/p/div/br/heading
+// boundaries) so adjacent-cell phrases match what the user sees on
+// screen. The same separator rule lives in findHighlightRehype.ts to
+// keep match offsets coherent across the two walks.
 export function snapshotRenderedViewText(
   element: HTMLElement | null,
   onChange: (nextText: string) => void,
@@ -36,8 +42,7 @@ export function snapshotRenderedViewText(
     onChange("");
     return;
   }
-  const nextText = (element.textContent ?? "").replace(/\u200B/g, "");
-  onChange(nextText);
+  onChange(deriveRenderedText(element));
 }
 
 interface RenderedAnchorApplyOptions {

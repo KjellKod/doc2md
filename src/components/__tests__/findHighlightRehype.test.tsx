@@ -3,6 +3,7 @@ import { render } from "@testing-library/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { findHighlightRehype, type RenderedFindMatch } from "../findHighlightRehype";
+import { deriveRenderedText } from "../preview/renderedTextCorpus";
 
 function renderMarkdown(markdown: string, match: RenderedFindMatch | null) {
   return render(
@@ -148,5 +149,42 @@ describe("findHighlightRehype", () => {
       ).toBe(text);
       unmount();
     }
+  });
+
+  it("wraps adjacent-cell matches when corpus injects td-boundary separators", () => {
+    // Bug fix for ideas/bug_report_find_preview_table_cells.md.
+    // Pre-fix corpus was element.textContent which concatenates cells
+    // with no separator ("AtlasJordan"). Post-fix corpus emits a
+    // virtual space at <td> close ("Atlas Jordan"). The same
+    // separator rule lives in findHighlightRehype's walk so offsets
+    // stay coherent across the two pipelines.
+    const md = [
+      "| Project | Owner |",
+      "| --- | --- |",
+      "| Atlas | Jordan |",
+    ].join("\n");
+
+    const { container: corpusContainer, unmount: unmountCorpus } =
+      renderMarkdown(md, null);
+    const corpus = deriveRenderedText(corpusContainer as HTMLElement);
+    unmountCorpus();
+
+    // Sanity: corpus places a space between adjacent cells.
+    expect(corpus).toContain("Atlas Jordan");
+    const start = corpus.indexOf("Atlas Jordan");
+    expect(start).toBeGreaterThanOrEqual(0);
+
+    const { container } = renderMarkdown(md, {
+      start,
+      end: start + "Atlas Jordan".length,
+    });
+    const marks = container.querySelectorAll(
+      "mark.markdown-rendered-find-highlight",
+    );
+    // One <mark> per cell — the matched span crosses a td boundary,
+    // so the rendered DOM has two adjacent marks (one in each cell).
+    expect(marks.length).toBe(2);
+    expect(marks[0].textContent).toBe("Atlas");
+    expect(marks[1].textContent).toBe("Jordan");
   });
 });
