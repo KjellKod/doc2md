@@ -51,6 +51,25 @@ function buildReverseMap() {
 
 const REVERSE_MATHEMATICAL_LETTERS = buildReverseMap();
 
+function applySuppressedStyle(
+  style: ReverseStyle,
+  suppressedStyles: ReadonlySet<ReverseStyle>,
+): ReverseStyle | null {
+  if (style === "boldItalic") {
+    const suppressBold =
+      suppressedStyles.has("bold") || suppressedStyles.has("boldItalic");
+    const suppressItalic =
+      suppressedStyles.has("italic") || suppressedStyles.has("boldItalic");
+
+    if (suppressBold && suppressItalic) return null;
+    if (suppressBold) return "italic";
+    if (suppressItalic) return "bold";
+    return style;
+  }
+
+  return suppressedStyles.has(style) ? null : style;
+}
+
 function markdownMarkersForStyle(style: ReverseStyle) {
   if (style === "bold") return "**";
   if (style === "italic") return "*";
@@ -103,7 +122,10 @@ function renderStyledTokens(tokens: StyledToken[]) {
   return output;
 }
 
-export function convertLinkedInUnicodeToMarkdown(text: string) {
+export function convertLinkedInUnicodeToMarkdown(
+  text: string,
+  suppressedStyles: ReadonlySet<ReverseStyle> = new Set(),
+) {
   const chars = Array.from(text);
   const tokens: StyledToken[] = [];
 
@@ -116,7 +138,10 @@ export function convertLinkedInUnicodeToMarkdown(text: string) {
 
     const reversed = REVERSE_MATHEMATICAL_LETTERS.get(char);
     let token: StyledToken = reversed
-      ? { text: reversed.text, style: reversed.style }
+      ? {
+          text: reversed.text,
+          style: applySuppressedStyle(reversed.style, suppressedStyles),
+        }
       : { text: char, style: null };
 
     let lookahead = index + 1;
@@ -133,9 +158,15 @@ export function convertLinkedInUnicodeToMarkdown(text: string) {
     }
 
     if (hasStrike) {
-      token = { text: token.text, style: "strike" };
+      token = {
+        text: token.text,
+        style: applySuppressedStyle("strike", suppressedStyles),
+      };
     } else if (hasUnderline) {
-      token = { text: token.text, style: "underline" };
+      token = {
+        text: token.text,
+        style: applySuppressedStyle("underline", suppressedStyles),
+      };
     }
 
     tokens.push(token);
@@ -143,6 +174,68 @@ export function convertLinkedInUnicodeToMarkdown(text: string) {
   }
 
   return renderStyledTokens(normalizeNeutralRuns(tokens));
+}
+
+function convertLinkedInUnicodeInMarkdown(markdown: string) {
+  let output = "";
+  let buffer = "";
+  let boldActive = false;
+  let italicActive = false;
+  let strikeActive = false;
+
+  const flushBuffer = () => {
+    if (buffer.length === 0) return;
+
+    const suppressedStyles = new Set<ReverseStyle>();
+    if (boldActive) suppressedStyles.add("bold");
+    if (italicActive) suppressedStyles.add("italic");
+    if (strikeActive) suppressedStyles.add("strike");
+
+    output += convertLinkedInUnicodeToMarkdown(buffer, suppressedStyles);
+    buffer = "";
+  };
+
+  for (let index = 0; index < markdown.length; index += 1) {
+    if (markdown[index] === "\\" && index + 1 < markdown.length) {
+      buffer += markdown.slice(index, index + 2);
+      index += 1;
+      continue;
+    }
+
+    const marker = markdown.startsWith("***", index)
+      ? "***"
+      : markdown.startsWith("**", index) || markdown.startsWith("__", index)
+        ? markdown.slice(index, index + 2)
+        : markdown.startsWith("~~", index)
+          ? "~~"
+          : markdown[index] === "*" || markdown[index] === "_"
+            ? markdown[index]
+            : "";
+
+    if (marker.length === 0) {
+      buffer += markdown[index];
+      continue;
+    }
+
+    flushBuffer();
+    output += marker;
+
+    if (marker === "***") {
+      boldActive = !boldActive;
+      italicActive = !italicActive;
+    } else if (marker === "**" || marker === "__") {
+      boldActive = !boldActive;
+    } else if (marker === "~~") {
+      strikeActive = !strikeActive;
+    } else {
+      italicActive = !italicActive;
+    }
+
+    index += marker.length - 1;
+  }
+
+  flushBuffer();
+  return output;
 }
 
 export function convertClipboardPasteToMarkdown({
@@ -154,7 +247,7 @@ export function convertClipboardPasteToMarkdown({
 
     if (htmlMarkdown.trim().length > 0) {
       return {
-        markdown: convertLinkedInUnicodeToMarkdown(htmlMarkdown),
+        markdown: convertLinkedInUnicodeInMarkdown(htmlMarkdown),
         source: "html",
       };
     }

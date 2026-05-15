@@ -54,6 +54,18 @@ describe("convertClipboardPasteToMarkdown", () => {
     });
   });
 
+  it("does not duplicate markdown markers for unicode inside semantic html", () => {
+    const result = convertClipboardPasteToMarkdown({
+      html: "<p><strong>𝐁𝐨𝐥𝐝</strong> and <em>𝑖𝑡𝑎𝑙𝑖𝑐</em></p>",
+      plainText: "Plain fallback",
+    });
+
+    expect(result).toEqual({
+      markdown: "**Bold** and _italic_",
+      source: "html",
+    });
+  });
+
   it("falls back to plain text when html conversion is empty", () => {
     expect(
       convertClipboardPasteToMarkdown({
