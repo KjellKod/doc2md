@@ -1,0 +1,66 @@
+src/desktop/DesktopApp.tsx
+  s_f00585f6db12ae::t_ed4efa62ecdd25 1482-1505
+  s_f00585f6db12ae::t_0c04afa8eef63b 424-426
+  s_f00585f6db12ae::t_392116fe74aa0f 1456,1458-1481
+  s_f00585f6db12ae::t_6f3b1fa390b50e 2814
+  s_f00585f6db12ae::t_89017b3de32714 1457,1632,1641,2702
+  s_f00585f6db12ae::t_ca07ec62ef5c90 2800-2805,2807,2841
+  s_f00585f6db12ae::t_2b18f4b186abe8 1775,1781-1783,1787-1788,1790,1797,1800-1806
+  s_f00585f6db12ae::t_9a80cf76224faf 1784-1786
+  s_f00585f6db12ae::t_01a2bdef089047 2653-2701,2703-2773
+src/desktop/mockShellBridge.ts
+  s_f00585f6db12ae::t_d79ec7a8b27c8d 131-137
+apps/macos/doc2mdTests/PersistenceStoreTests.swift
+  s_f00585f6db12ae::t_0856193dc10c3b 88-109
+src/desktop/__tests__/bridgeClient.test.ts
+  s_f00585f6db12ae::t_0e3412ed74b57d 47-56
+src/components/WorkingModeBar.tsx
+  s_f00585f6db12ae::t_acd6b1b7175e09 19,30,202-237
+apps/macos/doc2md/ShellBridge.swift
+  s_f00585f6db12ae::t_c7991bb9851b3e 690
+  s_f00585f6db12ae::t_57f2ce5050a1f5 16,29,143-144,386-390
+src/components/WorkingModeBar.test.tsx
+  s_f00585f6db12ae::t_62dc326339ccd5 113-135
+apps/macos/doc2mdTests/SessionStoreTests.swift
+  s_f00585f6db12ae::t_8b69f900632edb 277-288,290-302
+  s_f00585f6db12ae::t_20f569439cca22 289
+  s_f00585f6db12ae::t_1573e3c24e124d 414-415
+src/desktop/desktop.css
+  s_f00585f6db12ae::t_9a80cf76224faf 166
+  s_f00585f6db12ae::t_b7343c5ba5336d 107,113-114,243
+  s_f00585f6db12ae::t_116f68f58f7bd9 140-146,165,167-182,191-194,197,199,205-228,234
+src/styles/global.css
+  s_f00585f6db12ae::t_6ea46d65b5c0c5 429,451,464-477,486,946-948
+  s_f00585f6db12ae::t_a01e7903ca3c09 177-180
+src/desktop/__tests__/mockShellBridge.test.ts
+  s_f00585f6db12ae::t_19968bedd060aa 64-68,93,118
+src/__tests__/App.desktop.test.tsx
+  s_f00585f6db12ae::t_b43f18b4589b02 1207,1221-1222
+  s_f00585f6db12ae::t_4e8afc613210e8 731,773-788,1094,1117,1119-1200,1202-1206,1208-1220
+  s_f00585f6db12ae::t_9d462dd628631f 1114-1115
+  s_f00585f6db12ae::t_210652749ef207 1201
+  s_f00585f6db12ae::t_8aca10ed8e8403 1370
+src/types/doc2mdShell.d.ts
+  s_f00585f6db12ae::t_89017b3de32714 153
+apps/macos/doc2md/PersistenceStore.swift
+  s_f00585f6db12ae::t_7e901afdc114ec 123-132
+apps/macos/README.md
+  s_f00585f6db12ae::t_951941a55263a3 5,10,18
+  s_f00585f6db12ae::t_9a80cf76224faf 32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "193bf9febbc91774a0b24ef7ccc32f3bd91efa2a",
+  "prompts": {},
+  "sessions": {
+    "s_f00585f6db12ae": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e2c99-3ab6-75f0-a5d3-13603768d478",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
