@@ -76,11 +76,6 @@ async function findCount(page: Page) {
   return match ? Number(match[1]) : 0;
 }
 
-async function clearFindQuery(page: Page) {
-  const findInput = page.getByRole("textbox", { name: "Find markdown text" });
-  await findInput.fill("");
-}
-
 test.describe("find against xlsx in edit and preview modes", () => {
   test("single-cell substring matches in both edit and preview", async ({
     page,
