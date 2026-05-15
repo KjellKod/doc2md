@@ -18,6 +18,14 @@ describe("convertLinkedInUnicodeToMarkdown", () => {
       convertLinkedInUnicodeToMarkdown("s̶t̶r̶u̶c̶k̶ and u̲n̲d̲e̲r̲"),
     ).toBe("~~struck~~ and under");
   });
+
+  it("composes combining strikethrough with linkedin unicode emphasis", () => {
+    expect(
+      convertLinkedInUnicodeToMarkdown(
+        "𝐁̶𝐨̶𝐥̶𝐝̶ and 𝑖̶𝑡̶𝑎̶𝑙̶𝑖̶𝑐̶ and 𝑩̶𝒐̶𝒍̶𝒅̶ 𝒊̶𝒕̶𝒂̶𝒍̶𝒊̶𝒄̶",
+      ),
+    ).toBe("**~~Bold~~** and *~~italic~~* and ***~~Bold italic~~***");
+  });
 });
 
 describe("convertClipboardPasteToMarkdown", () => {
@@ -144,6 +152,18 @@ describe("convertClipboardPasteToMarkdown", () => {
 
     expect(result).toEqual({
       markdown: "**Bold** and _italic_",
+      source: "html",
+    });
+  });
+
+  it("composes combining strikethrough with semantic html emphasis", () => {
+    const result = convertClipboardPasteToMarkdown({
+      html: "<p><strong>𝐁̶𝐨̶𝐥̶𝐝̶</strong> and <em>𝑖̶𝑡̶𝑎̶𝑙̶𝑖̶𝑐̶</em></p>",
+      plainText: "Plain fallback",
+    });
+
+    expect(result).toEqual({
+      markdown: "**~~Bold~~** and _~~italic~~_",
       source: "html",
     });
   });

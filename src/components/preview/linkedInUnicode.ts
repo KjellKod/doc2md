@@ -5,6 +5,15 @@ const COMBINING_STRIKE = "\u0336";
 const COMBINING_UNDERLINE = "\u0332";
 
 type ReverseStyle = "bold" | "italic" | "boldItalic" | "strike" | "underline";
+type EmphasisPart = "bold" | "italic" | "strike";
+type RenderStyle =
+  | "bold"
+  | "italic"
+  | "boldItalic"
+  | "strike"
+  | "boldStrike"
+  | "italicStrike"
+  | "boldItalicStrike";
 
 interface ReverseCharacter {
   text: string;
@@ -13,7 +22,7 @@ interface ReverseCharacter {
 
 interface StyledToken {
   text: string;
-  style: ReverseStyle | null;
+  style: RenderStyle | null;
 }
 
 interface LetterRange {
@@ -72,31 +81,55 @@ function buildReverseMap() {
 
 const REVERSE_MATHEMATICAL_LETTERS = buildReverseMap();
 
-function applySuppressedStyle(
+function emphasisPartsForStyle(
   style: ReverseStyle,
   suppressedStyles: ReadonlySet<ReverseStyle>,
-): ReverseStyle | null {
+): Set<EmphasisPart> {
+  const parts = new Set<EmphasisPart>();
+
   if (style === "boldItalic") {
     const suppressBold =
       suppressedStyles.has("bold") || suppressedStyles.has("boldItalic");
     const suppressItalic =
       suppressedStyles.has("italic") || suppressedStyles.has("boldItalic");
 
-    if (suppressBold && suppressItalic) return null;
-    if (suppressBold) return "italic";
-    if (suppressItalic) return "bold";
-    return style;
+    if (!suppressBold) parts.add("bold");
+    if (!suppressItalic) parts.add("italic");
+    return parts;
   }
 
-  return suppressedStyles.has(style) ? null : style;
+  if (style === "bold" || style === "italic" || style === "strike") {
+    if (!suppressedStyles.has(style)) {
+      parts.add(style);
+    }
+  }
+
+  return parts;
 }
 
-function markdownMarkersForStyle(style: ReverseStyle) {
-  if (style === "bold") return "**";
-  if (style === "italic") return "*";
-  if (style === "boldItalic") return "***";
-  if (style === "strike") return "~~";
-  return "";
+function renderStyleFromParts(parts: ReadonlySet<EmphasisPart>): RenderStyle | null {
+  const bold = parts.has("bold");
+  const italic = parts.has("italic");
+  const strike = parts.has("strike");
+
+  if (bold && italic && strike) return "boldItalicStrike";
+  if (bold && strike) return "boldStrike";
+  if (italic && strike) return "italicStrike";
+  if (bold && italic) return "boldItalic";
+  if (bold) return "bold";
+  if (italic) return "italic";
+  if (strike) return "strike";
+  return null;
+}
+
+function markdownMarkersForStyle(style: RenderStyle) {
+  if (style === "bold") return { open: "**", close: "**" };
+  if (style === "italic") return { open: "*", close: "*" };
+  if (style === "boldItalic") return { open: "***", close: "***" };
+  if (style === "strike") return { open: "~~", close: "~~" };
+  if (style === "boldStrike") return { open: "**~~", close: "~~**" };
+  if (style === "italicStrike") return { open: "*~~", close: "~~*" };
+  return { open: "***~~", close: "~~***" };
 }
 
 function normalizeNeutralRuns(tokens: StyledToken[]) {
@@ -118,17 +151,17 @@ function normalizeNeutralRuns(tokens: StyledToken[]) {
 
 function renderStyledTokens(tokens: StyledToken[]) {
   let output = "";
-  let activeStyle: ReverseStyle | null = null;
+  let activeStyle: RenderStyle | null = null;
 
   for (const token of tokens) {
-    const nextStyle = token.style === "underline" ? null : token.style;
+    const nextStyle = token.style;
 
     if (activeStyle !== nextStyle) {
       if (activeStyle !== null) {
-        output += markdownMarkersForStyle(activeStyle);
+        output += markdownMarkersForStyle(activeStyle).close;
       }
       if (nextStyle !== null) {
-        output += markdownMarkersForStyle(nextStyle);
+        output += markdownMarkersForStyle(nextStyle).open;
       }
       activeStyle = nextStyle;
     }
@@ -137,7 +170,7 @@ function renderStyledTokens(tokens: StyledToken[]) {
   }
 
   if (activeStyle !== null) {
-    output += markdownMarkersForStyle(activeStyle);
+    output += markdownMarkersForStyle(activeStyle).close;
   }
 
   return output;
@@ -158,10 +191,13 @@ export function convertLinkedInUnicodeToMarkdown(
     }
 
     const reversed = REVERSE_MATHEMATICAL_LETTERS.get(char);
+    const emphasisParts = reversed
+      ? emphasisPartsForStyle(reversed.style, suppressedStyles)
+      : new Set<EmphasisPart>();
     let token: StyledToken = reversed
       ? {
           text: reversed.text,
-          style: applySuppressedStyle(reversed.style, suppressedStyles),
+          style: renderStyleFromParts(emphasisParts),
         }
       : { text: char, style: null };
 
@@ -179,14 +215,17 @@ export function convertLinkedInUnicodeToMarkdown(
     }
 
     if (hasStrike) {
+      if (!suppressedStyles.has("strike")) {
+        emphasisParts.add("strike");
+      }
       token = {
         text: token.text,
-        style: applySuppressedStyle("strike", suppressedStyles),
+        style: renderStyleFromParts(emphasisParts),
       };
     } else if (hasUnderline) {
       token = {
         text: token.text,
-        style: applySuppressedStyle("underline", suppressedStyles),
+        style: renderStyleFromParts(emphasisParts),
       };
     }
 
