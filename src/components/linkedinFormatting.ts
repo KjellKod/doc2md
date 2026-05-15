@@ -187,6 +187,10 @@ function stylizeCharacters(text: string, style: InlineStyle) {
     .join("");
 }
 
+export function stylizeLinkedInCharacters(text: string, style: InlineStyle) {
+  return stylizeCharacters(text, style);
+}
+
 function renderInlineFormatting(text: string) {
   let formatted = text;
 

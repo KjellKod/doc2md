@@ -23,6 +23,7 @@ export interface PreviewPanelProps {
   onStartWriting?: () => void;
   onNewDocument?: () => void;
   editorFocusRequest?: { id: number; target: "editor" };
+  onLargeMarkdownPaste?: (markdown: string) => void;
 }
 
 export default function PreviewPanel({
@@ -37,6 +38,7 @@ export default function PreviewPanel({
   onStartWriting,
   onNewDocument,
   editorFocusRequest,
+  onLargeMarkdownPaste,
 }: PreviewPanelProps) {
   const [mode, setMode] = useState<"edit" | "preview" | "linkedin">("preview");
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
@@ -326,6 +328,7 @@ export default function PreviewPanel({
           textareaRef={textareaRef}
           findHighlightRef={findHighlightRef}
           onMarkdownChange={onMarkdownChange}
+          onLargeMarkdownPaste={onLargeMarkdownPaste}
         />
       ) : mode === "linkedin" && linkedinPreviewState ? (
         <LinkedInMode
