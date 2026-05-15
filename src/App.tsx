@@ -1020,6 +1020,7 @@ function AppContent() {
               onHome={handleReturnHome}
               onOpen={handleBrowserOpenRequest}
               onNew={handleNewDocument}
+              trailingControls={<ThemeToggle />}
             />
           </div>
           <header

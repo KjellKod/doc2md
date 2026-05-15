@@ -16,6 +16,7 @@ import { useTheme } from "../hooks/useTheme";
 import type { FileEntry } from "../types";
 import type {
   DesktopPersistenceSettings,
+  DesktopSessionState,
   ShellFile,
   ShellConflict,
   ShellError,
@@ -57,6 +58,7 @@ const DEFAULT_DESKTOP_PERSISTENCE_SETTINGS: DesktopPersistenceSettings = {
   persistenceEnabled: false,
   recentFiles: [],
 };
+const SESSION_SYNC_DEBOUNCE_MS = 150;
 
 function PanelRightOpenIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -170,7 +172,7 @@ function noticeFromError(result: ShellError): DesktopNotice {
 }
 
 function noticeFromPersistenceIssue(
-  result: ShellResult<DesktopPersistenceSettings>,
+  result: ShellResult<{ ok: true }>,
 ): DesktopNotice {
   if (result.ok) {
     return { kind: "none" };
@@ -193,6 +195,12 @@ function noticeFromPersistenceIssue(
 function isPersistenceSettings(
   result: ShellResult<DesktopPersistenceSettings>,
 ): result is DesktopPersistenceSettings {
+  return result.ok;
+}
+
+function isSessionState(
+  result: ShellResult<DesktopSessionState>,
+): result is DesktopSessionState {
   return result.ok;
 }
 
@@ -394,6 +402,12 @@ function AppContent() {
     Record<string, PendingConflict>
   >({});
   const pendingConflictsRef = useRef<Record<string, PendingConflict>>({});
+  const sessionRestoreStartedRef = useRef(false);
+  const sessionRestoreInFlightRef = useRef(false);
+  const sessionRestoreCompletedRef = useRef(false);
+  const sessionSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const [entrySaveStates, setEntrySaveStates] = useState<
     Record<string, DesktopSaveState>
   >({});
@@ -411,6 +425,7 @@ function AppContent() {
     useState<DesktopPersistenceSettings>(DEFAULT_DESKTOP_PERSISTENCE_SETTINGS);
   const [initialPersistenceLoaded, setInitialPersistenceLoaded] =
     useState(false);
+  const [sessionRestoreRevision, setSessionRestoreRevision] = useState(0);
   const [editorFocusRequest, setEditorFocusRequest] = useState<{
     id: number;
     target: "editor";
@@ -868,12 +883,18 @@ function AppContent() {
       setPersistenceSettings(DEFAULT_DESKTOP_PERSISTENCE_SETTINGS);
       setInitialPersistenceLoaded(false);
       setIsDesktopSettingsOpen(false);
+      sessionRestoreStartedRef.current = false;
+      sessionRestoreInFlightRef.current = false;
+      sessionRestoreCompletedRef.current = false;
       resetPersistenceLifecycleRefs(currentThemeRef.current);
       return;
     }
 
     let cancelled = false;
     const desktopShell = shell;
+    sessionRestoreStartedRef.current = false;
+    sessionRestoreInFlightRef.current = false;
+    sessionRestoreCompletedRef.current = false;
     setInitialPersistenceLoaded(false);
 
     async function loadPersistenceSettings() {
@@ -1567,7 +1588,11 @@ function AppContent() {
   }, [hasWorkingEntry]);
 
   const handleOpenFileResult = useCallback(
-    async (result: ShellResult<ShellFile>) => {
+    async (
+      result: ShellResult<ShellFile>,
+      options: { refreshPersistence?: boolean } = {},
+    ): Promise<string | null> => {
+      const refreshAfterOpen = options.refreshPersistence ?? true;
       if (result.ok) {
         if (result.kind === "markdown") {
           const entryId = addMarkdownEntry({
@@ -1590,11 +1615,15 @@ function AppContent() {
           }));
           saveState.markSaved();
           clearDesktopProblem();
-          void refreshPersistenceSettings();
-          return;
+          if (refreshAfterOpen) {
+            void refreshPersistenceSettings();
+          }
+          return entryId;
         }
 
-        void refreshPersistenceSettings();
+        if (refreshAfterOpen) {
+          void refreshPersistenceSettings();
+        }
 
         if (window.location.protocol !== "doc2md:") {
           setDesktopNotice({
@@ -1602,7 +1631,7 @@ function AppContent() {
             message:
               "Importing non-Markdown files requires the Release desktop bundle. Run `npm run build:mac` or open the file from the installed app.",
           });
-          return;
+          return null;
         }
 
         const importResponse = await fetch(result.importUrl);
@@ -1613,7 +1642,7 @@ function AppContent() {
             kind: "error",
             message,
           });
-          return;
+          return null;
         }
 
         const blob = await importResponse.blob();
@@ -1629,21 +1658,22 @@ function AppContent() {
         }));
         saveState.markEdited();
         clearDesktopProblem();
-        return;
+        return entryId;
       }
 
       if (result.code === "cancelled") {
-        return;
+        return null;
       }
 
       if (result.code === "permission-needed") {
         setDesktopNotice(noticeFromPermission(result));
-        return;
+        return null;
       }
 
       if (result.code === "error") {
         setDesktopNotice(noticeFromError(result));
       }
+      return null;
     },
     [
       addImportedFileEntry,
@@ -1654,6 +1684,13 @@ function AppContent() {
       saveState,
     ],
   );
+  const handleOpenFileResultRef = useRef(handleOpenFileResult);
+  const selectEntryRef = useRef(selectEntry);
+
+  useEffect(() => {
+    handleOpenFileResultRef.current = handleOpenFileResult;
+    selectEntryRef.current = selectEntry;
+  }, [handleOpenFileResult, selectEntry]);
 
   const handleOpenFile = useCallback(async () => {
     if (!shell) {
@@ -1697,6 +1734,140 @@ function AppContent() {
     },
     [handleOpenFileResult, saveState, shell],
   );
+
+  useEffect(() => {
+    if (
+      !shell ||
+      !initialPersistenceLoaded ||
+      !persistenceSettings.persistenceEnabled ||
+      sessionRestoreStartedRef.current
+    ) {
+      if (
+        initialPersistenceLoaded &&
+        (!shell || !persistenceSettings.persistenceEnabled)
+      ) {
+        sessionRestoreCompletedRef.current = true;
+      }
+      return;
+    }
+
+    let cancelled = false;
+    const desktopShell = shell;
+    sessionRestoreStartedRef.current = true;
+    sessionRestoreInFlightRef.current = true;
+    sessionRestoreCompletedRef.current = false;
+
+    async function restoreSession() {
+      const restoredEntries: Array<{ path: string; entryId: string }> = [];
+      try {
+        const sessionResult = await desktopShell.getSessionState();
+        if (cancelled) {
+          return;
+        }
+
+        if (!isSessionState(sessionResult)) {
+          setDesktopNotice(noticeFromPersistenceIssue(sessionResult));
+          return;
+        }
+
+        for (const path of sessionResult.openPaths) {
+          const openResult = await desktopShell.openFile({ path });
+          if (cancelled) {
+            return;
+          }
+
+          const entryId = await handleOpenFileResultRef.current(openResult, {
+            refreshPersistence: false,
+          });
+          if (entryId && openResult.ok && openResult.kind === "markdown") {
+            restoredEntries.push({ path: openResult.path, entryId });
+          }
+        }
+
+        const selectedRestoredEntry =
+          sessionResult.selectedPath &&
+          restoredEntries.find(
+            (entry) => entry.path === sessionResult.selectedPath,
+          );
+        const fallbackRestoredEntry = restoredEntries[0];
+        const entryToSelect = selectedRestoredEntry ?? fallbackRestoredEntry;
+        if (entryToSelect) {
+          selectEntryRef.current(entryToSelect.entryId);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setDesktopNotice({
+            kind: "error",
+            message: "Session restore failed before the app received a native result.",
+          });
+          console.error("doc2md desktop session restore failure", error);
+        }
+      } finally {
+        if (!cancelled) {
+          sessionRestoreInFlightRef.current = false;
+          sessionRestoreCompletedRef.current = true;
+          setSessionRestoreRevision((revision) => revision + 1);
+        }
+      }
+    }
+
+    void restoreSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    initialPersistenceLoaded,
+    persistenceSettings.persistenceEnabled,
+    shell,
+  ]);
+
+  useEffect(() => {
+    if (
+      !shell ||
+      !initialPersistenceLoaded ||
+      !persistenceSettings.persistenceEnabled ||
+      !sessionRestoreCompletedRef.current ||
+      sessionRestoreInFlightRef.current
+    ) {
+      return;
+    }
+
+    if (sessionSyncTimeoutRef.current !== null) {
+      clearTimeout(sessionSyncTimeoutRef.current);
+    }
+
+    const desktopShell = shell;
+    const openPaths = entries
+      .map((entry) => desktopFiles[entry.id]?.path)
+      .filter((path): path is string => Boolean(path));
+    const selectedSessionPath = selectedEntryId
+      ? desktopFiles[selectedEntryId]?.path
+      : undefined;
+
+    sessionSyncTimeoutRef.current = setTimeout(() => {
+      void desktopShell.setSessionState({
+        openPaths,
+        selectedPath: selectedSessionPath,
+      });
+      sessionSyncTimeoutRef.current = null;
+    }, SESSION_SYNC_DEBOUNCE_MS);
+
+    return () => {
+      if (sessionSyncTimeoutRef.current !== null) {
+        clearTimeout(sessionSyncTimeoutRef.current);
+        sessionSyncTimeoutRef.current = null;
+      }
+    };
+  }, [
+    desktopFiles,
+    entries,
+    initialPersistenceLoaded,
+    persistenceSettings.persistenceEnabled,
+    selectedEntryId,
+    sessionRestoreRevision,
+    shell,
+  ]);
 
   const restoreCancelledSaveState = useCallback(
     (entryId: string, previousState: DesktopSaveState) => {
@@ -2430,6 +2601,7 @@ function AppContent() {
                   void handleOpenFile();
                 }}
                 onNew={handleNewDocument}
+                trailingControls={<ThemeToggle />}
                 recentFiles={workingModeRecentFiles}
                 onOpenRecentFile={(path) => {
                   void handleOpenRecentFile(path);

@@ -111,6 +111,7 @@ describe("App desktop bridge", () => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
     delete window.doc2mdShell;
+    delete document.documentElement.dataset.theme;
     localStorage.clear();
     sessionStorage.clear();
     cleanup();
@@ -1249,6 +1250,142 @@ describe("App desktop bridge", () => {
     );
     settingsDialog = screen.getByRole("dialog", { name: "Desktop settings" });
     expect(within(settingsDialog).getByText("Saved.md")).toBeInTheDocument();
+
+    cleanupShell();
+  });
+
+  it("restores saved Markdown session paths and selects the previous document", async () => {
+    const openFile = vi.fn(async (args?: { path?: string }) => ({
+      ok: true as const,
+      kind: "markdown" as const,
+      path: args?.path ?? "/Users/me/Manual.md",
+      content: args?.path?.endsWith("Beta.md") ? "# Beta\n" : "# Alpha\n",
+      mtimeMs: args?.path?.endsWith("Beta.md") ? 20 : 10,
+      lineEnding: "lf" as const,
+    }));
+    const getSessionState = vi.fn(async () => ({
+      ok: true as const,
+      openPaths: ["/Users/me/Alpha.md", "/Users/me/Beta.md"],
+      selectedPath: "/Users/me/Beta.md",
+      recentFiles: [],
+    }));
+    const cleanupShell = installMockShell({
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: true,
+        recentFiles: [],
+      })),
+      getSessionState,
+      openFile,
+    });
+
+    render(<DesktopApp />);
+
+    await screen.findByRole("heading", { name: "Beta" });
+    expect(getSessionState).toHaveBeenCalledTimes(1);
+    expect(openFile).toHaveBeenNthCalledWith(1, { path: "/Users/me/Alpha.md" });
+    expect(openFile).toHaveBeenNthCalledWith(2, { path: "/Users/me/Beta.md" });
+    ensureSidebarVisible();
+    expect(screen.getByRole("button", { name: "Open Alpha.md" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open Beta.md" })).toBeInTheDocument();
+
+    cleanupShell();
+  });
+
+  it("skips unopenable restored paths without blocking startup", async () => {
+    const openFile = vi.fn(async (args?: { path?: string }) => {
+      if (args?.path === "/Users/me/Missing.md") {
+        return {
+          ok: false as const,
+          code: "permission-needed" as const,
+          path: args.path,
+          message: "Open the file again before reloading it.",
+        };
+      }
+
+      return {
+        ok: true as const,
+        kind: "markdown" as const,
+        path: args?.path ?? "/Users/me/Alpha.md",
+        content: "# Alpha\n",
+        mtimeMs: 10,
+        lineEnding: "lf" as const,
+      };
+    });
+    const cleanupShell = installMockShell({
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: true,
+        recentFiles: [],
+      })),
+      getSessionState: vi.fn(async () => ({
+        ok: true as const,
+        openPaths: ["/Users/me/Missing.md", "/Users/me/Alpha.md"],
+        selectedPath: "/Users/me/Missing.md",
+        recentFiles: [],
+      })),
+      openFile,
+    });
+
+    render(<DesktopApp />);
+
+    expect(await screen.findByRole("heading", { name: "Alpha" })).toBeInTheDocument();
+    expect(openFile).toHaveBeenCalledTimes(2);
+
+    cleanupShell();
+  });
+
+  it("syncs only disk-backed Markdown paths to native session state", async () => {
+    const setSessionState = vi.fn(async (args: {
+      openPaths: string[];
+      selectedPath?: string;
+    }) => ({
+      ok: true as const,
+      ...args,
+      recentFiles: [],
+    }));
+    const cleanupShell = installMockShell({
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: true,
+        recentFiles: [],
+      })),
+      getSessionState: vi.fn(async () => ({
+        ok: true as const,
+        openPaths: [],
+        recentFiles: [],
+      })),
+      openFile: vi.fn(async () => ({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Disk.md",
+        content: "# Disk\n",
+        mtimeMs: 10,
+        lineEnding: "lf" as const,
+      })),
+      setSessionState,
+    });
+
+    render(<DesktopApp />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await screen.findByRole("heading", { name: "Disk" });
+
+    await waitFor(() =>
+      expect(setSessionState).toHaveBeenCalledWith({
+        openPaths: ["/Users/me/Disk.md"],
+        selectedPath: "/Users/me/Disk.md",
+      }),
+    );
+
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
+    await awaitOpenButton(/untitled\.md/i);
+
+    await waitFor(() =>
+      expect(setSessionState).toHaveBeenLastCalledWith({
+        openPaths: ["/Users/me/Disk.md"],
+        selectedPath: undefined,
+      }),
+    );
 
     cleanupShell();
   });

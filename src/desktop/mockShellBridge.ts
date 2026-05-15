@@ -3,6 +3,7 @@
 import { vi } from "vitest";
 import type {
   DesktopPersistenceSettings,
+  DesktopSessionState,
   Doc2mdShell,
   ShellFile,
   ShellRevealOk,
@@ -59,6 +60,12 @@ const DEFAULT_STAT: ShellStatOk = {
 const DEFAULT_PERSISTENCE_SETTINGS: DesktopPersistenceSettings = {
   ok: true,
   persistenceEnabled: false,
+  recentFiles: [],
+};
+
+const DEFAULT_SESSION_STATE: DesktopSessionState = {
+  ok: true,
+  openPaths: [],
   recentFiles: [],
 };
 
@@ -120,6 +127,15 @@ export function createMockShell(
         ...DEFAULT_PERSISTENCE_SETTINGS,
         persistenceEnabled: true,
         theme: args.theme,
+      })),
+    getSessionState:
+      overrides.getSessionState ?? vi.fn(async () => DEFAULT_SESSION_STATE),
+    setSessionState:
+      overrides.setSessionState ??
+      vi.fn(async (args) => ({
+        ...DEFAULT_SESSION_STATE,
+        openPaths: args.openPaths,
+        selectedPath: args.selectedPath,
       })),
   };
 }

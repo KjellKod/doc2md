@@ -1,6 +1,10 @@
 import { FilePlus, FolderOpen } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
-import type { KeyboardEvent, MouseEvent as ReactMouseEvent } from "react";
+import type {
+  KeyboardEvent,
+  MouseEvent as ReactMouseEvent,
+  ReactNode,
+} from "react";
 import type { DesktopRecentFile } from "../types/doc2mdShell";
 
 type WorkingModeBarVariant = "browser" | "desktop";
@@ -10,6 +14,7 @@ interface WorkingModeBarProps {
   onHome: () => void;
   onOpen: () => void | Promise<void>;
   onNew: () => void;
+  trailingControls?: ReactNode;
   recentFiles?: DesktopRecentFile[];
   onOpenRecentFile?: (path: string) => void | Promise<void>;
 }
@@ -19,6 +24,7 @@ export default function WorkingModeBar({
   onHome,
   onOpen,
   onNew,
+  trailingControls,
   recentFiles = [],
   onOpenRecentFile,
 }: WorkingModeBarProps) {
@@ -217,12 +223,17 @@ export default function WorkingModeBar({
 
         <button
           type="button"
-          className="primary-button working-mode-button"
+          className="secondary-button working-mode-button"
           onClick={handleNew}
         >
           <FilePlus className="working-mode-button-icon" aria-hidden="true" />
           <span>New</span>
         </button>
+        {trailingControls ? (
+          <div className="working-mode-trailing-controls">
+            {trailingControls}
+          </div>
+        ) : null}
       </div>
     </div>
   );

@@ -320,9 +320,10 @@ button.eyebrow.eyebrow-toggle {
 }
 
 .page.is-working-mode .working-mode-bar {
-  max-height: 76px;
+  max-height: 128px;
   margin-bottom: 20px;
   padding: 8px;
+  overflow: visible;
   border-color: var(--panel-border);
   background: rgba(255, 255, 255, 0.68);
   box-shadow: 0 14px 30px rgba(27, 39, 49, 0.06);
@@ -339,7 +340,9 @@ button.eyebrow.eyebrow-toggle {
 .working-mode-logo {
   display: inline-flex;
   align-items: center;
+  flex: 1 1 auto;
   min-height: 38px;
+  min-width: 0;
   padding: 0 10px;
   border: 0;
   border-radius: 6px;
@@ -358,6 +361,7 @@ button.eyebrow.eyebrow-toggle {
   display: inline-flex;
   align-items: baseline;
   gap: 0;
+  min-width: 0;
   font-size: 1.04rem;
   letter-spacing: 0;
 }
@@ -390,11 +394,16 @@ button.eyebrow.eyebrow-toggle {
 .working-mode-actions {
   display: inline-flex;
   align-items: center;
+  justify-content: flex-end;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
   gap: 8px;
+  min-width: 0;
 }
 
 .working-mode-open-group {
   position: relative;
+  flex-shrink: 0;
 }
 
 .working-mode-button {
@@ -408,6 +417,12 @@ button.eyebrow.eyebrow-toggle {
 .working-mode-button-icon {
   width: 16px;
   height: 16px;
+}
+
+.working-mode-trailing-controls {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .working-mode-recent-menu {
@@ -578,8 +593,8 @@ button.eyebrow.eyebrow-toggle {
 .preview-panel {
   --preview-panel-ceiling: calc(100dvh - 280px);
   position: relative;
-  height: min(700px, var(--preview-panel-ceiling));
-  min-height: min(700px, var(--preview-panel-ceiling));
+  height: var(--preview-panel-ceiling);
+  min-height: min(620px, var(--preview-panel-ceiling));
   max-height: var(--preview-panel-ceiling);
   overflow: visible;
 }
@@ -687,6 +702,12 @@ button.eyebrow.eyebrow-toggle {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+  min-width: 0;
+}
+
+.panel-heading > div,
+.about-header > div {
+  min-width: 0;
 }
 
 .panel-heading-tight {
@@ -697,12 +718,14 @@ button.eyebrow.eyebrow-toggle {
   margin: 0;
   font-size: 1.65rem;
   line-height: 1.05;
+  overflow-wrap: anywhere;
 }
 
 .panel-copy {
   margin: 6px 0 0;
   color: var(--text-secondary);
   font-size: 0.95rem;
+  overflow-wrap: anywhere;
 }
 
 .drop-zone {
@@ -2844,6 +2867,7 @@ body.is-height-resizing * {
 
   .workspace {
     grid-template-columns: 1fr;
+    min-width: 0;
   }
 
   .workspace.sidebar-collapsed {
@@ -2851,9 +2875,19 @@ body.is-height-resizing * {
   }
 
   .sidebar-panel,
-  .preview-panel,
   .collapse-rail {
     min-height: auto;
+  }
+
+  .sidebar-panel,
+  .preview-panel {
+    min-width: 0;
+  }
+
+  .preview-panel {
+    height: max(50dvh, min(680px, var(--preview-panel-ceiling)));
+    min-height: 50dvh;
+    max-height: none;
   }
 
   .collapse-toggle,
@@ -2883,6 +2917,23 @@ body.is-height-resizing * {
   }
 
   .hero-actions {
+    justify-content: flex-start;
+  }
+
+  .working-mode-bar {
+    align-items: flex-start;
+  }
+
+  .page.is-working-mode .working-mode-bar {
+    max-height: 172px;
+  }
+
+  .working-mode-logo {
+    max-width: 100%;
+  }
+
+  .working-mode-actions {
+    width: 100%;
     justify-content: flex-start;
   }
 
@@ -2922,12 +2973,17 @@ body.is-height-resizing * {
 
   .preview-toolbar {
     align-items: flex-start;
+    justify-content: flex-start;
+    gap: 10px;
     top: 8px;
     margin: 0;
   }
 
   .preview-toolbar-actions {
     justify-content: flex-start;
+    flex-wrap: wrap;
+    min-width: 0;
+    width: 100%;
   }
 
   .find-replace-bar {

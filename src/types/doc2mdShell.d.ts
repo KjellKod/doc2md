@@ -57,6 +57,13 @@ export interface DesktopPersistenceSettings {
   recentFiles: DesktopRecentFile[];
 }
 
+export interface DesktopSessionState {
+  ok: true;
+  openPaths: string[];
+  selectedPath?: string;
+  recentFiles: DesktopRecentFile[];
+}
+
 export interface ShellCancel {
   ok: false;
   code: "cancelled";
@@ -122,6 +129,11 @@ export interface SetPersistenceThemeArgs {
   theme: Theme;
 }
 
+export interface SetSessionStateArgs {
+  openPaths: string[];
+  selectedPath?: string;
+}
+
 export interface Doc2mdShell {
   readonly version: 2;
   openFile(args?: OpenFileArgs): Promise<ShellResult<ShellFile>>;
@@ -138,6 +150,10 @@ export interface Doc2mdShell {
   setPersistenceTheme(
     args: SetPersistenceThemeArgs,
   ): Promise<ShellResult<DesktopPersistenceSettings>>;
+  getSessionState(): Promise<ShellResult<DesktopSessionState>>;
+  setSessionState(
+    args: SetSessionStateArgs,
+  ): Promise<ShellResult<DesktopSessionState>>;
 }
 
 declare global {

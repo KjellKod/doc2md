@@ -34,6 +34,11 @@ const setPersistenceThemeArgs = {
   theme: "light" as const,
 };
 
+const setSessionStateArgs = {
+  openPaths: ["/mock/Untitled.md"],
+  selectedPath: "/mock/Untitled.md",
+};
+
 function eventForResult<T extends { ok: true }>(
   result: ShellResult<T>,
 ): DesktopSaveEvent {
@@ -128,9 +133,22 @@ describe("bridge flows", () => {
       theme: "light",
       recentFiles: [],
     });
+    await expect(shell.getSessionState()).resolves.toEqual({
+      ok: true,
+      openPaths: [],
+      recentFiles: [],
+    });
+    await expect(shell.setSessionState(setSessionStateArgs)).resolves.toEqual({
+      ok: true,
+      openPaths: ["/mock/Untitled.md"],
+      selectedPath: "/mock/Untitled.md",
+      recentFiles: [],
+    });
 
     const settings = await shell.getPersistenceSettings();
     expect(JSON.stringify(settings)).not.toMatch(/content|markdown/i);
+    const session = await shell.setSessionState(setSessionStateArgs);
+    expect(JSON.stringify(session)).not.toMatch(/content|markdown/i);
   });
 
   it("resolves persistence method error results", async () => {
@@ -149,6 +167,16 @@ describe("bridge flows", () => {
         ok: false as const,
         code: "error" as const,
         message: "Persistence unavailable.",
+      })),
+      getSessionState: vi.fn(async () => ({
+        ok: false as const,
+        code: "error" as const,
+        message: "Session unavailable.",
+      })),
+      setSessionState: vi.fn(async () => ({
+        ok: false as const,
+        code: "error" as const,
+        message: "Session unavailable.",
       })),
     });
 
@@ -170,6 +198,16 @@ describe("bridge flows", () => {
       ok: false,
       code: "error",
       message: "Persistence unavailable.",
+    });
+    await expect(shell.getSessionState()).resolves.toEqual({
+      ok: false,
+      code: "error",
+      message: "Session unavailable.",
+    });
+    await expect(shell.setSessionState(setSessionStateArgs)).resolves.toEqual({
+      ok: false,
+      code: "error",
+      message: "Session unavailable.",
     });
   });
 
