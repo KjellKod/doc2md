@@ -16,6 +16,7 @@ interface WorkingModeBarProps {
   onNew: () => void;
   trailingControls?: ReactNode;
   recentFiles?: DesktopRecentFile[];
+  unavailableRecentPaths?: ReadonlySet<string>;
   onOpenRecentFile?: (path: string) => void | Promise<void>;
 }
 
@@ -26,6 +27,7 @@ export default function WorkingModeBar({
   onNew,
   trailingControls,
   recentFiles = [],
+  unavailableRecentPaths = new Set(),
   onOpenRecentFile,
 }: WorkingModeBarProps) {
   const menuId = useId();
@@ -197,26 +199,42 @@ export default function WorkingModeBar({
               >
                 Browse...
               </button>
-              {recentFiles.map((file, index) => (
-                <button
-                  key={file.path}
-                  ref={(element) => {
-                    menuItemRefs.current[index + 1] = element;
-                  }}
-                  type="button"
-                  role="menuitem"
-                  className="working-mode-recent-item"
-                  title={file.path}
-                  onClick={() =>
-                    runAndClose(() => onOpenRecentFile?.(file.path))
-                  }
-                >
-                  <span className="working-mode-recent-name">
-                    {file.displayName}
-                  </span>
-                  <span className="working-mode-recent-path">{file.path}</span>
-                </button>
-              ))}
+              {recentFiles.map((file, index) => {
+                const isUnavailable = unavailableRecentPaths.has(file.path);
+                return (
+                  <button
+                    key={file.path}
+                    ref={(element) => {
+                      menuItemRefs.current[index + 1] = element;
+                    }}
+                    type="button"
+                    role="menuitem"
+                    className={`working-mode-recent-item${
+                      isUnavailable ? " is-unavailable" : ""
+                    }`}
+                    title={
+                      isUnavailable
+                        ? "Not available. Click to retry opening this file."
+                        : file.path
+                    }
+                    onClick={() =>
+                      runAndClose(() => onOpenRecentFile?.(file.path))
+                    }
+                  >
+                    <span
+                      className="working-mode-recent-unavailable-dot"
+                      aria-hidden="true"
+                    />
+                    {isUnavailable ? (
+                      <span className="visually-hidden">Not available. </span>
+                    ) : null}
+                    <span className="working-mode-recent-name">
+                      {file.displayName}
+                    </span>
+                    <span className="working-mode-recent-path">{file.path}</span>
+                  </button>
+                );
+              })}
             </div>
           ) : null}
         </div>

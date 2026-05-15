@@ -120,6 +120,16 @@ final class PersistenceStore {
         return settings
     }
 
+    func clearRecentFiles() throws -> PersistenceSettings {
+        let settings = load()
+        guard settings.persistenceEnabled else {
+            return .disabled
+        }
+
+        recentDocumentController.clearRecentDocuments(nil)
+        return settings
+    }
+
     func recentFiles(now: Date = Date()) -> [RecentFile] {
         Array(
             recentDocumentController.recentDocumentURLs

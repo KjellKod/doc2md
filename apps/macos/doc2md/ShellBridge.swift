@@ -13,6 +13,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
         static let getPersistenceSettings = "doc2mdGetPersistenceSettings"
         static let setPersistenceEnabled = "doc2mdSetPersistenceEnabled"
         static let setPersistenceTheme = "doc2mdSetPersistenceTheme"
+        static let clearRecentFiles = "doc2mdClearRecentFiles"
         static let getSessionState = "doc2mdGetSessionState"
         static let setSessionState = "doc2mdSetSessionState"
 
@@ -25,6 +26,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
             getPersistenceSettings,
             setPersistenceEnabled,
             setPersistenceTheme,
+            clearRecentFiles,
             getSessionState,
             setSessionState
         ]
@@ -138,6 +140,8 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
             handleSetPersistenceEnabled(bridgeMessage)
         case HandlerName.setPersistenceTheme:
             handleSetPersistenceTheme(bridgeMessage)
+        case HandlerName.clearRecentFiles:
+            handleClearRecentFiles(bridgeMessage)
         case HandlerName.getSessionState:
             handleGetSessionState(bridgeMessage)
         case HandlerName.setSessionState:
@@ -367,6 +371,23 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
         do {
             let args = try Self.decode(SetPersistenceThemeArgs.self, from: message.args)
             let settings = try persistenceStore.setTheme(args.theme)
+            resolve(
+                id: message.id,
+                result: ShellPersistenceSettingsOk(
+                    settings: settings,
+                    recentFiles: persistenceStore.recentFiles()
+                )
+            )
+        } catch {
+            resolve(id: message.id, result: Self.response(for: error))
+        }
+    }
+
+    private func handleClearRecentFiles(_ message: BridgeMessage) {
+        do {
+            let settings = try persistenceStore.clearRecentFiles()
+            nativeRecentOpenPaths.removeAll()
+            seedRestoreCandidatePaths()
             resolve(
                 id: message.id,
                 result: ShellPersistenceSettingsOk(
@@ -666,6 +687,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
       getPersistenceSettings: () => callShell("doc2mdGetPersistenceSettings", null),
       setPersistenceEnabled: (args) => callShell("doc2mdSetPersistenceEnabled", args),
       setPersistenceTheme: (args) => callShell("doc2mdSetPersistenceTheme", args),
+      clearRecentFiles: () => callShell("doc2mdClearRecentFiles", null),
       getSessionState: () => callShell("doc2mdGetSessionState", null),
       setSessionState: (args) => callShell("doc2mdSetSessionState", args)
     }

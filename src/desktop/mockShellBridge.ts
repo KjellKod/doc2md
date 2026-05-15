@@ -128,6 +128,13 @@ export function createMockShell(
         persistenceEnabled: true,
         theme: args.theme,
       })),
+    clearRecentFiles:
+      overrides.clearRecentFiles ??
+      vi.fn(async () => ({
+        ...DEFAULT_PERSISTENCE_SETTINGS,
+        persistenceEnabled: true,
+        recentFiles: [],
+      })),
     getSessionState:
       overrides.getSessionState ?? vi.fn(async () => DEFAULT_SESSION_STATE),
     setSessionState:

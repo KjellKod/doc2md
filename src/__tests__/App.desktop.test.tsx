@@ -728,7 +728,7 @@ describe("App desktop bridge", () => {
     cleanupShell();
   });
 
-  it("opens desktop Recent files from the working-mode Open popover", async () => {
+  it("keeps desktop settings available beside theme controls in working mode", async () => {
     const openFile = vi.fn(async (args?: { path?: string }) => {
       if (args?.path) {
         return {
@@ -769,6 +769,22 @@ describe("App desktop bridge", () => {
     await screen.findByRole("button", { name: "Desktop settings" });
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
     await screen.findByRole("heading", { name: "Alpha" });
+
+    const settingsButton = screen.getByRole("button", {
+      name: "Desktop settings",
+    });
+    expect(settingsButton.closest(".working-mode-trailing-controls")).toBeTruthy();
+    fireEvent.click(settingsButton);
+    const settingsDialog = screen.getByRole("dialog", {
+      name: "Desktop settings",
+    });
+    expect(settingsDialog.closest(".working-mode-trailing-controls")).toBeTruthy();
+    fireEvent.keyDown(settingsDialog, { key: "Escape" });
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("dialog", { name: "Desktop settings" }),
+      ).not.toBeInTheDocument(),
+    );
 
     const open = screen.getByRole("button", { name: "Open" });
     fireEvent.click(open);
@@ -1075,7 +1091,7 @@ describe("App desktop bridge", () => {
     cleanupShell();
   });
 
-  it("renders desktop persistence settings and display-only recent files", async () => {
+  it("renders desktop persistence settings with actionable recent files", async () => {
     const cleanupShell = installMockShell({
       getPersistenceSettings: vi.fn(async () => ({
         ok: true as const,
@@ -1095,12 +1111,115 @@ describe("App desktop bridge", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "Desktop settings" }));
 
+    const settingsDialog = screen.getByRole("dialog", { name: "Desktop settings" });
+    expect(settingsDialog.closest(".hero")).toHaveClass("hero--settings-open");
     expect(screen.getByLabelText("Persistence")).toBeChecked();
-    expect(screen.getByText("Recent files")).toBeInTheDocument();
-    expect(screen.getByText("Notes.md")).toBeInTheDocument();
-    expect(screen.getByText("/Users/me/Notes.md")).toBeInTheDocument();
+    expect(within(settingsDialog).getByText("Recent files")).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Notes.md" }),
+      within(settingsDialog).getByRole("button", { name: "Clear history" }),
+    ).toBeInTheDocument();
+    expect(
+      within(settingsDialog).getByRole("button", { name: /Notes\.md/ }),
+    ).toBeInTheDocument();
+    expect(within(settingsDialog).getByText("/Users/me/Notes.md")).toBeInTheDocument();
+
+    cleanupShell();
+  });
+
+  it("clears desktop recent history without disabling persistence", async () => {
+    const clearRecentFiles = vi.fn(async () => ({
+      ok: true as const,
+      persistenceEnabled: true,
+      theme: "dark" as const,
+      recentFiles: [],
+    }));
+    const cleanupShell = installMockShell({
+      clearRecentFiles,
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: true,
+        theme: "dark" as const,
+        recentFiles: [
+          {
+            path: "/Users/me/Old.md",
+            displayName: "Old.md",
+            lastOpenedAt: "2026-04-28T20:40:00.000Z",
+          },
+        ],
+      })),
+    });
+
+    render(<DesktopApp />);
+    fireEvent.click(await screen.findByRole("button", { name: "Desktop settings" }));
+    const settingsDialog = screen.getByRole("dialog", { name: "Desktop settings" });
+
+    fireEvent.click(within(settingsDialog).getByRole("button", { name: "Clear history" }));
+
+    await waitFor(() => expect(clearRecentFiles).toHaveBeenCalledTimes(1));
+    expect(screen.getByLabelText("Persistence")).toBeChecked();
+    expect(within(settingsDialog).queryByText("Old.md")).not.toBeInTheDocument();
+    expect(within(settingsDialog).getByText("No recent files yet.")).toBeInTheDocument();
+
+    cleanupShell();
+  });
+
+  it("opens settings recent files and marks unavailable files for retry", async () => {
+    const openFile = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false as const,
+        code: "permission-needed" as const,
+        path: "/Users/me/Recent.md",
+        message: "Open the file again.",
+      })
+      .mockResolvedValueOnce({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Recent.md",
+        content: "# Recent",
+        mtimeMs: 20,
+        lineEnding: "lf" as const,
+      });
+    const cleanupShell = installMockShell({
+      openFile,
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: true,
+        recentFiles: [
+          {
+            path: "/Users/me/Recent.md",
+            displayName: "Recent.md",
+            lastOpenedAt: "2026-05-12T22:11:00.000Z",
+          },
+        ],
+      })),
+    });
+
+    render(<DesktopApp />);
+    fireEvent.click(await screen.findByRole("button", { name: "Desktop settings" }));
+
+    const settingsDialog = screen.getByRole("dialog", { name: "Desktop settings" });
+    fireEvent.click(within(settingsDialog).getByRole("button", { name: /Recent\.md/ }));
+
+    await waitFor(() =>
+      expect(openFile).toHaveBeenLastCalledWith({ path: "/Users/me/Recent.md" }),
+    );
+    const recentButton = within(settingsDialog).getByRole("button", {
+      name: /Recent\.md/,
+    });
+    await waitFor(() => expect(recentButton).toHaveClass("is-unavailable"));
+    expect(recentButton).toHaveAttribute(
+      "title",
+      "Not available. Click to retry opening this file.",
+    );
+
+    fireEvent.click(recentButton);
+
+    await screen.findByRole("heading", { name: "Recent" });
+    expect(openFile).toHaveBeenCalledTimes(2);
+    expect(openFile).toHaveBeenLastCalledWith({ path: "/Users/me/Recent.md" });
+    expect(
+      screen.queryByRole("dialog", { name: "Desktop settings" }),
     ).not.toBeInTheDocument();
 
     cleanupShell();
@@ -1248,6 +1367,7 @@ describe("App desktop bridge", () => {
     fireEvent.click(
       await screen.findByRole("button", { name: "Show intro and return to landing" }),
     );
+    fireEvent.click(screen.getByRole("button", { name: "Desktop settings" }));
     settingsDialog = screen.getByRole("dialog", { name: "Desktop settings" });
     expect(within(settingsDialog).getByText("Saved.md")).toBeInTheDocument();
 

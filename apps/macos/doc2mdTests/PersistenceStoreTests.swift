@@ -85,6 +85,28 @@ final class PersistenceStoreTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: settingsURL.path))
     }
 
+    func testClearRecentFilesPreservesPersistenceSettings() throws {
+        let settingsURL = try makeSettingsURL()
+        let recentController = TestRecentDocumentController()
+        let store = PersistenceStore(
+            settingsURL: settingsURL,
+            recentDocumentController: recentController
+        )
+        let sourceURL = try makeFile(name: "clearable.md")
+
+        _ = try store.setPersistenceEnabled(true)
+        _ = try store.setTheme(.dark)
+        _ = try store.recordRecentDocument(url: sourceURL)
+
+        let settings = try store.clearRecentFiles()
+
+        XCTAssertTrue(settings.persistenceEnabled)
+        XCTAssertEqual(settings.theme, .dark)
+        XCTAssertEqual(recentController.clearCallCount, 1)
+        XCTAssertTrue(recentController.recentDocumentURLs.isEmpty)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: settingsURL.path))
+    }
+
     func testRecentDocumentsDedupesNewestFirstAndCapsAtTen() throws {
         let settingsURL = try makeSettingsURL()
         let directory = try makeDirectory()

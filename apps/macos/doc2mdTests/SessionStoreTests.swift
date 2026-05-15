@@ -274,6 +274,32 @@ final class ShellBridgeSessionTrustTests: XCTestCase {
         XCTAssertNil(persisted.selectedPath)
     }
 
+    func testClearRecentFilesRemovesNativeRecentOpenCandidates() async throws {
+        let recentMarkdown = try makeFile(name: "recent.md", content: "# recent\n")
+        let harness = try makeHarness(seedRecentURLs: [recentMarkdown])
+
+        let clearResult = try await sendMessage(
+            harness: harness,
+            name: "doc2mdClearRecentFiles",
+            id: "clear-native-recents",
+            args: nil
+        )
+
+        XCTAssertTrue(clearResult.ok)
+        XCTAssertEqual(clearResult.persistenceEnabled, true)
+        XCTAssertEqual(clearResult.recentFiles?.count, 0)
+
+        let openResult = try await sendMessage(
+            harness: harness,
+            name: "doc2mdOpenFile",
+            id: "open-cleared-native-recent",
+            args: ["path": recentMarkdown.path]
+        )
+
+        XCTAssertFalse(openResult.ok)
+        XCTAssertEqual(openResult.code, "permission-needed")
+    }
+
     private func makeHarness(
         seedSession: DesktopSessionState = DesktopSessionState(openPaths: [], selectedPath: nil),
         seedRecentURLs: [URL] = []
@@ -385,6 +411,8 @@ private struct CapturedShellResult: Decodable {
     let content: String?
     let importUrl: String?
     let code: String?
+    let persistenceEnabled: Bool?
+    let recentFiles: [RecentFile]?
     let openPaths: [String]?
     let selectedPath: String?
 }

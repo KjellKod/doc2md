@@ -421,6 +421,9 @@ function AppContent() {
     () => new Set(),
   );
   const [isDesktopSettingsOpen, setIsDesktopSettingsOpen] = useState(false);
+  const [unavailableRecentPaths, setUnavailableRecentPaths] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [persistenceSettings, setPersistenceSettings] =
     useState<DesktopPersistenceSettings>(DEFAULT_DESKTOP_PERSISTENCE_SETTINGS);
   const [initialPersistenceLoaded, setInitialPersistenceLoaded] =
@@ -1450,6 +1453,56 @@ function AppContent() {
     setDesktopNotice({ kind: "none" });
   }, []);
 
+  const handleClearRecentFiles = useCallback(async () => {
+    if (!shell?.clearRecentFiles) {
+      return;
+    }
+
+    try {
+      const result = await shell.clearRecentFiles();
+      if (isPersistenceSettings(result)) {
+        setPersistenceSettings(result);
+        setUnavailableRecentPaths(new Set());
+        clearDesktopProblem();
+        return;
+      }
+
+      showPersistenceIssue(result);
+    } catch (error) {
+      showPersistenceUnavailable();
+      console.error("doc2md desktop recent-file clear failure", error);
+    }
+  }, [
+    clearDesktopProblem,
+    shell,
+    showPersistenceIssue,
+    showPersistenceUnavailable,
+  ]);
+
+  const markRecentPathAvailable = useCallback((path: string) => {
+    setUnavailableRecentPaths((current) => {
+      if (!current.has(path)) {
+        return current;
+      }
+
+      const next = new Set(current);
+      next.delete(path);
+      return next;
+    });
+  }, []);
+
+  const markRecentPathUnavailable = useCallback((path: string) => {
+    setUnavailableRecentPaths((current) => {
+      if (current.has(path)) {
+        return current;
+      }
+
+      const next = new Set(current);
+      next.add(path);
+      return next;
+    });
+  }, []);
+
   const clearDocumentProblem = useCallback((entryId: string) => {
     setPendingConflicts((current) => omitRecordKey(current, entryId));
     setDocumentNotices((current) => omitRecordKey(current, entryId));
@@ -1576,6 +1629,7 @@ function AppContent() {
   }, [addScratchEntry]);
 
   const handleReturnHome = useCallback(() => {
+    setIsDesktopSettingsOpen(false);
     setShowLandingChrome(true);
     setActivePage("convert");
   }, []);
@@ -1584,6 +1638,7 @@ function AppContent() {
     if (!hasWorkingEntry) {
       return;
     }
+    setIsDesktopSettingsOpen(false);
     setShowLandingChrome(false);
   }, [hasWorkingEntry]);
 
@@ -1717,22 +1772,38 @@ function AppContent() {
   const handleOpenRecentFile = useCallback(
     async (path: string) => {
       if (!shell) {
-        return;
+        return false;
       }
 
       try {
         const result = await shell.openFile({ path });
         await handleOpenFileResult(result);
+        if (!result.ok && result.code !== "cancelled") {
+          markRecentPathUnavailable(path);
+          return false;
+        }
+        if (result.ok) {
+          markRecentPathAvailable(path);
+        }
+        return result.ok;
       } catch (error) {
+        markRecentPathUnavailable(path);
         saveState.markError();
         setDesktopNotice({
           kind: "error",
           message: "Open failed before the app received a native result.",
         });
         console.error("doc2md desktop openFile transport failure", error);
+        return false;
       }
     },
-    [handleOpenFileResult, saveState, shell],
+    [
+      handleOpenFileResult,
+      markRecentPathAvailable,
+      markRecentPathUnavailable,
+      saveState,
+      shell,
+    ],
   );
 
   useEffect(() => {
@@ -2579,6 +2650,127 @@ function AppContent() {
       : [];
   const workingModeBarInertProps = { inert: !isWorkingMode || undefined };
   const landingChromeInertProps = { inert: isWorkingMode || undefined };
+  const renderDesktopSettingsControl = (placement: "hero" | "working") => {
+    if (!isDesktop || !shell) {
+      return null;
+    }
+
+    const popoverId = `desktop-settings-popover-${placement}`;
+    const recentFiles = persistenceSettings.recentFiles;
+
+    return (
+      <div
+        ref={settingsPopoverRef}
+        className={`desktop-settings desktop-settings--${placement}`}
+        onKeyDown={handleDesktopSettingsKeyDown}
+      >
+        <button
+          type="button"
+          className="ghost-button desktop-settings-button"
+          aria-label="Desktop settings"
+          aria-expanded={isDesktopSettingsOpen}
+          aria-controls={popoverId}
+          onClick={() => setIsDesktopSettingsOpen((isOpen) => !isOpen)}
+          title="Desktop settings"
+        >
+          <Settings className="desktop-settings-icon" aria-hidden="true" />
+        </button>
+        {isDesktopSettingsOpen ? (
+          <div
+            id={popoverId}
+            className="desktop-settings-popover"
+            role="dialog"
+            aria-label="Desktop settings"
+          >
+            <label className="desktop-persistence-toggle">
+              <input
+                type="checkbox"
+                checked={persistenceSettings.persistenceEnabled}
+                onChange={(event) =>
+                  void handlePersistenceEnabledChange(
+                    event.currentTarget.checked,
+                  )
+                }
+              />
+              <span>Persistence</span>
+            </label>
+
+            {persistenceSettings.persistenceEnabled ? (
+              <div className="desktop-recent-files">
+                <div className="desktop-settings-section-header">
+                  <p className="desktop-settings-heading">Recent files</p>
+                  {recentFiles.length > 0 && shell.clearRecentFiles ? (
+                    <button
+                      type="button"
+                      className="desktop-clear-recents-button"
+                      onClick={() => {
+                        void handleClearRecentFiles();
+                      }}
+                    >
+                      Clear history
+                    </button>
+                  ) : null}
+                </div>
+                {recentFiles.length > 0 ? (
+                  <ol className="desktop-recent-list">
+                    {recentFiles.map((file) => {
+                      const isUnavailable = unavailableRecentPaths.has(file.path);
+                      return (
+                        <li key={file.path}>
+                          <button
+                            type="button"
+                            className={`desktop-recent-item${
+                              isUnavailable ? " is-unavailable" : ""
+                            }`}
+                            title={
+                              isUnavailable
+                                ? "Not available. Click to retry opening this file."
+                                : file.path
+                            }
+                            onClick={() => {
+                              void handleOpenRecentFile(file.path).then((opened) => {
+                                if (opened) {
+                                  setIsDesktopSettingsOpen(false);
+                                }
+                              });
+                            }}
+                          >
+                            <span
+                              className="desktop-recent-unavailable-dot"
+                              aria-hidden="true"
+                            />
+                            {isUnavailable ? (
+                              <span className="visually-hidden">
+                                Not available.{" "}
+                              </span>
+                            ) : null}
+                            <span className="desktop-recent-name">
+                              {file.displayName}
+                            </span>
+                            <span className="desktop-recent-path">
+                              {file.path}
+                            </span>
+                            <time
+                              className="desktop-recent-time"
+                              dateTime={file.lastOpenedAt}
+                            >
+                              {file.lastOpenedAt}
+                            </time>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                ) : (
+                  <p className="desktop-settings-empty">No recent files yet.</p>
+                )}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    );
+  };
 
   return (
       <div className="app-shell">
@@ -2605,15 +2797,21 @@ function AppContent() {
                   void handleOpenFile();
                 }}
                 onNew={handleNewDocument}
-                trailingControls={<ThemeToggle />}
+                trailingControls={
+                  <>
+                    <ThemeToggle />
+                    {isWorkingMode ? renderDesktopSettingsControl("working") : null}
+                  </>
+                }
                 recentFiles={workingModeRecentFiles}
+                unavailableRecentPaths={unavailableRecentPaths}
                 onOpenRecentFile={(path) => {
                   void handleOpenRecentFile(path);
                 }}
               />
             </div>
             <header
-              className="hero"
+              className={`hero${isDesktopSettingsOpen ? " hero--settings-open" : ""}`}
               aria-hidden={isWorkingMode}
               {...landingChromeInertProps}
             >
@@ -2640,86 +2838,7 @@ function AppContent() {
                 </button>
                 <div className="hero-actions">
                   <ThemeToggle />
-                  {isDesktop && shell ? (
-                    <div
-                      ref={settingsPopoverRef}
-                      className="desktop-settings"
-                      onKeyDown={handleDesktopSettingsKeyDown}
-                    >
-                      <button
-                        type="button"
-                        className="ghost-button desktop-settings-button"
-                        aria-label="Desktop settings"
-                        aria-expanded={isDesktopSettingsOpen}
-                        aria-controls="desktop-settings-popover"
-                        onClick={() =>
-                          setIsDesktopSettingsOpen((isOpen) => !isOpen)
-                        }
-                        title="Desktop settings"
-                      >
-                        <Settings className="desktop-settings-icon" aria-hidden="true" />
-                      </button>
-                      {isDesktopSettingsOpen ? (
-                        <div
-                          id="desktop-settings-popover"
-                          className="desktop-settings-popover"
-                          role="dialog"
-                          aria-label="Desktop settings"
-                        >
-                          <label className="desktop-persistence-toggle">
-                            <input
-                              type="checkbox"
-                              checked={persistenceSettings.persistenceEnabled}
-                              onChange={(event) =>
-                                void handlePersistenceEnabledChange(
-                                  event.currentTarget.checked,
-                                )
-                              }
-                            />
-                            <span>Persistence</span>
-                          </label>
-
-                          {persistenceSettings.persistenceEnabled ? (
-                            <div className="desktop-recent-files">
-                              <p className="desktop-settings-heading">
-                                Recent files
-                              </p>
-                              {persistenceSettings.recentFiles.length > 0 ? (
-                                <ol className="desktop-recent-list">
-                                  {persistenceSettings.recentFiles.map((file) => (
-                                    <li
-                                      key={file.path}
-                                      className="desktop-recent-item"
-                                    >
-                                      <span className="desktop-recent-name">
-                                        {file.displayName}
-                                      </span>
-                                      <span
-                                        className="desktop-recent-path"
-                                        title={file.path}
-                                      >
-                                        {file.path}
-                                      </span>
-                                      <time
-                                        className="desktop-recent-time"
-                                        dateTime={file.lastOpenedAt}
-                                      >
-                                        {file.lastOpenedAt}
-                                      </time>
-                                    </li>
-                                  ))}
-                                </ol>
-                              ) : (
-                                <p className="desktop-settings-empty">
-                                  No recent files yet.
-                                </p>
-                              )}
-                            </div>
-                          ) : null}
-                        </div>
-                      ) : null}
-                    </div>
-                  ) : null}
+                  {!isWorkingMode ? renderDesktopSettingsControl("hero") : null}
                 </div>
               </div>
               <h1>

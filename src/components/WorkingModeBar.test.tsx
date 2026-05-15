@@ -110,6 +110,29 @@ describe("WorkingModeBar", () => {
     expect(screen.getByRole("menuitem", { name: "Browse..." })).toHaveFocus();
   });
 
+  it("marks unavailable recent files while keeping them retryable", () => {
+    const onOpenRecentFile = vi.fn();
+    renderBar({
+      variant: "desktop",
+      recentFiles,
+      unavailableRecentPaths: new Set(["/Users/me/Beta.md"]),
+      onOpenRecentFile,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Open" }));
+    const beta = screen.getByRole("menuitem", { name: /Beta\.md/ });
+
+    expect(beta).toHaveClass("is-unavailable");
+    expect(beta).toHaveAttribute(
+      "title",
+      "Not available. Click to retry opening this file.",
+    );
+
+    fireEvent.click(beta);
+
+    expect(onOpenRecentFile).toHaveBeenCalledWith("/Users/me/Beta.md");
+  });
+
   it("treats empty recents Open as a plain button", () => {
     const { onOpen } = renderBar({
       variant: "desktop",

@@ -150,6 +150,7 @@ export interface Doc2mdShell {
   setPersistenceTheme(
     args: SetPersistenceThemeArgs,
   ): Promise<ShellResult<DesktopPersistenceSettings>>;
+  clearRecentFiles?(): Promise<ShellResult<DesktopPersistenceSettings>>;
   getSessionState(): Promise<ShellResult<DesktopSessionState>>;
   setSessionState(
     args: SetSessionStateArgs,
