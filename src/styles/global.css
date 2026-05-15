@@ -593,7 +593,7 @@ button.eyebrow.eyebrow-toggle {
 .preview-panel {
   --preview-panel-ceiling: calc(100dvh - 280px);
   position: relative;
-  height: var(--preview-panel-ceiling);
+  height: min(900px, var(--preview-panel-ceiling));
   min-height: min(620px, var(--preview-panel-ceiling));
   max-height: var(--preview-panel-ceiling);
   overflow: visible;
