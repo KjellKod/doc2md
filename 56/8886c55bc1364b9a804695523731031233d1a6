@@ -1,0 +1,9 @@
+docs/diary/2026-05-14.md
+  ai_agent 78-143
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "568886c55bc1364b9a804695523731031233d1a6",
+  "prompts": {}
+}
