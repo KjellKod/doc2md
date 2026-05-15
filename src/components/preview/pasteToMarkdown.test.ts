@@ -66,6 +66,18 @@ describe("convertClipboardPasteToMarkdown", () => {
     });
   });
 
+  it("does not treat underscores in html link destinations as markdown emphasis", () => {
+    const result = convertClipboardPasteToMarkdown({
+      html: '<p><a href="https://example.com/a_b">link</a> 𝑖𝑡𝑎𝑙𝑖𝑐</p>',
+      plainText: "Plain fallback",
+    });
+
+    expect(result).toEqual({
+      markdown: "[link](https://example.com/a_b) *italic*",
+      source: "html",
+    });
+  });
+
   it("falls back to plain text when html conversion is empty", () => {
     expect(
       convertClipboardPasteToMarkdown({

@@ -195,10 +195,80 @@ function convertLinkedInUnicodeInMarkdown(markdown: string) {
     buffer = "";
   };
 
+  const rawSpanEnd = (startIndex: number, closingMarker: string) => {
+    for (let index = startIndex; index < markdown.length; index += 1) {
+      if (markdown[index] === "\\" && index + 1 < markdown.length) {
+        index += 1;
+        continue;
+      }
+
+      if (markdown.startsWith(closingMarker, index)) {
+        return index + closingMarker.length;
+      }
+    }
+
+    return startIndex;
+  };
+
+  const linkDestinationEnd = (startIndex: number) => {
+    let nestedParens = 0;
+
+    for (let index = startIndex; index < markdown.length; index += 1) {
+      if (markdown[index] === "\\" && index + 1 < markdown.length) {
+        index += 1;
+        continue;
+      }
+
+      if (markdown[index] === "(") {
+        nestedParens += 1;
+        continue;
+      }
+
+      if (markdown[index] === ")") {
+        if (nestedParens === 0) {
+          return index + 1;
+        }
+        nestedParens -= 1;
+      }
+    }
+
+    return startIndex;
+  };
+
   for (let index = 0; index < markdown.length; index += 1) {
     if (markdown[index] === "\\" && index + 1 < markdown.length) {
       buffer += markdown.slice(index, index + 2);
       index += 1;
+      continue;
+    }
+
+    const codeMarker = markdown.startsWith("```", index)
+      ? "```"
+      : markdown[index] === "`"
+        ? "`"
+        : "";
+
+    if (codeMarker.length > 0) {
+      flushBuffer();
+      const endIndex = rawSpanEnd(index + codeMarker.length, codeMarker);
+      output += markdown.slice(index, endIndex);
+      index = endIndex - 1;
+      continue;
+    }
+
+    if (markdown.startsWith("](", index)) {
+      flushBuffer();
+      const endIndex = linkDestinationEnd(index + 2);
+      output += markdown.slice(index, endIndex);
+      index = endIndex - 1;
+      continue;
+    }
+
+    if (markdown.startsWith("<http", index) || markdown.startsWith("<mailto:", index)) {
+      flushBuffer();
+      const endIndex = rawSpanEnd(index + 1, ">");
+      output += markdown.slice(index, endIndex);
+      index = endIndex - 1;
       continue;
     }
 
