@@ -1225,6 +1225,52 @@ describe("App desktop bridge", () => {
     cleanupShell();
   });
 
+  it("selects already-open settings recent files without reopening a duplicate", async () => {
+    const openFile = vi.fn(async () => ({
+      ok: true as const,
+      kind: "markdown" as const,
+      path: "/Users/me/Alpha.md",
+      content: "# Alpha",
+      mtimeMs: 10,
+      lineEnding: "lf" as const,
+    }));
+    const cleanupShell = installMockShell({
+      openFile,
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: true,
+        recentFiles: [
+          {
+            path: "/Users/me/Alpha.md",
+            displayName: "Alpha.md",
+            lastOpenedAt: "2026-05-12T22:11:00.000Z",
+          },
+        ],
+      })),
+    });
+
+    render(<DesktopApp />);
+    await screen.findByRole("button", { name: "Desktop settings" });
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await screen.findByRole("heading", { name: "Alpha" });
+    expect(openFile).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Desktop settings" }));
+    const settingsDialog = screen.getByRole("dialog", { name: "Desktop settings" });
+    fireEvent.click(within(settingsDialog).getByRole("button", { name: /Alpha\.md/ }));
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("dialog", { name: "Desktop settings" }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(openFile).toHaveBeenCalledTimes(1);
+    ensureSidebarVisible();
+    expect(screen.getAllByRole("button", { name: "Open Alpha.md" })).toHaveLength(1);
+
+    cleanupShell();
+  });
+
   it("restores persisted light theme after desktop settings load", async () => {
     const cleanupShell = installMockShell({
       getPersistenceSettings: vi.fn(async () => ({

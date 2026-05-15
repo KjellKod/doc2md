@@ -1775,6 +1775,19 @@ function AppContent() {
         return false;
       }
 
+      const existingEntry = entriesRef.current.find(
+        (entry) => desktopFilesRef.current[entry.id]?.path === path,
+      );
+      if (existingEntry) {
+        selectEntry(existingEntry.id);
+        setActivePage("convert");
+        setShowLandingChrome(false);
+        markRecentPathAvailable(path);
+        clearDesktopProblem();
+        void refreshDesktopMetadataForEntry(existingEntry);
+        return true;
+      }
+
       try {
         const result = await shell.openFile({ path });
         await handleOpenFileResult(result);
@@ -1798,10 +1811,13 @@ function AppContent() {
       }
     },
     [
+      clearDesktopProblem,
       handleOpenFileResult,
       markRecentPathAvailable,
       markRecentPathUnavailable,
+      refreshDesktopMetadataForEntry,
       saveState,
+      selectEntry,
       shell,
     ],
   );
