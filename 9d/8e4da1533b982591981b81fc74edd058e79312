@@ -1,0 +1,46 @@
+docs/markdown-gfm-reference.md
+  s_bd066a8e170cce::t_2a1a639b8d95e1 19
+  s_bd066a8e170cce::t_c51ec095325ef7 1-18,20-55
+docs/testing.md
+  s_bd066a8e170cce::t_6242969e4681dd 22-25
+src/components/preview/pasteHtmlNormalizer.ts
+  s_bd066a8e170cce::t_55953d0f041de0 8-11,141-145,156-174,239,250-251
+src/styles/global.css
+  s_bd066a8e170cce::t_d0200d7a8f4d86 2327-2337
+  s_bd066a8e170cce::t_22b99884db8b16 2095-2130
+  s_bd066a8e170cce::t_8553e4a9a75218 2715-2726
+src/components/preview/pasteToMarkdown.test.ts
+  s_bd066a8e170cce::t_ff37c7f350431b 114-121,129-134,136-137
+  s_bd066a8e170cce::t_6f45ee5b40410e 122-128,135
+src/components/preview/EditMode.tsx
+  s_bd066a8e170cce::t_b77f7fa1a75b25 243,252,393
+  s_bd066a8e170cce::t_f3fa32eaa8d17c 168,258,266,515,522,554
+  s_bd066a8e170cce::t_028c83525f66d7 1,12-15,28-35,164-167,244-251,253-257,259-265,267-273,275,278,285-290,294-297,301-302,309,312-392,516-521,523-524
+src/components/PreviewPanel.test.tsx
+  s_bd066a8e170cce::t_7e204618a2091e 379-383,637,642,644
+  s_bd066a8e170cce::t_fbe9700752168b 622-636,638-641,643,645-646
+  s_bd066a8e170cce::t_42a488430fc7e4 363-378,384-393
+tests/e2e/paste-to-markdown.spec.ts
+  s_bd066a8e170cce::t_594cac06e782c0 105-106
+tests/e2e/hosted-browser-baseline.spec.ts
+  s_bd066a8e170cce::t_747c4aedc49ad2 140-152,155-156,159-162
+  s_bd066a8e170cce::t_9cc650ab92f4cd 153-154,157-158
+apps/macos/THIRD_PARTY_NOTICES.md
+  s_bd066a8e170cce::t_9fbee3c3ababf8 18-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "9d8e4da1533b982591981b81fc74edd058e79312",
+  "prompts": {},
+  "sessions": {
+    "s_bd066a8e170cce": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e2ccc-7d29-77b1-941a-8c9e9ec7e7ce",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
