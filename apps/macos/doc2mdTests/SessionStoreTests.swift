@@ -274,6 +274,49 @@ final class ShellBridgeSessionTrustTests: XCTestCase {
         XCTAssertNil(persisted.selectedPath)
     }
 
+    func testNativeRecentMarkdownCannotBePersistedUntilOpened() async throws {
+        let recentMarkdown = try makeFile(name: "recent.md", content: "# recent\n")
+        let harness = try makeHarness(seedRecentURLs: [recentMarkdown])
+
+        let untrustedSyncResult = try await sendMessage(
+            harness: harness,
+            name: "doc2mdSetSessionState",
+            id: "sync-unopened-native-recent-markdown",
+            args: [
+                "openPaths": [recentMarkdown.path],
+                "selectedPath": recentMarkdown.path
+            ]
+        )
+
+        XCTAssertEqual(untrustedSyncResult.openPaths, [])
+        XCTAssertNil(untrustedSyncResult.selectedPath)
+
+        let openResult = try await sendMessage(
+            harness: harness,
+            name: "doc2mdOpenFile",
+            id: "open-native-recent-markdown",
+            args: ["path": recentMarkdown.path]
+        )
+
+        XCTAssertTrue(openResult.ok)
+        XCTAssertEqual(openResult.kind, "markdown")
+        XCTAssertEqual(openResult.path, recentMarkdown.path)
+        XCTAssertEqual(openResult.content, "# recent\n")
+
+        let trustedSyncResult = try await sendMessage(
+            harness: harness,
+            name: "doc2mdSetSessionState",
+            id: "sync-opened-native-recent-markdown",
+            args: [
+                "openPaths": [recentMarkdown.path],
+                "selectedPath": recentMarkdown.path
+            ]
+        )
+
+        XCTAssertEqual(trustedSyncResult.openPaths, [recentMarkdown.path])
+        XCTAssertEqual(trustedSyncResult.selectedPath, recentMarkdown.path)
+    }
+
     func testClearRecentFilesRemovesNativeRecentOpenCandidates() async throws {
         let recentMarkdown = try makeFile(name: "recent.md", content: "# recent\n")
         let harness = try makeHarness(seedRecentURLs: [recentMarkdown])

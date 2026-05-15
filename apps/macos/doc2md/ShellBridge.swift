@@ -510,7 +510,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
         )
         let sessionPaths = sessionState.openPaths
         let recentPaths = persistenceStore.recentFiles().map(\.path)
-        restoreCandidatePaths = Set((sessionPaths + recentPaths).filter {
+        restoreCandidatePaths = Set(sessionPaths.filter {
             sessionStore.isRestoreEligiblePath($0)
         })
         nativeRecentOpenPaths = Set(recentPaths.filter(Self.isSupportedExistingFilePath))
