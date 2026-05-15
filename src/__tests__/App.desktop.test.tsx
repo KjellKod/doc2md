@@ -1335,6 +1335,46 @@ describe("App desktop bridge", () => {
     cleanupShell();
   });
 
+  it("does not overwrite native session state when restore throws", async () => {
+    const getSessionState = vi.fn(async () => {
+      throw new Error("native bridge unavailable");
+    });
+    const setSessionState = vi.fn(async (args: {
+      openPaths: string[];
+      selectedPath?: string;
+    }) => ({
+      ok: true as const,
+      ...args,
+      recentFiles: [],
+    }));
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const cleanupShell = installMockShell({
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: true,
+        recentFiles: [],
+      })),
+      getSessionState,
+      setSessionState,
+    });
+
+    render(<DesktopApp />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Session restore failed before the app received a native result.",
+    );
+    await waitFor(() => expect(getSessionState).toHaveBeenCalledTimes(1));
+    await new Promise((resolve) => setTimeout(resolve, 250));
+
+    expect(setSessionState).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalledWith(
+      "doc2md desktop session restore failure",
+      expect.any(Error),
+    );
+
+    cleanupShell();
+  });
+
   it("syncs only disk-backed Markdown paths to native session state", async () => {
     const setSessionState = vi.fn(async (args: {
       openPaths: string[];

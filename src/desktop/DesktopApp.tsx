@@ -1759,6 +1759,7 @@ function AppContent() {
 
     async function restoreSession() {
       const restoredEntries: Array<{ path: string; entryId: string }> = [];
+      let restoreCompleted = false;
       try {
         const sessionResult = await desktopShell.getSessionState();
         if (cancelled) {
@@ -1794,6 +1795,7 @@ function AppContent() {
         if (entryToSelect) {
           selectEntryRef.current(entryToSelect.entryId);
         }
+        restoreCompleted = true;
       } catch (error) {
         if (!cancelled) {
           setDesktopNotice({
@@ -1805,8 +1807,10 @@ function AppContent() {
       } finally {
         if (!cancelled) {
           sessionRestoreInFlightRef.current = false;
-          sessionRestoreCompletedRef.current = true;
-          setSessionRestoreRevision((revision) => revision + 1);
+          if (restoreCompleted) {
+            sessionRestoreCompletedRef.current = true;
+            setSessionRestoreRevision((revision) => revision + 1);
+          }
         }
       }
     }

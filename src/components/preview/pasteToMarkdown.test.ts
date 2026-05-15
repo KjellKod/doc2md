@@ -3,6 +3,7 @@ import {
   convertClipboardPasteToMarkdown,
   convertLinkedInUnicodeToMarkdown,
 } from "./pasteToMarkdown";
+import { convertLinkedInUnicodeInMarkdown } from "./linkedInUnicode";
 
 describe("convertLinkedInUnicodeToMarkdown", () => {
   it("converts linkedin unicode emphasis to markdown", () => {
@@ -17,6 +18,16 @@ describe("convertLinkedInUnicodeToMarkdown", () => {
     expect(
       convertLinkedInUnicodeToMarkdown("s̶t̶r̶u̶c̶k̶ and u̲n̲d̲e̲r̲"),
     ).toBe("~~struck~~ and under");
+  });
+});
+
+describe("convertLinkedInUnicodeInMarkdown", () => {
+  it("requires exact matching backtick runs to close code spans", () => {
+    expect(
+      convertLinkedInUnicodeInMarkdown(
+        "`` 𝐁𝐨𝐥𝐝 ``` still ` 𝑖𝑡𝑎𝑙𝑖𝑐 `` outside 𝐁",
+      ),
+    ).toBe("`` 𝐁𝐨𝐥𝐝 ``` still ` 𝑖𝑡𝑎𝑙𝑖𝑐 `` outside **B**");
   });
 });
 

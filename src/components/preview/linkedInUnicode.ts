@@ -231,6 +231,28 @@ export function convertLinkedInUnicodeInMarkdown(markdown: string) {
     return startIndex;
   };
 
+  const codeSpanEnd = (startIndex: number, closingMarker: string) => {
+    for (let index = startIndex; index < markdown.length; index += 1) {
+      if (markdown[index] === "\\" && index + 1 < markdown.length) {
+        index += 1;
+        continue;
+      }
+
+      if (markdown[index] !== "`") {
+        continue;
+      }
+
+      const backtickRun = markdown.slice(index).match(/^`+/)?.[0] ?? "";
+      if (backtickRun.length === closingMarker.length) {
+        return index + backtickRun.length;
+      }
+
+      index += backtickRun.length - 1;
+    }
+
+    return startIndex;
+  };
+
   const linkDestinationEnd = (startIndex: number) => {
     let nestedParens = 0;
 
@@ -269,7 +291,7 @@ export function convertLinkedInUnicodeInMarkdown(markdown: string) {
 
     if (codeMarker.length > 0) {
       flushBuffer();
-      const endIndex = rawSpanEnd(index + codeMarker.length, codeMarker);
+      const endIndex = codeSpanEnd(index + codeMarker.length, codeMarker);
       output += markdown.slice(index, endIndex);
       index = endIndex - 1;
       continue;
