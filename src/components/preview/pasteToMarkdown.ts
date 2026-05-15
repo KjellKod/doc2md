@@ -154,7 +154,7 @@ export function convertClipboardPasteToMarkdown({
 
     if (htmlMarkdown.trim().length > 0) {
       return {
-        markdown: htmlMarkdown,
+        markdown: convertLinkedInUnicodeToMarkdown(htmlMarkdown),
         source: "html",
       };
     }

@@ -42,6 +42,18 @@ describe("convertClipboardPasteToMarkdown", () => {
     expect(result.markdown).toMatch(/1\.\s+First/);
   });
 
+  it("converts linkedin unicode inside html clipboard content", () => {
+    const result = convertClipboardPasteToMarkdown({
+      html: "<p>𝐁𝐨𝐥𝐝 and 𝑖𝑡𝑎𝑙𝑖𝑐</p>",
+      plainText: "Plain fallback",
+    });
+
+    expect(result).toEqual({
+      markdown: "**Bold** and *italic*",
+      source: "html",
+    });
+  });
+
   it("falls back to plain text when html conversion is empty", () => {
     expect(
       convertClipboardPasteToMarkdown({
