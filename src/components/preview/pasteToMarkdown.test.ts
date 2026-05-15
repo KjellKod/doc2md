@@ -58,6 +58,39 @@ describe("convertClipboardPasteToMarkdown", () => {
     });
   });
 
+  it("converts Google Docs checkbox images without leaking data images or document-wide bold markers", () => {
+    const googleDocsClipboardHtml = [
+      "<strong>",
+      "<h1>Executive Summary Goals to Achieve in Q2</h1>",
+      '<p><a href="mailto:art@example.com">Art Messal</a>:</p>',
+      "<ul>",
+      '<li><img alt="unchecked" src="data:image/png;base64,abc"><span>100% completion of five must-do-epics 2026-Q2-100 labels</span></li>',
+      '<li><img alt="unchecked" src="data:image/png;base64,abc"><a href="https://example.atlassian.net/browse/ONF-9505">ONF-9505</a><span> [EE] Refactor Task Endpoints to use Mongo Sessions and Transactions</span></li>',
+      '<li><img alt="checked" src="data:image/png;base64,abc"><a href="https://example.atlassian.net/browse/ONF-7952">ONF-7952</a><span> Q1-4c Whitelabel Client Portal</span></li>',
+      "</ul>",
+      "</strong>",
+    ].join("");
+
+    expect(
+      convertClipboardPasteToMarkdown({
+        html: googleDocsClipboardHtml,
+        plainText:
+          "Executive Summary Goals to Achieve in Q2\nArt Messal:\n100% completion of five must-do-epics 2026-Q2-100 labels\nONF-9505 [EE] Refactor Task Endpoints to use Mongo Sessions and Transactions\nONF-7952 Q1-4c Whitelabel Client Portal",
+      }),
+    ).toEqual({
+      markdown: [
+        "# Executive Summary Goals to Achieve in Q2",
+        "",
+        "[Art Messal](mailto:art@example.com):",
+        "",
+        "- [ ] 100% completion of five must-do-epics 2026-Q2-100 labels",
+        "- [ ] [ONF-9505](https://example.atlassian.net/browse/ONF-9505) \\[EE\\] Refactor Task Endpoints to use Mongo Sessions and Transactions",
+        "- [x] [ONF-7952](https://example.atlassian.net/browse/ONF-7952) Q1-4c Whitelabel Client Portal",
+      ].join("\n"),
+      source: "html",
+    });
+  });
+
   it("converts common sans-serif LinkedIn unicode emphasis to markdown", () => {
     expect(
       convertClipboardPasteToMarkdown({
