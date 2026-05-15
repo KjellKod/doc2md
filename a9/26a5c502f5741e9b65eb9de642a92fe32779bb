@@ -1,0 +1,21 @@
+apps/macos/doc2mdTests/SessionStoreTests.swift
+  s_f00585f6db12ae::t_f78083fb5b6dd6 277-319
+apps/macos/doc2md/ShellBridge.swift
+  s_f00585f6db12ae::t_f78083fb5b6dd6 513
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "a926a5c502f5741e9b65eb9de642a92fe32779bb",
+  "prompts": {},
+  "sessions": {
+    "s_f00585f6db12ae": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e2c99-3ab6-75f0-a5d3-13603768d478",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
