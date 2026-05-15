@@ -1,0 +1,21 @@
+src/desktop/DesktopApp.tsx
+  s_f00585f6db12ae::t_21304ebec3aac4 387,1792-1796,1817-1818
+src/__tests__/App.desktop.test.tsx
+  s_f00585f6db12ae::t_d4d11a5b5526bc 1274-1333
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "ac49d51e142a13ec3e74da996710138dd73309bb",
+  "prompts": {},
+  "sessions": {
+    "s_f00585f6db12ae": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e2c99-3ab6-75f0-a5d3-13603768d478",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
