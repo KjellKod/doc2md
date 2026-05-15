@@ -5,30 +5,6 @@ const H1_FONT_SIZE_PT = 18;
 const H2_FONT_SIZE_PT = 15.5;
 const CHECKED_CHECKBOX_PLACEHOLDER = "DOC2MDPASTECHECKBOXCHECKED";
 const OPEN_CHECKBOX_PLACEHOLDER = "DOC2MDPASTECHECKBOXOPEN";
-const BLOCK_SELECTOR = [
-  "address",
-  "article",
-  "aside",
-  "blockquote",
-  "div",
-  "dl",
-  "fieldset",
-  "figure",
-  "h1",
-  "h2",
-  "h3",
-  "h4",
-  "h5",
-  "h6",
-  "hr",
-  "li",
-  "ol",
-  "p",
-  "pre",
-  "section",
-  "table",
-  "ul",
-].join(",");
 
 function getInlineStyle(element: Element, propertyName: string) {
   const style = element.getAttribute("style");
@@ -121,37 +97,6 @@ function replaceCheckboxes(document: Document) {
       : OPEN_CHECKBOX_PLACEHOLDER;
     checkbox.replaceWith(document.createTextNode(`${marker} `));
   });
-
-  const checkboxImages = Array.from(document.body.querySelectorAll("li img"));
-
-  checkboxImages.forEach((image) => {
-    const alt = (image.getAttribute("alt") ?? "").trim().toLowerCase();
-    if (alt !== "checked" && alt !== "unchecked") return;
-
-    const marker =
-      alt === "checked" ? CHECKED_CHECKBOX_PLACEHOLDER : OPEN_CHECKBOX_PLACEHOLDER;
-    image.replaceWith(document.createTextNode(`${marker} `));
-  });
-}
-
-function unwrapElement(element: Element) {
-  const parent = element.parentNode;
-  if (!parent) return;
-
-  while (element.firstChild) {
-    parent.insertBefore(element.firstChild, element);
-  }
-  parent.removeChild(element);
-}
-
-function unwrapBlockStyleContainers(document: Document) {
-  const containers = Array.from(document.body.querySelectorAll("strong,b,em,i"));
-
-  containers.forEach((container) => {
-    if (container.querySelector(BLOCK_SELECTOR)) {
-      unwrapElement(container);
-    }
-  });
 }
 
 function semanticReplacementForSpan(
@@ -208,7 +153,6 @@ export function normalizePasteHtmlForMarkdown(html: string) {
   const document = parser.parseFromString(html, "text/html");
 
   replaceCheckboxes(document);
-  unwrapBlockStyleContainers(document);
   replaceHeadingParagraphs(document);
   replaceInlineStyleSpans(document);
 

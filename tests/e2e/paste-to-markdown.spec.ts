@@ -90,41 +90,6 @@ test("pasting Google Docs-style rich clipboard content inserts markdown", async 
   );
 });
 
-test("pasting Google Docs checkbox image content inserts task list markdown", async ({
-  page,
-}) => {
-  await openScratchEditor(page);
-  const editor = page.getByLabel("Edit markdown");
-
-  await pasteClipboardPayload(page, {
-    html: [
-      "<strong>",
-      "<h1>Executive Summary Goals to Achieve in Q2</h1>",
-      '<p><a href="mailto:art@example.com">Art Messal</a>:</p>',
-      "<ul>",
-      '<li><img alt="unchecked" src="data:image/png;base64,abc"><span>100% completion of five must-do-epics 2026-Q2-100 labels</span></li>',
-      '<li><img alt="unchecked" src="data:image/png;base64,abc"><a href="https://example.atlassian.net/browse/ONF-9505">ONF-9505</a><span> [EE] Refactor Task Endpoints to use Mongo Sessions and Transactions</span></li>',
-      '<li><img alt="checked" src="data:image/png;base64,abc"><a href="https://example.atlassian.net/browse/ONF-7952">ONF-7952</a><span> Q1-4c Whitelabel Client Portal</span></li>',
-      "</ul>",
-      "</strong>",
-    ].join(""),
-    plainText:
-      "Executive Summary Goals to Achieve in Q2\nArt Messal:\n100% completion of five must-do-epics 2026-Q2-100 labels\nONF-9505 [EE] Refactor Task Endpoints to use Mongo Sessions and Transactions\nONF-7952 Q1-4c Whitelabel Client Portal",
-  });
-
-  await expect(editor).toHaveValue(
-    [
-      "# Executive Summary Goals to Achieve in Q2",
-      "",
-      "[Art Messal](mailto:art@example.com):",
-      "",
-      "- [ ] 100% completion of five must-do-epics 2026-Q2-100 labels",
-      "- [ ] [ONF-9505](https://example.atlassian.net/browse/ONF-9505) \\[EE\\] Refactor Task Endpoints to use Mongo Sessions and Transactions",
-      "- [x] [ONF-7952](https://example.atlassian.net/browse/ONF-7952) Q1-4c Whitelabel Client Portal",
-    ].join("\n"),
-  );
-});
-
 test("pasting common LinkedIn unicode text inserts markdown markers", async ({
   page,
 }) => {

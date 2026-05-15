@@ -21,6 +21,55 @@ describe("convertLinkedInUnicodeToMarkdown", () => {
 });
 
 describe("convertClipboardPasteToMarkdown", () => {
+  it("converts Google Docs-style headings, inline styles, lists, and checkboxes to markdown", () => {
+    const googleDocsClipboardHtml = [
+      '<meta charset="utf-8">',
+      '<p dir="ltr" style="line-height:1.38;margin-top:20pt;margin-bottom:6pt;">',
+      '<span style="font-size:20pt;font-family:Arial;color:#000000;background-color:transparent;font-weight:700;font-style:normal;white-space:pre-wrap;">Launch Plan</span>',
+      "</p>",
+      '<p dir="ltr" style="line-height:1.38;margin-top:0pt;margin-bottom:0pt;">',
+      '<span style="font-size:11pt;font-family:Arial;font-weight:700;white-space:pre-wrap;">Bold priority</span>',
+      '<span style="font-size:11pt;font-family:Arial;white-space:pre-wrap;"> and </span>',
+      '<span style="font-size:11pt;font-family:Arial;font-style:italic;white-space:pre-wrap;">italic detail</span>',
+      "</p>",
+      "<ul>",
+      '<li><span style="font-size:11pt;font-family:Arial;white-space:pre-wrap;">Normal item</span></li>',
+      '<li><input type="checkbox" checked><span style="font-size:11pt;font-family:Arial;white-space:pre-wrap;">Done task</span></li>',
+      '<li><input type="checkbox"><span style="font-size:11pt;font-family:Arial;white-space:pre-wrap;">Open task</span></li>',
+      "</ul>",
+    ].join("");
+
+    expect(
+      convertClipboardPasteToMarkdown({
+        html: googleDocsClipboardHtml,
+        plainText: "Launch Plan\nBold priority and italic detail\nNormal item\nDone task\nOpen task",
+      }),
+    ).toEqual({
+      markdown: [
+        "# Launch Plan",
+        "",
+        "**Bold priority** and _italic detail_",
+        "",
+        "- Normal item",
+        "- [x] Done task",
+        "- [ ] Open task",
+      ].join("\n"),
+      source: "html",
+    });
+  });
+
+  it("converts common sans-serif LinkedIn unicode emphasis to markdown", () => {
+    expect(
+      convertClipboardPasteToMarkdown({
+        html: "",
+        plainText: "𝗕𝗼𝗹𝗱 and 𝘪𝘵𝘢𝘭𝘪𝘤",
+      }),
+    ).toEqual({
+      markdown: "**Bold** and *italic*",
+      source: "plainText",
+    });
+  });
+
   it("prefers basic html clipboard content when conversion is non-empty", () => {
     const result = convertClipboardPasteToMarkdown({
       html: [
