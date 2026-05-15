@@ -1,0 +1,21 @@
+src/components/preview/pasteToMarkdown.test.ts
+  s_bd066a8e170cce::t_6f0fad02095041 21-28,159-166
+src/components/preview/linkedInUnicode.ts
+  s_bd066a8e170cce::t_a21da64f581e02 8-16,25,84,87-89,96-104,107,110-132,154,157,161,164,173,194-196,200,218-220,223,228
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "e6e190c593b06e65a3d386969771d926126bc4a8",
+  "prompts": {},
+  "sessions": {
+    "s_bd066a8e170cce": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e2ccc-7d29-77b1-941a-8c9e9ec7e7ce",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
