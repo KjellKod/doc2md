@@ -1,0 +1,49 @@
+docs/diary/2026-05-15.md
+  s_58728568bc1253::t_dbcdc9205aa667 1-11
+src/components/preview/EditMode.tsx
+  s_e1c6ba34fd164f::t_22f2a18c3bf961 12,15-16,39,150,227-269,409
+src/App.tsx
+  s_e1c6ba34fd164f::t_8d99a6aa89753c 309-313
+  s_e1c6ba34fd164f::t_22f2a18c3bf961 223-225,238-240,299-308,314,939-955,1296
+docs/quest-journal/paste-to-markdown_2026-05-15.md
+  s_58728568bc1253::t_dbcdc9205aa667 1-136
+src/components/preview/pasteToMarkdown.test.ts
+  s_e1c6ba34fd164f::t_22f2a18c3bf961 1-41,43-56
+  s_e1c6ba34fd164f::t_a5c58c21b36ebe 42
+src/components/PreviewPanel.test.tsx
+  s_e1c6ba34fd164f::t_4295a08ba6874e 3,64-99,564-624
+src/components/preview/PreviewPanel.tsx
+  s_e1c6ba34fd164f::t_22f2a18c3bf961 26,41,331
+src/App.test.tsx
+  s_e1c6ba34fd164f::t_4295a08ba6874e 72-92,234-254
+src/components/linkedinFormatting.ts
+  s_e1c6ba34fd164f::t_22f2a18c3bf961 190-193
+src/components/preview/pasteToMarkdown.ts
+  s_e1c6ba34fd164f::t_22f2a18c3bf961 1-174
+docs/dexter-journal/045-requiem-paste-to-markdown.md
+  s_58728568bc1253::t_dbcdc9205aa667 1-117
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "b89658c0040bd00a0894f48a3d2c0964c46c3dac",
+  "prompts": {},
+  "sessions": {
+    "s_58728568bc1253": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e29b3-1f93-7c82-8700-7329ae773331",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_e1c6ba34fd164f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e2c2a-5fa9-7e00-97bb-670d25ea84d5",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
