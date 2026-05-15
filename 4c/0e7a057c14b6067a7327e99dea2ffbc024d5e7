@@ -1,0 +1,31 @@
+src/components/findHighlightRehype.ts
+  s_a194dad0ec0486::t_2936a96e597d9e 2
+  s_a194dad0ec0486::t_4118662f119b20 57,62-78
+  s_a194dad0ec0486::t_5389d6ae8adb48 94,97-98,104-109,122
+  s_a194dad0ec0486::t_7f545291d4048e 121,123-128
+src/components/preview/renderedSurfaceEffects.ts
+  s_a194dad0ec0486::t_588bade7499dcc 3
+  s_a194dad0ec0486::t_fa7c1c15935a67 31-36,45
+src/components/preview/renderedTextCorpus.ts
+  s_a194dad0ec0486::t_2a1b0af8101cea 1-61,63-72
+  s_a194dad0ec0486::t_71688e4f1f54f6 62
+src/components/__tests__/findHighlightRehype.test.tsx
+  s_a194dad0ec0486::t_0b1f478ac9afcb 6
+  s_a194dad0ec0486::t_4b48121bfb9dec 153-189
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "4c0e7a057c14b6067a7327e99dea2ffbc024d5e7",
+  "prompts": {},
+  "sessions": {
+    "s_a194dad0ec0486": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6722860d-3d2b-40f7-9bf9-c3627ac3d8dc",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
