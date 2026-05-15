@@ -137,6 +137,29 @@ test("creates and edits a scratch draft", async ({ page }) => {
   await expectPreviewHeading(page, "Browser baseline draft");
 });
 
+test("renders GFM task lists as checkboxes without bullet markers", async ({
+  page,
+}) => {
+  await openHostedApp(page);
+
+  await page.getByRole("button", { name: "Start writing", exact: true }).click();
+  const editor = page.getByLabel("Edit markdown");
+  await editor.fill("- [x] Ship fix\n- [ ] Write docs");
+
+  await page.getByRole("button", { name: "Preview" }).click();
+
+  const taskItems = page.locator(".markdown-surface li.task-list-item");
+  await expect(taskItems).toHaveCount(2);
+  await expect(page.locator(".markdown-surface")).not.toContainText("[x]");
+  await expect(page.locator(".markdown-surface")).not.toContainText("[ ]");
+  await expect(taskItems.first()).toHaveCSS("list-style-type", "none");
+  await expect(taskItems.nth(1)).toHaveCSS("list-style-type", "none");
+  await expect(taskItems.first()).toContainText("Ship fix");
+  await expect(taskItems.nth(1)).toContainText("Write docs");
+  await expect(taskItems.first().locator('input[type="checkbox"]')).toBeChecked();
+  await expect(taskItems.nth(1).locator('input[type="checkbox"]')).not.toBeChecked();
+});
+
 test("keeps checkbox selection separate from active row selection", async ({
   page,
 }) => {

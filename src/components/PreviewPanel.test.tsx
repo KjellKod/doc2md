@@ -360,6 +360,37 @@ describe("PreviewPanel", () => {
     );
   });
 
+  it("renders GFM task list markers as disabled checkboxes", () => {
+    const { container } = render(
+      <PreviewPanel
+        entry={createEntry({
+          markdown: "- [x] Ship fix\n- [ ] Write docs",
+        })}
+      />,
+    );
+
+    expect(
+      container.querySelector(".markdown-surface ul.contains-task-list"),
+    ).toBeInTheDocument();
+    expect(container.querySelectorAll(".markdown-surface li.task-list-item")).toHaveLength(
+      2,
+    );
+
+    const surface = container.querySelector(".markdown-surface")!;
+    expect(surface).not.toHaveTextContent("[x]");
+    expect(surface).not.toHaveTextContent("[ ]");
+    expect(surface.querySelectorAll("li:not(.task-list-item)")).toHaveLength(0);
+
+    const checkboxes = screen.getAllByRole("checkbox");
+    expect(checkboxes).toHaveLength(2);
+    expect(checkboxes[0]).toBeChecked();
+    expect(checkboxes[0]).toBeDisabled();
+    expect(checkboxes[1]).not.toBeChecked();
+    expect(checkboxes[1]).toBeDisabled();
+    expect(screen.getByText("Ship fix")).toBeInTheDocument();
+    expect(screen.getByText("Write docs")).toBeInTheDocument();
+  });
+
   it("copies the rendered preview as html and plain text in preview mode", async () => {
     const { container } = render(<PreviewPanel entry={createEntry()} />);
     const previewSurface = container.querySelector(".markdown-surface");
@@ -586,6 +617,31 @@ describe("PreviewPanel", () => {
 
     expect(editor.selectionStart).toBe(14);
     expect(editor.selectionEnd).toBe(14);
+  });
+
+  it("shows paste conversion status while html paste conversion is queued", async () => {
+    Object.defineProperty(document, "execCommand", {
+      configurable: true,
+      value: vi.fn(() => false),
+    });
+
+    render(<ControlledPreviewPanel initialMarkdown="" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    const editor = screen.getByRole("textbox", {
+      name: "Edit markdown",
+    });
+
+    fireEditorPaste(editor, { html: "<p>𝐁𝐨𝐥𝐝</p>", plainText: "Bold" });
+
+    expect(screen.getByRole("status")).toHaveTextContent("Converting paste...");
+    expect(editor).toHaveAttribute("aria-busy", "true");
+
+    await waitFor(() => expect(editor).toHaveValue("**Bold**"));
+    await waitFor(() =>
+      expect(screen.queryByRole("status")).not.toBeInTheDocument(),
+    );
+    expect(editor).not.toHaveAttribute("aria-busy", "true");
   });
 
   it("notifies when converted paste exceeds threshold", () => {

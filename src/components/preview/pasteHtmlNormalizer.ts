@@ -5,6 +5,10 @@ const H1_FONT_SIZE_PT = 18;
 const H2_FONT_SIZE_PT = 15.5;
 const CHECKED_CHECKBOX_PLACEHOLDER = "DOC2MDPASTECHECKBOXCHECKED";
 const OPEN_CHECKBOX_PLACEHOLDER = "DOC2MDPASTECHECKBOXOPEN";
+const CHECKBOX_PLACEHOLDERS = [
+  CHECKED_CHECKBOX_PLACEHOLDER,
+  OPEN_CHECKBOX_PLACEHOLDER,
+] as const;
 const BLOCK_SELECTOR = [
   "address",
   "article",
@@ -134,6 +138,11 @@ function replaceCheckboxes(document: Document) {
   });
 }
 
+function isCheckboxListItem(listItem: Element) {
+  const text = (listItem.textContent ?? "").trimStart();
+  return CHECKBOX_PLACEHOLDERS.some((placeholder) => text.startsWith(placeholder));
+}
+
 function unwrapElement(element: Element) {
   const parent = element.parentNode;
   if (!parent) return;
@@ -142,6 +151,25 @@ function unwrapElement(element: Element) {
     parent.insertBefore(element.firstChild, element);
   }
   parent.removeChild(element);
+}
+
+function unwrapTaskListItemBlocks(document: Document) {
+  const listItems = Array.from(document.body.querySelectorAll("li"));
+
+  listItems.forEach((listItem) => {
+    if (!isCheckboxListItem(listItem)) return;
+
+    const blockChildren = Array.from(
+      listItem.querySelectorAll("p,div"),
+    ).filter((element) => !element.querySelector("ul,ol,table"));
+
+    blockChildren.forEach((element) => {
+      if (element.previousSibling?.textContent?.trim().length) {
+        element.before(document.createTextNode(" "));
+      }
+      unwrapElement(element);
+    });
+  });
 }
 
 function unwrapBlockStyleContainers(document: Document) {
@@ -208,6 +236,7 @@ export function normalizePasteHtmlForMarkdown(html: string) {
   const document = parser.parseFromString(html, "text/html");
 
   replaceCheckboxes(document);
+  unwrapTaskListItemBlocks(document);
   unwrapBlockStyleContainers(document);
   replaceHeadingParagraphs(document);
   replaceInlineStyleSpans(document);
@@ -218,5 +247,6 @@ export function normalizePasteHtmlForMarkdown(html: string) {
 export function restorePasteMarkdownPlaceholders(markdown: string) {
   return markdown
     .replace(new RegExp(CHECKED_CHECKBOX_PLACEHOLDER, "g"), "[x]")
-    .replace(new RegExp(OPEN_CHECKBOX_PLACEHOLDER, "g"), "[ ]");
+    .replace(new RegExp(OPEN_CHECKBOX_PLACEHOLDER, "g"), "[ ]")
+    .replace(/^(\s*[-*+]\s+\[[ xX]\])\s*\n(?:[ \t]*\n)*[ \t]+/gm, "$1 ");
 }

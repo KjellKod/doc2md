@@ -111,6 +111,30 @@ describe("convertClipboardPasteToMarkdown", () => {
     });
   });
 
+  it("keeps Google Docs checkbox item text on the marker line", () => {
+    const googleDocsClipboardHtml = [
+      "<ul>",
+      '<li><img alt="unchecked" src="data:image/png;base64,abc"><p><span>100% completion of five must-do-epics 2026-Q2-100 labels</span></p></li>',
+      '<li><input type="checkbox"><div><a href="https://example.atlassian.net/browse/ONF-9505">ONF-9505</a><span> [EE] Refactor Task Endpoints to use Mongo Sessions and Transactions</span></div></li>',
+      "</ul>",
+    ].join("");
+
+    const result = convertClipboardPasteToMarkdown({
+      html: googleDocsClipboardHtml,
+      plainText:
+        "100% completion of five must-do-epics 2026-Q2-100 labels\nONF-9505 [EE] Refactor Task Endpoints to use Mongo Sessions and Transactions",
+    });
+
+    expect(result).toEqual({
+      markdown: [
+        "- [ ] 100% completion of five must-do-epics 2026-Q2-100 labels",
+        "- [ ] [ONF-9505](https://example.atlassian.net/browse/ONF-9505) \\[EE\\] Refactor Task Endpoints to use Mongo Sessions and Transactions",
+      ].join("\n"),
+      source: "html",
+    });
+    expect(result.markdown).not.toMatch(/^-\s+\[[ xX]\]\s*\n/m);
+  });
+
   it("converts common sans-serif LinkedIn unicode emphasis to markdown", () => {
     expect(
       convertClipboardPasteToMarkdown({
