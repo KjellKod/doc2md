@@ -1,0 +1,21 @@
+docs/journal/042-celebrate-find-table-cells.md
+  s_a194dad0ec0486::t_f792cd621c0e84 1-37
+docs/journal/README.md
+  s_a194dad0ec0486::t_a7a1b76fbd0ff5 9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "b636c009ab2df32ef9fa1939c675223b53961b9e",
+  "prompts": {},
+  "sessions": {
+    "s_a194dad0ec0486": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6722860d-3d2b-40f7-9bf9-c3627ac3d8dc",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
