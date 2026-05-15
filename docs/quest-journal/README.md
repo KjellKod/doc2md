@@ -2,7 +2,7 @@
 
 | Date | Quest | Outcome |
 |------|-------|---------|
-| 2026-05-15 | [ux-improvements-v2](ux-improvements-v2_2026-05-15.md) | Mac session restore, native-owned recents, compact working-mode controls, preview/mobile layout polish, and final clipped-menu regression fix. |
+| 2026-05-15 | [paste-to-markdown](paste-to-markdown_2026-05-15.md) | Implement ideas/paste-to-markdown-in-editor.md. Keep scope tight: intercept paste in the edit textarea, convert Linke... |
 | 2026-05-14 | [preview-panel-refactor-phase-1](preview-panel-refactor-phase-1_2026-05-14.md) | `src/components/PreviewPanel.tsx` is a 1285-line, load-bearing component that owns mode switching, find UI wiring, vi... |
 | 2026-05-12 | [headless-dmg-packaging](headless-dmg-packaging_2026-05-12.md) | Replaced the Finder/AppleScript DMG layout path with pinned, headless dmgbuild via pipx using JSON settings. New CI gates: mounted-layout test (.DS_Store records, .background.png bytes, symlink target, icon positions) and determinism check (parsed-record equality + PNG byte equality). 2 plan iterations, 1-shot build, 1 fix loop addressing 2 Reviewer B catches, Gold tier. |
 | 2026-05-12 | [ci-supply-chain-hardening](ci-supply-chain-hardening_2026-05-12.md) | Hardened CI/CD against Mini Shai-Hulud / TanStack-class supply-chain risks: wired Python guard tests into security.yml, dropped npm cache off the release/deploy boundary, applied --ignore-scripts uniformly, added Dependabot + codex-version-drift workflow, and extended security_ci_guard.py with 4 new low-noise rules and 15 bug-fail-positive tests. Solo, 2 plan iterations, 1-shot build, clean code review. |
