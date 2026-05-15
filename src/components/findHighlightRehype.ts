@@ -1,4 +1,5 @@
 import type { Element, ElementContent, Root, Text } from "hast";
+import { elementBoundarySeparator } from "./preview/renderedTextCorpus";
 
 /**
  * Rehype plugin that wraps the matched character range in a `<mark>`
@@ -53,9 +54,28 @@ export function findHighlightRehype(match: RenderedFindMatch | null) {
       }
       const cursor = { value: 0 };
       const inserted = { value: false };
-      walk(tree, cursor, match, inserted);
+      walk(tree, cursor, match, inserted, null);
     };
   };
+}
+
+// Elements whose direct text-only children are whitespace placeholders
+// emitted by remark-gfm / rehype but stripped from the rendered DOM by
+// React. Skipping them keeps the hast cursor in lockstep with the
+// deriveRenderedText DOM walk (preview/renderedTextCorpus.ts).
+const TEXT_STRIPPING_PARENTS = new Set([
+  "table",
+  "thead",
+  "tbody",
+  "tfoot",
+  "tr",
+  "ul",
+  "ol",
+  "dl",
+]);
+
+function isWhitespaceOnly(value: string): boolean {
+  return /^\s*$/.test(value);
 }
 
 interface Cursor {
@@ -71,13 +91,22 @@ function walk(
   cursor: Cursor,
   match: RenderedFindMatch,
   inserted: Inserted,
+  parentTagName: string | null,
 ): void {
   const children = node.children as ElementContent[];
+  const stripWhitespaceText =
+    parentTagName !== null && TEXT_STRIPPING_PARENTS.has(parentTagName);
   for (let i = 0; i < children.length; i += 1) {
     const child = children[i];
 
     if (child.type === "text") {
       const text = child as Text;
+      // Whitespace text nodes inside table-/list-shaped parents are
+      // emitted by remark-gfm but stripped by React on render; skip
+      // them so the cursor matches the actual DOM corpus.
+      if (stripWhitespaceText && isWhitespaceOnly(text.value)) {
+        continue;
+      }
       const replacement = splitTextNode(text, cursor, match, inserted);
       if (replacement) {
         children.splice(i, 1, ...replacement);
@@ -89,7 +118,14 @@ function walk(
     }
 
     if (child.type === "element") {
-      walk(child as Element, cursor, match, inserted);
+      const elementChild = child as Element;
+      walk(elementChild, cursor, match, inserted, elementChild.tagName);
+      // Mirror the virtual separator injected by deriveRenderedText
+      // (preview/renderedTextCorpus.ts) so cursor offsets in this
+      // walk stay aligned with the corpus useFindReplace searches.
+      // Same rule both places: space at td/th/dt/dd/li close, newline
+      // at tr/p/div/br/heading close.
+      cursor.value += elementBoundarySeparator(elementChild.tagName).length;
       continue;
     }
     // raw / comment / doctype nodes: skip — they do not contribute
