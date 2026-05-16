@@ -2,7 +2,7 @@
 
 ## Status
 
-- **Phase 1: DONE.** Landed in PR (link TBD when merged) via quest
+- **Phase 1: DONE.** Landed in PR #127 via quest
   `preview-panel-refactor-phase-1_2026-05-13__2241`. Journal:
   `docs/journal/041-celebrate-preview-panel-refactor-phase-1.md`.
 - **Phase 2: NOT STARTED.** Quest brief at
