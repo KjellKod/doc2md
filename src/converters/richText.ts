@@ -139,6 +139,26 @@ function getLastListItem(list: Element): HTMLLIElement | null {
   return null;
 }
 
+function appendListToParentItem(
+  parentItem: HTMLLIElement,
+  list: Element
+): Element {
+  const existingList = Array.from(parentItem.children).find(
+    (child) => child !== list && child.tagName === list.tagName
+  );
+
+  if (!existingList) {
+    parentItem.appendChild(list);
+    return list;
+  }
+
+  while (list.firstChild) {
+    existingList.appendChild(list.firstChild);
+  }
+  list.remove();
+  return existingList;
+}
+
 /**
  * Google Docs exports nested lists as flat sibling <ul> elements with
  * CSS classes encoding the nesting level (e.g. lst-kix_xxx-0, lst-kix_xxx-1).
@@ -148,32 +168,44 @@ function getLastListItem(list: Element): HTMLLIElement | null {
  */
 function nestGoogleDocsLists(doc: Document): void {
   const lists = Array.from(doc.querySelectorAll("ul, ol"));
+  const stacks = new Map<string, Element[]>();
 
-  for (let i = lists.length - 1; i >= 0; i--) {
-    const list = lists[i];
+  lists.forEach((list) => {
     const metadata = getGoogleDocsListMetadata(list);
-    if (!metadata || metadata.level === 0) continue;
+    if (!metadata) return;
 
-    // Walk backwards through preceding siblings to find a list at a lower level
-    let sibling = list.previousElementSibling;
-    while (sibling) {
-      if (sibling.tagName === "UL" || sibling.tagName === "OL") {
-        const siblingMetadata = getGoogleDocsListMetadata(sibling);
-        if (
-          siblingMetadata &&
-          siblingMetadata.family === metadata.family &&
-          siblingMetadata.level < metadata.level
-        ) {
-          const lastLi = getLastListItem(sibling);
-          if (lastLi) {
-            lastLi.appendChild(list);
-          }
-          break;
-        }
-      }
-      sibling = sibling.previousElementSibling;
+    const stack = stacks.get(metadata.family) ?? [];
+    stacks.set(metadata.family, stack);
+
+    if (metadata.level === 0) {
+      stack[0] = list;
+      stack.length = 1;
+      return;
     }
-  }
+
+    let parentList: Element | undefined;
+    for (
+      let parentLevel = metadata.level - 1;
+      parentLevel >= 0;
+      parentLevel -= 1
+    ) {
+      parentList = stack[parentLevel];
+      if (parentList) break;
+    }
+
+    if (!parentList || parentList === list || list.contains(parentList)) {
+      stack[0] = list;
+      stack.length = 1;
+      return;
+    }
+
+    const parentItem = getLastListItem(parentList);
+    if (!parentItem) return;
+
+    const nestedList = appendListToParentItem(parentItem, list);
+    stack[metadata.level] = nestedList;
+    stack.length = metadata.level + 1;
+  });
 }
 
 function getOrCreateNestedList(

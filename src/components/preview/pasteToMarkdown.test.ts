@@ -187,6 +187,46 @@ describe("convertClipboardPasteToMarkdown", () => {
     });
   });
 
+  it("keeps Google Docs sibling list levels in original order", () => {
+    const result = convertClipboardPasteToMarkdown({
+      html: [
+        '<ul class="lst-kix_goal-0">',
+        '<li><img alt="unchecked" src="data:image/png;base64,abc"><span>100% completion of five must-do-epics 2026-Q2-100 labels</span></li>',
+        "</ul>",
+        '<ul class="lst-kix_goal-1">',
+        '<li><img alt="unchecked" src="data:image/png;base64,abc"><a href="https://example.atlassian.net/browse/ONF-9505">ONF-9505</a><span> [EE] Refactor Task Endpoints to use Mongo Sessions and Transactions</span></li>',
+        "</ul>",
+        '<ul class="lst-kix_goal-2">',
+        '<li><img alt="unchecked" src="data:image/png;base64,abc"><a href="https://example.atlassian.net/browse/ONF-7952">ONF-7952</a><span> Q1-4c Whitelabel Client Portal</span></li>',
+        "</ul>",
+        '<ul class="lst-kix_goal-1">',
+        '<li><img alt="unchecked" src="data:image/png;base64,abc"><a href="https://example.atlassian.net/browse/ONF-6640">ONF-6640</a><span> Q1-2a Custom Fields/Requirements for Courier Clients</span></li>',
+        "</ul>",
+        '<ul class="lst-kix_goal-0">',
+        '<li><img alt="unchecked" src="data:image/png;base64,abc"><span>At least 65% completion of all 12 committed epics</span></li>',
+        "</ul>",
+      ].join(""),
+      plainText: [
+        "100% completion of five must-do-epics 2026-Q2-100 labels",
+        "ONF-9505 [EE] Refactor Task Endpoints to use Mongo Sessions and Transactions",
+        "ONF-7952 Q1-4c Whitelabel Client Portal",
+        "ONF-6640 Q1-2a Custom Fields/Requirements for Courier Clients",
+        "At least 65% completion of all 12 committed epics",
+      ].join("\n"),
+    });
+
+    expect(result).toEqual({
+      markdown: [
+        "- [ ] 100% completion of five must-do-epics 2026-Q2-100 labels",
+        "    - [ ] [ONF-9505](https://example.atlassian.net/browse/ONF-9505) \\[EE\\] Refactor Task Endpoints to use Mongo Sessions and Transactions",
+        "        - [ ] [ONF-7952](https://example.atlassian.net/browse/ONF-7952) Q1-4c Whitelabel Client Portal",
+        "    - [ ] [ONF-6640](https://example.atlassian.net/browse/ONF-6640) Q1-2a Custom Fields/Requirements for Courier Clients",
+        "- [ ] At least 65% completion of all 12 committed epics",
+      ].join("\n"),
+      source: "html",
+    });
+  });
+
   it("preserves Google Docs li-bullet checkbox indentation inside one flat list", () => {
     const result = convertClipboardPasteToMarkdown({
       html: [
