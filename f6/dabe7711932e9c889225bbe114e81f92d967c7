@@ -1,0 +1,33 @@
+src/App.tsx
+  s_28bb8e077547a0::t_417dccdf3f36b0 1-6,8-9,17,20-56
+src/shell/AppShell.tsx
+  s_28bb8e077547a0::t_f549a44a080c1e 560-562
+  s_28bb8e077547a0::t_fd1466f00f34a9 1-30,32-559,563-565
+  s_28bb8e077547a0::t_1a50971a34d832 31
+src/shell/webAdapter.tsx
+  s_28bb8e077547a0::t_7060f56e0e965c 1-459
+src/shell/desktopAdapter.tsx
+  s_28bb8e077547a0::t_70ab7939d8be20 2240-2254,2256-2265,2267-2276,2278-2298,2300-2305,2307-2313,2315-2371,2373-2400,2402-2410,2412-2413,2415-2416,2418-2439
+  s_28bb8e077547a0::t_b08dfe06f90532 212-234
+  s_28bb8e077547a0::t_8be7f45779265c 2-20,22,30,48-57
+  s_28bb8e077547a0::t_9077e456a715d3 239-240
+  s_28bb8e077547a0::t_3f56a8916481d1 1,21,23-29,31-47,58-211,235-238,241-2239,2255,2266,2277,2299,2306,2314,2372,2401,2411,2414,2417,2440
+src/desktop/DesktopApp.tsx
+  s_28bb8e077547a0::t_f52d8d1eba8870 2-8,11-12,14-15,18-55,62
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "f6dabe7711932e9c889225bbe114e81f92d967c7",
+  "prompts": {},
+  "sessions": {
+    "s_28bb8e077547a0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6500232d-94ad-4a88-8345-ab2a76c6b8f9",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
