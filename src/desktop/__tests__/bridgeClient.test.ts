@@ -44,6 +44,16 @@ describe("bridgeClient", () => {
     expect(getShell()).toBeNull();
   });
 
+  it("accepts version 2 shells without optional clearRecentFiles support", () => {
+    window.doc2mdShell = {
+      ...createMockShell(),
+      clearRecentFiles: undefined,
+    } as unknown as Doc2mdShell;
+
+    expect(hasShell()).toBe(true);
+    expect(getShell()).toBe(window.doc2mdShell);
+  });
+
   it("ignores version 2 shells missing statFile", () => {
     window.doc2mdShell = {
       ...createMockShell(),

@@ -13,6 +13,9 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
         static let getPersistenceSettings = "doc2mdGetPersistenceSettings"
         static let setPersistenceEnabled = "doc2mdSetPersistenceEnabled"
         static let setPersistenceTheme = "doc2mdSetPersistenceTheme"
+        static let clearRecentFiles = "doc2mdClearRecentFiles"
+        static let getSessionState = "doc2mdGetSessionState"
+        static let setSessionState = "doc2mdSetSessionState"
 
         static let all = [
             openFile,
@@ -22,7 +25,10 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
             statFile,
             getPersistenceSettings,
             setPersistenceEnabled,
-            setPersistenceTheme
+            setPersistenceTheme,
+            clearRecentFiles,
+            getSessionState,
+            setSessionState
         ]
     }
 
@@ -57,16 +63,35 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
         let theme: StoredTheme
     }
 
+    private struct SetSessionStateArgs: Codable {
+        let openPaths: [String]
+        let selectedPath: String?
+    }
+
     weak var webView: WKWebView?
 
-    private let fileStore = FileStore()
-    private let persistenceStore = PersistenceStore()
+    private let fileStore: FileStore
+    private let persistenceStore: PersistenceStore
+    private let sessionStore: SessionStore
     private let licenseReminderController: LicenseReminderController?
     private var knownURLsByPath: [String: URL] = [:]
+    private var restoreCandidatePaths: Set<String> = []
+    private var nativeRecentOpenPaths: Set<String> = []
+    private var sessionSyncSuppressedPaths: Set<String> = []
     private var lastDirectoryURL: URL?
 
-    init(licenseReminderController: LicenseReminderController? = nil) {
+    init(
+        fileStore: FileStore = FileStore(),
+        persistenceStore: PersistenceStore = PersistenceStore(),
+        sessionStore: SessionStore = SessionStore(),
+        licenseReminderController: LicenseReminderController? = nil
+    ) {
+        self.fileStore = fileStore
+        self.persistenceStore = persistenceStore
+        self.sessionStore = sessionStore
         self.licenseReminderController = licenseReminderController
+        super.init()
+        seedRestoreCandidatePaths()
     }
 
     func install(on userContentController: WKUserContentController) {
@@ -116,6 +141,12 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
             handleSetPersistenceEnabled(bridgeMessage)
         case HandlerName.setPersistenceTheme:
             handleSetPersistenceTheme(bridgeMessage)
+        case HandlerName.clearRecentFiles:
+            handleClearRecentFiles(bridgeMessage)
+        case HandlerName.getSessionState:
+            handleGetSessionState(bridgeMessage)
+        case HandlerName.setSessionState:
+            handleSetSessionState(bridgeMessage)
         default:
             resolve(
                 id: bridgeMessage.id,
@@ -130,7 +161,16 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
             let url: URL
 
             if let path = args.path {
-                guard let knownURL = knownURLsByPath[Self.standardPath(path)] else {
+                let standardizedPath = Self.standardPath(path)
+                if let knownURL = knownURLsByPath[standardizedPath] {
+                    url = knownURL
+                } else if restoreCandidatePaths.contains(standardizedPath),
+                          sessionStore.isRestoreEligiblePath(standardizedPath) {
+                    url = URL(fileURLWithPath: standardizedPath)
+                } else if nativeRecentOpenPaths.contains(standardizedPath),
+                          Self.isSupportedExistingFilePath(standardizedPath) {
+                    url = URL(fileURLWithPath: standardizedPath)
+                } else {
                     resolve(
                         id: message.id,
                         result: ShellCallResult.permissionNeeded(
@@ -140,7 +180,6 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
                     )
                     return
                 }
-                url = knownURL
             } else {
                 let panel = NSOpenPanel()
                 panel.canChooseDirectories = false
@@ -164,7 +203,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
                     try fileStore.open(url: standardizedURL)
                 }
                 remember(url: standardizedURL)
-                recordRecentFileIfEnabled(url: standardizedURL)
+                recordRecentDocumentIfEnabled(url: standardizedURL)
                 resolve(id: message.id, result: ShellCallResult.openMarkdown(result))
                 return
             }
@@ -175,7 +214,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
 
             let ticket = try ImportHandoff.shared.enqueue(url: standardizedURL)
             rememberLastDirectory(from: standardizedURL)
-            recordRecentFileIfEnabled(url: standardizedURL)
+            recordRecentDocumentIfEnabled(url: standardizedURL)
             // Import-source handoff URLs are intentionally not remembered as
             // directly editable paths; only `.md` targets belong in knownURLsByPath.
             let openImportResult = ShellOpenImportOk(
@@ -214,7 +253,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
             }
 
             remember(url: knownURL)
-            recordRecentFileIfEnabled(url: knownURL)
+            recordRecentDocumentIfEnabled(url: knownURL)
             resolve(id: message.id, result: ShellCallResult.save(result)) { [weak self] in
                 self?.licenseReminderController?.recordSuccessfulSave()
             }
@@ -247,7 +286,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
             }
 
             remember(url: url)
-            recordRecentFileIfEnabled(url: url)
+            recordRecentDocumentIfEnabled(url: url)
             resolve(id: message.id, result: ShellCallResult.save(result)) { [weak self] in
                 self?.licenseReminderController?.recordSuccessfulSave()
             }
@@ -297,14 +336,35 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
 
     private func handleGetPersistenceSettings(_ message: BridgeMessage) {
         let settings = persistenceStore.load()
-        resolve(id: message.id, result: ShellPersistenceSettingsOk(settings: settings))
+        resolve(
+            id: message.id,
+            result: ShellPersistenceSettingsOk(
+                settings: settings,
+                recentFiles: persistenceStore.recentFiles()
+            )
+        )
     }
 
     private func handleSetPersistenceEnabled(_ message: BridgeMessage) {
         do {
             let args = try Self.decode(SetPersistenceEnabledArgs.self, from: message.args)
             let settings = try persistenceStore.setPersistenceEnabled(args.enabled)
-            resolve(id: message.id, result: ShellPersistenceSettingsOk(settings: settings))
+            if !args.enabled {
+                try sessionStore.clear()
+                restoreCandidatePaths.removeAll()
+                nativeRecentOpenPaths.removeAll()
+                sessionSyncSuppressedPaths.removeAll()
+            } else {
+                sessionSyncSuppressedPaths.removeAll()
+                seedRestoreCandidatePaths()
+            }
+            resolve(
+                id: message.id,
+                result: ShellPersistenceSettingsOk(
+                    settings: settings,
+                    recentFiles: persistenceStore.recentFiles()
+                )
+            )
         } catch {
             resolve(id: message.id, result: Self.response(for: error))
         }
@@ -314,7 +374,96 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
         do {
             let args = try Self.decode(SetPersistenceThemeArgs.self, from: message.args)
             let settings = try persistenceStore.setTheme(args.theme)
-            resolve(id: message.id, result: ShellPersistenceSettingsOk(settings: settings))
+            resolve(
+                id: message.id,
+                result: ShellPersistenceSettingsOk(
+                    settings: settings,
+                    recentFiles: persistenceStore.recentFiles()
+                )
+            )
+        } catch {
+            resolve(id: message.id, result: Self.response(for: error))
+        }
+    }
+
+    private func handleClearRecentFiles(_ message: BridgeMessage) {
+        do {
+            let settings = try persistenceStore.clearRecentFiles()
+            try sessionStore.clear()
+            sessionSyncSuppressedPaths.formUnion(knownURLsByPath.keys)
+            restoreCandidatePaths.removeAll()
+            nativeRecentOpenPaths.removeAll()
+            resolve(
+                id: message.id,
+                result: ShellPersistenceSettingsOk(
+                    settings: settings,
+                    recentFiles: persistenceStore.recentFiles()
+                )
+            )
+        } catch {
+            resolve(id: message.id, result: Self.response(for: error))
+        }
+    }
+
+    private func handleGetSessionState(_ message: BridgeMessage) {
+        do {
+            guard persistenceStore.load().persistenceEnabled else {
+                resolve(
+                    id: message.id,
+                    result: ShellSessionStateOk(
+                        openPaths: [],
+                        selectedPath: nil,
+                        recentFiles: []
+                    )
+                )
+                return
+            }
+
+            let state = try sessionStore.loadAndPrune()
+            state.openPaths.forEach { restoreCandidatePaths.insert($0) }
+            resolve(
+                id: message.id,
+                result: ShellSessionStateOk(
+                    openPaths: state.openPaths,
+                    selectedPath: state.selectedPath,
+                    recentFiles: persistenceStore.recentFiles()
+                )
+            )
+        } catch {
+            resolve(id: message.id, result: Self.response(for: error))
+        }
+    }
+
+    private func handleSetSessionState(_ message: BridgeMessage) {
+        do {
+            guard persistenceStore.load().persistenceEnabled else {
+                resolve(
+                    id: message.id,
+                    result: ShellSessionStateOk(
+                        openPaths: [],
+                        selectedPath: nil,
+                        recentFiles: []
+                    )
+                )
+                return
+            }
+
+            let args = try Self.decode(SetSessionStateArgs.self, from: message.args)
+            let trustedKnownPaths = Set(knownURLsByPath.keys).subtracting(sessionSyncSuppressedPaths)
+            let trustedPaths = trustedKnownPaths.union(restoreCandidatePaths)
+            let state = try sessionStore.writeTrusted(
+                openPaths: args.openPaths,
+                selectedPath: args.selectedPath,
+                trustedPaths: trustedPaths
+            )
+            resolve(
+                id: message.id,
+                result: ShellSessionStateOk(
+                    openPaths: state.openPaths,
+                    selectedPath: state.selectedPath,
+                    recentFiles: persistenceStore.recentFiles()
+                )
+            )
         } catch {
             resolve(id: message.id, result: Self.response(for: error))
         }
@@ -331,9 +480,16 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
         return try operation()
     }
 
-    private func recordRecentFileIfEnabled(url: URL) {
+    private func recordRecentDocumentIfEnabled(url: URL) {
         do {
-            _ = try persistenceStore.recordRecentFile(url: url)
+            let settings = try persistenceStore.recordRecentDocument(url: url)
+            if settings.persistenceEnabled {
+                let standardizedPath = url.standardizedFileURL.path
+                sessionSyncSuppressedPaths.remove(standardizedPath)
+                if Self.isSupportedExistingFilePath(standardizedPath) {
+                    nativeRecentOpenPaths.insert(standardizedPath)
+                }
+            }
         } catch {
             #if DEBUG
             print("ShellBridge failed to record recent file: \(error.localizedDescription)")
@@ -342,8 +498,29 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
     }
 
     private func remember(url: URL) {
-        knownURLsByPath[url.standardizedFileURL.path] = url
+        let standardizedPath = url.standardizedFileURL.path
+        knownURLsByPath[standardizedPath] = url
+        restoreCandidatePaths.remove(standardizedPath)
         rememberLastDirectory(from: url)
+    }
+
+    private func seedRestoreCandidatePaths() {
+        guard persistenceStore.load().persistenceEnabled else {
+            restoreCandidatePaths.removeAll()
+            nativeRecentOpenPaths.removeAll()
+            return
+        }
+
+        let sessionState = (try? sessionStore.loadAndPrune()) ?? DesktopSessionState(
+            openPaths: [],
+            selectedPath: nil
+        )
+        let sessionPaths = sessionState.openPaths
+        let recentPaths = persistenceStore.recentFiles().map(\.path)
+        restoreCandidatePaths = Set(sessionPaths.filter {
+            sessionStore.isRestoreEligiblePath($0)
+        })
+        nativeRecentOpenPaths = Set(recentPaths.filter(Self.isSupportedExistingFilePath))
     }
 
     private func rememberLastDirectory(from url: URL) {
@@ -432,7 +609,22 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
         URL(fileURLWithPath: path).standardizedFileURL.path
     }
 
+    private static func isSupportedExistingFilePath(_ path: String) -> Bool {
+        let standardizedPath = standardPath(path)
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(
+            atPath: standardizedPath,
+            isDirectory: &isDirectory
+        ), !isDirectory.boolValue else {
+            return false
+        }
+
+        let fileExtension = URL(fileURLWithPath: standardizedPath).pathExtension.lowercased()
+        return allSupportedOpenExtensions.contains(fileExtension)
+    }
+
     private static let markdownDirectExtensions = ["md", "markdown"]
+    private static let allSupportedOpenExtensions = Set(SupportedFormats.allSupportedExtensions)
     private static let openContentTypes = contentTypes(forExtensions: SupportedFormats.allSupportedExtensions)
     private static let saveContentTypes = contentTypes(forExtensions: [FileStore.markdownSaveExtension])
 
@@ -501,7 +693,10 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
       statFile: (args) => callShell("doc2mdStatFile", args),
       getPersistenceSettings: () => callShell("doc2mdGetPersistenceSettings", null),
       setPersistenceEnabled: (args) => callShell("doc2mdSetPersistenceEnabled", args),
-      setPersistenceTheme: (args) => callShell("doc2mdSetPersistenceTheme", args)
+      setPersistenceTheme: (args) => callShell("doc2mdSetPersistenceTheme", args),
+      clearRecentFiles: () => callShell("doc2mdClearRecentFiles", null),
+      getSessionState: () => callShell("doc2mdGetSessionState", null),
+      setSessionState: (args) => callShell("doc2mdSetSessionState", args)
     }
   });
 })();

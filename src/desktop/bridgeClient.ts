@@ -20,7 +20,9 @@ function isDoc2mdShell(shell: unknown): shell is Doc2mdShell {
     typeof candidate.statFile === "function" &&
     typeof candidate.getPersistenceSettings === "function" &&
     typeof candidate.setPersistenceEnabled === "function" &&
-    typeof candidate.setPersistenceTheme === "function"
+    typeof candidate.setPersistenceTheme === "function" &&
+    typeof candidate.getSessionState === "function" &&
+    typeof candidate.setSessionState === "function"
   );
 }
 

@@ -16,6 +16,7 @@ import { useTheme } from "../hooks/useTheme";
 import type { FileEntry } from "../types";
 import type {
   DesktopPersistenceSettings,
+  DesktopSessionState,
   ShellFile,
   ShellConflict,
   ShellError,
@@ -57,6 +58,7 @@ const DEFAULT_DESKTOP_PERSISTENCE_SETTINGS: DesktopPersistenceSettings = {
   persistenceEnabled: false,
   recentFiles: [],
 };
+const SESSION_SYNC_DEBOUNCE_MS = 150;
 
 function PanelRightOpenIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -170,7 +172,7 @@ function noticeFromError(result: ShellError): DesktopNotice {
 }
 
 function noticeFromPersistenceIssue(
-  result: ShellResult<DesktopPersistenceSettings>,
+  result: ShellResult<{ ok: true }>,
 ): DesktopNotice {
   if (result.ok) {
     return { kind: "none" };
@@ -193,6 +195,12 @@ function noticeFromPersistenceIssue(
 function isPersistenceSettings(
   result: ShellResult<DesktopPersistenceSettings>,
 ): result is DesktopPersistenceSettings {
+  return result.ok;
+}
+
+function isSessionState(
+  result: ShellResult<DesktopSessionState>,
+): result is DesktopSessionState {
   return result.ok;
 }
 
@@ -376,6 +384,7 @@ function AppContent() {
   const saveState = useDesktopSaveState(isDesktop);
   const { theme, setTheme } = useTheme();
   const saveInFlightRef = useRef(false);
+  const recentOpenInFlightPathsRef = useRef<Set<string>>(new Set());
   const settingsPopoverRef = useRef<HTMLDivElement>(null);
   const restoredThemeRef = useRef<Theme | null>(null);
   const themeBaselineRef = useRef<Theme>(theme);
@@ -394,6 +403,13 @@ function AppContent() {
     Record<string, PendingConflict>
   >({});
   const pendingConflictsRef = useRef<Record<string, PendingConflict>>({});
+  const sessionRestoreStartedRef = useRef(false);
+  const sessionRestoreInFlightRef = useRef(false);
+  const sessionRestoreCompletedRef = useRef(false);
+  const sessionSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const sessionSyncSuppressedPathsRef = useRef<Set<string>>(new Set());
   const [entrySaveStates, setEntrySaveStates] = useState<
     Record<string, DesktopSaveState>
   >({});
@@ -407,10 +423,14 @@ function AppContent() {
     () => new Set(),
   );
   const [isDesktopSettingsOpen, setIsDesktopSettingsOpen] = useState(false);
+  const [unavailableRecentPaths, setUnavailableRecentPaths] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [persistenceSettings, setPersistenceSettings] =
     useState<DesktopPersistenceSettings>(DEFAULT_DESKTOP_PERSISTENCE_SETTINGS);
   const [initialPersistenceLoaded, setInitialPersistenceLoaded] =
     useState(false);
+  const [sessionRestoreRevision, setSessionRestoreRevision] = useState(0);
   const [editorFocusRequest, setEditorFocusRequest] = useState<{
     id: number;
     target: "editor";
@@ -868,12 +888,18 @@ function AppContent() {
       setPersistenceSettings(DEFAULT_DESKTOP_PERSISTENCE_SETTINGS);
       setInitialPersistenceLoaded(false);
       setIsDesktopSettingsOpen(false);
+      sessionRestoreStartedRef.current = false;
+      sessionRestoreInFlightRef.current = false;
+      sessionRestoreCompletedRef.current = false;
       resetPersistenceLifecycleRefs(currentThemeRef.current);
       return;
     }
 
     let cancelled = false;
     const desktopShell = shell;
+    sessionRestoreStartedRef.current = false;
+    sessionRestoreInFlightRef.current = false;
+    sessionRestoreCompletedRef.current = false;
     setInitialPersistenceLoaded(false);
 
     async function loadPersistenceSettings() {
@@ -1429,6 +1455,76 @@ function AppContent() {
     setDesktopNotice({ kind: "none" });
   }, []);
 
+  const allowSessionSyncForPath = useCallback((path: string) => {
+    sessionSyncSuppressedPathsRef.current.delete(path);
+  }, []);
+
+  const suppressCurrentSessionPaths = useCallback(() => {
+    sessionSyncSuppressedPathsRef.current = new Set(
+      Object.values(desktopFilesRef.current).map((file) => file.path),
+    );
+  }, []);
+
+  const handleClearRecentFiles = useCallback(async () => {
+    if (!shell?.clearRecentFiles) {
+      return;
+    }
+
+    try {
+      const result = await shell.clearRecentFiles();
+      if (isPersistenceSettings(result)) {
+        if (sessionSyncTimeoutRef.current !== null) {
+          clearTimeout(sessionSyncTimeoutRef.current);
+          sessionSyncTimeoutRef.current = null;
+        }
+        suppressCurrentSessionPaths();
+        void shell.setSessionState({
+          openPaths: [],
+          selectedPath: undefined,
+        });
+        setPersistenceSettings(result);
+        setUnavailableRecentPaths(new Set());
+        clearDesktopProblem();
+        return;
+      }
+
+      showPersistenceIssue(result);
+    } catch (error) {
+      showPersistenceUnavailable();
+      console.error("doc2md desktop recent-file clear failure", error);
+    }
+  }, [
+    clearDesktopProblem,
+    shell,
+    showPersistenceIssue,
+    showPersistenceUnavailable,
+    suppressCurrentSessionPaths,
+  ]);
+
+  const markRecentPathAvailable = useCallback((path: string) => {
+    setUnavailableRecentPaths((current) => {
+      if (!current.has(path)) {
+        return current;
+      }
+
+      const next = new Set(current);
+      next.delete(path);
+      return next;
+    });
+  }, []);
+
+  const markRecentPathUnavailable = useCallback((path: string) => {
+    setUnavailableRecentPaths((current) => {
+      if (current.has(path)) {
+        return current;
+      }
+
+      const next = new Set(current);
+      next.add(path);
+      return next;
+    });
+  }, []);
+
   const clearDocumentProblem = useCallback((entryId: string) => {
     setPendingConflicts((current) => omitRecordKey(current, entryId));
     setDocumentNotices((current) => omitRecordKey(current, entryId));
@@ -1555,6 +1651,7 @@ function AppContent() {
   }, [addScratchEntry]);
 
   const handleReturnHome = useCallback(() => {
+    setIsDesktopSettingsOpen(false);
     setShowLandingChrome(true);
     setActivePage("convert");
   }, []);
@@ -1563,13 +1660,21 @@ function AppContent() {
     if (!hasWorkingEntry) {
       return;
     }
+    setIsDesktopSettingsOpen(false);
     setShowLandingChrome(false);
   }, [hasWorkingEntry]);
 
   const handleOpenFileResult = useCallback(
-    async (result: ShellResult<ShellFile>) => {
+    async (
+      result: ShellResult<ShellFile>,
+      options: { refreshPersistence?: boolean } = {},
+    ): Promise<string | null> => {
+      const refreshAfterOpen = options.refreshPersistence ?? true;
       if (result.ok) {
         if (result.kind === "markdown") {
+          if (refreshAfterOpen) {
+            allowSessionSyncForPath(result.path);
+          }
           const entryId = addMarkdownEntry({
             name: basenameForPath(result.path),
             content: result.content,
@@ -1590,11 +1695,15 @@ function AppContent() {
           }));
           saveState.markSaved();
           clearDesktopProblem();
-          void refreshPersistenceSettings();
-          return;
+          if (refreshAfterOpen) {
+            void refreshPersistenceSettings();
+          }
+          return entryId;
         }
 
-        void refreshPersistenceSettings();
+        if (refreshAfterOpen) {
+          void refreshPersistenceSettings();
+        }
 
         if (window.location.protocol !== "doc2md:") {
           setDesktopNotice({
@@ -1602,7 +1711,7 @@ function AppContent() {
             message:
               "Importing non-Markdown files requires the Release desktop bundle. Run `npm run build:mac` or open the file from the installed app.",
           });
-          return;
+          return null;
         }
 
         const importResponse = await fetch(result.importUrl);
@@ -1613,7 +1722,7 @@ function AppContent() {
             kind: "error",
             message,
           });
-          return;
+          return null;
         }
 
         const blob = await importResponse.blob();
@@ -1629,31 +1738,40 @@ function AppContent() {
         }));
         saveState.markEdited();
         clearDesktopProblem();
-        return;
+        return entryId;
       }
 
       if (result.code === "cancelled") {
-        return;
+        return null;
       }
 
       if (result.code === "permission-needed") {
         setDesktopNotice(noticeFromPermission(result));
-        return;
+        return null;
       }
 
       if (result.code === "error") {
         setDesktopNotice(noticeFromError(result));
       }
+      return null;
     },
     [
       addImportedFileEntry,
       addMarkdownEntry,
+      allowSessionSyncForPath,
       clearDesktopProblem,
       clearDocumentProblem,
       refreshPersistenceSettings,
       saveState,
     ],
   );
+  const handleOpenFileResultRef = useRef(handleOpenFileResult);
+  const selectEntryRef = useRef(selectEntry);
+
+  useEffect(() => {
+    handleOpenFileResultRef.current = handleOpenFileResult;
+    selectEntryRef.current = selectEntry;
+  }, [handleOpenFileResult, selectEntry]);
 
   const handleOpenFile = useCallback(async () => {
     if (!shell) {
@@ -1680,23 +1798,207 @@ function AppContent() {
   const handleOpenRecentFile = useCallback(
     async (path: string) => {
       if (!shell) {
-        return;
+        return false;
       }
 
+      const existingEntry = entriesRef.current.find(
+        (entry) => desktopFilesRef.current[entry.id]?.path === path,
+      );
+      if (existingEntry) {
+        allowSessionSyncForPath(path);
+        selectEntry(existingEntry.id);
+        setActivePage("convert");
+        setShowLandingChrome(false);
+        markRecentPathAvailable(path);
+        clearDesktopProblem();
+        void refreshDesktopMetadataForEntry(existingEntry);
+        return true;
+      }
+
+      if (recentOpenInFlightPathsRef.current.has(path)) {
+        return false;
+      }
+
+      recentOpenInFlightPathsRef.current.add(path);
       try {
         const result = await shell.openFile({ path });
         await handleOpenFileResult(result);
+        if (!result.ok && result.code !== "cancelled") {
+          markRecentPathUnavailable(path);
+          return false;
+        }
+        if (result.ok) {
+          markRecentPathAvailable(path);
+        }
+        return result.ok;
       } catch (error) {
+        markRecentPathUnavailable(path);
         saveState.markError();
         setDesktopNotice({
           kind: "error",
           message: "Open failed before the app received a native result.",
         });
         console.error("doc2md desktop openFile transport failure", error);
+        return false;
+      } finally {
+        recentOpenInFlightPathsRef.current.delete(path);
       }
     },
-    [handleOpenFileResult, saveState, shell],
+    [
+      allowSessionSyncForPath,
+      clearDesktopProblem,
+      handleOpenFileResult,
+      markRecentPathAvailable,
+      markRecentPathUnavailable,
+      refreshDesktopMetadataForEntry,
+      saveState,
+      selectEntry,
+      shell,
+    ],
   );
+
+  useEffect(() => {
+    if (
+      !shell ||
+      !initialPersistenceLoaded ||
+      !persistenceSettings.persistenceEnabled ||
+      sessionRestoreStartedRef.current
+    ) {
+      if (
+        initialPersistenceLoaded &&
+        (!shell || !persistenceSettings.persistenceEnabled)
+      ) {
+        sessionRestoreCompletedRef.current = true;
+      }
+      return;
+    }
+
+    let cancelled = false;
+    const desktopShell = shell;
+    sessionRestoreStartedRef.current = true;
+    sessionRestoreInFlightRef.current = true;
+    sessionRestoreCompletedRef.current = false;
+
+    async function restoreSession() {
+      const restoredEntries: Array<{ path: string; entryId: string }> = [];
+      let restoreCompleted = false;
+      try {
+        const sessionResult = await desktopShell.getSessionState();
+        if (cancelled) {
+          return;
+        }
+
+        if (!isSessionState(sessionResult)) {
+          setDesktopNotice(noticeFromPersistenceIssue(sessionResult));
+          return;
+        }
+
+        for (const path of sessionResult.openPaths) {
+          const openResult = await desktopShell.openFile({ path });
+          if (cancelled) {
+            return;
+          }
+
+          const entryId = await handleOpenFileResultRef.current(openResult, {
+            refreshPersistence: false,
+          });
+          if (entryId && openResult.ok && openResult.kind === "markdown") {
+            restoredEntries.push({ path: openResult.path, entryId });
+          }
+        }
+
+        const selectedRestoredEntry =
+          sessionResult.selectedPath &&
+          restoredEntries.find(
+            (entry) => entry.path === sessionResult.selectedPath,
+          );
+        const fallbackRestoredEntry = restoredEntries[0];
+        const entryToSelect = selectedRestoredEntry ?? fallbackRestoredEntry;
+        if (entryToSelect) {
+          selectEntryRef.current(entryToSelect.entryId);
+        }
+        restoreCompleted = true;
+      } catch (error) {
+        if (!cancelled) {
+          setDesktopNotice({
+            kind: "error",
+            message: "Session restore failed before the app received a native result.",
+          });
+          console.error("doc2md desktop session restore failure", error);
+        }
+      } finally {
+        if (!cancelled) {
+          sessionRestoreInFlightRef.current = false;
+          if (restoreCompleted) {
+            sessionRestoreCompletedRef.current = true;
+            setSessionRestoreRevision((revision) => revision + 1);
+          }
+        }
+      }
+    }
+
+    void restoreSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    initialPersistenceLoaded,
+    persistenceSettings.persistenceEnabled,
+    shell,
+  ]);
+
+  useEffect(() => {
+    if (
+      !shell ||
+      !initialPersistenceLoaded ||
+      !persistenceSettings.persistenceEnabled ||
+      !sessionRestoreCompletedRef.current ||
+      sessionRestoreInFlightRef.current
+    ) {
+      return;
+    }
+
+    if (sessionSyncTimeoutRef.current !== null) {
+      clearTimeout(sessionSyncTimeoutRef.current);
+    }
+
+    const desktopShell = shell;
+    const openPaths = entries
+      .map((entry) => desktopFiles[entry.id]?.path)
+      .filter((path): path is string => Boolean(path))
+      .filter((path) => !sessionSyncSuppressedPathsRef.current.has(path));
+    const selectedPath = selectedEntryId
+      ? desktopFiles[selectedEntryId]?.path
+      : undefined;
+    const selectedSessionPath =
+      selectedPath && !sessionSyncSuppressedPathsRef.current.has(selectedPath)
+        ? selectedPath
+        : undefined;
+
+    sessionSyncTimeoutRef.current = setTimeout(() => {
+      void desktopShell.setSessionState({
+        openPaths,
+        selectedPath: selectedSessionPath,
+      });
+      sessionSyncTimeoutRef.current = null;
+    }, SESSION_SYNC_DEBOUNCE_MS);
+
+    return () => {
+      if (sessionSyncTimeoutRef.current !== null) {
+        clearTimeout(sessionSyncTimeoutRef.current);
+        sessionSyncTimeoutRef.current = null;
+      }
+    };
+  }, [
+    desktopFiles,
+    entries,
+    initialPersistenceLoaded,
+    persistenceSettings.persistenceEnabled,
+    selectedEntryId,
+    sessionRestoreRevision,
+    shell,
+  ]);
 
   const restoreCancelledSaveState = useCallback(
     (entryId: string, previousState: DesktopSaveState) => {
@@ -1730,6 +2032,7 @@ function AppContent() {
 
         if (result.ok) {
           const lineEnding = lineEndingForDesktopFile(desktopFile);
+          allowSessionSyncForPath(result.path);
           renameEntry(entry.id, basenameForPath(result.path));
           setDesktopFiles((current) => ({
             ...current,
@@ -1785,6 +2088,7 @@ function AppContent() {
       }
     },
     [
+      allowSessionSyncForPath,
       clearDocumentProblem,
       entrySaveStates,
       restoreCancelledSaveState,
@@ -1832,6 +2136,7 @@ function AppContent() {
       });
 
       if (result.ok) {
+        allowSessionSyncForPath(result.path);
         renameEntry(entry.id, basenameForPath(result.path));
         setDesktopFiles((current) => ({
           ...current,
@@ -1885,6 +2190,7 @@ function AppContent() {
       saveInFlightRef.current = false;
     }
   }, [
+    allowSessionSyncForPath,
     clearDocumentProblem,
     entrySaveStates,
     restoreCancelledSaveState,
@@ -2404,6 +2710,127 @@ function AppContent() {
       : [];
   const workingModeBarInertProps = { inert: !isWorkingMode || undefined };
   const landingChromeInertProps = { inert: isWorkingMode || undefined };
+  const renderDesktopSettingsControl = (placement: "hero" | "working") => {
+    if (!isDesktop || !shell) {
+      return null;
+    }
+
+    const popoverId = `desktop-settings-popover-${placement}`;
+    const recentFiles = persistenceSettings.recentFiles;
+
+    return (
+      <div
+        ref={settingsPopoverRef}
+        className={`desktop-settings desktop-settings--${placement}`}
+        onKeyDown={handleDesktopSettingsKeyDown}
+      >
+        <button
+          type="button"
+          className="ghost-button desktop-settings-button"
+          aria-label="Desktop settings"
+          aria-expanded={isDesktopSettingsOpen}
+          aria-controls={popoverId}
+          onClick={() => setIsDesktopSettingsOpen((isOpen) => !isOpen)}
+          title="Desktop settings"
+        >
+          <Settings className="desktop-settings-icon" aria-hidden="true" />
+        </button>
+        {isDesktopSettingsOpen ? (
+          <div
+            id={popoverId}
+            className="desktop-settings-popover"
+            role="dialog"
+            aria-label="Desktop settings"
+          >
+            <label className="desktop-persistence-toggle">
+              <input
+                type="checkbox"
+                checked={persistenceSettings.persistenceEnabled}
+                onChange={(event) =>
+                  void handlePersistenceEnabledChange(
+                    event.currentTarget.checked,
+                  )
+                }
+              />
+              <span>Persistence</span>
+            </label>
+
+            {persistenceSettings.persistenceEnabled ? (
+              <div className="desktop-recent-files">
+                <div className="desktop-settings-section-header">
+                  <p className="desktop-settings-heading">Recent files</p>
+                  {recentFiles.length > 0 && shell.clearRecentFiles ? (
+                    <button
+                      type="button"
+                      className="desktop-clear-recents-button"
+                      onClick={() => {
+                        void handleClearRecentFiles();
+                      }}
+                    >
+                      Clear history
+                    </button>
+                  ) : null}
+                </div>
+                {recentFiles.length > 0 ? (
+                  <ol className="desktop-recent-list">
+                    {recentFiles.map((file) => {
+                      const isUnavailable = unavailableRecentPaths.has(file.path);
+                      return (
+                        <li key={file.path}>
+                          <button
+                            type="button"
+                            className={`desktop-recent-item${
+                              isUnavailable ? " is-unavailable" : ""
+                            }`}
+                            title={
+                              isUnavailable
+                                ? "Not available. Click to retry opening this file."
+                                : file.path
+                            }
+                            onClick={() => {
+                              void handleOpenRecentFile(file.path).then((opened) => {
+                                if (opened) {
+                                  setIsDesktopSettingsOpen(false);
+                                }
+                              });
+                            }}
+                          >
+                            <span
+                              className="desktop-recent-unavailable-dot"
+                              aria-hidden="true"
+                            />
+                            {isUnavailable ? (
+                              <span className="visually-hidden">
+                                Not available.{" "}
+                              </span>
+                            ) : null}
+                            <span className="desktop-recent-name">
+                              {file.displayName}
+                            </span>
+                            <span className="desktop-recent-path">
+                              {file.path}
+                            </span>
+                            <time
+                              className="desktop-recent-time"
+                              dateTime={file.lastOpenedAt}
+                            >
+                              {file.lastOpenedAt}
+                            </time>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                ) : (
+                  <p className="desktop-settings-empty">No recent files yet.</p>
+                )}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    );
+  };
 
   return (
       <div className="app-shell">
@@ -2430,14 +2857,21 @@ function AppContent() {
                   void handleOpenFile();
                 }}
                 onNew={handleNewDocument}
+                trailingControls={
+                  <>
+                    <ThemeToggle />
+                    {isWorkingMode ? renderDesktopSettingsControl("working") : null}
+                  </>
+                }
                 recentFiles={workingModeRecentFiles}
+                unavailableRecentPaths={unavailableRecentPaths}
                 onOpenRecentFile={(path) => {
                   void handleOpenRecentFile(path);
                 }}
               />
             </div>
             <header
-              className="hero"
+              className={`hero${isDesktopSettingsOpen ? " hero--settings-open" : ""}`}
               aria-hidden={isWorkingMode}
               {...landingChromeInertProps}
             >
@@ -2464,86 +2898,7 @@ function AppContent() {
                 </button>
                 <div className="hero-actions">
                   <ThemeToggle />
-                  {isDesktop && shell ? (
-                    <div
-                      ref={settingsPopoverRef}
-                      className="desktop-settings"
-                      onKeyDown={handleDesktopSettingsKeyDown}
-                    >
-                      <button
-                        type="button"
-                        className="ghost-button desktop-settings-button"
-                        aria-label="Desktop settings"
-                        aria-expanded={isDesktopSettingsOpen}
-                        aria-controls="desktop-settings-popover"
-                        onClick={() =>
-                          setIsDesktopSettingsOpen((isOpen) => !isOpen)
-                        }
-                        title="Desktop settings"
-                      >
-                        <Settings className="desktop-settings-icon" aria-hidden="true" />
-                      </button>
-                      {isDesktopSettingsOpen ? (
-                        <div
-                          id="desktop-settings-popover"
-                          className="desktop-settings-popover"
-                          role="dialog"
-                          aria-label="Desktop settings"
-                        >
-                          <label className="desktop-persistence-toggle">
-                            <input
-                              type="checkbox"
-                              checked={persistenceSettings.persistenceEnabled}
-                              onChange={(event) =>
-                                void handlePersistenceEnabledChange(
-                                  event.currentTarget.checked,
-                                )
-                              }
-                            />
-                            <span>Persistence</span>
-                          </label>
-
-                          {persistenceSettings.persistenceEnabled ? (
-                            <div className="desktop-recent-files">
-                              <p className="desktop-settings-heading">
-                                Recent files
-                              </p>
-                              {persistenceSettings.recentFiles.length > 0 ? (
-                                <ol className="desktop-recent-list">
-                                  {persistenceSettings.recentFiles.map((file) => (
-                                    <li
-                                      key={file.path}
-                                      className="desktop-recent-item"
-                                    >
-                                      <span className="desktop-recent-name">
-                                        {file.displayName}
-                                      </span>
-                                      <span
-                                        className="desktop-recent-path"
-                                        title={file.path}
-                                      >
-                                        {file.path}
-                                      </span>
-                                      <time
-                                        className="desktop-recent-time"
-                                        dateTime={file.lastOpenedAt}
-                                      >
-                                        {file.lastOpenedAt}
-                                      </time>
-                                    </li>
-                                  ))}
-                                </ol>
-                              ) : (
-                                <p className="desktop-settings-empty">
-                                  No recent files yet.
-                                </p>
-                              )}
-                            </div>
-                          ) : null}
-                        </div>
-                      ) : null}
-                    </div>
-                  ) : null}
+                  {!isWorkingMode ? renderDesktopSettingsControl("hero") : null}
                 </div>
               </div>
               <h1>

@@ -28,6 +28,11 @@
 		9A0200000000000000000018 /* THIRD_PARTY_NOTICES.md in Resources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000011 /* THIRD_PARTY_NOTICES.md */; };
 		9A0200000000000000000019 /* LicenseRef-doc2md-Desktop.txt in Resources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000012 /* LicenseRef-doc2md-Desktop.txt */; };
 		9A020000000000000000001A /* Credits.rtf in Resources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000013 /* Credits.rtf */; };
+		9A020000000000000000001B /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000014 /* SessionStore.swift */; };
+		9A020000000000000000001C /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000014 /* SessionStore.swift */; };
+		9A020000000000000000001D /* SessionStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000015 /* SessionStoreTests.swift */; };
+		9A020000000000000000001E /* ShellBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000004 /* ShellBridge.swift */; };
+		9A020000000000000000001F /* SupportedFormats.generated.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A010000000000000000000A /* SupportedFormats.generated.swift */; };
 		9A0200000000000000000020 /* LicenseClaims.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000020 /* LicenseClaims.swift */; };
 		9A0200000000000000000021 /* LicenseToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000021 /* LicenseToken.swift */; };
 		9A0200000000000000000022 /* LicensePublicKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000022 /* LicensePublicKeys.swift */; };
@@ -94,6 +99,8 @@
 		9A0100000000000000000011 /* THIRD_PARTY_NOTICES.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ../../THIRD_PARTY_NOTICES.md; sourceTree = "<group>"; };
 		9A0100000000000000000012 /* LicenseRef-doc2md-Desktop.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = ../../../../LICENSES/LicenseRef-doc2md-Desktop.txt; sourceTree = "<group>"; };
 		9A0100000000000000000013 /* Credits.rtf */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; path = Credits.rtf; sourceTree = "<group>"; };
+		9A0100000000000000000014 /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
+		9A0100000000000000000015 /* SessionStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStoreTests.swift; sourceTree = "<group>"; };
 		9A0100000000000000000020 /* LicenseClaims.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseClaims.swift; sourceTree = "<group>"; };
 		9A0100000000000000000021 /* LicenseToken.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseToken.swift; sourceTree = "<group>"; };
 		9A0100000000000000000022 /* LicensePublicKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicensePublicKeys.swift; sourceTree = "<group>"; };
@@ -156,6 +163,7 @@
 				9A0100000000000000000006 /* AppScheme.swift */,
 				9A0100000000000000000007 /* FileStore.swift */,
 				9A010000000000000000000F /* PersistenceStore.swift */,
+				9A0100000000000000000014 /* SessionStore.swift */,
 				9A010000000000000000000A /* SupportedFormats.generated.swift */,
 				9A0100000000000000000053 /* ReleaseCommit.generated.swift */,
 				9A0100000000000000000050 /* AboutWindow.swift */,
@@ -213,6 +221,7 @@
 			children = (
 				9A0100000000000000000009 /* FileStoreTests.swift */,
 				9A0100000000000000000010 /* PersistenceStoreTests.swift */,
+				9A0100000000000000000015 /* SessionStoreTests.swift */,
 				9A010000000000000000000B /* AppSchemeImportRouteTests.swift */,
 				9A0000000000000000000006 /* Licensing */,
 			);
@@ -379,6 +388,7 @@
 				9A0200000000000000000005 /* AppScheme.swift in Sources */,
 				9A0200000000000000000006 /* FileStore.swift in Sources */,
 				9A0200000000000000000015 /* PersistenceStore.swift in Sources */,
+				9A020000000000000000001B /* SessionStore.swift in Sources */,
 				9A0200000000000000000009 /* SupportedFormats.generated.swift in Sources */,
 				9A0200000000000000000053 /* ReleaseCommit.generated.swift in Sources */,
 				9A0200000000000000000050 /* AboutWindow.swift in Sources */,
@@ -408,6 +418,10 @@
 				9A0200000000000000000008 /* FileStore.swift in Sources */,
 				9A0200000000000000000016 /* PersistenceStore.swift in Sources */,
 				9A0200000000000000000017 /* PersistenceStoreTests.swift in Sources */,
+				9A020000000000000000001C /* SessionStore.swift in Sources */,
+				9A020000000000000000001D /* SessionStoreTests.swift in Sources */,
+				9A020000000000000000001E /* ShellBridge.swift in Sources */,
+				9A020000000000000000001F /* SupportedFormats.generated.swift in Sources */,
 				9A0200000000000000000010 /* AppScheme.swift in Sources */,
 				9A0200000000000000000011 /* AppSchemeImportRouteTests.swift in Sources */,
 				9A0200000000000000000030 /* LicenseClaims.swift in Sources */,

@@ -1,6 +1,22 @@
 import Foundation
 import XCTest
 
+private final class TestRecentDocumentController: RecentDocumentControlling {
+    private(set) var recentDocumentURLs: [URL] = []
+    private(set) var clearCallCount = 0
+
+    func noteNewRecentDocumentURL(_ url: URL) {
+        recentDocumentURLs = [url] + recentDocumentURLs.filter {
+            $0.standardizedFileURL.path != url.standardizedFileURL.path
+        }
+    }
+
+    func clearRecentDocuments(_ sender: Any?) {
+        clearCallCount += 1
+        recentDocumentURLs = []
+    }
+}
+
 final class PersistenceStoreTests: XCTestCase {
     private var tempDirectories: [URL] = []
 
@@ -29,7 +45,11 @@ final class PersistenceStoreTests: XCTestCase {
 
     func testDisablePersistenceClearsThemeAndRecentFiles() throws {
         let settingsURL = try makeSettingsURL()
-        let store = PersistenceStore(settingsURL: settingsURL)
+        let recentController = TestRecentDocumentController()
+        let store = PersistenceStore(
+            settingsURL: settingsURL,
+            recentDocumentController: recentController
+        )
         let sourceURL = try makeFile(name: "notes.md")
 
         var settings = try store.setPersistenceEnabled(true)
@@ -38,30 +58,56 @@ final class PersistenceStoreTests: XCTestCase {
         settings = try store.setTheme(.light)
         XCTAssertEqual(settings.theme, .light)
 
-        settings = try store.recordRecentFile(
-            url: sourceURL,
-            now: Date(timeIntervalSince1970: 1)
-        )
-        XCTAssertEqual(settings.recentFiles.count, 1)
+        settings = try store.recordRecentDocument(url: sourceURL)
+        XCTAssertEqual(recentController.recentDocumentURLs.count, 1)
 
         settings = try store.setPersistenceEnabled(false)
 
         XCTAssertEqual(settings, .disabled)
         XCTAssertEqual(store.load(), .disabled)
+        XCTAssertEqual(recentController.clearCallCount, 1)
+        XCTAssertTrue(recentController.recentDocumentURLs.isEmpty)
         XCTAssertFalse(FileManager.default.fileExists(atPath: settingsURL.path))
     }
 
     func testSetThemeAndRecordRecentNoopWhenPersistenceDisabled() throws {
         let settingsURL = try makeSettingsURL()
-        let store = PersistenceStore(settingsURL: settingsURL)
+        let recentController = TestRecentDocumentController()
+        let store = PersistenceStore(
+            settingsURL: settingsURL,
+            recentDocumentController: recentController
+        )
         let sourceURL = try makeFile(name: "disabled.md")
 
         XCTAssertEqual(try store.setTheme(.dark), .disabled)
-        XCTAssertEqual(try store.recordRecentFile(url: sourceURL), .disabled)
+        XCTAssertEqual(try store.recordRecentDocument(url: sourceURL), .disabled)
+        XCTAssertTrue(recentController.recentDocumentURLs.isEmpty)
         XCTAssertFalse(FileManager.default.fileExists(atPath: settingsURL.path))
     }
 
-    func testRecordRecentFilesDedupesNewestFirstAndCapsAtTen() throws {
+    func testClearRecentFilesPreservesPersistenceSettings() throws {
+        let settingsURL = try makeSettingsURL()
+        let recentController = TestRecentDocumentController()
+        let store = PersistenceStore(
+            settingsURL: settingsURL,
+            recentDocumentController: recentController
+        )
+        let sourceURL = try makeFile(name: "clearable.md")
+
+        _ = try store.setPersistenceEnabled(true)
+        _ = try store.setTheme(.dark)
+        _ = try store.recordRecentDocument(url: sourceURL)
+
+        let settings = try store.clearRecentFiles()
+
+        XCTAssertTrue(settings.persistenceEnabled)
+        XCTAssertEqual(settings.theme, .dark)
+        XCTAssertEqual(recentController.clearCallCount, 1)
+        XCTAssertTrue(recentController.recentDocumentURLs.isEmpty)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: settingsURL.path))
+    }
+
+    func testRecentDocumentsDedupesNewestFirstAndCapsAtTen() throws {
         let settingsURL = try makeSettingsURL()
         let directory = try makeDirectory()
         let nestedDirectory = directory.appendingPathComponent("nested", isDirectory: true)
@@ -69,64 +115,91 @@ final class PersistenceStoreTests: XCTestCase {
             at: nestedDirectory,
             withIntermediateDirectories: true
         )
-        let store = PersistenceStore(settingsURL: settingsURL)
+        let recentController = TestRecentDocumentController()
+        let store = PersistenceStore(
+            settingsURL: settingsURL,
+            recentDocumentController: recentController
+        )
         _ = try store.setPersistenceEnabled(true)
 
         let canonicalURL = directory.appendingPathComponent("dedupe.md")
         let variantURL = nestedDirectory
             .appendingPathComponent("..", isDirectory: true)
             .appendingPathComponent("dedupe.md")
-        _ = try store.recordRecentFile(
-            url: canonicalURL,
-            now: Date(timeIntervalSince1970: 1)
-        )
-        var settings = try store.recordRecentFile(
-            url: variantURL,
-            now: Date(timeIntervalSince1970: 2)
-        )
+        _ = try store.recordRecentDocument(url: canonicalURL)
+        _ = try store.recordRecentDocument(url: variantURL)
 
-        XCTAssertEqual(settings.recentFiles.count, 1)
+        var recentFiles = store.recentFiles(now: Date(timeIntervalSince1970: 2))
+        XCTAssertEqual(recentFiles.count, 1)
         XCTAssertEqual(
-            settings.recentFiles.first?.path,
+            recentFiles.first?.path,
             PersistenceStore.standardPath(for: canonicalURL)
         )
-        XCTAssertEqual(settings.recentFiles.first?.displayName, "dedupe.md")
+        XCTAssertEqual(recentFiles.first?.displayName, "dedupe.md")
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        XCTAssertNotNil(formatter.date(from: try XCTUnwrap(settings.recentFiles.first?.lastOpenedAt)))
+        XCTAssertNotNil(formatter.date(from: try XCTUnwrap(recentFiles.first?.lastOpenedAt)))
 
         for index in 0..<10 {
-            settings = try store.recordRecentFile(
-                url: directory.appendingPathComponent("recent-\(index).md"),
-                now: Date(timeIntervalSince1970: TimeInterval(10 + index))
+            _ = try store.recordRecentDocument(
+                url: directory.appendingPathComponent("recent-\(index).md")
             )
         }
 
-        XCTAssertEqual(settings.recentFiles.count, 10)
-        XCTAssertEqual(settings.recentFiles.first?.displayName, "recent-9.md")
-        XCTAssertEqual(settings.recentFiles.last?.displayName, "recent-0.md")
-        XCTAssertFalse(settings.recentFiles.contains { $0.displayName == "dedupe.md" })
+        recentFiles = store.recentFiles(now: Date(timeIntervalSince1970: 12))
+        XCTAssertEqual(recentFiles.count, 10)
+        XCTAssertEqual(recentFiles.first?.displayName, "recent-9.md")
+        XCTAssertEqual(recentFiles.last?.displayName, "recent-0.md")
+        XCTAssertFalse(recentFiles.contains { $0.displayName == "dedupe.md" })
     }
 
     func testSettingsFileStoresMetadataOnly() throws {
         let settingsURL = try makeSettingsURL()
-        let store = PersistenceStore(settingsURL: settingsURL)
+        let store = PersistenceStore(
+            settingsURL: settingsURL,
+            recentDocumentController: TestRecentDocumentController()
+        )
         let sourceURL = try makeFile(name: "metadata.md")
 
         _ = try store.setPersistenceEnabled(true)
         _ = try store.setTheme(.dark)
-        _ = try store.recordRecentFile(url: sourceURL)
+        _ = try store.recordRecentDocument(url: sourceURL)
 
         let data = try Data(contentsOf: settingsURL)
         let rawJSON = try XCTUnwrap(String(data: data, encoding: .utf8))
 
         XCTAssertTrue(rawJSON.contains("\"persistenceEnabled\""))
         XCTAssertTrue(rawJSON.contains("\"theme\""))
-        XCTAssertTrue(rawJSON.contains("\"recentFiles\""))
+        XCTAssertFalse(rawJSON.contains("\"recentFiles\""))
         XCTAssertFalse(rawJSON.contains("content"))
         XCTAssertFalse(rawJSON.contains("markdown"))
         XCTAssertFalse(rawJSON.contains("credential"))
         XCTAssertFalse(rawJSON.contains("license"))
+    }
+
+    func testLegacyRecentFilesDecodeButAreNotPersistedAgain() throws {
+        let settingsURL = try makeSettingsURL()
+        try FileManager.default.createDirectory(
+            at: settingsURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try Data(
+            """
+            {"persistenceEnabled":true,"theme":"dark","recentFiles":[{"path":"/tmp/legacy.md","displayName":"legacy.md","lastOpenedAt":"2026-05-12T22:10:00.000Z"}]}
+            """.utf8
+        ).write(to: settingsURL)
+        let store = PersistenceStore(
+            settingsURL: settingsURL,
+            recentDocumentController: TestRecentDocumentController()
+        )
+
+        let loaded = store.load()
+        XCTAssertTrue(loaded.persistenceEnabled)
+        XCTAssertEqual(loaded.recentFiles.count, 1)
+
+        _ = try store.setTheme(.light)
+        let rawJSON = try XCTUnwrap(String(data: Data(contentsOf: settingsURL), encoding: .utf8))
+        XCTAssertFalse(rawJSON.contains("\"recentFiles\""))
     }
 
     private func makeSettingsURL() throws -> URL {

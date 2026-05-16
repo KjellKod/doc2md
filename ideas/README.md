@@ -7,7 +7,6 @@ Index of active proposals plus a pointer to the most recent audit. The full per-
 | Gut | Idea | Notes |
 |---|---|---|
 | `need` | `preview-panel-refactor` | Phase 1 shipped in PR #127 (shell + 3 modes + 2 hooks + 3 flat extractions + shared rendered-surface effects module). Phase 2 (AppShell dedup of App.tsx 1306 + DesktopApp.tsx 2911) still open; brief at `ideas/quest-briefs/preview-panel-refactor-phase-2.md`. |
-| `need` | `doc2md-mac-session-restore` | Apple-blessed APIs: `NSDocumentController.noteNewRecentDocumentURL` + `Open Recent` submenu + `session.json` reopen. Data already in `PersistenceStore.recentFiles`. |
 | `need` | `paste-to-markdown-in-editor` | Reverse-table of `formatLinkedInUnicode` + HTML→markdown (turndown already a dep). Closes the LinkedIn round-trip workflow. |
 | `if-needed` | `doc2md-browser-crash-recovery` | Hosted-tab crash recovery via persisted drafts + stable identity. Trigger: first real-world data-loss report. |
 | `if-needed` | `doc2md-mac-file-watchers` | `NSFilePresenter` live watcher. Trigger: silent overwrite from iCloud/Dropbox racing with Save. |
@@ -27,6 +26,7 @@ Pointers below link to the archive copy or to the journal entry that documents w
 
 | Archived | Idea | Shipped via |
 |---|---|---|
+| 2026-05-15 | ~~`doc2md-mac-session-restore`~~ | Quest `ux-improvements-v2` — native recents via `NSDocumentController`, Markdown-only `session.json` restore, and native trust filtering. See [quest journal](../docs/quest-journal/ux-improvements-v2_2026-05-15.md). |
 | 2026-05-14 | ~~`bug_report_find_preview_table_cells`~~ | PR #128 — `renderedTextCorpus.ts` injects virtual cell separators (space at td/th/dt/dd/li close, newline at tr/p/div/br/heading close); offset-coherent hast walk skips whitespace-only text nodes inside table/list containers. See [archive](archive/bug_report_find_preview_table_cells.md). |
 | 2026-05-14 | ~~`doc2md-working-mode-chrome`~~ | PRs #121, #122 — `WorkingModeBar.tsx`, hero hide, Home affordance. See [archive](archive/doc2md-working-mode-chrome.md). |
 | 2026-05-14 | ~~`doc2md-ux-hardening-proposal`~~ | Phase 1 shipped across #114, #115, #121, #122; subsequent phases promoted to standalone ideas (folder-view, mac-file-watchers, mac-session-restore, browser-crash-recovery, editor-engine-evaluation). See [archive](archive/doc2md-ux-hardening-proposal.md). |

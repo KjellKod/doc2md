@@ -1,5 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ConversionQuality } from "../converters/types";
 import type { FileEntry } from "../types";
@@ -58,6 +59,42 @@ function createEntry(overrides: Partial<FileEntry> = {}): FileEntry {
     selected: true,
     ...overrides,
   };
+}
+
+function fireEditorPaste(
+  editor: HTMLElement,
+  {
+    html = "",
+    plainText = "",
+  }: {
+    html?: string;
+    plainText?: string;
+  },
+) {
+  fireEvent.paste(editor, {
+    clipboardData: {
+      getData: (type: string) => {
+        if (type === "text/html") return html;
+        if (type === "text/plain") return plainText;
+        return "";
+      },
+    },
+  });
+}
+
+function ControlledPreviewPanel({
+  initialMarkdown,
+}: {
+  initialMarkdown: string;
+}) {
+  const [markdown, setMarkdown] = useState(initialMarkdown);
+
+  return (
+    <PreviewPanel
+      entry={createEntry({ markdown, editedMarkdown: markdown })}
+      onMarkdownChange={setMarkdown}
+    />
+  );
 }
 
 afterEach(() => {
@@ -522,6 +559,69 @@ describe("PreviewPanel", () => {
     });
 
     expect(onChange).toHaveBeenCalledWith("# Hello World!");
+  });
+
+  it("replaces selection with converted paste and restores caret after insert", async () => {
+    vi.useFakeTimers();
+    Object.defineProperty(document, "execCommand", {
+      configurable: true,
+      value: vi.fn(() => false),
+    });
+
+    render(<ControlledPreviewPanel initialMarkdown="Alpha target Omega" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    const editor = screen.getByRole("textbox", {
+      name: "Edit markdown",
+    }) as HTMLTextAreaElement;
+
+    editor.setSelectionRange(6, 12);
+    fireEditorPaste(editor, { plainText: "𝐁𝐨𝐥𝐝" });
+
+    expect(editor).toHaveValue("Alpha **Bold** Omega");
+
+    await act(async () => {
+      vi.runOnlyPendingTimers();
+    });
+
+    expect(editor.selectionStart).toBe(14);
+    expect(editor.selectionEnd).toBe(14);
+  });
+
+  it("notifies when converted paste exceeds threshold", () => {
+    const onLargeMarkdownPaste = vi.fn();
+
+    render(
+      <PreviewPanel
+        entry={createEntry()}
+        onLargeMarkdownPaste={onLargeMarkdownPaste}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    fireEditorPaste(screen.getByRole("textbox", { name: "Edit markdown" }), {
+      plainText: "x".repeat(201),
+    });
+
+    expect(onLargeMarkdownPaste).toHaveBeenCalledWith("x".repeat(201));
+  });
+
+  it("does not notify when converted paste is at or below threshold", () => {
+    const onLargeMarkdownPaste = vi.fn();
+
+    render(
+      <PreviewPanel
+        entry={createEntry()}
+        onLargeMarkdownPaste={onLargeMarkdownPaste}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    fireEditorPaste(screen.getByRole("textbox", { name: "Edit markdown" }), {
+      plainText: "x".repeat(200),
+    });
+
+    expect(onLargeMarkdownPaste).not.toHaveBeenCalled();
   });
 
   it("displays editedMarkdown when present in preview mode", () => {

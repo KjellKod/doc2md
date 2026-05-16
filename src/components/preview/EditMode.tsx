@@ -9,7 +9,10 @@ import {
 } from "../markdownFormatting";
 import { computeAutoContinueEdit } from "../markdownAutoContinue";
 import { scrollTextareaToLine } from "../viewportAnchor";
+import { convertClipboardPasteToMarkdown } from "./pasteToMarkdown";
 import { useViewportAnchor } from "./useViewportAnchor";
+
+const LARGE_PASTE_MARKDOWN_LENGTH = 200;
 
 interface TargetedInsert {
   start: number;
@@ -33,6 +36,7 @@ interface EditModeProps {
   suppressMatchCenteringForModeSwitchRef: MutableElementRef<boolean>;
   viewportTopFloor: () => number;
   onMarkdownChange?: (markdown: string) => void;
+  onLargeMarkdownPaste?: (markdown: string) => void;
 }
 
 /**
@@ -143,6 +147,7 @@ export default function EditMode({
   suppressMatchCenteringForModeSwitchRef,
   viewportTopFloor,
   onMarkdownChange,
+  onLargeMarkdownPaste,
 }: EditModeProps) {
   const isComposingRef = useRef(false);
   const syncFindHighlightScroll = useCallback(() => {
@@ -217,6 +222,49 @@ export default function EditMode({
 
   function handleEditorScroll() {
     syncFindHighlightScroll();
+  }
+
+  function handleTextareaPaste(
+    event: React.ClipboardEvent<HTMLTextAreaElement>,
+  ) {
+    const textarea = event.currentTarget;
+    const plainText = event.clipboardData.getData("text/plain");
+    const { markdown, source } = convertClipboardPasteToMarkdown({
+      html: event.clipboardData.getData("text/html"),
+      plainText,
+    });
+
+    if (source === "empty") {
+      return;
+    }
+
+    if (markdown.length > LARGE_PASTE_MARKDOWN_LENGTH) {
+      onLargeMarkdownPaste?.(markdown);
+    }
+
+    if (source !== "html" && markdown === plainText) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const selectionStart = textarea.selectionStart;
+    const selectionEnd = textarea.selectionEnd;
+    const value = textarea.value;
+    const nextValue =
+      value.slice(0, selectionStart) + markdown + value.slice(selectionEnd);
+    const caret = selectionStart + markdown.length;
+
+    commitTargeted(
+      {
+        start: selectionStart,
+        end: selectionEnd,
+        text: markdown,
+        caretStart: caret,
+        caretEnd: caret,
+      },
+      nextValue,
+    );
   }
 
   function commitTargeted(insert: TargetedInsert, fallbackValue: string) {
@@ -358,6 +406,7 @@ export default function EditMode({
         className="markdown-edit-area"
         value={effectiveMarkdown}
         onChange={(event) => onMarkdownChange?.(event.target.value)}
+        onPaste={handleTextareaPaste}
         onScroll={handleEditorScroll}
         onKeyDown={handleTextareaKeyDown}
         onCompositionStart={() => {

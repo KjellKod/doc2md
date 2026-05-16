@@ -111,6 +111,7 @@ describe("App desktop bridge", () => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
     delete window.doc2mdShell;
+    delete document.documentElement.dataset.theme;
     localStorage.clear();
     sessionStorage.clear();
     cleanup();
@@ -727,7 +728,7 @@ describe("App desktop bridge", () => {
     cleanupShell();
   });
 
-  it("opens desktop Recent files from the working-mode Open popover", async () => {
+  it("keeps desktop settings available beside theme controls in working mode", async () => {
     const openFile = vi.fn(async (args?: { path?: string }) => {
       if (args?.path) {
         return {
@@ -768,6 +769,22 @@ describe("App desktop bridge", () => {
     await screen.findByRole("button", { name: "Desktop settings" });
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
     await screen.findByRole("heading", { name: "Alpha" });
+
+    const settingsButton = screen.getByRole("button", {
+      name: "Desktop settings",
+    });
+    expect(settingsButton.closest(".working-mode-trailing-controls")).toBeTruthy();
+    fireEvent.click(settingsButton);
+    const settingsDialog = screen.getByRole("dialog", {
+      name: "Desktop settings",
+    });
+    expect(settingsDialog.closest(".working-mode-trailing-controls")).toBeTruthy();
+    fireEvent.keyDown(settingsDialog, { key: "Escape" });
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("dialog", { name: "Desktop settings" }),
+      ).not.toBeInTheDocument(),
+    );
 
     const open = screen.getByRole("button", { name: "Open" });
     fireEvent.click(open);
@@ -1074,7 +1091,7 @@ describe("App desktop bridge", () => {
     cleanupShell();
   });
 
-  it("renders desktop persistence settings and display-only recent files", async () => {
+  it("renders desktop persistence settings with actionable recent files", async () => {
     const cleanupShell = installMockShell({
       getPersistenceSettings: vi.fn(async () => ({
         ok: true as const,
@@ -1094,13 +1111,303 @@ describe("App desktop bridge", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "Desktop settings" }));
 
+    const settingsDialog = screen.getByRole("dialog", { name: "Desktop settings" });
+    expect(settingsDialog.closest(".hero")).toHaveClass("hero--settings-open");
     expect(screen.getByLabelText("Persistence")).toBeChecked();
-    expect(screen.getByText("Recent files")).toBeInTheDocument();
-    expect(screen.getByText("Notes.md")).toBeInTheDocument();
-    expect(screen.getByText("/Users/me/Notes.md")).toBeInTheDocument();
+    expect(within(settingsDialog).getByText("Recent files")).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Notes.md" }),
+      within(settingsDialog).getByRole("button", { name: "Clear history" }),
+    ).toBeInTheDocument();
+    expect(
+      within(settingsDialog).getByRole("button", { name: /Notes\.md/ }),
+    ).toBeInTheDocument();
+    expect(within(settingsDialog).getByText("/Users/me/Notes.md")).toBeInTheDocument();
+
+    cleanupShell();
+  });
+
+  it("clears desktop recent history without disabling persistence", async () => {
+    const clearRecentFiles = vi.fn(async () => ({
+      ok: true as const,
+      persistenceEnabled: true,
+      theme: "dark" as const,
+      recentFiles: [],
+    }));
+    const cleanupShell = installMockShell({
+      clearRecentFiles,
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: true,
+        theme: "dark" as const,
+        recentFiles: [
+          {
+            path: "/Users/me/Old.md",
+            displayName: "Old.md",
+            lastOpenedAt: "2026-04-28T20:40:00.000Z",
+          },
+        ],
+      })),
+    });
+
+    render(<DesktopApp />);
+    fireEvent.click(await screen.findByRole("button", { name: "Desktop settings" }));
+    const settingsDialog = screen.getByRole("dialog", { name: "Desktop settings" });
+
+    fireEvent.click(within(settingsDialog).getByRole("button", { name: "Clear history" }));
+
+    await waitFor(() => expect(clearRecentFiles).toHaveBeenCalledTimes(1));
+    expect(screen.getByLabelText("Persistence")).toBeChecked();
+    expect(within(settingsDialog).queryByText("Old.md")).not.toBeInTheDocument();
+    expect(within(settingsDialog).getByText("No recent files yet.")).toBeInTheDocument();
+
+    cleanupShell();
+  });
+
+  it("clears restored session paths without closing the active file", async () => {
+    const clearRecentFiles = vi.fn(async () => ({
+      ok: true as const,
+      persistenceEnabled: true,
+      recentFiles: [],
+    }));
+    const setSessionState = vi.fn(async (args: {
+      openPaths: string[];
+      selectedPath?: string;
+    }) => ({
+      ok: true as const,
+      ...args,
+      recentFiles: [],
+    }));
+    const cleanupShell = installMockShell({
+      clearRecentFiles,
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: true,
+        recentFiles: [
+          {
+            path: "/Users/me/Current.md",
+            displayName: "Current.md",
+            lastOpenedAt: "2026-04-28T20:40:00.000Z",
+          },
+        ],
+      })),
+      getSessionState: vi.fn(async () => ({
+        ok: true as const,
+        openPaths: [],
+        recentFiles: [],
+      })),
+      openFile: vi.fn(async () => ({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Current.md",
+        content: "# Current\n",
+        mtimeMs: 10,
+        lineEnding: "lf" as const,
+      })),
+      setSessionState,
+    });
+
+    render(<DesktopApp />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await screen.findByRole("heading", { name: "Current" });
+    await waitFor(() =>
+      expect(setSessionState).toHaveBeenCalledWith({
+        openPaths: ["/Users/me/Current.md"],
+        selectedPath: "/Users/me/Current.md",
+      }),
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Desktop settings" }));
+    const settingsDialog = screen.getByRole("dialog", { name: "Desktop settings" });
+    fireEvent.click(within(settingsDialog).getByRole("button", { name: "Clear history" }));
+
+    await waitFor(() => expect(clearRecentFiles).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole("heading", { name: "Current" })).toBeInTheDocument();
+    expect(within(settingsDialog).getByText("No recent files yet.")).toBeInTheDocument();
+
+    setSessionState.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    fireEvent.change(screen.getByLabelText("Edit markdown"), {
+      target: { value: "# Current\n\nEdited after clearing history" },
+    });
+
+    await waitFor(() =>
+      expect(setSessionState).toHaveBeenCalledWith({
+        openPaths: [],
+        selectedPath: undefined,
+      }),
+    );
+    expect(setSessionState).not.toHaveBeenCalledWith({
+      openPaths: ["/Users/me/Current.md"],
+      selectedPath: "/Users/me/Current.md",
+    });
+
+    cleanupShell();
+  });
+
+  it("opens settings recent files and marks unavailable files for retry", async () => {
+    const openFile = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false as const,
+        code: "permission-needed" as const,
+        path: "/Users/me/Recent.md",
+        message: "Open the file again.",
+      })
+      .mockResolvedValueOnce({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Recent.md",
+        content: "# Recent",
+        mtimeMs: 20,
+        lineEnding: "lf" as const,
+      });
+    const cleanupShell = installMockShell({
+      openFile,
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: true,
+        recentFiles: [
+          {
+            path: "/Users/me/Recent.md",
+            displayName: "Recent.md",
+            lastOpenedAt: "2026-05-12T22:11:00.000Z",
+          },
+        ],
+      })),
+    });
+
+    render(<DesktopApp />);
+    fireEvent.click(await screen.findByRole("button", { name: "Desktop settings" }));
+
+    const settingsDialog = screen.getByRole("dialog", { name: "Desktop settings" });
+    fireEvent.click(within(settingsDialog).getByRole("button", { name: /Recent\.md/ }));
+
+    await waitFor(() =>
+      expect(openFile).toHaveBeenLastCalledWith({ path: "/Users/me/Recent.md" }),
+    );
+    const recentButton = within(settingsDialog).getByRole("button", {
+      name: /Recent\.md/,
+    });
+    await waitFor(() => expect(recentButton).toHaveClass("is-unavailable"));
+    expect(recentButton).toHaveAttribute(
+      "title",
+      "Not available. Click to retry opening this file.",
+    );
+
+    fireEvent.click(recentButton);
+
+    await screen.findByRole("heading", { name: "Recent" });
+    expect(openFile).toHaveBeenCalledTimes(2);
+    expect(openFile).toHaveBeenLastCalledWith({ path: "/Users/me/Recent.md" });
+    expect(
+      screen.queryByRole("dialog", { name: "Desktop settings" }),
     ).not.toBeInTheDocument();
+
+    cleanupShell();
+  });
+
+  it("selects already-open settings recent files without reopening a duplicate", async () => {
+    const openFile = vi.fn(async () => ({
+      ok: true as const,
+      kind: "markdown" as const,
+      path: "/Users/me/Alpha.md",
+      content: "# Alpha",
+      mtimeMs: 10,
+      lineEnding: "lf" as const,
+    }));
+    const cleanupShell = installMockShell({
+      openFile,
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: true,
+        recentFiles: [
+          {
+            path: "/Users/me/Alpha.md",
+            displayName: "Alpha.md",
+            lastOpenedAt: "2026-05-12T22:11:00.000Z",
+          },
+        ],
+      })),
+    });
+
+    render(<DesktopApp />);
+    await screen.findByRole("button", { name: "Desktop settings" });
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await screen.findByRole("heading", { name: "Alpha" });
+    expect(openFile).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Desktop settings" }));
+    const settingsDialog = screen.getByRole("dialog", { name: "Desktop settings" });
+    fireEvent.click(within(settingsDialog).getByRole("button", { name: /Alpha\.md/ }));
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("dialog", { name: "Desktop settings" }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(openFile).toHaveBeenCalledTimes(1);
+    ensureSidebarVisible();
+    expect(screen.getAllByRole("button", { name: "Open Alpha.md" })).toHaveLength(1);
+
+    cleanupShell();
+  });
+
+  it("ignores repeated settings recent clicks while native open is pending", async () => {
+    const pendingOpen = createDeferred<{
+      ok: true;
+      kind: "markdown";
+      path: string;
+      content: string;
+      mtimeMs: number;
+      lineEnding: "lf";
+    }>();
+    const openFile = vi.fn(() => pendingOpen.promise);
+    const cleanupShell = installMockShell({
+      openFile,
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: true,
+        recentFiles: [
+          {
+            path: "/Users/me/Recent.md",
+            displayName: "Recent.md",
+            lastOpenedAt: "2026-05-12T22:11:00.000Z",
+          },
+        ],
+      })),
+    });
+
+    render(<DesktopApp />);
+    fireEvent.click(await screen.findByRole("button", { name: "Desktop settings" }));
+    const settingsDialog = screen.getByRole("dialog", { name: "Desktop settings" });
+    const recentButton = within(settingsDialog).getByRole("button", {
+      name: /Recent\.md/,
+    });
+
+    fireEvent.click(recentButton);
+    fireEvent.click(recentButton);
+    fireEvent.click(recentButton);
+    fireEvent.click(recentButton);
+    fireEvent.click(recentButton);
+
+    expect(openFile).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      pendingOpen.resolve({
+        ok: true,
+        kind: "markdown",
+        path: "/Users/me/Recent.md",
+        content: "# Recent",
+        mtimeMs: 20,
+        lineEnding: "lf",
+      });
+      await pendingOpen.promise;
+    });
+
+    await screen.findByRole("heading", { name: "Recent" });
+    expect(openFile).toHaveBeenCalledTimes(1);
+    ensureSidebarVisible();
+    expect(screen.getAllByRole("button", { name: "Open Recent.md" })).toHaveLength(1);
 
     cleanupShell();
   });
@@ -1247,8 +1554,185 @@ describe("App desktop bridge", () => {
     fireEvent.click(
       await screen.findByRole("button", { name: "Show intro and return to landing" }),
     );
+    fireEvent.click(screen.getByRole("button", { name: "Desktop settings" }));
     settingsDialog = screen.getByRole("dialog", { name: "Desktop settings" });
     expect(within(settingsDialog).getByText("Saved.md")).toBeInTheDocument();
+
+    cleanupShell();
+  });
+
+  it("restores saved Markdown session paths and selects the previous document", async () => {
+    const openFile = vi.fn(async (args?: { path?: string }) => ({
+      ok: true as const,
+      kind: "markdown" as const,
+      path: args?.path ?? "/Users/me/Manual.md",
+      content: args?.path?.endsWith("Beta.md") ? "# Beta\n" : "# Alpha\n",
+      mtimeMs: args?.path?.endsWith("Beta.md") ? 20 : 10,
+      lineEnding: "lf" as const,
+    }));
+    const getSessionState = vi.fn(async () => ({
+      ok: true as const,
+      openPaths: ["/Users/me/Alpha.md", "/Users/me/Beta.md"],
+      selectedPath: "/Users/me/Beta.md",
+      recentFiles: [],
+    }));
+    const cleanupShell = installMockShell({
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: true,
+        recentFiles: [],
+      })),
+      getSessionState,
+      openFile,
+    });
+
+    render(<DesktopApp />);
+
+    await screen.findByRole("heading", { name: "Beta" });
+    expect(getSessionState).toHaveBeenCalledTimes(1);
+    expect(openFile).toHaveBeenNthCalledWith(1, { path: "/Users/me/Alpha.md" });
+    expect(openFile).toHaveBeenNthCalledWith(2, { path: "/Users/me/Beta.md" });
+    ensureSidebarVisible();
+    expect(screen.getByRole("button", { name: "Open Alpha.md" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open Beta.md" })).toBeInTheDocument();
+
+    cleanupShell();
+  });
+
+  it("skips unopenable restored paths without blocking startup", async () => {
+    const openFile = vi.fn(async (args?: { path?: string }) => {
+      if (args?.path === "/Users/me/Missing.md") {
+        return {
+          ok: false as const,
+          code: "permission-needed" as const,
+          path: args.path,
+          message: "Open the file again before reloading it.",
+        };
+      }
+
+      return {
+        ok: true as const,
+        kind: "markdown" as const,
+        path: args?.path ?? "/Users/me/Alpha.md",
+        content: "# Alpha\n",
+        mtimeMs: 10,
+        lineEnding: "lf" as const,
+      };
+    });
+    const cleanupShell = installMockShell({
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: true,
+        recentFiles: [],
+      })),
+      getSessionState: vi.fn(async () => ({
+        ok: true as const,
+        openPaths: ["/Users/me/Missing.md", "/Users/me/Alpha.md"],
+        selectedPath: "/Users/me/Missing.md",
+        recentFiles: [],
+      })),
+      openFile,
+    });
+
+    render(<DesktopApp />);
+
+    expect(await screen.findByRole("heading", { name: "Alpha" })).toBeInTheDocument();
+    expect(openFile).toHaveBeenCalledTimes(2);
+
+    cleanupShell();
+  });
+
+  it("does not overwrite native session state when restore throws", async () => {
+    const getSessionState = vi.fn(async () => {
+      throw new Error("native bridge unavailable");
+    });
+    const setSessionState = vi.fn(async (args: {
+      openPaths: string[];
+      selectedPath?: string;
+    }) => ({
+      ok: true as const,
+      ...args,
+      recentFiles: [],
+    }));
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const cleanupShell = installMockShell({
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: true,
+        recentFiles: [],
+      })),
+      getSessionState,
+      setSessionState,
+    });
+
+    render(<DesktopApp />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Session restore failed before the app received a native result.",
+    );
+    await waitFor(() => expect(getSessionState).toHaveBeenCalledTimes(1));
+    await new Promise((resolve) => setTimeout(resolve, 250));
+
+    expect(setSessionState).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalledWith(
+      "doc2md desktop session restore failure",
+      expect.any(Error),
+    );
+
+    cleanupShell();
+  });
+
+  it("syncs only disk-backed Markdown paths to native session state", async () => {
+    const setSessionState = vi.fn(async (args: {
+      openPaths: string[];
+      selectedPath?: string;
+    }) => ({
+      ok: true as const,
+      ...args,
+      recentFiles: [],
+    }));
+    const cleanupShell = installMockShell({
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: true,
+        recentFiles: [],
+      })),
+      getSessionState: vi.fn(async () => ({
+        ok: true as const,
+        openPaths: [],
+        recentFiles: [],
+      })),
+      openFile: vi.fn(async () => ({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Disk.md",
+        content: "# Disk\n",
+        mtimeMs: 10,
+        lineEnding: "lf" as const,
+      })),
+      setSessionState,
+    });
+
+    render(<DesktopApp />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await screen.findByRole("heading", { name: "Disk" });
+
+    await waitFor(() =>
+      expect(setSessionState).toHaveBeenCalledWith({
+        openPaths: ["/Users/me/Disk.md"],
+        selectedPath: "/Users/me/Disk.md",
+      }),
+    );
+
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
+    await awaitOpenButton(/untitled\.md/i);
+
+    await waitFor(() =>
+      expect(setSessionState).toHaveBeenLastCalledWith({
+        openPaths: ["/Users/me/Disk.md"],
+        selectedPath: undefined,
+      }),
+    );
 
     cleanupShell();
   });

@@ -1,6 +1,9 @@
 import "@testing-library/jest-dom/vitest";
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { fileURLToPath } from "node:url";
 import WorkingModeBar from "./WorkingModeBar";
 import type { DesktopRecentFile } from "../types/doc2mdShell";
 
@@ -16,6 +19,17 @@ const recentFiles: DesktopRecentFile[] = [
     lastOpenedAt: "2026-05-12T22:11:00.000Z",
   },
 ];
+
+const globalCssPath = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  "../styles/global.css",
+);
+
+function extractRuleBody(styles: string, selector: string): string {
+  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const ruleMatch = styles.match(new RegExp(`${escapedSelector}\\s*\\{([^}]*)\\}`));
+  return ruleMatch?.[1] ?? "";
+}
 
 function renderBar(overrides: Partial<Parameters<typeof WorkingModeBar>[0]> = {}) {
   const props = {
@@ -51,6 +65,32 @@ describe("WorkingModeBar", () => {
     expect(screen.getByText("PRIVATE MARKDOWN WORKSPACE")).toBeInTheDocument();
   });
 
+  it("renders supplied trailing controls after Open and New", () => {
+    renderBar({
+      trailingControls: (
+        <button type="button" aria-label="Switch to night mode">
+          Theme
+        </button>
+      ),
+    });
+
+    const buttons = screen.getAllByRole("button");
+    expect(screen.getByRole("button", { name: "Open" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New" })).toHaveClass(
+      "secondary-button",
+      "working-mode-button",
+    );
+    expect(
+      screen.getByRole("button", { name: "Switch to night mode" }),
+    ).toBeInTheDocument();
+    expect(buttons.map((button) => button.textContent)).toEqual([
+      "doc2md - PRIVATE MARKDOWN WORKSPACE",
+      "Open",
+      "New",
+      "Theme",
+    ]);
+  });
+
   it("opens desktop recent menu with aria-expanded", () => {
     renderBar({
       variant: "desktop",
@@ -68,6 +108,29 @@ describe("WorkingModeBar", () => {
     expect(open).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("menu", { name: "Recent files" })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Browse..." })).toHaveFocus();
+  });
+
+  it("marks unavailable recent files while keeping them retryable", () => {
+    const onOpenRecentFile = vi.fn();
+    renderBar({
+      variant: "desktop",
+      recentFiles,
+      unavailableRecentPaths: new Set(["/Users/me/Beta.md"]),
+      onOpenRecentFile,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Open" }));
+    const beta = screen.getByRole("menuitem", { name: /Beta\.md/ });
+
+    expect(beta).toHaveClass("is-unavailable");
+    expect(beta).toHaveAttribute(
+      "title",
+      "Not available. Click to retry opening this file.",
+    );
+
+    fireEvent.click(beta);
+
+    expect(onOpenRecentFile).toHaveBeenCalledWith("/Users/me/Beta.md");
   });
 
   it("treats empty recents Open as a plain button", () => {
@@ -143,5 +206,17 @@ describe("WorkingModeBar", () => {
     expect(beta).toHaveFocus();
     fireEvent.keyDown(beta, { key: "ArrowUp" });
     expect(alpha).toHaveFocus();
+  });
+
+  it("keeps overflow hidden by default but allows it in active working mode for the recent menu", () => {
+    const styles = readFileSync(globalCssPath, "utf8");
+    const baseBarRule = extractRuleBody(styles, ".working-mode-bar");
+    const activeBarRule = extractRuleBody(
+      styles,
+      ".page.is-working-mode .working-mode-bar",
+    );
+
+    expect(baseBarRule).toContain("overflow: hidden;");
+    expect(activeBarRule).toContain("overflow: visible;");
   });
 });

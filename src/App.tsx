@@ -220,6 +220,9 @@ function AppContent() {
   const [checkedEntryIds, setCheckedEntryIds] = useState<Set<string>>(
     () => new Set(),
   );
+  const [pastePromotedEntryIds, setPastePromotedEntryIds] = useState<
+    Set<string>
+  >(() => new Set());
   const [entrySaveStates, setEntrySaveStates] = useState<
     Record<string, SaveState>
   >({});
@@ -232,7 +235,9 @@ function AppContent() {
   }>({ id: 0, target: "editor" });
   const convertPageActive = activePage === "convert";
   const selectedEntryId = selectedEntry?.id ?? null;
-  const hasWorkingEntry = selectedEntry !== null && !selectedEntry.isScratch;
+  const hasWorkingEntry =
+    selectedEntry !== null &&
+    (!selectedEntry.isScratch || pastePromotedEntryIds.has(selectedEntry.id));
   const isWorkingMode = hasWorkingEntry && !showLandingChrome;
 
   let convertedCount = 0;
@@ -291,6 +296,22 @@ function AppContent() {
         Object.entries(current).filter(([entryId]) => liveEntryIds.has(entryId)),
       ),
     );
+    setPastePromotedEntryIds((current) => {
+      const liveScratchEntryIds = new Set(
+        entries.filter((entry) => entry.isScratch).map((entry) => entry.id),
+      );
+      const next = new Set(
+        Array.from(current).filter((entryId) =>
+          liveScratchEntryIds.has(entryId),
+        ),
+      );
+
+      const unchanged =
+        next.size === current.size &&
+        Array.from(next).every((entryId) => current.has(entryId));
+
+      return unchanged ? current : next;
+    });
   }, [entries]);
 
   useEffect(() => {
@@ -915,6 +936,23 @@ function AppContent() {
     setEditorFocusRequest(({ id }) => ({ id: id + 1, target: "editor" }));
   }, [addScratchEntry]);
 
+  const handleLargeMarkdownPaste = useCallback(() => {
+    if (!selectedEntry?.isScratch) {
+      return;
+    }
+
+    setPastePromotedEntryIds((current) => {
+      if (current.has(selectedEntry.id)) {
+        return current;
+      }
+
+      const next = new Set(current);
+      next.add(selectedEntry.id);
+      return next;
+    });
+    setShowLandingChrome(false);
+  }, [selectedEntry?.id, selectedEntry?.isScratch]);
+
   const handleSelectEntry = useCallback(
     (entryId: string) => {
       selectEntry(entryId);
@@ -1020,6 +1058,7 @@ function AppContent() {
               onHome={handleReturnHome}
               onOpen={handleBrowserOpenRequest}
               onNew={handleNewDocument}
+              trailingControls={<ThemeToggle />}
             />
           </div>
           <header
@@ -1255,6 +1294,7 @@ function AppContent() {
                       setEntrySaveState(selectedEntry.id, "edited");
                     }
                   }}
+                  onLargeMarkdownPaste={handleLargeMarkdownPaste}
                 />
                 {selectedEntry ? (
                   <button

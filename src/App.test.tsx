@@ -69,6 +69,27 @@ async function ensureSidebarVisible() {
   }
 }
 
+function fireEditorPaste(
+  editor: HTMLElement,
+  {
+    html = "",
+    plainText = "",
+  }: {
+    html?: string;
+    plainText?: string;
+  },
+) {
+  fireEvent.paste(editor, {
+    clipboardData: {
+      getData: (type: string) => {
+        if (type === "text/html") return html;
+        if (type === "text/plain") return plainText;
+        return "";
+      },
+    },
+  });
+}
+
 describe("App", () => {
   afterEach(() => {
     vi.clearAllMocks();
@@ -208,6 +229,29 @@ describe("App", () => {
       }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Show intro and return to landing" })).not.toBeInTheDocument();
+  });
+
+  it("promotes scratch entry to working mode after large paste", async () => {
+    const { container } = render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Start writing" }));
+
+    const editor = await screen.findByRole("textbox", {
+      name: "Edit markdown",
+    });
+    fireEditorPaste(editor, { plainText: "x".repeat(201) });
+
+    await waitFor(() => {
+      expect(container.querySelector(".page")).toHaveClass("is-working-mode");
+    });
+    expect(
+      screen.queryByRole("heading", {
+        name: "Edit or convert to Markdown, without leaving the browser.",
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Show intro and return to landing" }),
+    ).toBeInTheDocument();
   });
 
   it("returns Home without clearing entries and re-enters working mode on another hosted file", async () => {

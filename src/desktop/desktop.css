@@ -104,11 +104,14 @@
   right: 0;
   z-index: 20;
   width: min(88vw, 360px);
+  max-height: min(70dvh, 560px);
   padding: 14px;
   border: 1px solid var(--panel-border);
   border-radius: 8px;
   background: var(--panel-bg-strong);
   box-shadow: 0 18px 40px rgba(27, 39, 49, 0.16);
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .desktop-persistence-toggle {
@@ -134,6 +137,13 @@
   border-top: 1px solid var(--panel-border);
 }
 
+.desktop-settings-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .desktop-settings-heading,
 .desktop-settings-empty {
   margin: 0;
@@ -152,29 +162,76 @@
   font-size: 0.92rem;
 }
 
+.desktop-clear-recents-button {
+  min-height: 44px;
+  padding: 4px 8px;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.desktop-clear-recents-button:hover,
+.desktop-clear-recents-button:focus-visible {
+  border-color: var(--border-strong);
+  color: var(--accent);
+}
+
 .desktop-recent-list {
   display: grid;
   gap: 8px;
-  max-height: 280px;
   margin: 0;
   padding: 0;
-  overflow: auto;
   list-style: none;
+}
+
+.desktop-recent-list li {
+  min-width: 0;
 }
 
 .desktop-recent-item {
   display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 2px;
+  width: 100%;
   min-width: 0;
   padding: 9px 10px;
   border: 1px solid var(--panel-border);
   border-radius: 8px;
   background: var(--surface-subtle);
+  color: inherit;
+  font: inherit;
+  line-height: 1.25;
+  text-align: left;
+}
+
+.desktop-recent-item:hover,
+.desktop-recent-item:focus-visible {
+  border-color: var(--border-strong);
+  outline: none;
+}
+
+.desktop-recent-unavailable-dot {
+  display: none;
+  grid-row: 1 / span 3;
+  width: 9px;
+  height: 9px;
+  margin: 5px 8px 0 0;
+  border-radius: 999px;
+  background: var(--error);
+}
+
+.desktop-recent-item.is-unavailable .desktop-recent-unavailable-dot {
+  display: inline-block;
 }
 
 .desktop-recent-name,
 .desktop-recent-path,
 .desktop-recent-time {
+  grid-column: 2;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -183,6 +240,7 @@
 
 .desktop-recent-name {
   color: var(--text-primary);
+  font-size: 0.95rem;
   font-weight: 800;
 }
 
@@ -193,14 +251,32 @@
 }
 
 .file-list-save-status {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  padding: 4px 8px;
+  gap: 6px;
+  min-height: 32px;
+  padding: 6px 10px;
   border-radius: 999px;
   background: var(--success-soft);
   color: var(--success);
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 800;
   white-space: nowrap;
+}
+
+.file-list-save-status--compact {
+  width: 32px;
+  padding: 6px;
+}
+
+.file-list-save-status-icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  stroke-width: 2.3;
 }
 
 .file-list-save-status--edited,
