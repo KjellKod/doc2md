@@ -1,0 +1,21 @@
+ideas/preview-panel-refactor.md
+  s_642b2bfedd67c6::t_7160e950e05af0 5
+docs/diary/2026-05-16.md
+  s_642b2bfedd67c6::t_a008f2ec3c5635 50-64
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "bd65ce146660d30f6af185a7445d40a15afb4e0e",
+  "prompts": {},
+  "sessions": {
+    "s_642b2bfedd67c6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41d00284-80e9-480e-bdde-595bd8067e19",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
