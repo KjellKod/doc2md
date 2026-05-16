@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: LicenseRef-doc2md-Desktop
 
-import type { CSSProperties, KeyboardEvent, MouseEvent, SVGProps } from "react";
+import type { KeyboardEvent, SVGProps } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Settings } from "lucide-react";
 import AboutSection from "../components/AboutSection";
@@ -13,6 +13,7 @@ import ThemeToggle from "../components/ThemeToggle";
 import WorkingModeBar from "../components/WorkingModeBar";
 import { useFileConversion } from "../hooks/useFileConversion";
 import { useTheme } from "../hooks/useTheme";
+import { useWorkspaceResize } from "../shell/useWorkspaceResize";
 import type { FileEntry } from "../types";
 import type {
   DesktopPersistenceSettings,
@@ -36,18 +37,7 @@ import { useDesktopCapability } from "./useDesktopCapability";
 import { useDesktopSaveState } from "./useDesktopSaveState";
 import { useNativeMenuEvents } from "./useNativeMenuEvents";
 
-const BASE_PAGE_MAX_WIDTH = 1680;
-const DEFAULT_SIDEBAR_WIDTH = 430;
-const SIDEBAR_COLLAPSE_WIDTH = 56;
-const SIDEBAR_SNAP_THRESHOLD = 200;
-const SIDEBAR_WIDTH_STEP = 16;
-const MIN_EDIT_SHELL_HEIGHT = 240;
-const EDIT_SHELL_HEIGHT_STEP = 32;
-const EDIT_SHELL_BOTTOM_GUTTER = 36;
-const DEFAULT_HEADER_OFFSET_PX = 280;
-const MAX_SIDEBAR_WIDTH = DEFAULT_SIDEBAR_WIDTH;
 type PageView = "convert" | "install";
-type ResizeAxis = "sidebar" | "height";
 const DISPLAY_VERSION = __DOC2MD_DISPLAY_VERSION__;
 const CONVERSION_FAILED_SAVE_MESSAGE =
   "Cannot save: conversion failed. Please re-open the file or choose another.";
@@ -247,124 +237,13 @@ function DesktopMenuEventBridge({
   return <span data-testid="desktop-menu-bridge" hidden />;
 }
 
-function computeEditShellCeiling(
-  innerHeight: number,
-  previewPanelTop: number | null,
-  bottomGutter = EDIT_SHELL_BOTTOM_GUTTER,
-  fallbackHeaderOffset = DEFAULT_HEADER_OFFSET_PX,
-): number {
-  const raw =
-    typeof previewPanelTop === "number" &&
-    Number.isFinite(previewPanelTop) &&
-    previewPanelTop > 0
-      ? innerHeight - previewPanelTop - bottomGutter
-      : innerHeight - fallbackHeaderOffset;
-
-  return Math.max(MIN_EDIT_SHELL_HEIGHT, Math.round(raw));
-}
-
-function outerHeight(element: Element | null): number {
-  if (!(element instanceof HTMLElement)) {
-    return 0;
-  }
-
-  const rect = element.getBoundingClientRect();
-  const style = window.getComputedStyle(element);
-  const marginTop = Number.parseFloat(style.marginTop) || 0;
-  const marginBottom = Number.parseFloat(style.marginBottom) || 0;
-
-  return rect.height + marginTop + marginBottom;
-}
-
-function computeFallbackHeaderOffsetPx(): number {
-  if (typeof document === "undefined" || typeof window === "undefined") {
-    return DEFAULT_HEADER_OFFSET_PX;
-  }
-
-  const workspace = document.querySelector(".workspace");
-  const workspaceTop = workspace?.getBoundingClientRect().top;
-  if (
-    typeof workspaceTop === "number" &&
-    Number.isFinite(workspaceTop) &&
-    workspaceTop > 0
-  ) {
-    return Math.round(workspaceTop);
-  }
-
-  const appShell = document.querySelector(".app-shell");
-  const hero = document.querySelector(".hero");
-  const viewSwitcherRow = document.querySelector(".view-switcher-row");
-  const appShellTopPadding =
-    appShell instanceof HTMLElement
-      ? Number.parseFloat(window.getComputedStyle(appShell).paddingTop) || 0
-      : 0;
-  // Fallback breakdown: app shell top padding, rendered hero height,
-  // rendered view-switcher row including its bottom margin, and a small
-  // workspace gap allowance when layout has not produced a usable rect yet.
-  const measuredOffset =
-    appShellTopPadding + outerHeight(hero) + outerHeight(viewSwitcherRow) + 24;
-
-  return measuredOffset > 0
-    ? Math.round(measuredOffset)
-    : DEFAULT_HEADER_OFFSET_PX;
-}
-
-function clampEditShellHeight(height: number, ceiling: number) {
-  return Math.min(
-    Math.max(Math.round(height), MIN_EDIT_SHELL_HEIGHT),
-    Math.max(MIN_EDIT_SHELL_HEIGHT, ceiling),
-  );
-}
-
-function clampSidebarWidth(width: number) {
-  return Math.min(
-    Math.max(Math.round(width), SIDEBAR_COLLAPSE_WIDTH),
-    MAX_SIDEBAR_WIDTH,
-  );
-}
-
-function clampKeyboardSidebarWidth(width: number) {
-  return Math.min(
-    Math.max(Math.round(width), SIDEBAR_SNAP_THRESHOLD),
-    MAX_SIDEBAR_WIDTH,
-  );
-}
-
 function AppContent() {
   const [activePage, setActivePage] = useState<PageView>("convert");
   const [showLandingChrome, setShowLandingChrome] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [activeResizeAxis, setActiveResizeAxis] =
-    useState<ResizeAxis | null>(null);
-  const [editShellHeight, setEditShellHeight] = useState<number | null>(null);
-  const [editShellHeightCeiling, setEditShellHeightCeiling] = useState(() =>
-    computeEditShellCeiling(
-      typeof window === "undefined" ? DEFAULT_HEADER_OFFSET_PX : window.innerHeight,
-      null,
-    ),
-  );
-  const [sidebarWidth, setSidebarWidth] = useState<number | null>(null);
   const convertTabRef = useRef<HTMLButtonElement>(null);
   const installTabRef = useRef<HTMLButtonElement>(null);
-  const previewPanelRef = useRef<HTMLElement | null>(null);
-  const editShellHeightCeilingRef = useRef(editShellHeightCeiling);
-  const dragStartXRef = useRef(0);
-  const dragStartYRef = useRef(0);
-  const dragStartHeightRef = useRef<number | null>(null);
-  const dragStartSidebarWidthRef = useRef<number | null>(null);
-  const latestSidebarWidthRef = useRef(DEFAULT_SIDEBAR_WIDTH);
-  const restoreSidebarWidthRef = useRef(DEFAULT_SIDEBAR_WIDTH);
-  const lastSidebarClickAtRef = useRef(-Infinity);
-  const lastHeightClickAtRef = useRef(-Infinity);
-  const sidebarDragMovedRef = useRef(false);
-  const heightDragMovedRef = useRef(false);
-  // Mirror of the hosted App's working-mode auto-collapse: fires once per
-  // session when the user opens a non-scratch entry AND has not touched
-  // the sidebar yet. Without this, the Mac shell stayed in landing-mode
-  // chrome on first file open (regression caught in manual validation).
-  const userTouchedSidebarRef = useRef(false);
-  const firstAutoCollapseFiredRef = useRef(false);
   const previousSelectedEntryIdRef = useRef<string | null>(null);
+  const resize = useWorkspaceResize();
   const {
     entries,
     addFiles,
@@ -483,217 +362,17 @@ function AppContent() {
   }, [pendingConflicts]);
 
   // Working-mode auto-collapse: same one-shot semantics as the hosted App,
-  // applied here so the Mac shell actually collapses the upload chrome
-  // when the user opens a file.
+  // delegated to the shared hook so the Mac shell collapses the upload chrome
+  // on the user's first non-scratch open.
   useEffect(() => {
     const previous = previousSelectedEntryIdRef.current;
     previousSelectedEntryIdRef.current = selectedEntryId;
 
-    if (firstAutoCollapseFiredRef.current) return;
-    if (previous !== null || selectedEntryId === null) return;
-    if (selectedEntry?.isScratch) return;
-    if (userTouchedSidebarRef.current) return;
-    if (sidebarCollapsed) return;
-    if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
-      if (window.matchMedia("(max-width: 980px)").matches) return;
-    }
-
-    firstAutoCollapseFiredRef.current = true;
-    restoreSidebarWidthRef.current =
-      sidebarWidth ?? measureSidebarWidth() ?? DEFAULT_SIDEBAR_WIDTH;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot first-open auto-collapse coupled to two ref writes above
-    setSidebarCollapsed(true);
-  }, [selectedEntry?.isScratch, selectedEntryId, sidebarCollapsed, sidebarWidth]);
-
-  useEffect(() => {
-    if (typeof window.matchMedia !== "function") {
+    if (previous !== null || selectedEntryId === null) {
       return;
     }
-
-    const mediaQueryList = window.matchMedia("(max-width: 980px)");
-    const handleChange = (event: MediaQueryList | MediaQueryListEvent) => {
-      if (event.matches) {
-        setSidebarCollapsed(false);
-        setActiveResizeAxis(null);
-        // Clear drag-driven inline overrides when the layout
-        // collapses to the mobile single-column breakpoint. Without
-        // this, a previously dragged-large editor height or
-        // narrowed sidebar would persist as inline style and
-        // override the @media single-column rules below 980px,
-        // leaving narrow viewports stuck in a desktop layout.
-        setEditShellHeight(null);
-        setSidebarWidth(null);
-      }
-    };
-
-    handleChange(mediaQueryList);
-
-    if (typeof mediaQueryList.addEventListener === "function") {
-      mediaQueryList.addEventListener("change", handleChange);
-
-      return () => {
-        mediaQueryList.removeEventListener("change", handleChange);
-      };
-    }
-
-    mediaQueryList.addListener(handleChange);
-
-    return () => {
-      mediaQueryList.removeListener(handleChange);
-    };
-  }, []);
-
-  const recomputeEditShellHeightCeiling = useCallback(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const previewPanelTop =
-      previewPanelRef.current?.getBoundingClientRect().top ?? null;
-    const ceiling = computeEditShellCeiling(
-      window.innerHeight,
-      previewPanelTop,
-      EDIT_SHELL_BOTTOM_GUTTER,
-      computeFallbackHeaderOffsetPx(),
-    );
-    editShellHeightCeilingRef.current = ceiling;
-    setEditShellHeightCeiling((current) =>
-      current === ceiling ? current : ceiling,
-    );
-    setEditShellHeight((current) =>
-      current === null ? current : clampEditShellHeight(current, ceiling),
-    );
-  }, []);
-
-  useEffect(() => {
-    recomputeEditShellHeightCeiling();
-
-    let frameId: number | null = null;
-    if (typeof window.requestAnimationFrame === "function") {
-      frameId = window.requestAnimationFrame(recomputeEditShellHeightCeiling);
-    }
-
-    window.addEventListener("resize", recomputeEditShellHeightCeiling);
-
-    let observer: ResizeObserver | null = null;
-    if (typeof ResizeObserver !== "undefined") {
-      observer = new ResizeObserver(recomputeEditShellHeightCeiling);
-      const previewPanel = previewPanelRef.current;
-      const observedElements = new Set<Element>();
-
-      if (previewPanel) {
-        observedElements.add(previewPanel);
-        if (previewPanel.parentElement) {
-          observedElements.add(previewPanel.parentElement);
-        }
-        const viewPanel = previewPanel.closest(".view-panel");
-        if (viewPanel) {
-          observedElements.add(viewPanel);
-        }
-      }
-
-      const appShell = document.querySelector(".app-shell");
-      if (appShell) {
-        observedElements.add(appShell);
-      }
-
-      observedElements.forEach((element) => observer?.observe(element));
-    }
-
-    return () => {
-      if (frameId !== null) {
-        window.cancelAnimationFrame(frameId);
-      }
-      window.removeEventListener("resize", recomputeEditShellHeightCeiling);
-      observer?.disconnect();
-    };
-  }, [recomputeEditShellHeightCeiling]);
-
-  useEffect(() => {
-    if (activeResizeAxis === null) {
-      return;
-    }
-
-    const handleMouseMove = (event: globalThis.MouseEvent) => {
-      if (activeResizeAxis === "sidebar") {
-        const baseSidebarWidth = dragStartSidebarWidthRef.current;
-        if (baseSidebarWidth === null) {
-          return;
-        }
-        if (Math.abs(event.clientX - dragStartXRef.current) > 2) {
-          sidebarDragMovedRef.current = true;
-        }
-        const nextWidth = clampSidebarWidth(
-          baseSidebarWidth + (event.clientX - dragStartXRef.current),
-        );
-        latestSidebarWidthRef.current = nextWidth;
-        setSidebarWidth(nextWidth);
-        return;
-      }
-
-      const baseHeight = dragStartHeightRef.current;
-      if (baseHeight !== null) {
-        if (Math.abs(event.clientY - dragStartYRef.current) > 2) {
-          heightDragMovedRef.current = true;
-        }
-        setEditShellHeight(
-          clampEditShellHeight(
-            baseHeight + (event.clientY - dragStartYRef.current),
-            editShellHeightCeilingRef.current,
-          ),
-        );
-      }
-    };
-    const handleMouseUp = (event: globalThis.MouseEvent) => {
-      if (
-        activeResizeAxis === "sidebar" &&
-        latestSidebarWidthRef.current < SIDEBAR_SNAP_THRESHOLD
-      ) {
-        const restoreWidth = restoreSidebarWidthRef.current;
-        setSidebarWidth(restoreWidth);
-        // Snap-collapse remains in-session only; reload behavior is unchanged, with no localStorage or desktop-settings write.
-        setSidebarCollapsed(true);
-      }
-      if (activeResizeAxis === "sidebar") {
-        if (sidebarDragMovedRef.current) {
-          userTouchedSidebarRef.current = true;
-        }
-        lastSidebarClickAtRef.current = sidebarDragMovedRef.current
-          ? -Infinity
-          : event.timeStamp;
-      }
-      if (activeResizeAxis === "height") {
-        lastHeightClickAtRef.current = heightDragMovedRef.current
-          ? -Infinity
-          : event.timeStamp;
-      }
-      setActiveResizeAxis(null);
-    };
-
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [activeResizeAxis]);
-
-  useEffect(() => {
-    document.body.classList.toggle(
-      "is-sidebar-resizing",
-      activeResizeAxis === "sidebar",
-    );
-    document.body.classList.toggle(
-      "is-height-resizing",
-      activeResizeAxis === "height",
-    );
-
-    return () => {
-      document.body.classList.remove("is-sidebar-resizing");
-      document.body.classList.remove("is-height-resizing");
-    };
-  }, [activeResizeAxis]);
+    resize.triggerFirstOpenAutoCollapse(Boolean(selectedEntry?.isScratch));
+  }, [resize, selectedEntry?.isScratch, selectedEntryId]);
 
   useEffect(() => {
     currentThemeRef.current = theme;
@@ -1079,238 +758,26 @@ function AppContent() {
     setIsDesktopSettingsOpen(false);
   };
 
-  // Measure the panel that the handle controls (the preview panel
-  // contains both the heading and the active surface, so its rendered
-  // height is the "current size" the drag starts from). Fall back to
-  // the edit shell when in edit mode, and finally to MIN if neither
-  // exists yet.
-  function measureEditShellHeight(): number | null {
-    if (typeof document === "undefined") {
-      return null;
-    }
-    const panel = document.querySelector(".preview-panel");
-    if (panel) {
-      return clampEditShellHeight(
-        panel.getBoundingClientRect().height,
-        editShellHeightCeilingRef.current,
-      );
-    }
-    const shell = document.querySelector(".markdown-edit-shell");
-    if (shell) {
-      return clampEditShellHeight(
-        shell.getBoundingClientRect().height,
-        editShellHeightCeilingRef.current,
-      );
-    }
-    return MIN_EDIT_SHELL_HEIGHT;
-  }
-
-  function measureSidebarWidth(): number | null {
-    if (typeof document === "undefined") {
-      return null;
-    }
-    const sidebar =
-      document.querySelector<HTMLElement>(".sidebar-panel") ??
-      document.querySelector<HTMLElement>(".collapse-rail");
-    if (!sidebar) {
-      return null;
-    }
-    return clampSidebarWidth(sidebar.getBoundingClientRect().width);
-  }
-
-  const handleSidebarResizeStart = (event: MouseEvent<HTMLButtonElement>) => {
-    if (event.detail >= 2) {
-      event.preventDefault();
-      handleSidebarResizeReset();
-      return;
-    }
-
-    const measuredSidebarWidth = measureSidebarWidth();
-    const startWidth =
-      sidebarWidth ?? measuredSidebarWidth ?? MAX_SIDEBAR_WIDTH;
-    dragStartXRef.current = event.clientX;
-    dragStartSidebarWidthRef.current = startWidth;
-    latestSidebarWidthRef.current = startWidth;
-    restoreSidebarWidthRef.current = startWidth;
-    sidebarDragMovedRef.current = false;
-    setSidebarWidth(startWidth);
-    setSidebarCollapsed(false);
-    setActiveResizeAxis("sidebar");
-  };
-
-  const handleSidebarResizeKeyDown = (
-    event: KeyboardEvent<HTMLButtonElement>,
-  ) => {
-    if (event.key === "ArrowRight") {
-      event.preventDefault();
-      userTouchedSidebarRef.current = true;
-      setSidebarWidth((current) =>
-        clampKeyboardSidebarWidth(
-          (current ?? measureSidebarWidth() ?? MAX_SIDEBAR_WIDTH) +
-            SIDEBAR_WIDTH_STEP,
-        ),
-      );
-      return;
-    }
-
-    if (event.key === "ArrowLeft") {
-      event.preventDefault();
-      userTouchedSidebarRef.current = true;
-      setSidebarWidth((current) =>
-        clampKeyboardSidebarWidth(
-          (current ?? measureSidebarWidth() ?? MAX_SIDEBAR_WIDTH) -
-            SIDEBAR_WIDTH_STEP,
-        ),
-      );
-      return;
-    }
-
-    if (event.key === "Home") {
-      event.preventDefault();
-      handleSidebarResizeReset();
-    }
-  };
-
-  const handleSidebarResizeClickReset = (
-    event: MouseEvent<HTMLButtonElement>,
-  ) => {
-    const elapsedSinceLastClick = event.timeStamp - lastSidebarClickAtRef.current;
-    lastSidebarClickAtRef.current = event.timeStamp;
-
-    if (event.detail < 2 && elapsedSinceLastClick >= 500) {
-      return;
-    }
-
-    event.preventDefault();
-    lastSidebarClickAtRef.current = -Infinity;
-    handleSidebarResizeReset();
-  };
-
-  const handleSidebarResizeMouseUp = (
-    event: MouseEvent<HTMLButtonElement>,
-  ) => {
-    lastSidebarClickAtRef.current = sidebarDragMovedRef.current
-      ? -Infinity
-      : event.timeStamp;
-  };
-
-  const handleSidebarResizeReset = () => {
-    userTouchedSidebarRef.current = true;
-    lastSidebarClickAtRef.current = -Infinity;
-    restoreSidebarWidthRef.current = DEFAULT_SIDEBAR_WIDTH;
-    latestSidebarWidthRef.current = DEFAULT_SIDEBAR_WIDTH;
-    setSidebarCollapsed(false);
-    setSidebarWidth(DEFAULT_SIDEBAR_WIDTH);
-  };
-
-  const handleCollapseSidebar = () => {
-    userTouchedSidebarRef.current = true;
-    restoreSidebarWidthRef.current =
-      sidebarWidth ?? measureSidebarWidth() ?? DEFAULT_SIDEBAR_WIDTH;
-    setSidebarCollapsed(true);
-  };
-
-  const handleShowSidebar = () => {
-    userTouchedSidebarRef.current = true;
-    setSidebarWidth(restoreSidebarWidthRef.current);
-    setSidebarCollapsed(false);
-  };
-
-  const handleHeightResizeStart = (event: MouseEvent<HTMLButtonElement>) => {
-    if (event.detail >= 2) {
-      event.preventDefault();
-      handleHeightResizeReset();
-      return;
-    }
-
-    recomputeEditShellHeightCeiling();
-    const measuredHeight =
-      editShellHeight ?? measureEditShellHeight() ?? MIN_EDIT_SHELL_HEIGHT;
-    dragStartYRef.current = event.clientY;
-    dragStartHeightRef.current = measuredHeight;
-    heightDragMovedRef.current = false;
-    setActiveResizeAxis("height");
-  };
-
-  const handleHeightResizeKeyDown = (
-    event: KeyboardEvent<HTMLButtonElement>,
-  ) => {
-    if (event.key === "ArrowDown") {
-      event.preventDefault();
-      setEditShellHeight((current) =>
-        clampEditShellHeight(
-          (current ?? measureEditShellHeight() ?? MIN_EDIT_SHELL_HEIGHT) +
-            EDIT_SHELL_HEIGHT_STEP,
-          editShellHeightCeilingRef.current,
-        ),
-      );
-      return;
-    }
-
-    if (event.key === "ArrowUp") {
-      event.preventDefault();
-      setEditShellHeight((current) =>
-        clampEditShellHeight(
-          (current ?? measureEditShellHeight() ?? MIN_EDIT_SHELL_HEIGHT) -
-            EDIT_SHELL_HEIGHT_STEP,
-          editShellHeightCeilingRef.current,
-        ),
-      );
-      return;
-    }
-
-    if (event.key === "Home") {
-      event.preventDefault();
-      handleHeightResizeReset();
-    }
-  };
-
-  const handleHeightResizeClickReset = (
-    event: MouseEvent<HTMLButtonElement>,
-  ) => {
-    const elapsedSinceLastClick = event.timeStamp - lastHeightClickAtRef.current;
-    lastHeightClickAtRef.current = event.timeStamp;
-
-    if (event.detail < 2 && elapsedSinceLastClick >= 500) {
-      return;
-    }
-
-    event.preventDefault();
-    lastHeightClickAtRef.current = -Infinity;
-    handleHeightResizeReset();
-  };
-
-  const handleHeightResizeMouseUp = (
-    event: MouseEvent<HTMLButtonElement>,
-  ) => {
-    lastHeightClickAtRef.current = heightDragMovedRef.current
-      ? -Infinity
-      : event.timeStamp;
-  };
-
-  const handleHeightResizeReset = () => {
-    lastHeightClickAtRef.current = -Infinity;
-    setEditShellHeight(null);
-  };
-
-  const pageFrameStyle = {
-    "--page-max-width": `${BASE_PAGE_MAX_WIDTH}px`,
-  } as CSSProperties;
-
-  const workspaceStyle = {
-    "--sidebar-width": `${sidebarWidth ?? DEFAULT_SIDEBAR_WIDTH}px`,
-  } as CSSProperties & Record<"--sidebar-width", string>;
-
-  const previewPanelStyle =
-    editShellHeight !== null
-      ? ({
-          "--preview-panel-ceiling": `${editShellHeightCeiling}px`,
-          height: `${editShellHeight}px`,
-          minHeight: `${editShellHeight}px`,
-        } as CSSProperties & Record<"--preview-panel-ceiling", string>)
-      : ({
-          "--preview-panel-ceiling": `${editShellHeightCeiling}px`,
-        } as CSSProperties & Record<"--preview-panel-ceiling", string>);
+  const {
+    activeResizeAxis,
+    sidebarCollapsed,
+    previewPanelRef,
+    pageFrameStyle,
+    workspaceStyle,
+    previewPanelStyle,
+    handleShowSidebar,
+    handleCollapseSidebar,
+    handleSidebarResizeStart,
+    handleSidebarResizeKeyDown,
+    handleSidebarResizeClickReset,
+    handleSidebarResizeMouseUp,
+    handleSidebarResizeReset,
+    handleHeightResizeStart,
+    handleHeightResizeKeyDown,
+    handleHeightResizeClickReset,
+    handleHeightResizeMouseUp,
+    handleHeightResizeReset,
+  } = resize;
 
   const focusPageTab = (page: PageView) => {
     const tab =
