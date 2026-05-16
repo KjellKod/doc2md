@@ -2,6 +2,7 @@
 
 | Date | Quest | Outcome |
 |------|-------|---------|
+| 2026-05-15 | [paste-to-markdown](paste-to-markdown_2026-05-15.md) | Implement ideas/paste-to-markdown-in-editor.md. Keep scope tight: intercept paste in the edit textarea, convert Linke... |
 | 2026-05-15 | [ux-improvements-v2](ux-improvements-v2_2026-05-15.md) | Mac session restore, native-owned recents, compact working-mode controls, preview/mobile layout polish, and final clipped-menu regression fix. |
 | 2026-05-15 | [paste-to-markdown](paste-to-markdown_2026-05-15.md) | Implement ideas/paste-to-markdown-in-editor.md. Keep scope tight: intercept paste in the edit textarea, convert Linke... |
 | 2026-05-14 | [preview-panel-refactor-phase-1](preview-panel-refactor-phase-1_2026-05-14.md) | `src/components/PreviewPanel.tsx` is a 1285-line, load-bearing component that owns mode switching, find UI wiring, vi... |
