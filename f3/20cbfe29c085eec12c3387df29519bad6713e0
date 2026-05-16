@@ -1,0 +1,26 @@
+src/desktop/DesktopApp.tsx
+  s_28bb8e077547a0::t_d73b0a61dcb392 3,16
+  s_28bb8e077547a0::t_566a7af5de38da 246
+  s_28bb8e077547a0::t_19463bf833e331 365-366,371,374-375
+  s_28bb8e077547a0::t_9744b1bb5acf13 761-780
+src/App.tsx
+  s_28bb8e077547a0::t_39e1a2ef89c582 18,24-28,101,162-163,225,248-249,257-258,420-451,457-483,616
+src/shell/useWorkspaceResize.ts
+  s_28bb8e077547a0::t_d1ed14485fd932 1-653
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "f320cbfe29c085eec12c3387df29519bad6713e0",
+  "prompts": {},
+  "sessions": {
+    "s_28bb8e077547a0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6500232d-94ad-4a88-8345-ab2a76c6b8f9",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
