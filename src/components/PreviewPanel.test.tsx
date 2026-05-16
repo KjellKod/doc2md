@@ -396,6 +396,41 @@ describe("PreviewPanel", () => {
     expect(screen.getByText("Write docs")).toBeInTheDocument();
   });
 
+  it("renders nested GFM task lists as nested checkbox list items", () => {
+    const { container } = render(
+      <PreviewPanel
+        entry={createEntry({
+          markdown: [
+            "- [ ] 100% completion of five must-do-epics 2026-Q2-100 labels",
+            "",
+            "  - [ ] ONF-9505 [EE] Refactor Task Endpoints to use Mongo Sessions and Transactions",
+            "- [ ] ONF-7952 Q1-4c Whitelabel Client Portal",
+          ].join("\n"),
+        })}
+      />,
+    );
+
+    const topLevelList = container.querySelector(
+      ".markdown-surface > ul.contains-task-list",
+    );
+    expect(topLevelList).toBeInTheDocument();
+    expect(
+      topLevelList?.querySelectorAll(":scope > li.task-list-item"),
+    ).toHaveLength(2);
+
+    const firstTopLevelItem = topLevelList?.querySelector(
+      ":scope > li.task-list-item",
+    );
+    const nestedList = firstTopLevelItem?.querySelector(
+      ":scope > ul.contains-task-list",
+    );
+    expect(nestedList).toBeInTheDocument();
+    expect(
+      nestedList?.querySelectorAll(":scope > li.task-list-item"),
+    ).toHaveLength(1);
+    expect(screen.getAllByRole("checkbox")).toHaveLength(3);
+  });
+
   it("copies the rendered preview as html and plain text in preview mode", async () => {
     const { container } = render(<PreviewPanel entry={createEntry()} />);
     const previewSurface = container.querySelector(".markdown-surface");

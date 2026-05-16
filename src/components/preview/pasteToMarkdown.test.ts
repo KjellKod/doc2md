@@ -160,6 +160,33 @@ describe("convertClipboardPasteToMarkdown", () => {
     });
   });
 
+  it("preserves Google Docs flat sibling checkbox lists as nested task lists", () => {
+    const result = convertClipboardPasteToMarkdown({
+      html: [
+        '<ul class="lst-kix_goal-0">',
+        '<li><img alt="unchecked" src="data:image/png;base64,abc"><p><span>100% completion of five must-do-epics 2026-Q2-100 labels</span></p></li>',
+        "</ul>",
+        '<ul class="lst-kix_goal-1">',
+        '<li><img alt="unchecked" src="data:image/png;base64,abc"><p><a href="https://example.atlassian.net/browse/ONF-9505">ONF-9505</a><span> [EE] Refactor Task Endpoints to use Mongo Sessions and Transactions</span></p></li>',
+        "</ul>",
+        '<ul class="lst-kix_goal-0">',
+        '<li><img alt="unchecked" src="data:image/png;base64,abc"><p><a href="https://example.atlassian.net/browse/ONF-7952">ONF-7952</a><span> Q1-4c Whitelabel Client Portal</span></p></li>',
+        "</ul>",
+      ].join(""),
+      plainText:
+        "100% completion of five must-do-epics 2026-Q2-100 labels\nONF-9505 [EE] Refactor Task Endpoints to use Mongo Sessions and Transactions\nONF-7952 Q1-4c Whitelabel Client Portal",
+    });
+
+    expect(result).toEqual({
+      markdown: [
+        "- [ ] 100% completion of five must-do-epics 2026-Q2-100 labels",
+        "    - [ ] [ONF-9505](https://example.atlassian.net/browse/ONF-9505) \\[EE\\] Refactor Task Endpoints to use Mongo Sessions and Transactions",
+        "- [ ] [ONF-7952](https://example.atlassian.net/browse/ONF-7952) Q1-4c Whitelabel Client Portal",
+      ].join("\n"),
+      source: "html",
+    });
+  });
+
   it("converts common sans-serif LinkedIn unicode emphasis to markdown", () => {
     expect(
       convertClipboardPasteToMarkdown({
@@ -209,6 +236,18 @@ describe("convertClipboardPasteToMarkdown", () => {
     expect(
       convertClipboardPasteToMarkdown({
         html: "<p>---</p>",
+        plainText: "---",
+      }),
+    ).toEqual({
+      markdown: "\\---",
+      source: "html",
+    });
+  });
+
+  it("uses the plain text marker when Google Docs html auto-substitutes dashes", () => {
+    expect(
+      convertClipboardPasteToMarkdown({
+        html: "<p>—</p>",
         plainText: "---",
       }),
     ).toEqual({

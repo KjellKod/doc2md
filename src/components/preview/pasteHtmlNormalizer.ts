@@ -252,5 +252,9 @@ export function restorePasteMarkdownPlaceholders(markdown: string) {
       /^(\s*[-*+]\s+\[[ xX]\])\s*\n(?:[ \t]*\n)*(?![ \t]*(?:[-*+]\s|\d+\.\s|>\s))[ \t]+/gm,
       "$1 ",
     )
+    .replace(
+      /^((?: {4})*[-*+]\s+\[[ xX]\].*)\n{2,}(?=(?: {4})*[-*+]\s+\[[ xX]\])/gm,
+      "$1\n",
+    )
     .replace(/\\([–—])/g, "$1");
 }
