@@ -4,6 +4,7 @@ import {
   convertLinkedInUnicodeToMarkdown,
 } from "./pasteToMarkdown";
 import { convertLinkedInUnicodeInMarkdown } from "./linkedInUnicode";
+import { restorePasteMarkdownPlaceholders } from "./pasteHtmlNormalizer";
 
 describe("convertLinkedInUnicodeToMarkdown", () => {
   it("converts linkedin unicode emphasis to markdown", () => {
@@ -37,6 +38,14 @@ describe("convertLinkedInUnicodeInMarkdown", () => {
     expect(convertLinkedInUnicodeInMarkdown("a__b__ 𝑖𝑡𝑎𝑙𝑖𝑐")).toBe(
       "a__b__ *italic*",
     );
+  });
+});
+
+describe("restorePasteMarkdownPlaceholders", () => {
+  it("removes only one Markdown escape before unicode dashes", () => {
+    expect(
+      restorePasteMarkdownPlaceholders("\\— and \\\\— and \\– and \\\\–"),
+    ).toBe("— and \\— and – and \\–");
   });
 });
 
@@ -187,7 +196,7 @@ describe("convertClipboardPasteToMarkdown", () => {
   it("removes unnecessary escapes before unicode dashes from html paste", () => {
     expect(
       convertClipboardPasteToMarkdown({
-        html: "<p>\\— and \\–</p>",
+        html: "<p>— and –</p>",
         plainText: "— and –",
       }),
     ).toEqual({
