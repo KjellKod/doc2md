@@ -1,0 +1,61 @@
+src/components/preview/pasteHtmlNormalizer.ts
+  s_bd066a8e170cce::t_95a47ba9ff06ec 1-5,8-94,98-159,166
+  s_bd066a8e170cce::t_6d17cb9341c344 6-7,95-97,160-163
+  s_bd066a8e170cce::t_97eccdef8ecde8 164
+src/components/preview/pasteToMarkdown.test.ts
+  s_e1c6ba34fd164f::t_22f2a18c3bf961 1-20,23,73-90,142-153,98,103-104,110,115-116,122,127-128,134,139-140,42-43,46-47,58-59,62-63,66-67,69-71
+  s_bd066a8e170cce::t_67de258d07958d 21-22
+  s_e1c6ba34fd164f::t_a5c58c21b36ebe 91
+  s_58728568bc1253::t_50c79136440e56 92-93,95,97,99-100,102,105,107,109,111-112,114,117,119,121,123-124,126,129-133,135-138,141,41,57,60,72
+  s_58728568bc1253::t_2aa3303d00295e 94,96,101,68
+  s_58728568bc1253::t_125c29b9e100c0 106,108,113
+  s_58728568bc1253::t_0b6688fdb20050 118,120,125
+  s_58728568bc1253::t_2d4dbe1b062da7 24,26-34,36-38,45,49,51,53-55,61,64-65
+  s_bd066a8e170cce::t_ff37c7f350431b 25,35,39-40
+  s_bd066a8e170cce::t_41e79c97a7949b 44,50,52
+  s_bd066a8e170cce::t_c06b0e06ebbb44 48,56
+src/components/preview/pasteToMarkdown.ts
+  s_e1c6ba34fd164f::t_22f2a18c3bf961 1,11-20,25-29,33-35,37-53
+  s_58728568bc1253::t_b3d25513db29c3 36
+  s_bd066a8e170cce::t_c5e0a868b70c8a 2,6-9
+  s_bd066a8e170cce::t_4e5f4910779dab 3-5,23,32
+src/components/preview/linkedInUnicode.ts
+  s_bd066a8e170cce::t_89ab768dd352ea 1-15,17-74,76-77,79-83,89-90,100-120,122-123,125-127,129-130,132-139,141-143,146-163,165-183,185-188,190-295,297-299,301-328
+  s_bd066a8e170cce::t_a21da64f581e02 84,92-93
+  s_bd066a8e170cce::t_4282bbf6ba90c5 144-145
+tests/e2e/paste-to-markdown.spec.ts
+  s_58728568bc1253::t_2d4dbe1b062da7 1-29,53-98,100-104
+  s_58728568bc1253::t_c93ed903361ac1 30-52,99
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "70a8dc726b695a612986e073d59038b27b454943",
+  "prompts": {},
+  "sessions": {
+    "s_58728568bc1253": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e29b3-1f93-7c82-8700-7329ae773331",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_bd066a8e170cce": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e2ccc-7d29-77b1-941a-8c9e9ec7e7ce",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_e1c6ba34fd164f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e2c2a-5fa9-7e00-97bb-670d25ea84d5",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}

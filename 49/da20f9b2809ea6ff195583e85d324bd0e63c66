@@ -1,0 +1,54 @@
+src/components/preview/pasteHtmlNormalizer.ts
+  s_bd066a8e170cce::t_95a47ba9ff06ec 1-5,32-118,122-123,155-210,212-215,222,134-135,143,145,153-154
+  s_bd066a8e170cce::t_6d17cb9341c344 6-7,119-121,216-219,124,126,130,136,140,146,149
+  s_bd066a8e170cce::t_97eccdef8ecde8 220
+  s_bd066a8e170cce::t_28c9501a50a170 8-31,125,127-129,131-133,137-139,141-142,144,147-148,150-152,211
+src/components/preview/pasteToMarkdown.test.ts
+  s_e1c6ba34fd164f::t_22f2a18c3bf961 1-20,23,106-123,175-186,131,136-137,143,148-149,155,160-161,167,172-173,42-43,46-47,58-59,95-96,99-100,102-104,74-75,79-80,91-92
+  s_bd066a8e170cce::t_67de258d07958d 21-22
+  s_e1c6ba34fd164f::t_a5c58c21b36ebe 124
+  s_58728568bc1253::t_50c79136440e56 125-126,128,130,132-133,135,138,140,142,144-145,147,150,152,154,156-157,159,162-166,168-171,174,41,57,60,105,73,90,93
+  s_58728568bc1253::t_2aa3303d00295e 127,129,134,101
+  s_58728568bc1253::t_125c29b9e100c0 139,141,146
+  s_58728568bc1253::t_0b6688fdb20050 151,153,158
+  s_58728568bc1253::t_2d4dbe1b062da7 24,26-34,36-38,45,49,51,53-55,94,97-98
+  s_bd066a8e170cce::t_ff37c7f350431b 25,35,39-40,62,66,70,72,87
+  s_bd066a8e170cce::t_41e79c97a7949b 44,50,52,61,63-65,67-69,71,76-78,82-85,88
+  s_bd066a8e170cce::t_c06b0e06ebbb44 48,56,81,86,89
+tests/e2e/paste-to-markdown.spec.ts
+  s_58728568bc1253::t_2d4dbe1b062da7 1-29,53-92,128-133,135-139,94-98,113-114,126-127
+  s_58728568bc1253::t_c93ed903361ac1 30-52,134
+  s_bd066a8e170cce::t_a1aeb587510d83 93,99-104,107-112,115-125
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "49da20f9b2809ea6ff195583e85d324bd0e63c66",
+  "prompts": {},
+  "sessions": {
+    "s_58728568bc1253": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e29b3-1f93-7c82-8700-7329ae773331",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_bd066a8e170cce": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e2ccc-7d29-77b1-941a-8c9e9ec7e7ce",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_e1c6ba34fd164f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e2c2a-5fa9-7e00-97bb-670d25ea84d5",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}

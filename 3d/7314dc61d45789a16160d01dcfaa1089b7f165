@@ -1,0 +1,43 @@
+src/components/preview/pasteToMarkdown.test.ts
+  s_e1c6ba34fd164f::t_22f2a18c3bf961 1-20,23-41,57-68,49,54-55
+  s_bd066a8e170cce::t_67de258d07958d 21-22
+  s_e1c6ba34fd164f::t_a5c58c21b36ebe 42
+  s_58728568bc1253::t_50c79136440e56 43-44,46,48,50-51,53,56
+  s_58728568bc1253::t_2aa3303d00295e 45,47,52
+src/components/preview/pasteToMarkdown.ts
+  s_e1c6ba34fd164f::t_22f2a18c3bf961 1,3,8,10-18,50,67,148-152,154-156,158-174
+  s_58728568bc1253::t_b3d25513db29c3 70
+  s_bd066a8e170cce::t_afb80c301de728 74,82,85,89,109,146-147
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "3d7314dc61d45789a16160d01dcfaa1089b7f165",
+  "prompts": {},
+  "sessions": {
+    "s_58728568bc1253": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e29b3-1f93-7c82-8700-7329ae773331",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_bd066a8e170cce": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e2ccc-7d29-77b1-941a-8c9e9ec7e7ce",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_e1c6ba34fd164f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e2c2a-5fa9-7e00-97bb-670d25ea84d5",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
