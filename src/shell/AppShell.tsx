@@ -28,9 +28,13 @@ import type {
 } from "react";
 import { useRef } from "react";
 import AboutSection from "../components/AboutSection";
+import DropZone from "../components/DropZone";
+import type { DropZoneProps } from "../components/DropZone";
 import FileList from "../components/FileList";
 import InstallPage from "../components/InstallPage";
 import PreviewPanel from "../components/PreviewPanel";
+import WorkingModeBar from "../components/WorkingModeBar";
+import type { WorkingModeBarProps } from "../components/WorkingModeBar";
 import type { FileEntry } from "../types";
 import type { SaveState } from "../types/saveState";
 import { entryDisplayName } from "../utils/displayName";
@@ -79,10 +83,6 @@ export type AppShellCallbacks = {
   onMarkdownChange: (text: string) => void;
 };
 
-// DropZone slot props are kept narrow so the shell does not depend on the
-// DropZone component's full prop surface (it doesn't render DropZone itself;
-// the adapter does, and passes the rendered element via dropZoneSlot).
-
 export type AppShellProps = {
   // Shared layout state derived from useWorkspaceResize. The adapter does
   // NOT call the hook; the shim does and passes the relevant pieces down.
@@ -119,21 +119,18 @@ export type AppShellProps = {
   previewPanelSaveProps: AppShellPreviewPanelSaveProps;
   callbacks: AppShellCallbacks;
 
-  // Slot: the working-mode bar. Differs by variant (browser vs desktop)
-  // and by trailing controls (theme toggle, desktop settings popover,
-  // recent files). The adapter renders the WorkingModeBar with its
-  // variant-specific props and passes it as a node.
-  workingModeBarSlot: ReactNode;
+  // Typed component props: AppShell owns the WorkingModeBar render so missing
+  // callbacks/data fail at the shell boundary.
+  workingModeBarProps: WorkingModeBarProps;
 
   // Slot: the hero region's trailing actions (theme toggle, optional
   // desktop settings control). The shell renders the eyebrow toggle and
   // tagline; the adapter provides the hero-actions div contents.
   heroActionsSlot: ReactNode;
 
-  // Slot: rendered DropZone. The shell does not import DropZone directly
-  // because the desktop adapter passes a different onBrowseRequest path
-  // (native open vs hidden file input click).
-  dropZoneSlot: ReactNode;
+  // Typed component props: AppShell owns the DropZone render while adapters
+  // choose browser file input vs desktop native-open behavior.
+  dropZoneProps: DropZoneProps;
 
   // Slot: a fully-rendered FileList. Both adapters pass the same
   // AppShellFileListProps shape, but the desktop adapter additionally
@@ -143,15 +140,18 @@ export type AppShellProps = {
   // Slot: the desktop shell bar (title, save pill, reload/reveal buttons,
   // status/conflict region). Web returns null. Rendered between the view
   // switcher row and the workspace.
+  /* type: DesktopStatusProps, includes conflict bar callbacks and save controls. */
   desktopStatusSlot: ReactNode;
 
   // Slot: hidden controls the shell mounts but does not own. Today this is
   // the hosted-browser hidden file input; desktop returns null. The shell
   // renders this slot at the top of `.page`.
+  /* type: InputHTMLAttributes<HTMLInputElement>. */
   hiddenInputSlot: ReactNode;
 
   // Slot: the DesktopMenuBridge or null. Rendered at the top of the
   // app-shell.
+  /* type: DesktopMenuBridgeProps. */
   nativeMenuBridgeSlot: ReactNode;
 
   // Optional class extension applied to the .hero element. Used by the
@@ -235,9 +235,9 @@ export default function AppShell(props: AppShellProps) {
     editorFocusRequest,
     previewPanelSaveProps,
     callbacks,
-    workingModeBarSlot,
+    workingModeBarProps,
     heroActionsSlot,
-    dropZoneSlot,
+    dropZoneProps,
     fileListProps,
     desktopStatusSlot,
     hiddenInputSlot,
@@ -301,7 +301,7 @@ export default function AppShell(props: AppShellProps) {
           </p>
           {hiddenInputSlot}
           <div aria-hidden={!isWorkingMode} {...workingModeBarInertProps}>
-            {workingModeBarSlot}
+            <WorkingModeBar {...workingModeBarProps} />
           </div>
           <header
             className={heroClassName}
@@ -461,7 +461,7 @@ export default function AppShell(props: AppShellProps) {
                     </button>
                   </div>
 
-                  {dropZoneSlot}
+                  <DropZone {...dropZoneProps} />
 
                   <div className="panel-heading panel-heading-tight">
                     <div>

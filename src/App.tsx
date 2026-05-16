@@ -8,11 +8,6 @@ import ThemeProvider from "./components/ThemeProvider";
 import AppShell from "./shell/AppShell";
 import { useWebAppShellAdapter } from "./shell/webAdapter";
 
-// `computeEditShellCeiling` was moved to src/shell/useWorkspaceResize.ts as
-// part of the AppShell dedup. Existing test imports (`src/App.test.tsx`)
-// continue to work via this re-export to keep the diff to import-site only.
-export { computeEditShellCeiling } from "./shell/useWorkspaceResize";
-
 function AppContent() {
   const adapter = useWebAppShellAdapter();
 
@@ -46,9 +41,9 @@ function AppContent() {
       editorFocusRequest={adapter.editorFocusRequest}
       previewPanelSaveProps={adapter.previewPanelSaveProps}
       callbacks={adapter.callbacks}
-      workingModeBarSlot={adapter.workingModeBarSlot}
+      workingModeBarProps={adapter.workingModeBarProps}
       heroActionsSlot={adapter.heroActionsSlot}
-      dropZoneSlot={adapter.dropZoneSlot}
+      dropZoneProps={adapter.dropZoneProps}
       fileListProps={adapter.fileListProps}
       desktopStatusSlot={adapter.desktopStatusSlot}
       hiddenInputSlot={adapter.hiddenInputSlot}

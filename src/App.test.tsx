@@ -8,7 +8,8 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import App, { computeEditShellCeiling } from "./App";
+import App from "./App";
+import { computeEditShellCeiling } from "./shell/useWorkspaceResize";
 
 const { convertFileMock } = vi.hoisted(() => ({
   convertFileMock: vi.fn(),

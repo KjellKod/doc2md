@@ -44,9 +44,9 @@ function DesktopAppContent() {
       editorFocusRequest={adapter.editorFocusRequest}
       previewPanelSaveProps={adapter.previewPanelSaveProps}
       callbacks={adapter.callbacks}
-      workingModeBarSlot={adapter.workingModeBarSlot}
+      workingModeBarProps={adapter.workingModeBarProps}
       heroActionsSlot={adapter.heroActionsSlot}
-      dropZoneSlot={adapter.dropZoneSlot}
+      dropZoneProps={adapter.dropZoneProps}
       fileListProps={adapter.fileListProps}
       desktopStatusSlot={adapter.desktopStatusSlot}
       hiddenInputSlot={adapter.hiddenInputSlot}

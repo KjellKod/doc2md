@@ -22,9 +22,9 @@
 import type { KeyboardEvent, ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Settings } from "lucide-react";
-import DropZone from "../components/DropZone";
+import type { DropZoneProps } from "../components/DropZone";
 import ThemeToggle from "../components/ThemeToggle";
-import WorkingModeBar from "../components/WorkingModeBar";
+import type { WorkingModeBarProps } from "../components/WorkingModeBar";
 import { useFileConversion } from "../hooks/useFileConversion";
 import { useTheme } from "../hooks/useTheme";
 import { useWorkspaceResize } from "./useWorkspaceResize";
@@ -222,9 +222,9 @@ export type DesktopAppShellAdapter = {
   callbacks: AppShellCallbacks;
   previewPanelSaveProps: AppShellPreviewPanelSaveProps;
   fileListProps: AppShellFileListProps;
-  workingModeBarSlot: ReactNode;
+  workingModeBarProps: WorkingModeBarProps;
   heroActionsSlot: ReactNode;
-  dropZoneSlot: ReactNode;
+  dropZoneProps: DropZoneProps;
   desktopStatusSlot: ReactNode;
   hiddenInputSlot: ReactNode;
   nativeMenuBridgeSlot: ReactNode;
@@ -2193,6 +2193,7 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
                                 : file.path
                             }
                             onClick={() => {
+                              // eslint-disable-next-line react-hooks/refs -- click handler opens recent file after user action
                               void handleOpenRecentFile(file.path).then((opened) => {
                                 if (opened) {
                                   setIsDesktopSettingsOpen(false);
@@ -2275,27 +2276,25 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     onToggleAllChecked: toggleAllChecked,
   };
 
-  const workingModeBarSlot = (
-    <WorkingModeBar
-      variant="desktop"
-      onHome={handleReturnHome}
-      onOpen={() => {
-        void handleOpenFile();
-      }}
-      onNew={handleNewDocument}
-      trailingControls={
-        <>
-          <ThemeToggle />
-          {isWorkingMode ? renderDesktopSettingsControl("working") : null}
-        </>
-      }
-      recentFiles={workingModeRecentFiles}
-      unavailableRecentPaths={unavailableRecentPaths}
-      onOpenRecentFile={(path) => {
-        void handleOpenRecentFile(path);
-      }}
-    />
-  );
+  const workingModeBarProps: WorkingModeBarProps = {
+    variant: "desktop",
+    onHome: handleReturnHome,
+    onOpen: () => {
+      void handleOpenFile();
+    },
+    onNew: handleNewDocument,
+    trailingControls: (
+      <>
+        <ThemeToggle />
+        {isWorkingMode ? renderDesktopSettingsControl("working") : null}
+      </>
+    ),
+    recentFiles: workingModeRecentFiles,
+    unavailableRecentPaths,
+    onOpenRecentFile: (path) => {
+      void handleOpenRecentFile(path);
+    },
+  };
 
   const heroActionsSlot = (
     <>
@@ -2304,13 +2303,11 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     </>
   );
 
-  const dropZoneSlot = (
-    <DropZone
-      onFilesAdded={addFiles}
-      onUrlAdded={handleUrlAdded}
-      onBrowseRequest={shell ? handleOpenFile : undefined}
-    />
-  );
+  const dropZoneProps: DropZoneProps = {
+    onFilesAdded: addFiles,
+    onUrlAdded: handleUrlAdded,
+    onBrowseRequest: shell ? handleOpenFile : undefined,
+  };
 
   const desktopStatusSlot = showDesktopShellBar ? (
     <section
@@ -2429,9 +2426,9 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     callbacks,
     previewPanelSaveProps,
     fileListProps,
-    workingModeBarSlot,
+    workingModeBarProps,
     heroActionsSlot,
-    dropZoneSlot,
+    dropZoneProps,
     desktopStatusSlot,
     hiddenInputSlot: null,
     nativeMenuBridgeSlot,

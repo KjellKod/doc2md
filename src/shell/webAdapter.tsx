@@ -13,9 +13,10 @@
 
 import type { ChangeEvent, ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import DropZone, { BROWSER_FILE_ACCEPT } from "../components/DropZone";
+import { BROWSER_FILE_ACCEPT } from "../components/DropZone";
+import type { DropZoneProps } from "../components/DropZone";
 import ThemeToggle from "../components/ThemeToggle";
-import WorkingModeBar from "../components/WorkingModeBar";
+import type { WorkingModeBarProps } from "../components/WorkingModeBar";
 import { useFileConversion } from "../hooks/useFileConversion";
 import { useSaveState } from "../hooks/useSaveState";
 import type {
@@ -46,9 +47,9 @@ export type WebAppShellAdapter = {
   callbacks: AppShellCallbacks;
   previewPanelSaveProps: AppShellPreviewPanelSaveProps;
   fileListProps: AppShellFileListProps;
-  workingModeBarSlot: ReactNode;
+  workingModeBarProps: WorkingModeBarProps;
   heroActionsSlot: ReactNode;
-  dropZoneSlot: ReactNode;
+  dropZoneProps: DropZoneProps;
   desktopStatusSlot: ReactNode;
   hiddenInputSlot: ReactNode;
   nativeMenuBridgeSlot: ReactNode;
@@ -298,7 +299,7 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
       return next;
     });
     setShowLandingChrome(false);
-  }, [selectedEntry?.id, selectedEntry?.isScratch]);
+  }, [selectedEntry]);
 
   const handleSelectEntry = useCallback(
     (entryId: string) => {
@@ -405,25 +406,21 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     onToggleAllChecked: toggleAllChecked,
   };
 
-  const workingModeBarSlot = (
-    <WorkingModeBar
-      variant="browser"
-      onHome={handleReturnHome}
-      onOpen={handleBrowserOpenRequest}
-      onNew={handleNewDocument}
-      trailingControls={<ThemeToggle />}
-    />
-  );
+  const workingModeBarProps: WorkingModeBarProps = {
+    variant: "browser",
+    onHome: handleReturnHome,
+    onOpen: handleBrowserOpenRequest,
+    onNew: handleNewDocument,
+    trailingControls: <ThemeToggle />,
+  };
 
   const heroActionsSlot = <ThemeToggle />;
 
-  const dropZoneSlot = (
-    <DropZone
-      onFilesAdded={addFiles}
-      onUrlAdded={handleUrlAdded}
-      onBrowseRequest={handleBrowserOpenRequest}
-    />
-  );
+  const dropZoneProps: DropZoneProps = {
+    onFilesAdded: addFiles,
+    onUrlAdded: handleUrlAdded,
+    onBrowseRequest: handleBrowserOpenRequest,
+  };
 
   const hiddenInputSlot = (
     <input
@@ -449,9 +446,9 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     callbacks,
     previewPanelSaveProps,
     fileListProps,
-    workingModeBarSlot,
+    workingModeBarProps,
     heroActionsSlot,
-    dropZoneSlot,
+    dropZoneProps,
     desktopStatusSlot: null,
     hiddenInputSlot,
     nativeMenuBridgeSlot: null,
