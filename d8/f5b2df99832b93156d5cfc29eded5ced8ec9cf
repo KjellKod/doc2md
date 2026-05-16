@@ -1,0 +1,23 @@
+tests/e2e/appshell-dedup-characterization.spec.ts
+  s_28bb8e077547a0::t_9ac03689792192 1-278
+src/__tests__/appshell-dedup-desktop-characterization.test.tsx
+  s_28bb8e077547a0::t_df3a101e44fbb2 1-24,26-105,109-119
+  s_28bb8e077547a0::t_12efb86474bd6f 25
+  s_28bb8e077547a0::t_7bd7356b4ca2f1 106-108
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "d8f5b2df99832b93156d5cfc29eded5ced8ec9cf",
+  "prompts": {},
+  "sessions": {
+    "s_28bb8e077547a0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6500232d-94ad-4a88-8345-ab2a76c6b8f9",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
