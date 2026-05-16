@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { Save } from "lucide-react";
 import type { FileEntry } from "../types";
 import type { SaveState } from "../types/saveState";
 import { entryDisplayName } from "../utils/displayName";
@@ -22,6 +23,41 @@ const SAVE_STATUS_LABELS: Record<SaveState, string> = {
   "permission-needed": "Permission",
 };
 
+const SAVE_STATUS_DESCRIPTIONS: Record<SaveState, string> = {
+  saved: "Saved to disk.",
+  edited: "Edited. Save to update the file.",
+  saving: "Saving changes.",
+  conflict: "File changed on disk. Review before saving.",
+  error: "Save failed.",
+  "permission-needed": "Permission needed to save.",
+};
+
+function statusDescription(entry: FileEntry, hasScratchContent: boolean) {
+  if (entry.isScratch && entry.status === "success") {
+    return hasScratchContent
+      ? "Draft is ready to preview and download."
+      : "Start writing to enable download.";
+  }
+
+  if (entry.status === "warning") {
+    return entry.warnings[0] ?? "Converted with warnings. Review before using.";
+  }
+
+  if (entry.status === "error") {
+    return "Unable to convert this file.";
+  }
+
+  if (entry.status === "converting") {
+    return "Converting to Markdown.";
+  }
+
+  if (entry.status === "pending") {
+    return "Waiting to convert.";
+  }
+
+  return "Markdown is ready to review.";
+}
+
 export default function FileListItem({
   entry,
   checked,
@@ -30,19 +66,25 @@ export default function FileListItem({
   onSelect,
 }: FileListItemProps) {
   const fullNameTooltipId = useId();
+  const saveStatusTooltipId = useId();
+  const statusTooltipId = useId();
   const displayName = entryDisplayName(entry);
-  const hasScratchContent =
+  const hasScratchContent = Boolean(
     entry.isScratch &&
-    (entry.editedMarkdown ?? entry.markdown).trim().length > 0;
-  const notice =
-    entry.warnings[0] ??
-    (entry.isScratch
-      ? hasScratchContent
-        ? "Draft is ready to preview and download."
-        : "Start writing to enable download."
-      : entry.status === "success"
-        ? "Markdown is ready to review."
-        : "");
+      (entry.editedMarkdown ?? entry.markdown).trim().length > 0,
+  );
+  const saveStatusDescription = saveStatus
+    ? SAVE_STATUS_DESCRIPTIONS[saveStatus]
+    : undefined;
+  const isSavedCompact = saveStatus === "saved";
+  const isReadyCompact = entry.status === "success" && !entry.isScratch;
+  const describedBy = [
+    fullNameTooltipId,
+    saveStatus ? saveStatusTooltipId : undefined,
+    statusTooltipId,
+  ]
+    .filter((id): id is string => Boolean(id))
+    .join(" ");
 
   return (
     <li>
@@ -61,7 +103,7 @@ export default function FileListItem({
           type="button"
           className={`file-list-item${entry.selected ? " is-selected" : ""}`}
           aria-label={`Open ${displayName}`}
-          aria-describedby={fullNameTooltipId}
+          aria-describedby={describedBy}
           onClick={() => onSelect(entry.id)}
         >
           <div className="file-list-item-top">
@@ -76,23 +118,52 @@ export default function FileListItem({
               >
                 {displayName}
               </span>
-              <FormatBadge format={entry.format} />
             </div>
             <div className="file-list-item-statuses">
               {saveStatus ? (
                 <span
-                  className={`file-list-save-status file-list-save-status--${saveStatus}`}
+                  className={`file-list-save-status file-list-save-status--${saveStatus}${
+                    isSavedCompact ? " file-list-save-status--compact" : ""
+                  }`}
+                  aria-label={saveStatusDescription}
+                  aria-describedby={saveStatusTooltipId}
                 >
-                  {SAVE_STATUS_LABELS[saveStatus]}
+                  {isSavedCompact ? (
+                    <>
+                      <Save
+                        className="file-list-save-status-icon"
+                        aria-hidden="true"
+                      />
+                      <span className="visually-hidden">
+                        {SAVE_STATUS_LABELS[saveStatus]}
+                      </span>
+                    </>
+                  ) : (
+                    SAVE_STATUS_LABELS[saveStatus]
+                  )}
+                  <span
+                    id={saveStatusTooltipId}
+                    role="tooltip"
+                    className="file-list-status-tooltip"
+                  >
+                    {saveStatusDescription}
+                  </span>
                 </span>
               ) : null}
               <StatusIndicator
                 status={entry.status}
-                label={entry.isScratch ? "Draft" : undefined}
+                label={
+                  entry.isScratch && entry.status === "success"
+                    ? "Draft"
+                    : undefined
+                }
+                compact={isReadyCompact}
+                description={statusDescription(entry, hasScratchContent)}
+                descriptionId={statusTooltipId}
               />
             </div>
+            <FormatBadge format={entry.format} />
           </div>
-          <p className="file-list-item-copy">{notice}</p>
         </button>
       </div>
     </li>

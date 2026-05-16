@@ -251,14 +251,32 @@
 }
 
 .file-list-save-status {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  padding: 4px 8px;
+  gap: 6px;
+  min-height: 32px;
+  padding: 6px 10px;
   border-radius: 999px;
   background: var(--success-soft);
   color: var(--success);
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 800;
   white-space: nowrap;
+}
+
+.file-list-save-status--compact {
+  width: 32px;
+  padding: 6px;
+}
+
+.file-list-save-status-icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  stroke-width: 2.3;
 }
 
 .file-list-save-status--edited,
