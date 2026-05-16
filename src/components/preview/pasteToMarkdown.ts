@@ -59,7 +59,9 @@ export function convertClipboardPasteToMarkdown({
   if (html.trim().length > 0) {
     const htmlMarkdown = restorePlainTextHorizontalRuleMarkers(
       restorePasteMarkdownPlaceholders(
-        convertHtmlFragmentToMarkdown(normalizePasteHtmlForMarkdown(html)),
+        convertHtmlFragmentToMarkdown(normalizePasteHtmlForMarkdown(html), {
+          inferGoogleDocsListNesting: false,
+        }),
       ),
       plainText,
     );

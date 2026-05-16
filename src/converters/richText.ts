@@ -67,6 +67,10 @@ interface GoogleDocsListMetadata {
   level: number;
 }
 
+interface ConvertHtmlFragmentToMarkdownOptions {
+  inferGoogleDocsListNesting?: boolean;
+}
+
 function getGoogleDocsListMetadata(list: Element): GoogleDocsListMetadata | null {
   const className = list.getAttribute("class") ?? "";
   const match = className.match(GDOCS_LIST_CLASS_PATTERN);
@@ -272,12 +276,17 @@ function nestGoogleDocsFlatListItems(doc: Document): void {
   });
 }
 
-export function convertHtmlFragmentToMarkdown(html: string) {
+export function convertHtmlFragmentToMarkdown(
+  html: string,
+  options: ConvertHtmlFragmentToMarkdownOptions = {}
+) {
   const DOMParserCtor = getDomParser();
   const parser = new DOMParserCtor();
   const document = parser.parseFromString(html, "text/html");
-  nestGoogleDocsLists(document);
-  nestGoogleDocsFlatListItems(document);
+  if (options.inferGoogleDocsListNesting ?? true) {
+    nestGoogleDocsLists(document);
+    nestGoogleDocsFlatListItems(document);
+  }
   const replacements = replaceTablesWithPlaceholders(document);
 
   return restoreTablePlaceholders(
