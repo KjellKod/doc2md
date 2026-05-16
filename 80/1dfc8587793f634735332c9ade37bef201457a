@@ -1,0 +1,21 @@
+src/components/preview/pasteHtmlNormalizer.ts
+  s_bd066a8e170cce::t_3d243e54b888be 251-252
+src/components/preview/pasteToMarkdown.test.ts
+  s_bd066a8e170cce::t_8e13bbbbcecc00 171-194
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "801dfc8587793f634735332c9ade37bef201457a",
+  "prompts": {},
+  "sessions": {
+    "s_bd066a8e170cce": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e2ccc-7d29-77b1-941a-8c9e9ec7e7ce",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
