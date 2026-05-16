@@ -103,6 +103,7 @@ afterEach(() => {
 
 const originalClipboardItem = globalThis.ClipboardItem;
 const originalBlob = globalThis.Blob;
+const originalExecCommand = document.execCommand;
 let clipboardWriteText: ReturnType<typeof vi.fn>;
 let clipboardWrite: ReturnType<typeof vi.fn>;
 
@@ -128,6 +129,10 @@ afterEach(() => {
   Object.defineProperty(globalThis, "Blob", {
     configurable: true,
     value: originalBlob,
+  });
+  Object.defineProperty(document, "execCommand", {
+    configurable: true,
+    value: originalExecCommand,
   });
 });
 
@@ -636,12 +641,46 @@ describe("PreviewPanel", () => {
 
     expect(screen.getByRole("status")).toHaveTextContent("Converting paste...");
     expect(editor).toHaveAttribute("aria-busy", "true");
+    expect(editor).toHaveAttribute("readonly");
 
     await waitFor(() => expect(editor).toHaveValue("**Bold**"));
     await waitFor(() =>
       expect(screen.queryByRole("status")).not.toBeInTheDocument(),
     );
     expect(editor).not.toHaveAttribute("aria-busy", "true");
+    expect(editor).not.toHaveAttribute("readonly");
+  });
+
+  it("allows the queued html paste commit to update markdown", async () => {
+    const execCommand = vi.fn((_command: string, _showUi: boolean, text: string) => {
+      const editor = document.activeElement as HTMLTextAreaElement | null;
+      if (!editor) return false;
+
+      const start = editor.selectionStart;
+      const end = editor.selectionEnd;
+      const nextValue = editor.value.slice(0, start) + text + editor.value.slice(end);
+      editor.value = nextValue;
+      editor.setSelectionRange(start + text.length, start + text.length);
+      fireEvent.input(editor, { target: { value: nextValue } });
+      return true;
+    });
+    Object.defineProperty(document, "execCommand", {
+      configurable: true,
+      value: execCommand,
+    });
+
+    render(<ControlledPreviewPanel initialMarkdown="" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    const editor = screen.getByRole("textbox", {
+      name: "Edit markdown",
+    });
+
+    fireEditorPaste(editor, { html: "<p>𝐁𝐨𝐥𝐝</p>", plainText: "Bold" });
+
+    await waitFor(() => expect(editor).toHaveValue("**Bold**"));
+    expect(execCommand).toHaveBeenCalledWith("insertText", false, "**Bold**");
+    expect(editor).not.toHaveAttribute("readonly");
   });
 
   it("notifies when converted paste exceeds threshold", () => {

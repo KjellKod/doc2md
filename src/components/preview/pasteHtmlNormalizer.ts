@@ -248,6 +248,9 @@ export function restorePasteMarkdownPlaceholders(markdown: string) {
   return markdown
     .replace(new RegExp(CHECKED_CHECKBOX_PLACEHOLDER, "g"), "[x]")
     .replace(new RegExp(OPEN_CHECKBOX_PLACEHOLDER, "g"), "[ ]")
-    .replace(/^(\s*[-*+]\s+\[[ xX]\])\s*\n(?:[ \t]*\n)*[ \t]+/gm, "$1 ")
+    .replace(
+      /^(\s*[-*+]\s+\[[ xX]\])\s*\n(?:[ \t]*\n)*(?![ \t]*(?:[-*+]\s|\d+\.\s|>\s))[ \t]+/gm,
+      "$1 ",
+    )
     .replace(/\\+([–—])/g, "$1");
 }

@@ -165,6 +165,7 @@ export default function EditMode({
   const pasteConversionJobRef = useRef(0);
   const pasteConversionFrameRef = useRef<number | null>(null);
   const pasteConversionTimerRef = useRef<number | null>(null);
+  const allowPasteCommitChangeRef = useRef(false);
   const [isPasteConverting, setIsPasteConverting] = useState(false);
   const syncFindHighlightScroll = useCallback(() => {
     if (!textareaRef.current || !findHighlightRef.current) {
@@ -263,6 +264,9 @@ export default function EditMode({
     const jobId = pasteConversionJobRef.current + 1;
     pasteConversionJobRef.current = jobId;
     pasteConversionActiveRef.current = true;
+    if (textareaRef.current) {
+      textareaRef.current.readOnly = true;
+    }
     setIsPasteConverting(true);
     return jobId;
   }
@@ -316,6 +320,11 @@ export default function EditMode({
       if (pasteConversionJobRef.current !== jobId) return;
 
       try {
+        const textarea = textareaRef.current;
+        if (!textarea || textarea.value !== snapshot.value) return;
+
+        textarea.readOnly = false;
+        allowPasteCommitChangeRef.current = true;
         applyPasteConversion(
           snapshot,
           convertClipboardPasteToMarkdown({
@@ -325,6 +334,7 @@ export default function EditMode({
           { allowNativeUnchangedPlainText: false },
         );
       } finally {
+        allowPasteCommitChangeRef.current = false;
         finishPasteConversion(jobId);
       }
     };
@@ -382,6 +392,13 @@ export default function EditMode({
     }
 
     event.preventDefault();
+  }
+
+  function handleTextareaChange(event: React.ChangeEvent<HTMLTextAreaElement>) {
+    if (pasteConversionActiveRef.current && !allowPasteCommitChangeRef.current) {
+      return;
+    }
+    onMarkdownChange?.(event.target.value);
   }
 
   useEffect(() => {
@@ -540,7 +557,7 @@ export default function EditMode({
         }}
         className="markdown-edit-area"
         value={effectiveMarkdown}
-        onChange={(event) => onMarkdownChange?.(event.target.value)}
+        onChange={handleTextareaChange}
         onPaste={handleTextareaPaste}
         onScroll={handleEditorScroll}
         onKeyDown={handleTextareaKeyDown}
@@ -552,6 +569,7 @@ export default function EditMode({
         }}
         aria-label="Edit markdown"
         aria-busy={isPasteConverting}
+        readOnly={isPasteConverting}
       />
     </div>
   );

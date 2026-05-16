@@ -135,6 +135,22 @@ describe("convertClipboardPasteToMarkdown", () => {
     expect(result.markdown).not.toMatch(/^-\s+\[[ xX]\]\s*\n/m);
   });
 
+  it("preserves nested lists after a Google Docs checkbox marker", () => {
+    const result = convertClipboardPasteToMarkdown({
+      html: [
+        "<ul>",
+        '<li><img alt="unchecked" src="data:image/png;base64,abc"><ul><li>Nested item</li></ul></li>',
+        "</ul>",
+      ].join(""),
+      plainText: "Nested item",
+    });
+
+    expect(result).toEqual({
+      markdown: ["- [ ]", "    - Nested item"].join("\n"),
+      source: "html",
+    });
+  });
+
   it("converts common sans-serif LinkedIn unicode emphasis to markdown", () => {
     expect(
       convertClipboardPasteToMarkdown({
