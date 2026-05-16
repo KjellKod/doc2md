@@ -1,0 +1,39 @@
+src/App.tsx
+  s_133d78fbf5d555::t_8e5dbb91029dbe 44,46
+src/components/DropZone.tsx
+  s_133d78fbf5d555::t_8e5dbb91029dbe 7
+src/shell/desktopAdapter.tsx
+  s_133d78fbf5d555::t_e5cd9f49939bf8 2196
+  s_133d78fbf5d555::t_8e5dbb91029dbe 25,27,225,227,2279-2297,2306-2310,2429,2431
+src/__tests__/appshell-dedup-desktop-characterization.test.tsx
+  s_133d78fbf5d555::t_07414d68e21456 355-357
+  s_133d78fbf5d555::t_49f08b0da01003 18,23,25-28,31-34,40,44-45,49-69,103-161,177-195,197-203,237-299,301-348,358
+  s_133d78fbf5d555::t_ceeeec72610d88 196,300,349-354
+src/desktop/DesktopApp.tsx
+  s_133d78fbf5d555::t_8e5dbb91029dbe 47,49
+src/components/WorkingModeBar.tsx
+  s_133d78fbf5d555::t_8e5dbb91029dbe 10,12
+src/shell/webAdapter.tsx
+  s_133d78fbf5d555::t_8e5dbb91029dbe 16-17,19,50,52,409-415,419-423,449,451
+  s_133d78fbf5d555::t_2401cb76d0cf69 302
+src/App.test.tsx
+  s_133d78fbf5d555::t_8e5dbb91029dbe 11-12
+src/shell/AppShell.tsx
+  s_133d78fbf5d555::t_8e5dbb91029dbe 31-32,36-37,122-124,131-133,143,149,154,238,240,304,464
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "e3fcc09645b695e4b97aac38a30cbbeef0fd0041",
+  "prompts": {},
+  "sessions": {
+    "s_133d78fbf5d555": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e3325-f712-7ed3-bb1b-525ecd47d697",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
