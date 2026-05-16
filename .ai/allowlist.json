@@ -23,7 +23,7 @@
     "plan-reviewer-a": "claude",
     "plan-reviewer-b": "gpt-5.5",
     "arbiter": "claude",
-    "builder": "gpt-5.5",
+    "builder": "claude",
     "code-reviewer-a": "claude",
     "code-reviewer-b": "gpt-5.5",
     "fixer": "gpt-5.5"

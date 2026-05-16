@@ -94,7 +94,6 @@
 
 | Name | Model | Role | Service Notes |
 |------|-------|------|----------------|
-| `grill-me` | **Human-guided questioning** | Requirements examiner | Extracted the difference between "new document" and "wipe the room clean." Useful distinction. Late, but useful. |
 | `Codex` | **GPT-5** | Implementor and reviewer | Scoped state by entry id, taught drafts to multiply, and kept hosted behavior in the same corrected path. |
 | `Vitest` | **Local toolchain** | Witness | Confirmed 423 tests survived the funeral procession. |
 | `Xcode` | **Release build** | Last inspector | Built the Mac app in Release configuration and left only the usual long scroll of ceremony. |
