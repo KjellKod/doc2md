@@ -1,0 +1,31 @@
+src/styles/global.css
+  s_f00585f6db12ae::t_c805850ff0f4c7 1231-1232,1238,1245,1273,1286,1335,1338-1342,1344-1345,1350-1363,1367-1368,1372-1373,1377,1382,1387,1391-1424
+  s_f00585f6db12ae::t_f4694f15486085 1427-1432
+src/components/StatusIndicator.tsx
+  s_f00585f6db12ae::t_3b3656b3f8d19a 1-8,14-16,19-47,49-52,58-60,62-65,67-84
+src/components/__tests__/FileListItem.test.tsx
+  s_f00585f6db12ae::t_2a0063c80ec392 42-45
+  s_f00585f6db12ae::t_3db8b20a0b3dfe 7,17,46,48-50,53-105
+  s_f00585f6db12ae::t_5c71a6c5b98603 38-40
+src/components/FileListItem.tsx
+  s_f00585f6db12ae::t_235a0dc9f8ca60 2,26-60,69-70,76-87,106,125-129,131-150,155-162,165
+  s_f00585f6db12ae::t_37efe1f73fc85a 72,74-75
+src/desktop/desktop.css
+  s_f00585f6db12ae::t_c2873a69d4ce35 254-257,259-261,265,270-279
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "05763331a0ccdd8a13aa75bccc9dbf59708c93d9",
+  "prompts": {},
+  "sessions": {
+    "s_f00585f6db12ae": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e2c99-3ab6-75f0-a5d3-13603768d478",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
