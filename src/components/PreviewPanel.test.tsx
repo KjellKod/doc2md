@@ -718,7 +718,7 @@ describe("PreviewPanel", () => {
     expect(editor).not.toHaveAttribute("readonly");
   });
 
-  it("notifies when converted paste exceeds threshold", () => {
+  it("defers large unchanged plain-text paste notification until after native paste", async () => {
     const onLargeMarkdownPaste = vi.fn();
 
     render(
@@ -733,7 +733,10 @@ describe("PreviewPanel", () => {
       plainText: "x".repeat(201),
     });
 
-    expect(onLargeMarkdownPaste).toHaveBeenCalledWith("x".repeat(201));
+    expect(onLargeMarkdownPaste).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(onLargeMarkdownPaste).toHaveBeenCalledWith("x".repeat(201)),
+    );
   });
 
   it("does not notify when converted paste is at or below threshold", () => {

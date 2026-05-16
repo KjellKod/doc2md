@@ -282,16 +282,19 @@ export default function EditMode({
       return false;
     }
 
-    if (markdown.length > LARGE_PASTE_MARKDOWN_LENGTH) {
-      onLargeMarkdownPaste?.(markdown);
-    }
-
     if (
       options.allowNativeUnchangedPlainText &&
       source !== "html" &&
       markdown === snapshot.plainText
     ) {
+      if (markdown.length > LARGE_PASTE_MARKDOWN_LENGTH) {
+        window.setTimeout(() => onLargeMarkdownPaste?.(markdown), 0);
+      }
       return false;
+    }
+
+    if (markdown.length > LARGE_PASTE_MARKDOWN_LENGTH) {
+      onLargeMarkdownPaste?.(markdown);
     }
 
     const nextValue =
