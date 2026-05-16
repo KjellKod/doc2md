@@ -4,9 +4,54 @@ import { getDomParser } from "./runtime";
 
 const TABLE_PLACEHOLDER_PREFIX = "DOC2MDTABLE";
 
+const GDOCS_LIST_FAMILY_PATTERN = /(?:^|\s)lst-kix_[^\s-]+-(\d+)(?:\s|$)/;
+const GDOCS_LIST_ITEM_BULLET_PATTERN = /(?:^|\s)li-bullet-(\d+)(?:\s|$)/;
+const GOOGLE_DOCS_LIST_LEVEL_ATTRIBUTE = "data-doc2md-list-level";
+
 const turndownService = new TurndownService({
   headingStyle: "atx",
   bulletListMarker: "-"
+});
+
+turndownService.addRule("googleDocsListItem", {
+  filter: (node) => {
+    if (node.nodeName !== "LI") return false;
+    const element = node as unknown as Element;
+    return (
+      typeof element.hasAttribute === "function" &&
+      element.hasAttribute(GOOGLE_DOCS_LIST_LEVEL_ATTRIBUTE)
+    );
+  },
+  replacement: (content, node, options) => {
+    const element = node as unknown as Element;
+    const parent = element.parentNode as Element | null;
+
+    let prefix = options.bulletListMarker + "   ";
+    if (parent && parent.nodeName === "OL") {
+      const start = parent.getAttribute("start");
+      const index = Array.prototype.indexOf.call(parent.children, element);
+      prefix = (start ? Number(start) + index : index + 1) + ".  ";
+    }
+
+    const isParagraph = /\n$/.test(content);
+    let normalized = content.replace(/^\n+/, "").replace(/\n+$/, "");
+    if (isParagraph) normalized += "\n";
+    normalized = normalized.replace(
+      /\n/gm,
+      "\n" + " ".repeat(prefix.length)
+    );
+
+    const rawLevel = Number.parseInt(
+      element.getAttribute(GOOGLE_DOCS_LIST_LEVEL_ATTRIBUTE) ?? "0",
+      10
+    );
+    const level = Number.isFinite(rawLevel) ? Math.max(0, rawLevel) : 0;
+    const indent = "    ".repeat(level);
+
+    return (
+      indent + prefix + normalized + (element.nextSibling ? "\n" : "")
+    );
+  }
 });
 
 function normalizeCellText(value: string) {
@@ -46,10 +91,41 @@ function replaceTablesWithPlaceholders(document: Document) {
   return replacements;
 }
 
+function collapseBlankLinesBetweenListItems(markdown: string): string {
+  // After Turndown emits sibling <ul>/<ol> blocks it leaves a blank line
+  // between them (`\n\n`). Adjacent list items that share a Google Docs
+  // origin should remain a single visual list with no break.
+  const listLine = /^(?: {4})*(?:[-*+]|\d+\.)\s/;
+  const lines = markdown.split("\n");
+  const result: string[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    result.push(line);
+    if (!listLine.test(line)) {
+      i += 1;
+      continue;
+    }
+
+    let j = i + 1;
+    while (j < lines.length && lines[j].trim() === "") j += 1;
+    if (j > i + 1 && j < lines.length && listLine.test(lines[j])) {
+      i = j;
+      continue;
+    }
+
+    i += 1;
+  }
+
+  return result.join("\n");
+}
+
 function restoreTablePlaceholders(markdown: string, replacements: Map<string, string>) {
   // Collapse excess whitespace between a bullet marker and its text, while
   // preserving leading indentation that encodes nesting level.
   let result = markdown.replace(/^(\s*[-*])\s{2,}/gm, "$1 ");
+  result = collapseBlankLinesBetweenListItems(result);
 
   replacements.forEach((tableMarkdown, placeholder) => {
     result = result.replace(placeholder, tableMarkdown);
@@ -58,243 +134,91 @@ function restoreTablePlaceholders(markdown: string, replacements: Map<string, st
   return result.trim();
 }
 
-const GDOCS_LIST_CLASS_PATTERN = /(?:^|\s)(lst-kix_[^\s-]+)-(\d+)(?:\s|$)/;
-const GDOCS_LIST_ITEM_CLASS_PATTERN = /(?:^|\s)li-bullet-(\d+)(?:\s|$)/;
-const GOOGLE_DOCS_LIST_LEVEL_ATTRIBUTE = "data-doc2md-list-level";
-
-interface GoogleDocsListMetadata {
-  family: string;
-  level: number;
-}
-
 interface ConvertHtmlFragmentToMarkdownOptions {
   inferGoogleDocsListNesting?: boolean;
   maxGoogleDocsInferredListDepth?: number;
-}
-
-function getGoogleDocsListMetadata(list: Element): GoogleDocsListMetadata | null {
-  const className = list.getAttribute("class") ?? "";
-  const match = className.match(GDOCS_LIST_CLASS_PATTERN);
-
-  if (match) {
-    return {
-      family: match[1],
-      level: parseInt(match[2], 10)
-    };
-  }
-
-  const firstListItem = getFirstListItem(list);
-  const itemLevel = firstListItem
-    ? getGoogleDocsListItemLevel(firstListItem)
-    : null;
-
-  if (itemLevel !== null) {
-    return {
-      family: "google-docs-list",
-      level: itemLevel
-    };
-  }
-
-  return null;
-}
-
-function getGoogleDocsListItemLevel(listItem: Element): number | null {
-  const annotatedLevel = listItem.getAttribute(GOOGLE_DOCS_LIST_LEVEL_ATTRIBUTE);
-  if (annotatedLevel !== null) {
-    const level = Number.parseInt(annotatedLevel, 10);
-    return Number.isFinite(level) ? level : null;
-  }
-
-  const classLevel = (listItem.getAttribute("class") ?? "").match(
-    GDOCS_LIST_ITEM_CLASS_PATTERN
-  );
-  if (classLevel) return Number.parseInt(classLevel[1], 10);
-
-  const ariaLevel = listItem.getAttribute("aria-level");
-  if (ariaLevel !== null) {
-    const level = Number.parseInt(ariaLevel, 10);
-    return Number.isFinite(level) ? Math.max(0, level - 1) : null;
-  }
-
-  return null;
-}
-
-function getFirstListItem(list: Element): HTMLLIElement | null {
-  const children = Array.from(list.children);
-
-  for (const child of children) {
-    if (child.tagName === "LI") {
-      return child as HTMLLIElement;
-    }
-  }
-
-  return null;
-}
-
-function getLastListItem(list: Element): HTMLLIElement | null {
-  const children = Array.from(list.children);
-
-  for (let i = children.length - 1; i >= 0; i -= 1) {
-    const child = children[i];
-    if (child.tagName === "LI") {
-      return child as HTMLLIElement;
-    }
-  }
-
-  return null;
-}
-
-function appendListToParentItem(
-  parentItem: HTMLLIElement,
-  list: Element
-): Element {
-  const existingList = Array.from(parentItem.children).find(
-    (child) => child !== list && child.tagName === list.tagName
-  );
-
-  if (!existingList) {
-    parentItem.appendChild(list);
-    return list;
-  }
-
-  while (list.firstChild) {
-    existingList.appendChild(list.firstChild);
-  }
-  list.remove();
-  return existingList;
 }
 
 function clampGoogleDocsListLevel(
   level: number,
   maxDepth: number | undefined
 ) {
-  if (maxDepth === undefined) return level;
+  if (maxDepth === undefined) return Math.max(0, level);
   return Math.max(0, Math.min(level, maxDepth));
 }
 
-/**
- * Google Docs exports nested lists as flat sibling <ul> elements with
- * CSS classes encoding the nesting level (e.g. lst-kix_xxx-0, lst-kix_xxx-1).
- * Turndown treats these as independent flat lists. This function restructures
- * consecutive sibling lists into proper nested HTML so Turndown produces
- * indented markdown.
- */
-function nestGoogleDocsLists(
-  doc: Document,
-  options: ConvertHtmlFragmentToMarkdownOptions
-): void {
-  const lists = Array.from(doc.querySelectorAll("ul, ol"));
-  const stacks = new Map<string, Element[]>();
-
-  lists.forEach((list) => {
-    const metadata = getGoogleDocsListMetadata(list);
-    if (!metadata) return;
-    const level = clampGoogleDocsListLevel(
-      metadata.level,
-      options.maxGoogleDocsInferredListDepth
-    );
-
-    const stack = stacks.get(metadata.family) ?? [];
-    stacks.set(metadata.family, stack);
-
-    if (level === 0) {
-      stack[0] = list;
-      stack.length = 1;
-      return;
-    }
-
-    let parentList: Element | undefined;
-    for (
-      let parentLevel = level - 1;
-      parentLevel >= 0;
-      parentLevel -= 1
-    ) {
-      parentList = stack[parentLevel];
-      if (parentList) break;
-    }
-
-    if (!parentList || parentList === list || list.contains(parentList)) {
-      stack[0] = list;
-      stack.length = 1;
-      return;
-    }
-
-    const parentItem = getLastListItem(parentList);
-    if (!parentItem) return;
-
-    const nestedList = appendListToParentItem(parentItem, list);
-    stack[level] = nestedList;
-    stack.length = level + 1;
-  });
+function levelFromUlClass(list: Element): number | null {
+  const className = list.getAttribute("class") ?? "";
+  const match = className.match(GDOCS_LIST_FAMILY_PATTERN);
+  return match ? Number.parseInt(match[1], 10) : null;
 }
 
-function getOrCreateNestedList(
-  doc: Document,
-  parentItem: HTMLLIElement,
-  tagName: string
-): HTMLOListElement | HTMLUListElement {
-  const existingList = Array.from(parentItem.children).find(
-    (child) => child.tagName === tagName
-  );
+function levelFromLiClass(item: Element): number | null {
+  const className = item.getAttribute("class") ?? "";
+  const match = className.match(GDOCS_LIST_ITEM_BULLET_PATTERN);
+  return match ? Number.parseInt(match[1], 10) : null;
+}
 
-  if (existingList) {
-    return existingList as HTMLOListElement | HTMLUListElement;
+function levelFromAriaLevel(item: Element): number | null {
+  const aria = item.getAttribute("aria-level");
+  if (aria === null) return null;
+  const parsed = Number.parseInt(aria, 10);
+  return Number.isFinite(parsed) ? Math.max(0, parsed - 1) : null;
+}
+
+function levelFromExistingAnnotation(item: Element): number | null {
+  const existing = item.getAttribute(GOOGLE_DOCS_LIST_LEVEL_ATTRIBUTE);
+  if (existing === null) return null;
+  const parsed = Number.parseInt(existing, 10);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function determineGoogleDocsListItemLevel(item: Element): number | null {
+  const annotated = levelFromExistingAnnotation(item);
+  if (annotated !== null) return annotated;
+
+  // Real Google Docs HTML carries the nesting level on the parent
+  // <ul class="lst-kix_*-N">. `li-bullet-N` is the bullet *style* index
+  // (almost always 0) and lies about depth, so prefer the parent class.
+  const parent = item.parentElement;
+  if (parent && (parent.tagName === "UL" || parent.tagName === "OL")) {
+    const ulLevel = levelFromUlClass(parent);
+    if (ulLevel !== null) return ulLevel;
   }
 
-  const nestedList = doc.createElement(tagName.toLowerCase()) as
-    | HTMLOListElement
-    | HTMLUListElement;
-  parentItem.appendChild(nestedList);
-  return nestedList;
+  const liLevel = levelFromLiClass(item);
+  if (liLevel !== null) return liLevel;
+
+  const ariaLevel = levelFromAriaLevel(item);
+  if (ariaLevel !== null) return ariaLevel;
+
+  return null;
 }
 
-function nestGoogleDocsFlatListItems(
-  doc: Document,
+/**
+ * Annotate every <li> in the document with its absolute Google Docs list
+ * level (clamped to `maxGoogleDocsInferredListDepth`). Annotation is the
+ * only signal the listItem Turndown rule needs to emit the right indent.
+ *
+ * No DOM nodes are moved. Source order is preserved — even when Google
+ * Docs batches an entire level into a single sibling <ul>, every item is
+ * emitted at the position it occupies in the source HTML.
+ */
+function annotateGoogleDocsListLevels(
+  document: Document,
   options: ConvertHtmlFragmentToMarkdownOptions
 ): void {
-  const lists = Array.from(doc.querySelectorAll("ul, ol"));
+  const items = Array.from(document.querySelectorAll("li"));
 
-  lists.forEach((list) => {
-    const listItems = Array.from(list.children).filter(
-      (child): child is HTMLLIElement => child.tagName === "LI"
+  items.forEach((item) => {
+    const rawLevel = determineGoogleDocsListItemLevel(item);
+    if (rawLevel === null) return;
+
+    const level = clampGoogleDocsListLevel(
+      rawLevel,
+      options.maxGoogleDocsInferredListDepth
     );
-
-    if (listItems.length === 0) return;
-    if (listItems.every((listItem) => getGoogleDocsListItemLevel(listItem) === null)) {
-      return;
-    }
-
-    const lastItemByLevel: HTMLLIElement[] = [];
-
-    listItems.forEach((listItem) => {
-      const level = clampGoogleDocsListLevel(
-        getGoogleDocsListItemLevel(listItem) ?? 0,
-        options.maxGoogleDocsInferredListDepth
-      );
-
-      if (level === 0) {
-        lastItemByLevel[0] = listItem;
-        lastItemByLevel.length = 1;
-        return;
-      }
-
-      let parentItem: HTMLLIElement | undefined;
-      for (let parentLevel = level - 1; parentLevel >= 0; parentLevel -= 1) {
-        parentItem = lastItemByLevel[parentLevel];
-        if (parentItem) break;
-      }
-
-      if (!parentItem) {
-        lastItemByLevel[0] = listItem;
-        lastItemByLevel.length = 1;
-        return;
-      }
-
-      const nestedList = getOrCreateNestedList(doc, parentItem, list.tagName);
-      nestedList.appendChild(listItem);
-      lastItemByLevel[level] = listItem;
-      lastItemByLevel.length = level + 1;
-    });
+    item.setAttribute(GOOGLE_DOCS_LIST_LEVEL_ATTRIBUTE, String(level));
   });
 }
 
@@ -306,8 +230,7 @@ export function convertHtmlFragmentToMarkdown(
   const parser = new DOMParserCtor();
   const document = parser.parseFromString(html, "text/html");
   if (options.inferGoogleDocsListNesting ?? true) {
-    nestGoogleDocsLists(document, options);
-    nestGoogleDocsFlatListItems(document, options);
+    annotateGoogleDocsListLevels(document, options);
   }
   const replacements = replaceTablesWithPlaceholders(document);
 

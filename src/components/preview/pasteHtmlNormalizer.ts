@@ -10,6 +10,7 @@ const CHECKBOX_PLACEHOLDERS = [
   OPEN_CHECKBOX_PLACEHOLDER,
 ] as const;
 const GOOGLE_DOCS_LIST_LEVEL_ATTRIBUTE = "data-doc2md-list-level";
+const GOOGLE_DOCS_LIST_FAMILY_PATTERN = /(?:^|\s)lst-kix_[^\s-]+-(\d+)(?:\s|$)/;
 const GOOGLE_DOCS_LIST_ITEM_CLASS_PATTERN = /(?:^|\s)li-bullet-(\d+)(?:\s|$)/;
 const BLOCK_SELECTOR = [
   "address",
@@ -111,6 +112,16 @@ function getGoogleDocsListItemLevel(
   listItem: Element,
   classStyles: Map<string, string>,
 ) {
+  // Real Google Docs HTML carries the nesting level on the parent
+  // <ul class="lst-kix_*-N">. `li-bullet-N` is the bullet *style* index
+  // (almost always 0) and lies about depth, so prefer the parent class.
+  const parent = listItem.parentElement;
+  if (parent && (parent.tagName === "UL" || parent.tagName === "OL")) {
+    const parentClass = parent.getAttribute("class") ?? "";
+    const familyLevel = parentClass.match(GOOGLE_DOCS_LIST_FAMILY_PATTERN);
+    if (familyLevel) return Number.parseInt(familyLevel[1], 10);
+  }
+
   const classLevel = (listItem.getAttribute("class") ?? "").match(
     GOOGLE_DOCS_LIST_ITEM_CLASS_PATTERN,
   );

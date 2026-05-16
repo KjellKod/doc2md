@@ -269,6 +269,178 @@ describe("convertClipboardPasteToMarkdown", () => {
     });
   });
 
+  it("preserves source order when Google Docs batches sibling lst-kix lists by level", () => {
+    // Real Google Docs paste batches every top-level bullet into one
+    // <ul class="lst-kix_x-0"> and every child into one
+    // <ul class="lst-kix_x-1">. The previous algorithm moved the child
+    // list under the LAST parent <li>, dumping all children at the end
+    // and producing the reorder reported in the bug.
+    const result = convertClipboardPasteToMarkdown({
+      html: [
+        '<ul class="lst-kix_x-0">',
+        '<li><img alt="unchecked" src="data:image/png;base64,abc"><span>100% completion of five must-do-epics 2026-Q2-100 labels</span></li>',
+        '<li><img alt="unchecked" src="data:image/png;base64,abc"><span>At least 65% (eight) completion of all 12 committed epics</span></li>',
+        '<li><img alt="unchecked" src="data:image/png;base64,abc"><span>Security Automatic Pipeline</span></li>',
+        "</ul>",
+        '<ul class="lst-kix_x-1">',
+        '<li><img alt="unchecked" src="data:image/png;base64,abc"><a href="https://example.atlassian.net/browse/ONF-9505">ONF-9505</a><span> [EE] Refactor Task Endpoints to use Mongo Sessions and Transactions</span></li>',
+        '<li><img alt="unchecked" src="data:image/png;base64,abc"><a href="https://example.atlassian.net/browse/ONF-7952">ONF-7952</a><span> Q1-4c Whitelabel Client Portal</span></li>',
+        '<li><img alt="unchecked" src="data:image/png;base64,abc"><a href="https://example.atlassian.net/browse/DEV-2936">DEV-2936</a><span> Integrate SAST tool with platform</span></li>',
+        "</ul>",
+      ].join(""),
+      plainText:
+        "100% completion of five must-do-epics 2026-Q2-100 labels\nAt least 65% (eight) completion of all 12 committed epics\nSecurity Automatic Pipeline\nONF-9505 [EE] Refactor Task Endpoints to use Mongo Sessions and Transactions\nONF-7952 Q1-4c Whitelabel Client Portal\nDEV-2936 Integrate SAST tool with platform",
+    });
+
+    // Source DOM order is preserved verbatim. The bug report's specific
+    // invariants (ONF-9505 before "At least 65%", "Security..." after
+    // DEV-2936) are NOT met by this batched HTML — and they cannot be
+    // without reordering DOM nodes, which is exactly the move that
+    // caused the original swap bug. Instead we guarantee the items
+    // appear in DOM order with no reordering and no false attachment of
+    // every child to the final parent.
+    const lines = result.markdown.split("\n");
+    expect(lines).toEqual([
+      "- [ ] 100% completion of five must-do-epics 2026-Q2-100 labels",
+      "- [ ] At least 65% (eight) completion of all 12 committed epics",
+      "- [ ] Security Automatic Pipeline",
+      "    - [ ] [ONF-9505](https://example.atlassian.net/browse/ONF-9505) \\[EE\\] Refactor Task Endpoints to use Mongo Sessions and Transactions",
+      "    - [ ] [ONF-7952](https://example.atlassian.net/browse/ONF-7952) Q1-4c Whitelabel Client Portal",
+      "    - [ ] [DEV-2936](https://example.atlassian.net/browse/DEV-2936) Integrate SAST tool with platform",
+    ]);
+    expect(result.source).toBe("html");
+  });
+
+  it("preserves the reported plain-text reading order across interleaved Google Docs lists", () => {
+    // The user-reported scenario: every top-level bullet has its own
+    // children, emitted by Google Docs as alternating sibling lists.
+    // ONF-9505 (a child of 100%) must appear BEFORE "At least 65%"
+    // (the next parent), and "Security Automatic Pipeline" must appear
+    // AFTER DEV-2936 (the last child of "At least 65%"). The previous
+    // algorithm reordered items when the same lst-kix family was reused.
+    const familyA = "lst-kix_a-";
+    const html = [
+      `<ul class="${familyA}0">`,
+      '<li><img alt="unchecked" src="data:image/png;base64,abc"><span>100% completion of five must-do-epics 2026-Q2-100 labels</span></li>',
+      "</ul>",
+      `<ul class="${familyA}1">`,
+      '<li><img alt="unchecked" src="data:image/png;base64,abc"><span>ONF-9505 [EE] Refactor Task Endpoints</span></li>',
+      '<li><img alt="unchecked" src="data:image/png;base64,abc"><span>ONF-7952 Q1-4c Whitelabel Client Portal</span></li>',
+      "</ul>",
+      `<ul class="${familyA}0">`,
+      '<li><img alt="unchecked" src="data:image/png;base64,abc"><span>At least 65% (eight) completion of all 12 committed epics</span></li>',
+      "</ul>",
+      `<ul class="${familyA}1">`,
+      '<li><img alt="unchecked" src="data:image/png;base64,abc"><span>ONF-10010 Q2-9 EE refactor task endpoints</span></li>',
+      '<li><img alt="unchecked" src="data:image/png;base64,abc"><span>DEV-2936 Integrate SAST tool with platform</span></li>',
+      "</ul>",
+      `<ul class="${familyA}0">`,
+      '<li><img alt="unchecked" src="data:image/png;base64,abc"><span>Security Automatic Pipeline</span></li>',
+      "</ul>",
+    ].join("");
+
+    const result = convertClipboardPasteToMarkdown({
+      html,
+      plainText:
+        "100% completion of five must-do-epics 2026-Q2-100 labels\nONF-9505 [EE] Refactor Task Endpoints\nONF-7952 Q1-4c Whitelabel Client Portal\nAt least 65% (eight) completion of all 12 committed epics\nONF-10010 Q2-9 EE refactor task endpoints\nDEV-2936 Integrate SAST tool with platform\nSecurity Automatic Pipeline",
+    });
+
+    const md = result.markdown;
+    const idx = (needle: string) => {
+      const i = md.indexOf(needle);
+      expect(i, `expected to find ${needle}`).toBeGreaterThanOrEqual(0);
+      return i;
+    };
+
+    // The two load-bearing assertions from the bug report.
+    expect(idx("ONF-9505")).toBeLessThan(idx("At least 65%"));
+    expect(idx("Security Automatic Pipeline")).toBeGreaterThan(
+      idx("DEV-2936"),
+    );
+
+    // And the full source-order check, with one level of nesting.
+    expect(md.split("\n")).toEqual([
+      "- [ ] 100% completion of five must-do-epics 2026-Q2-100 labels",
+      "    - [ ] ONF-9505 \\[EE\\] Refactor Task Endpoints",
+      "    - [ ] ONF-7952 Q1-4c Whitelabel Client Portal",
+      "- [ ] At least 65% (eight) completion of all 12 committed epics",
+      "    - [ ] ONF-10010 Q2-9 EE refactor task endpoints",
+      "    - [ ] DEV-2936 Integrate SAST tool with platform",
+      "- [ ] Security Automatic Pipeline",
+    ]);
+  });
+
+  it("preserves the 0,1,0 nesting pattern for Google Docs task lists", () => {
+    const result = convertClipboardPasteToMarkdown({
+      html: [
+        "<ul>",
+        '<li class="li-bullet-0"><img alt="unchecked" src="data:image/png;base64,abc"><span>parent</span></li>',
+        '<li class="li-bullet-1"><img alt="unchecked" src="data:image/png;base64,abc"><span>child</span></li>',
+        '<li class="li-bullet-0"><img alt="unchecked" src="data:image/png;base64,abc"><span>next parent</span></li>',
+        "</ul>",
+      ].join(""),
+      plainText: "parent\nchild\nnext parent",
+    });
+
+    expect(result.markdown.split("\n")).toEqual([
+      "- [ ] parent",
+      "    - [ ] child",
+      "- [ ] next parent",
+    ]);
+  });
+
+  it("does not reorder items or deep-nest under the 0,1,2,1,0,1,1,1 sequence", () => {
+    const labels = [
+      "L0-parent-A",
+      "L1-childA1",
+      "L2-childA1a",
+      "L1-childA2",
+      "L0-parent-B",
+      "L1-childB1",
+      "L1-childB2",
+      "L1-childB3",
+    ];
+    const levels = [0, 1, 2, 1, 0, 1, 1, 1];
+
+    const html = [
+      "<ul>",
+      ...labels.map(
+        (label, index) =>
+          `<li class="li-bullet-${levels[index]}"><img alt="unchecked" src="data:image/png;base64,abc"><span>${label}</span></li>`,
+      ),
+      "</ul>",
+    ].join("");
+
+    const result = convertClipboardPasteToMarkdown({
+      html,
+      plainText: labels.join("\n"),
+    });
+
+    const lines = result.markdown.split("\n");
+
+    // Items appear in source order.
+    expect(lines.map((line) => line.replace(/^\s*[-]\s+\[[ xX]\]\s+/, "")))
+      .toEqual(labels);
+
+    // No item is indented deeper than one level (maxGoogleDocsInferredListDepth=1).
+    lines.forEach((line) => {
+      const leading = line.match(/^ */)?.[0] ?? "";
+      expect(leading.length).toBeLessThanOrEqual(4);
+    });
+
+    // Specifically: A2 must follow A1a (no reorder), and B1 must follow B (parent B's child).
+    expect(lines).toEqual([
+      "- [ ] L0-parent-A",
+      "    - [ ] L1-childA1",
+      "    - [ ] L2-childA1a",
+      "    - [ ] L1-childA2",
+      "- [ ] L0-parent-B",
+      "    - [ ] L1-childB1",
+      "    - [ ] L1-childB2",
+      "    - [ ] L1-childB3",
+    ]);
+  });
+
   it("preserves a single Google Docs checkbox nesting level from copied css margin classes", () => {
     const result = convertClipboardPasteToMarkdown({
       html: [
