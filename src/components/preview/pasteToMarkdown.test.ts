@@ -168,6 +168,30 @@ describe("convertClipboardPasteToMarkdown", () => {
     expect(result.markdown).toMatch(/1\.\s+First/);
   });
 
+  it("removes unnecessary escapes before unicode dashes from html paste", () => {
+    expect(
+      convertClipboardPasteToMarkdown({
+        html: "<p>\\— and \\–</p>",
+        plainText: "— and –",
+      }),
+    ).toEqual({
+      markdown: "— and –",
+      source: "html",
+    });
+  });
+
+  it("keeps literal ascii horizontal-rule markers escaped", () => {
+    expect(
+      convertClipboardPasteToMarkdown({
+        html: "<p>---</p>",
+        plainText: "---",
+      }),
+    ).toEqual({
+      markdown: "\\---",
+      source: "html",
+    });
+  });
+
   it("converts linkedin unicode inside html clipboard content", () => {
     const result = convertClipboardPasteToMarkdown({
       html: "<p>𝐁𝐨𝐥𝐝 and 𝑖𝑡𝑎𝑙𝑖𝑐</p>",
