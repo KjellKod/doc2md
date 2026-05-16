@@ -1,0 +1,33 @@
+src/converters/richText.ts
+  s_bd066a8e170cce::t_11fc236f708015 62-63,74-78,81-126,179-242,248
+docs/quest-journal/README.md
+  s_bd066a8e170cce::t_db63c8695a959c 5
+ideas/README.md
+  s_bd066a8e170cce::t_8040b0ad4f58c5 29
+docs/diary/2026-05-15.md
+  s_bd066a8e170cce::t_9e98a1b4a1c22c 1-37,46
+src/components/preview/pasteToMarkdown.test.ts
+  s_bd066a8e170cce::t_e00ed33d3dd4c3 190-241,311-315
+src/components/preview/pasteHtmlNormalizer.ts
+  s_bd066a8e170cce::t_4385906236adc2 12-13,39,51-143,330
+src/components/preview/pasteToMarkdown.ts
+  s_bd066a8e170cce::t_740bd7e92aeb3b 43-46
+docs/dexter-journal/README.md
+  s_bd066a8e170cce::t_1f9c4359742951 9-10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "789658ce78f7912bd615c05c49fea86125f76045",
+  "prompts": {},
+  "sessions": {
+    "s_bd066a8e170cce": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e2ccc-7d29-77b1-941a-8c9e9ec7e7ce",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
