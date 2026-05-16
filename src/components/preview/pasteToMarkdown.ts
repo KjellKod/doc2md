@@ -60,7 +60,7 @@ export function convertClipboardPasteToMarkdown({
     const htmlMarkdown = restorePlainTextHorizontalRuleMarkers(
       restorePasteMarkdownPlaceholders(
         convertHtmlFragmentToMarkdown(normalizePasteHtmlForMarkdown(html), {
-          inferGoogleDocsListNesting: false,
+          maxGoogleDocsInferredListDepth: 1,
         }),
       ),
       plainText,

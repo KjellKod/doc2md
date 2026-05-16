@@ -160,7 +160,7 @@ describe("convertClipboardPasteToMarkdown", () => {
     });
   });
 
-  it("flattens Google Docs sibling checkbox lists with weak level classes", () => {
+  it("preserves a single Google Docs sibling checkbox nesting level", () => {
     const result = convertClipboardPasteToMarkdown({
       html: [
         '<ul class="lst-kix_goal-0">',
@@ -180,14 +180,14 @@ describe("convertClipboardPasteToMarkdown", () => {
     expect(result).toEqual({
       markdown: [
         "- [ ] 100% completion of five must-do-epics 2026-Q2-100 labels",
-        "- [ ] [ONF-9505](https://example.atlassian.net/browse/ONF-9505) \\[EE\\] Refactor Task Endpoints to use Mongo Sessions and Transactions",
+        "    - [ ] [ONF-9505](https://example.atlassian.net/browse/ONF-9505) \\[EE\\] Refactor Task Endpoints to use Mongo Sessions and Transactions",
         "- [ ] [ONF-7952](https://example.atlassian.net/browse/ONF-7952) Q1-4c Whitelabel Client Portal",
       ].join("\n"),
       source: "html",
     });
   });
 
-  it("keeps ambiguous Google Docs level sequences in original flat order", () => {
+  it("keeps ambiguous Google Docs level sequences in original order without deep nesting", () => {
     const result = convertClipboardPasteToMarkdown({
       html: [
         '<ul class="lst-kix_goal-0">',
@@ -230,19 +230,19 @@ describe("convertClipboardPasteToMarkdown", () => {
     expect(result).toEqual({
       markdown: [
         "- [ ] 100% completion of five must-do-epics 2026-Q2-100 labels",
-        "- [ ] [ONF-9505](https://example.atlassian.net/browse/ONF-9505) \\[EE\\] Refactor Task Endpoints to use Mongo Sessions and Transactions",
-        "- [ ] [ONF-7952](https://example.atlassian.net/browse/ONF-7952) Q1-4c Whitelabel Client Portal",
-        "- [ ] [ONF-6640](https://example.atlassian.net/browse/ONF-6640) Q1-2a Custom Fields/Requirements for Courier Clients",
+        "    - [ ] [ONF-9505](https://example.atlassian.net/browse/ONF-9505) \\[EE\\] Refactor Task Endpoints to use Mongo Sessions and Transactions",
+        "    - [ ] [ONF-7952](https://example.atlassian.net/browse/ONF-7952) Q1-4c Whitelabel Client Portal",
+        "    - [ ] [ONF-6640](https://example.atlassian.net/browse/ONF-6640) Q1-2a Custom Fields/Requirements for Courier Clients",
         "- [ ] At least 65% completion of all 12 committed epics",
-        "- [ ] [ONF-10010](https://example.atlassian.net/browse/ONF-10010) Q2 revenue reporting",
-        "- [ ] [ONF-10009](https://example.atlassian.net/browse/ONF-10009) Q2 driver workflow",
-        "- [ ] Continue operational cleanup",
+        "    - [ ] [ONF-10010](https://example.atlassian.net/browse/ONF-10010) Q2 revenue reporting",
+        "    - [ ] [ONF-10009](https://example.atlassian.net/browse/ONF-10009) Q2 driver workflow",
+        "    - [ ] Continue operational cleanup",
       ].join("\n"),
       source: "html",
     });
   });
 
-  it("flattens ambiguous Google Docs li-bullet checkbox indentation", () => {
+  it("caps ambiguous Google Docs li-bullet checkbox indentation at one level", () => {
     const result = convertClipboardPasteToMarkdown({
       html: [
         "<ul>",
@@ -260,16 +260,16 @@ describe("convertClipboardPasteToMarkdown", () => {
     expect(result).toEqual({
       markdown: [
         "- [ ] Parent task",
-        "- [ ] Child task",
-        "- [ ] Grandchild task",
-        "- [ ] Second child task",
+        "    - [ ] Child task",
+        "    - [ ] Grandchild task",
+        "    - [ ] Second child task",
         "- [ ] Next parent task",
       ].join("\n"),
       source: "html",
     });
   });
 
-  it("flattens ambiguous Google Docs checkbox indentation from copied css margin classes", () => {
+  it("preserves a single Google Docs checkbox nesting level from copied css margin classes", () => {
     const result = convertClipboardPasteToMarkdown({
       html: [
         "<style>",
@@ -287,7 +287,7 @@ describe("convertClipboardPasteToMarkdown", () => {
     expect(result).toEqual({
       markdown: [
         "- [ ] Parent task",
-        "- [ ] Child task",
+        "    - [ ] Child task",
         "- [ ] Next parent task",
       ].join("\n"),
       source: "html",

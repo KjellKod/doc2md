@@ -69,6 +69,7 @@ interface GoogleDocsListMetadata {
 
 interface ConvertHtmlFragmentToMarkdownOptions {
   inferGoogleDocsListNesting?: boolean;
+  maxGoogleDocsInferredListDepth?: number;
 }
 
 function getGoogleDocsListMetadata(list: Element): GoogleDocsListMetadata | null {
@@ -163,6 +164,14 @@ function appendListToParentItem(
   return existingList;
 }
 
+function clampGoogleDocsListLevel(
+  level: number,
+  maxDepth: number | undefined
+) {
+  if (maxDepth === undefined) return level;
+  return Math.max(0, Math.min(level, maxDepth));
+}
+
 /**
  * Google Docs exports nested lists as flat sibling <ul> elements with
  * CSS classes encoding the nesting level (e.g. lst-kix_xxx-0, lst-kix_xxx-1).
@@ -170,18 +179,25 @@ function appendListToParentItem(
  * consecutive sibling lists into proper nested HTML so Turndown produces
  * indented markdown.
  */
-function nestGoogleDocsLists(doc: Document): void {
+function nestGoogleDocsLists(
+  doc: Document,
+  options: ConvertHtmlFragmentToMarkdownOptions
+): void {
   const lists = Array.from(doc.querySelectorAll("ul, ol"));
   const stacks = new Map<string, Element[]>();
 
   lists.forEach((list) => {
     const metadata = getGoogleDocsListMetadata(list);
     if (!metadata) return;
+    const level = clampGoogleDocsListLevel(
+      metadata.level,
+      options.maxGoogleDocsInferredListDepth
+    );
 
     const stack = stacks.get(metadata.family) ?? [];
     stacks.set(metadata.family, stack);
 
-    if (metadata.level === 0) {
+    if (level === 0) {
       stack[0] = list;
       stack.length = 1;
       return;
@@ -189,7 +205,7 @@ function nestGoogleDocsLists(doc: Document): void {
 
     let parentList: Element | undefined;
     for (
-      let parentLevel = metadata.level - 1;
+      let parentLevel = level - 1;
       parentLevel >= 0;
       parentLevel -= 1
     ) {
@@ -207,8 +223,8 @@ function nestGoogleDocsLists(doc: Document): void {
     if (!parentItem) return;
 
     const nestedList = appendListToParentItem(parentItem, list);
-    stack[metadata.level] = nestedList;
-    stack.length = metadata.level + 1;
+    stack[level] = nestedList;
+    stack.length = level + 1;
   });
 }
 
@@ -232,7 +248,10 @@ function getOrCreateNestedList(
   return nestedList;
 }
 
-function nestGoogleDocsFlatListItems(doc: Document): void {
+function nestGoogleDocsFlatListItems(
+  doc: Document,
+  options: ConvertHtmlFragmentToMarkdownOptions
+): void {
   const lists = Array.from(doc.querySelectorAll("ul, ol"));
 
   lists.forEach((list) => {
@@ -248,7 +267,10 @@ function nestGoogleDocsFlatListItems(doc: Document): void {
     const lastItemByLevel: HTMLLIElement[] = [];
 
     listItems.forEach((listItem) => {
-      const level = getGoogleDocsListItemLevel(listItem) ?? 0;
+      const level = clampGoogleDocsListLevel(
+        getGoogleDocsListItemLevel(listItem) ?? 0,
+        options.maxGoogleDocsInferredListDepth
+      );
 
       if (level === 0) {
         lastItemByLevel[0] = listItem;
@@ -284,8 +306,8 @@ export function convertHtmlFragmentToMarkdown(
   const parser = new DOMParserCtor();
   const document = parser.parseFromString(html, "text/html");
   if (options.inferGoogleDocsListNesting ?? true) {
-    nestGoogleDocsLists(document);
-    nestGoogleDocsFlatListItems(document);
+    nestGoogleDocsLists(document, options);
+    nestGoogleDocsFlatListItems(document, options);
   }
   const replacements = replaceTablesWithPlaceholders(document);
 
