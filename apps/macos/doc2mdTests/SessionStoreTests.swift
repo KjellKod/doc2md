@@ -343,6 +343,87 @@ final class ShellBridgeSessionTrustTests: XCTestCase {
         XCTAssertEqual(openResult.code, "permission-needed")
     }
 
+    func testClearRecentFilesClearsSessionRestoreAndSuppressesOpenPathsUntilReopened() async throws {
+        let restoredMarkdown = try makeFile(name: "restored.md", content: "# restored\n")
+        let harness = try makeHarness(
+            seedSession: DesktopSessionState(
+                openPaths: [restoredMarkdown.path],
+                selectedPath: restoredMarkdown.path
+            ),
+            seedRecentURLs: [restoredMarkdown]
+        )
+
+        let restoreOpenResult = try await sendMessage(
+            harness: harness,
+            name: "doc2mdOpenFile",
+            id: "open-restored-before-clear",
+            args: ["path": restoredMarkdown.path]
+        )
+        XCTAssertTrue(restoreOpenResult.ok)
+
+        let persistedBeforeClear = try await sendMessage(
+            harness: harness,
+            name: "doc2mdSetSessionState",
+            id: "sync-restored-before-clear",
+            args: [
+                "openPaths": [restoredMarkdown.path],
+                "selectedPath": restoredMarkdown.path
+            ]
+        )
+        XCTAssertEqual(persistedBeforeClear.openPaths, [restoredMarkdown.path])
+        XCTAssertEqual(persistedBeforeClear.selectedPath, restoredMarkdown.path)
+
+        let clearResult = try await sendMessage(
+            harness: harness,
+            name: "doc2mdClearRecentFiles",
+            id: "clear-session-recents",
+            args: nil
+        )
+        XCTAssertTrue(clearResult.ok)
+        XCTAssertEqual(clearResult.recentFiles?.count, 0)
+
+        let restoreAfterClear = try await sendMessage(
+            harness: harness,
+            name: "doc2mdGetSessionState",
+            id: "get-session-after-clear",
+            args: nil
+        )
+        XCTAssertEqual(restoreAfterClear.openPaths, [])
+        XCTAssertNil(restoreAfterClear.selectedPath)
+
+        let suppressedSyncResult = try await sendMessage(
+            harness: harness,
+            name: "doc2mdSetSessionState",
+            id: "sync-open-path-after-clear",
+            args: [
+                "openPaths": [restoredMarkdown.path],
+                "selectedPath": restoredMarkdown.path
+            ]
+        )
+        XCTAssertEqual(suppressedSyncResult.openPaths, [])
+        XCTAssertNil(suppressedSyncResult.selectedPath)
+
+        let explicitOpenResult = try await sendMessage(
+            harness: harness,
+            name: "doc2mdOpenFile",
+            id: "explicit-open-after-clear",
+            args: ["path": restoredMarkdown.path]
+        )
+        XCTAssertTrue(explicitOpenResult.ok)
+
+        let trustedAgainSyncResult = try await sendMessage(
+            harness: harness,
+            name: "doc2mdSetSessionState",
+            id: "sync-open-path-after-explicit-open",
+            args: [
+                "openPaths": [restoredMarkdown.path],
+                "selectedPath": restoredMarkdown.path
+            ]
+        )
+        XCTAssertEqual(trustedAgainSyncResult.openPaths, [restoredMarkdown.path])
+        XCTAssertEqual(trustedAgainSyncResult.selectedPath, restoredMarkdown.path)
+    }
+
     private func makeHarness(
         seedSession: DesktopSessionState = DesktopSessionState(openPaths: [], selectedPath: nil),
         seedRecentURLs: [URL] = []

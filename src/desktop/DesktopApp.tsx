@@ -409,6 +409,7 @@ function AppContent() {
   const sessionSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
+  const sessionSyncSuppressedPathsRef = useRef<Set<string>>(new Set());
   const [entrySaveStates, setEntrySaveStates] = useState<
     Record<string, DesktopSaveState>
   >({});
@@ -1454,6 +1455,16 @@ function AppContent() {
     setDesktopNotice({ kind: "none" });
   }, []);
 
+  const allowSessionSyncForPath = useCallback((path: string) => {
+    sessionSyncSuppressedPathsRef.current.delete(path);
+  }, []);
+
+  const suppressCurrentSessionPaths = useCallback(() => {
+    sessionSyncSuppressedPathsRef.current = new Set(
+      Object.values(desktopFilesRef.current).map((file) => file.path),
+    );
+  }, []);
+
   const handleClearRecentFiles = useCallback(async () => {
     if (!shell?.clearRecentFiles) {
       return;
@@ -1462,6 +1473,15 @@ function AppContent() {
     try {
       const result = await shell.clearRecentFiles();
       if (isPersistenceSettings(result)) {
+        if (sessionSyncTimeoutRef.current !== null) {
+          clearTimeout(sessionSyncTimeoutRef.current);
+          sessionSyncTimeoutRef.current = null;
+        }
+        suppressCurrentSessionPaths();
+        void shell.setSessionState({
+          openPaths: [],
+          selectedPath: undefined,
+        });
         setPersistenceSettings(result);
         setUnavailableRecentPaths(new Set());
         clearDesktopProblem();
@@ -1478,6 +1498,7 @@ function AppContent() {
     shell,
     showPersistenceIssue,
     showPersistenceUnavailable,
+    suppressCurrentSessionPaths,
   ]);
 
   const markRecentPathAvailable = useCallback((path: string) => {
@@ -1651,6 +1672,9 @@ function AppContent() {
       const refreshAfterOpen = options.refreshPersistence ?? true;
       if (result.ok) {
         if (result.kind === "markdown") {
+          if (refreshAfterOpen) {
+            allowSessionSyncForPath(result.path);
+          }
           const entryId = addMarkdownEntry({
             name: basenameForPath(result.path),
             content: result.content,
@@ -1734,6 +1758,7 @@ function AppContent() {
     [
       addImportedFileEntry,
       addMarkdownEntry,
+      allowSessionSyncForPath,
       clearDesktopProblem,
       clearDocumentProblem,
       refreshPersistenceSettings,
@@ -1780,6 +1805,7 @@ function AppContent() {
         (entry) => desktopFilesRef.current[entry.id]?.path === path,
       );
       if (existingEntry) {
+        allowSessionSyncForPath(path);
         selectEntry(existingEntry.id);
         setActivePage("convert");
         setShowLandingChrome(false);
@@ -1819,6 +1845,7 @@ function AppContent() {
       }
     },
     [
+      allowSessionSyncForPath,
       clearDesktopProblem,
       handleOpenFileResult,
       markRecentPathAvailable,
@@ -1939,10 +1966,15 @@ function AppContent() {
     const desktopShell = shell;
     const openPaths = entries
       .map((entry) => desktopFiles[entry.id]?.path)
-      .filter((path): path is string => Boolean(path));
-    const selectedSessionPath = selectedEntryId
+      .filter((path): path is string => Boolean(path))
+      .filter((path) => !sessionSyncSuppressedPathsRef.current.has(path));
+    const selectedPath = selectedEntryId
       ? desktopFiles[selectedEntryId]?.path
       : undefined;
+    const selectedSessionPath =
+      selectedPath && !sessionSyncSuppressedPathsRef.current.has(selectedPath)
+        ? selectedPath
+        : undefined;
 
     sessionSyncTimeoutRef.current = setTimeout(() => {
       void desktopShell.setSessionState({
@@ -2000,6 +2032,7 @@ function AppContent() {
 
         if (result.ok) {
           const lineEnding = lineEndingForDesktopFile(desktopFile);
+          allowSessionSyncForPath(result.path);
           renameEntry(entry.id, basenameForPath(result.path));
           setDesktopFiles((current) => ({
             ...current,
@@ -2055,6 +2088,7 @@ function AppContent() {
       }
     },
     [
+      allowSessionSyncForPath,
       clearDocumentProblem,
       entrySaveStates,
       restoreCancelledSaveState,
@@ -2102,6 +2136,7 @@ function AppContent() {
       });
 
       if (result.ok) {
+        allowSessionSyncForPath(result.path);
         renameEntry(entry.id, basenameForPath(result.path));
         setDesktopFiles((current) => ({
           ...current,
@@ -2155,6 +2190,7 @@ function AppContent() {
       saveInFlightRef.current = false;
     }
   }, [
+    allowSessionSyncForPath,
     clearDocumentProblem,
     entrySaveStates,
     restoreCancelledSaveState,

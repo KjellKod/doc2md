@@ -1163,6 +1163,87 @@ describe("App desktop bridge", () => {
     cleanupShell();
   });
 
+  it("clears restored session paths without closing the active file", async () => {
+    const clearRecentFiles = vi.fn(async () => ({
+      ok: true as const,
+      persistenceEnabled: true,
+      recentFiles: [],
+    }));
+    const setSessionState = vi.fn(async (args: {
+      openPaths: string[];
+      selectedPath?: string;
+    }) => ({
+      ok: true as const,
+      ...args,
+      recentFiles: [],
+    }));
+    const cleanupShell = installMockShell({
+      clearRecentFiles,
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: true,
+        recentFiles: [
+          {
+            path: "/Users/me/Current.md",
+            displayName: "Current.md",
+            lastOpenedAt: "2026-04-28T20:40:00.000Z",
+          },
+        ],
+      })),
+      getSessionState: vi.fn(async () => ({
+        ok: true as const,
+        openPaths: [],
+        recentFiles: [],
+      })),
+      openFile: vi.fn(async () => ({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Current.md",
+        content: "# Current\n",
+        mtimeMs: 10,
+        lineEnding: "lf" as const,
+      })),
+      setSessionState,
+    });
+
+    render(<DesktopApp />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await screen.findByRole("heading", { name: "Current" });
+    await waitFor(() =>
+      expect(setSessionState).toHaveBeenCalledWith({
+        openPaths: ["/Users/me/Current.md"],
+        selectedPath: "/Users/me/Current.md",
+      }),
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Desktop settings" }));
+    const settingsDialog = screen.getByRole("dialog", { name: "Desktop settings" });
+    fireEvent.click(within(settingsDialog).getByRole("button", { name: "Clear history" }));
+
+    await waitFor(() => expect(clearRecentFiles).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole("heading", { name: "Current" })).toBeInTheDocument();
+    expect(within(settingsDialog).getByText("No recent files yet.")).toBeInTheDocument();
+
+    setSessionState.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    fireEvent.change(screen.getByLabelText("Edit markdown"), {
+      target: { value: "# Current\n\nEdited after clearing history" },
+    });
+
+    await waitFor(() =>
+      expect(setSessionState).toHaveBeenCalledWith({
+        openPaths: [],
+        selectedPath: undefined,
+      }),
+    );
+    expect(setSessionState).not.toHaveBeenCalledWith({
+      openPaths: ["/Users/me/Current.md"],
+      selectedPath: "/Users/me/Current.md",
+    });
+
+    cleanupShell();
+  });
+
   it("opens settings recent files and marks unavailable files for retry", async () => {
     const openFile = vi
       .fn()

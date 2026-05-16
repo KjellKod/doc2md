@@ -77,6 +77,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
     private var knownURLsByPath: [String: URL] = [:]
     private var restoreCandidatePaths: Set<String> = []
     private var nativeRecentOpenPaths: Set<String> = []
+    private var sessionSyncSuppressedPaths: Set<String> = []
     private var lastDirectoryURL: URL?
 
     init(
@@ -352,7 +353,9 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
                 try sessionStore.clear()
                 restoreCandidatePaths.removeAll()
                 nativeRecentOpenPaths.removeAll()
+                sessionSyncSuppressedPaths.removeAll()
             } else {
+                sessionSyncSuppressedPaths.removeAll()
                 seedRestoreCandidatePaths()
             }
             resolve(
@@ -386,8 +389,10 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
     private func handleClearRecentFiles(_ message: BridgeMessage) {
         do {
             let settings = try persistenceStore.clearRecentFiles()
+            try sessionStore.clear()
+            sessionSyncSuppressedPaths.formUnion(knownURLsByPath.keys)
+            restoreCandidatePaths.removeAll()
             nativeRecentOpenPaths.removeAll()
-            seedRestoreCandidatePaths()
             resolve(
                 id: message.id,
                 result: ShellPersistenceSettingsOk(
@@ -444,7 +449,8 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
             }
 
             let args = try Self.decode(SetSessionStateArgs.self, from: message.args)
-            let trustedPaths = Set(knownURLsByPath.keys).union(restoreCandidatePaths)
+            let trustedKnownPaths = Set(knownURLsByPath.keys).subtracting(sessionSyncSuppressedPaths)
+            let trustedPaths = trustedKnownPaths.union(restoreCandidatePaths)
             let state = try sessionStore.writeTrusted(
                 openPaths: args.openPaths,
                 selectedPath: args.selectedPath,
@@ -479,6 +485,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
             let settings = try persistenceStore.recordRecentDocument(url: url)
             if settings.persistenceEnabled {
                 let standardizedPath = url.standardizedFileURL.path
+                sessionSyncSuppressedPaths.remove(standardizedPath)
                 if Self.isSupportedExistingFilePath(standardizedPath) {
                     nativeRecentOpenPaths.insert(standardizedPath)
                 }
