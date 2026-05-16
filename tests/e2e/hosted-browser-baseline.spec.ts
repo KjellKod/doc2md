@@ -137,6 +137,71 @@ test("creates and edits a scratch draft", async ({ page }) => {
   await expectPreviewHeading(page, "Browser baseline draft");
 });
 
+test("renders GFM task lists as checkboxes without bullet markers", async ({
+  page,
+}) => {
+  await openHostedApp(page);
+
+  await page.getByRole("button", { name: "Start writing", exact: true }).click();
+  const editor = page.getByLabel("Edit markdown");
+  await editor.fill("- [x] Ship fix\n- [ ] Write docs");
+
+  await page.getByRole("button", { name: "Preview" }).click();
+
+  const taskItems = page.locator(".markdown-surface li.task-list-item");
+  await expect(taskItems).toHaveCount(2);
+  await expect(page.locator(".markdown-surface")).not.toContainText("[x]");
+  await expect(page.locator(".markdown-surface")).not.toContainText("[ ]");
+  await expect(taskItems.first()).toHaveCSS("list-style-type", "none");
+  await expect(taskItems.nth(1)).toHaveCSS("list-style-type", "none");
+  await expect(taskItems.first()).toContainText("Ship fix");
+  await expect(taskItems.nth(1)).toContainText("Write docs");
+  await expect(taskItems.first().locator('input[type="checkbox"]')).toBeChecked();
+  await expect(taskItems.nth(1).locator('input[type="checkbox"]')).not.toBeChecked();
+});
+
+test("renders nested GFM task list checkboxes indented at matching size", async ({
+  page,
+}) => {
+  await openHostedApp(page);
+
+  await page.getByRole("button", { name: "Start writing", exact: true }).click();
+  const editor = page.getByLabel("Edit markdown");
+  await editor.fill(
+    [
+      "- [ ] 100% completion of five must-do-epics 2026-Q2-100 labels",
+      "",
+      "  - [ ] ONF-9505 [EE] Refactor Task Endpoints to use Mongo Sessions and Transactions",
+      "- [ ] ONF-7952 Q1-4c Whitelabel Client Portal",
+    ].join("\n"),
+  );
+
+  await page.getByRole("button", { name: "Preview" }).click();
+
+  const taskItems = page.locator(".markdown-surface li.task-list-item");
+  await expect(taskItems).toHaveCount(3);
+
+  const renderedCheckboxes = page.locator(
+    ".markdown-surface input[type='checkbox']",
+  );
+  await expect(renderedCheckboxes).toHaveCount(3);
+  const parentCheckbox = renderedCheckboxes.nth(0);
+  const nestedCheckbox = renderedCheckboxes.nth(1);
+  const thirdCheckbox = renderedCheckboxes.nth(2);
+
+  const parentBox = await parentCheckbox.boundingBox();
+  const nestedBox = await nestedCheckbox.boundingBox();
+  const thirdBox = await thirdCheckbox.boundingBox();
+
+  expect(parentBox).not.toBeNull();
+  expect(nestedBox).not.toBeNull();
+  expect(thirdBox).not.toBeNull();
+  expect(nestedBox!.x).toBeGreaterThan(parentBox!.x + 12);
+  expect(thirdBox!.x).toBeCloseTo(parentBox!.x, 1);
+  expect(nestedBox!.width).toBeCloseTo(parentBox!.width, 1);
+  expect(nestedBox!.height).toBeCloseTo(parentBox!.height, 1);
+});
+
 test("keeps checkbox selection separate from active row selection", async ({
   page,
 }) => {

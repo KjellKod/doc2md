@@ -2197,6 +2197,42 @@ body.is-height-resizing * {
   overflow: auto;
 }
 
+.markdown-paste-status {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(320px, calc(100% - 24px));
+  padding: 8px 12px;
+  border: 1px solid rgba(23, 56, 76, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 24px rgba(27, 39, 49, 0.12);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 650;
+  pointer-events: none;
+}
+
+.markdown-paste-spinner {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  border: 2px solid rgba(23, 56, 76, 0.18);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .markdown-edit-area:focus {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   /* The textarea keeps an inside offset so the ring stays within the
@@ -2391,6 +2427,23 @@ body.is-height-resizing * {
 
 .markdown-surface li + li {
   margin-top: 0.42rem;
+}
+
+.markdown-surface li.task-list-item {
+  list-style-type: none;
+}
+
+.markdown-surface li.task-list-item > input[type="checkbox"],
+.markdown-surface li.task-list-item > p > input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  margin: 0 0.55rem 0 -1.35rem;
+  vertical-align: -0.12em;
+}
+
+.markdown-surface li.task-list-item li.task-list-item > input[type="checkbox"],
+.markdown-surface li.task-list-item li.task-list-item > p > input[type="checkbox"] {
+  margin-left: 0;
 }
 
 .markdown-surface li > p {
@@ -2768,6 +2821,18 @@ body.is-height-resizing * {
 :root[data-theme="dark"] .markdown-edit-area {
   background: rgba(18, 23, 28, 0.98);
   color: var(--text-primary);
+}
+
+:root[data-theme="dark"] .markdown-paste-status {
+  border-color: rgba(204, 214, 223, 0.12);
+  background: rgba(23, 27, 33, 0.94);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.28);
+  color: var(--text-primary);
+}
+
+:root[data-theme="dark"] .markdown-paste-spinner {
+  border-color: rgba(204, 214, 223, 0.2);
+  border-top-color: var(--accent);
 }
 
 :root[data-theme="dark"] .markdown-find-overlay {

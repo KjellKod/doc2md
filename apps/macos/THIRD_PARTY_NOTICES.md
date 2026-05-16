@@ -15,6 +15,16 @@ When distributing the Mac app, preserve the MIT notice for bundled MIT doc2md co
 - `https://github.com/KjellKod/doc2md/blob/main/LICENSES/MIT.txt`
 - `https://github.com/KjellKod/doc2md/blob/main/packages/core/LICENSE`
 
+## Documentation Reference Material
+
+The project uses the GitHub Flavored Markdown Spec as a reference for Markdown behavior validation in docs and tests.
+
+| Material | Version | License | Source |
+| --- | ---: | --- | --- |
+| GitHub Flavored Markdown Spec | 0.29-gfm | Creative Commons Attribution-ShareAlike 4.0 | `https://github.github.com/gfm/` |
+
+The GitHub Flavored Markdown Spec is based on the CommonMark Spec by John MacFarlane. Preserve Creative Commons Attribution-ShareAlike 4.0 attribution if spec text or spec-derived documentation is distributed.
+
 ## Direct Runtime Dependencies
 
 The current app build can include these direct runtime dependencies from the root `package.json` and `package-lock.json`:

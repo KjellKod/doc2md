@@ -103,6 +103,7 @@ afterEach(() => {
 
 const originalClipboardItem = globalThis.ClipboardItem;
 const originalBlob = globalThis.Blob;
+const originalExecCommand = document.execCommand;
 let clipboardWriteText: ReturnType<typeof vi.fn>;
 let clipboardWrite: ReturnType<typeof vi.fn>;
 
@@ -128,6 +129,10 @@ afterEach(() => {
   Object.defineProperty(globalThis, "Blob", {
     configurable: true,
     value: originalBlob,
+  });
+  Object.defineProperty(document, "execCommand", {
+    configurable: true,
+    value: originalExecCommand,
   });
 });
 
@@ -360,6 +365,72 @@ describe("PreviewPanel", () => {
     );
   });
 
+  it("renders GFM task list markers as disabled checkboxes", () => {
+    const { container } = render(
+      <PreviewPanel
+        entry={createEntry({
+          markdown: "- [x] Ship fix\n- [ ] Write docs",
+        })}
+      />,
+    );
+
+    expect(
+      container.querySelector(".markdown-surface ul.contains-task-list"),
+    ).toBeInTheDocument();
+    expect(container.querySelectorAll(".markdown-surface li.task-list-item")).toHaveLength(
+      2,
+    );
+
+    const surface = container.querySelector(".markdown-surface")!;
+    expect(surface).not.toHaveTextContent("[x]");
+    expect(surface).not.toHaveTextContent("[ ]");
+    expect(surface.querySelectorAll("li:not(.task-list-item)")).toHaveLength(0);
+
+    const checkboxes = screen.getAllByRole("checkbox");
+    expect(checkboxes).toHaveLength(2);
+    expect(checkboxes[0]).toBeChecked();
+    expect(checkboxes[0]).toBeDisabled();
+    expect(checkboxes[1]).not.toBeChecked();
+    expect(checkboxes[1]).toBeDisabled();
+    expect(screen.getByText("Ship fix")).toBeInTheDocument();
+    expect(screen.getByText("Write docs")).toBeInTheDocument();
+  });
+
+  it("renders nested GFM task lists as nested checkbox list items", () => {
+    const { container } = render(
+      <PreviewPanel
+        entry={createEntry({
+          markdown: [
+            "- [ ] 100% completion of five must-do-epics 2026-Q2-100 labels",
+            "",
+            "  - [ ] ONF-9505 [EE] Refactor Task Endpoints to use Mongo Sessions and Transactions",
+            "- [ ] ONF-7952 Q1-4c Whitelabel Client Portal",
+          ].join("\n"),
+        })}
+      />,
+    );
+
+    const topLevelList = container.querySelector(
+      ".markdown-surface > ul.contains-task-list",
+    );
+    expect(topLevelList).toBeInTheDocument();
+    expect(
+      topLevelList?.querySelectorAll(":scope > li.task-list-item"),
+    ).toHaveLength(2);
+
+    const firstTopLevelItem = topLevelList?.querySelector(
+      ":scope > li.task-list-item",
+    );
+    const nestedList = firstTopLevelItem?.querySelector(
+      ":scope > ul.contains-task-list",
+    );
+    expect(nestedList).toBeInTheDocument();
+    expect(
+      nestedList?.querySelectorAll(":scope > li.task-list-item"),
+    ).toHaveLength(1);
+    expect(screen.getAllByRole("checkbox")).toHaveLength(3);
+  });
+
   it("copies the rendered preview as html and plain text in preview mode", async () => {
     const { container } = render(<PreviewPanel entry={createEntry()} />);
     const previewSurface = container.querySelector(".markdown-surface");
@@ -588,7 +659,66 @@ describe("PreviewPanel", () => {
     expect(editor.selectionEnd).toBe(14);
   });
 
-  it("notifies when converted paste exceeds threshold", () => {
+  it("shows paste conversion status while html paste conversion is queued", async () => {
+    Object.defineProperty(document, "execCommand", {
+      configurable: true,
+      value: vi.fn(() => false),
+    });
+
+    render(<ControlledPreviewPanel initialMarkdown="" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    const editor = screen.getByRole("textbox", {
+      name: "Edit markdown",
+    });
+
+    fireEditorPaste(editor, { html: "<p>𝐁𝐨𝐥𝐝</p>", plainText: "Bold" });
+
+    expect(screen.getByRole("status")).toHaveTextContent("Converting paste...");
+    expect(editor).toHaveAttribute("aria-busy", "true");
+    expect(editor).toHaveAttribute("readonly");
+
+    await waitFor(() => expect(editor).toHaveValue("**Bold**"));
+    await waitFor(() =>
+      expect(screen.queryByRole("status")).not.toBeInTheDocument(),
+    );
+    expect(editor).not.toHaveAttribute("aria-busy", "true");
+    expect(editor).not.toHaveAttribute("readonly");
+  });
+
+  it("allows the queued html paste commit to update markdown", async () => {
+    const execCommand = vi.fn((_command: string, _showUi: boolean, text: string) => {
+      const editor = document.activeElement as HTMLTextAreaElement | null;
+      if (!editor) return false;
+
+      const start = editor.selectionStart;
+      const end = editor.selectionEnd;
+      const nextValue = editor.value.slice(0, start) + text + editor.value.slice(end);
+      editor.value = nextValue;
+      editor.setSelectionRange(start + text.length, start + text.length);
+      fireEvent.input(editor, { target: { value: nextValue } });
+      return true;
+    });
+    Object.defineProperty(document, "execCommand", {
+      configurable: true,
+      value: execCommand,
+    });
+
+    render(<ControlledPreviewPanel initialMarkdown="" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    const editor = screen.getByRole("textbox", {
+      name: "Edit markdown",
+    });
+
+    fireEditorPaste(editor, { html: "<p>𝐁𝐨𝐥𝐝</p>", plainText: "Bold" });
+
+    await waitFor(() => expect(editor).toHaveValue("**Bold**"));
+    expect(execCommand).toHaveBeenCalledWith("insertText", false, "**Bold**");
+    expect(editor).not.toHaveAttribute("readonly");
+  });
+
+  it("defers large unchanged plain-text paste notification until after native paste", async () => {
     const onLargeMarkdownPaste = vi.fn();
 
     render(
@@ -603,7 +733,10 @@ describe("PreviewPanel", () => {
       plainText: "x".repeat(201),
     });
 
-    expect(onLargeMarkdownPaste).toHaveBeenCalledWith("x".repeat(201));
+    expect(onLargeMarkdownPaste).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(onLargeMarkdownPaste).toHaveBeenCalledWith("x".repeat(201)),
+    );
   });
 
   it("does not notify when converted paste is at or below threshold", () => {

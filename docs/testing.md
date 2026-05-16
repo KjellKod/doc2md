@@ -19,6 +19,10 @@ npx vitest run --exclude '.worktrees/**'
 * PDF warning detection heuristics
 * Error-state handling
 
+## Markdown dialect checks
+
+Preview rendering and paste conversion use GitHub Flavored Markdown as the reference dialect. Before changing task list, strikethrough, table, autolink, or list-continuation behavior, check `docs/markdown-gfm-reference.md` and the upstream GFM spec it links to.
+
 ## Integration tests
 
 * Single-file and mixed-format multi-file conversion flows

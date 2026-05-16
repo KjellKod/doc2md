@@ -5,6 +5,14 @@ const H1_FONT_SIZE_PT = 18;
 const H2_FONT_SIZE_PT = 15.5;
 const CHECKED_CHECKBOX_PLACEHOLDER = "DOC2MDPASTECHECKBOXCHECKED";
 const OPEN_CHECKBOX_PLACEHOLDER = "DOC2MDPASTECHECKBOXOPEN";
+const CHECKBOX_PLACEHOLDERS = [
+  CHECKED_CHECKBOX_PLACEHOLDER,
+  OPEN_CHECKBOX_PLACEHOLDER,
+] as const;
+const GOOGLE_DOCS_LIST_LEVEL_ATTRIBUTE = "data-doc2md-list-level";
+const TASK_LIST_ITEM_ATTRIBUTE = "data-doc2md-task-item";
+const GOOGLE_DOCS_LIST_FAMILY_PATTERN = /(?:^|\s)lst-kix_[^\s-]+-(\d+)(?:\s|$)/;
+const GOOGLE_DOCS_LIST_ITEM_CLASS_PATTERN = /(?:^|\s)li-bullet-(\d+)(?:\s|$)/;
 const BLOCK_SELECTOR = [
   "address",
   "article",
@@ -30,10 +38,7 @@ const BLOCK_SELECTOR = [
   "ul",
 ].join(",");
 
-function getInlineStyle(element: Element, propertyName: string) {
-  const style = element.getAttribute("style");
-  if (!style) return "";
-
+function getStyleDeclarationValue(style: string, propertyName: string) {
   const property = propertyName.toLowerCase();
   const declaration = style
     .split(";")
@@ -43,6 +48,109 @@ function getInlineStyle(element: Element, propertyName: string) {
   if (!declaration) return "";
 
   return declaration.slice(declaration.indexOf(":") + 1).trim().toLowerCase();
+}
+
+function getInlineStyle(element: Element, propertyName: string) {
+  const style = element.getAttribute("style");
+  if (!style) return "";
+
+  return getStyleDeclarationValue(style, propertyName);
+}
+
+function getCssClassStyles(document: Document) {
+  const classStyles = new Map<string, string>();
+  const classRulePattern = /\.([A-Za-z_][\w-]*)\s*\{([^}]*)\}/g;
+
+  Array.from(document.querySelectorAll("style")).forEach((styleElement) => {
+    const cssText = styleElement.textContent ?? "";
+    let match: RegExpExecArray | null;
+
+    while ((match = classRulePattern.exec(cssText))) {
+      classStyles.set(match[1], match[2]);
+    }
+  });
+
+  return classStyles;
+}
+
+function getClassStyle(
+  element: Element,
+  propertyName: string,
+  classStyles: Map<string, string>,
+) {
+  for (const className of Array.from(element.classList)) {
+    const value = getStyleDeclarationValue(
+      classStyles.get(className) ?? "",
+      propertyName,
+    );
+    if (value) return value;
+  }
+
+  return "";
+}
+
+function cssLengthToPoints(value: string) {
+  const match = value.trim().match(/^(-?\d+(?:\.\d+)?)(px|pt|em|rem)?$/);
+  if (!match) return null;
+
+  const amount = Number.parseFloat(match[1]);
+  if (!Number.isFinite(amount)) return null;
+
+  const unit = match[2] ?? "px";
+  if (unit === "pt") return amount;
+  if (unit === "em" || unit === "rem") return amount * 12;
+  return amount * 0.75;
+}
+
+function listLevelFromMarginLeft(value: string) {
+  const points = cssLengthToPoints(value);
+  if (points === null || points <= 0) return null;
+
+  return Math.max(0, Math.round(points / 36) - 1);
+}
+
+function getGoogleDocsListItemLevel(
+  listItem: Element,
+  classStyles: Map<string, string>,
+) {
+  // Real Google Docs HTML carries the nesting level on the parent
+  // <ul class="lst-kix_*-N">. `li-bullet-N` is the bullet *style* index
+  // (almost always 0) and lies about depth, so prefer the parent class.
+  const parent = listItem.parentElement;
+  if (parent && (parent.tagName === "UL" || parent.tagName === "OL")) {
+    const parentClass = parent.getAttribute("class") ?? "";
+    const familyLevel = parentClass.match(GOOGLE_DOCS_LIST_FAMILY_PATTERN);
+    if (familyLevel) return Number.parseInt(familyLevel[1], 10);
+  }
+
+  const classLevel = (listItem.getAttribute("class") ?? "").match(
+    GOOGLE_DOCS_LIST_ITEM_CLASS_PATTERN,
+  );
+  if (classLevel) return Number.parseInt(classLevel[1], 10);
+
+  const inlineMarginLevel = listLevelFromMarginLeft(
+    getInlineStyle(listItem, "margin-left"),
+  );
+  if (inlineMarginLevel !== null) return inlineMarginLevel;
+
+  const classMarginLevel = listLevelFromMarginLeft(
+    getClassStyle(listItem, "margin-left", classStyles),
+  );
+  if (classMarginLevel !== null) return classMarginLevel;
+
+  return null;
+}
+
+function annotateGoogleDocsListLevels(document: Document) {
+  const classStyles = getCssClassStyles(document);
+  const listItems = Array.from(document.body.querySelectorAll("li"));
+
+  listItems.forEach((listItem) => {
+    const level = getGoogleDocsListItemLevel(listItem, classStyles);
+    if (level === null) return;
+
+    listItem.setAttribute(GOOGLE_DOCS_LIST_LEVEL_ATTRIBUTE, String(level));
+  });
 }
 
 function fontWeightLooksBold(value: string) {
@@ -110,6 +218,24 @@ function replaceHeadingParagraphs(document: Document) {
   });
 }
 
+function markContainingListItemAsTask(node: Node, document: Document) {
+  // Walk up to the nearest <li> and mark it as a task-list item so the
+  // Turndown converter emits `- ` regardless of the parent <ol>/<ul>.
+  // Google Docs sometimes wraps checklists in <ol>, which would otherwise
+  // serialize as a numbered list with `[ ]` text.
+  let current: Node | null = node.parentNode;
+  while (current && current !== document.body) {
+    if (
+      current.nodeType === 1 &&
+      (current as Element).tagName === "LI"
+    ) {
+      (current as Element).setAttribute(TASK_LIST_ITEM_ATTRIBUTE, "");
+      return;
+    }
+    current = current.parentNode;
+  }
+}
+
 function replaceCheckboxes(document: Document) {
   const checkboxes = Array.from(
     document.body.querySelectorAll('li input[type="checkbox"]'),
@@ -119,6 +245,7 @@ function replaceCheckboxes(document: Document) {
     const marker = checkbox.hasAttribute("checked")
       ? CHECKED_CHECKBOX_PLACEHOLDER
       : OPEN_CHECKBOX_PLACEHOLDER;
+    markContainingListItemAsTask(checkbox, document);
     checkbox.replaceWith(document.createTextNode(`${marker} `));
   });
 
@@ -130,8 +257,14 @@ function replaceCheckboxes(document: Document) {
 
     const marker =
       alt === "checked" ? CHECKED_CHECKBOX_PLACEHOLDER : OPEN_CHECKBOX_PLACEHOLDER;
+    markContainingListItemAsTask(image, document);
     image.replaceWith(document.createTextNode(`${marker} `));
   });
+}
+
+function isCheckboxListItem(listItem: Element) {
+  const text = (listItem.textContent ?? "").trimStart();
+  return CHECKBOX_PLACEHOLDERS.some((placeholder) => text.startsWith(placeholder));
 }
 
 function unwrapElement(element: Element) {
@@ -142,6 +275,25 @@ function unwrapElement(element: Element) {
     parent.insertBefore(element.firstChild, element);
   }
   parent.removeChild(element);
+}
+
+function unwrapTaskListItemBlocks(document: Document) {
+  const listItems = Array.from(document.body.querySelectorAll("li"));
+
+  listItems.forEach((listItem) => {
+    if (!isCheckboxListItem(listItem)) return;
+
+    const blockChildren = Array.from(
+      listItem.querySelectorAll("p,div"),
+    ).filter((element) => !element.querySelector("ul,ol,table"));
+
+    blockChildren.forEach((element) => {
+      if (element.previousSibling?.textContent?.trim().length) {
+        element.before(document.createTextNode(" "));
+      }
+      unwrapElement(element);
+    });
+  });
 }
 
 function unwrapBlockStyleContainers(document: Document) {
@@ -207,7 +359,9 @@ export function normalizePasteHtmlForMarkdown(html: string) {
   const parser = new DOMParserCtor();
   const document = parser.parseFromString(html, "text/html");
 
+  annotateGoogleDocsListLevels(document);
   replaceCheckboxes(document);
+  unwrapTaskListItemBlocks(document);
   unwrapBlockStyleContainers(document);
   replaceHeadingParagraphs(document);
   replaceInlineStyleSpans(document);
@@ -218,5 +372,14 @@ export function normalizePasteHtmlForMarkdown(html: string) {
 export function restorePasteMarkdownPlaceholders(markdown: string) {
   return markdown
     .replace(new RegExp(CHECKED_CHECKBOX_PLACEHOLDER, "g"), "[x]")
-    .replace(new RegExp(OPEN_CHECKBOX_PLACEHOLDER, "g"), "[ ]");
+    .replace(new RegExp(OPEN_CHECKBOX_PLACEHOLDER, "g"), "[ ]")
+    .replace(
+      /^(\s*[-*+]\s+\[[ xX]\])\s*\n(?:[ \t]*\n)*(?![ \t]*(?:[-*+]\s|\d+\.\s|>\s))[ \t]+/gm,
+      "$1 ",
+    )
+    .replace(
+      /^((?: {4})*[-*+]\s+\[[ xX]\].*)\n{2,}(?=(?: {4})*[-*+]\s+\[[ xX]\])/gm,
+      "$1\n",
+    )
+    .replace(/\\([–—])/g, "$1");
 }

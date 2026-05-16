@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { FindMatch } from "../useFindReplace";
 import {
   insertLink,
@@ -9,7 +9,10 @@ import {
 } from "../markdownFormatting";
 import { computeAutoContinueEdit } from "../markdownAutoContinue";
 import { scrollTextareaToLine } from "../viewportAnchor";
-import { convertClipboardPasteToMarkdown } from "./pasteToMarkdown";
+import {
+  convertClipboardPasteToMarkdown,
+  type ClipboardPasteConversion,
+} from "./pasteToMarkdown";
 import { useViewportAnchor } from "./useViewportAnchor";
 
 const LARGE_PASTE_MARKDOWN_LENGTH = 200;
@@ -20,6 +23,14 @@ interface TargetedInsert {
   text: string;
   caretStart: number;
   caretEnd: number;
+}
+
+interface PasteSnapshot {
+  html: string;
+  plainText: string;
+  selectionStart: number;
+  selectionEnd: number;
+  value: string;
 }
 
 interface MutableElementRef<T> {
@@ -150,6 +161,12 @@ export default function EditMode({
   onLargeMarkdownPaste,
 }: EditModeProps) {
   const isComposingRef = useRef(false);
+  const pasteConversionActiveRef = useRef(false);
+  const pasteConversionJobRef = useRef(0);
+  const pasteConversionFrameRef = useRef<number | null>(null);
+  const pasteConversionTimerRef = useRef<number | null>(null);
+  const allowPasteCommitChangeRef = useRef(false);
+  const [isPasteConverting, setIsPasteConverting] = useState(false);
   const syncFindHighlightScroll = useCallback(() => {
     if (!textareaRef.current || !findHighlightRef.current) {
       return;
@@ -224,48 +241,176 @@ export default function EditMode({
     syncFindHighlightScroll();
   }
 
-  function handleTextareaPaste(
-    event: React.ClipboardEvent<HTMLTextAreaElement>,
+  const clearPasteConversionTimers = useCallback(() => {
+    if (pasteConversionFrameRef.current !== null) {
+      window.cancelAnimationFrame(pasteConversionFrameRef.current);
+      pasteConversionFrameRef.current = null;
+    }
+    if (pasteConversionTimerRef.current !== null) {
+      window.clearTimeout(pasteConversionTimerRef.current);
+      pasteConversionTimerRef.current = null;
+    }
+  }, []);
+
+  function finishPasteConversion(jobId: number) {
+    if (pasteConversionJobRef.current !== jobId) return;
+    clearPasteConversionTimers();
+    pasteConversionActiveRef.current = false;
+    setIsPasteConverting(false);
+  }
+
+  function beginPasteConversion() {
+    clearPasteConversionTimers();
+    const jobId = pasteConversionJobRef.current + 1;
+    pasteConversionJobRef.current = jobId;
+    pasteConversionActiveRef.current = true;
+    if (textareaRef.current) {
+      textareaRef.current.readOnly = true;
+    }
+    setIsPasteConverting(true);
+    return jobId;
+  }
+
+  function applyPasteConversion(
+    snapshot: PasteSnapshot,
+    conversion: ClipboardPasteConversion,
+    options: { allowNativeUnchangedPlainText: boolean },
   ) {
-    const textarea = event.currentTarget;
-    const plainText = event.clipboardData.getData("text/plain");
-    const { markdown, source } = convertClipboardPasteToMarkdown({
-      html: event.clipboardData.getData("text/html"),
-      plainText,
-    });
+    const { markdown, source } = conversion;
 
     if (source === "empty") {
-      return;
+      return false;
+    }
+
+    if (
+      options.allowNativeUnchangedPlainText &&
+      source !== "html" &&
+      markdown === snapshot.plainText
+    ) {
+      if (markdown.length > LARGE_PASTE_MARKDOWN_LENGTH) {
+        window.setTimeout(() => onLargeMarkdownPaste?.(markdown), 0);
+      }
+      return false;
     }
 
     if (markdown.length > LARGE_PASTE_MARKDOWN_LENGTH) {
       onLargeMarkdownPaste?.(markdown);
     }
 
-    if (source !== "html" && markdown === plainText) {
-      return;
-    }
-
-    event.preventDefault();
-
-    const selectionStart = textarea.selectionStart;
-    const selectionEnd = textarea.selectionEnd;
-    const value = textarea.value;
     const nextValue =
-      value.slice(0, selectionStart) + markdown + value.slice(selectionEnd);
-    const caret = selectionStart + markdown.length;
+      snapshot.value.slice(0, snapshot.selectionStart) +
+      markdown +
+      snapshot.value.slice(snapshot.selectionEnd);
+    const caret = snapshot.selectionStart + markdown.length;
 
     commitTargeted(
       {
-        start: selectionStart,
-        end: selectionEnd,
+        start: snapshot.selectionStart,
+        end: snapshot.selectionEnd,
         text: markdown,
         caretStart: caret,
         caretEnd: caret,
       },
       nextValue,
     );
+    return true;
   }
+
+  function scheduleHtmlPasteConversion(snapshot: PasteSnapshot) {
+    const jobId = beginPasteConversion();
+    const runConversion = () => {
+      pasteConversionTimerRef.current = null;
+      if (pasteConversionJobRef.current !== jobId) return;
+
+      try {
+        const textarea = textareaRef.current;
+        if (!textarea || textarea.value !== snapshot.value) return;
+
+        textarea.readOnly = false;
+        allowPasteCommitChangeRef.current = true;
+        applyPasteConversion(
+          snapshot,
+          convertClipboardPasteToMarkdown({
+            html: snapshot.html,
+            plainText: snapshot.plainText,
+          }),
+          { allowNativeUnchangedPlainText: false },
+        );
+      } finally {
+        allowPasteCommitChangeRef.current = false;
+        finishPasteConversion(jobId);
+      }
+    };
+
+    if (typeof window.requestAnimationFrame === "function") {
+      pasteConversionFrameRef.current = window.requestAnimationFrame(() => {
+        pasteConversionFrameRef.current = null;
+        pasteConversionTimerRef.current = window.setTimeout(runConversion, 0);
+      });
+      return;
+    }
+
+    pasteConversionTimerRef.current = window.setTimeout(runConversion, 0);
+  }
+
+  function handleTextareaPaste(
+    event: React.ClipboardEvent<HTMLTextAreaElement>,
+  ) {
+    if (pasteConversionActiveRef.current) {
+      event.preventDefault();
+      return;
+    }
+
+    const textarea = event.currentTarget;
+    const plainText = event.clipboardData.getData("text/plain");
+    const html = event.clipboardData.getData("text/html");
+    const snapshot: PasteSnapshot = {
+      html,
+      plainText,
+      selectionStart: textarea.selectionStart,
+      selectionEnd: textarea.selectionEnd,
+      value: textarea.value,
+    };
+
+    if (html.trim().length > 0) {
+      event.preventDefault();
+      scheduleHtmlPasteConversion(snapshot);
+      return;
+    }
+
+    const conversion = convertClipboardPasteToMarkdown({
+      html,
+      plainText,
+    });
+
+    if (conversion.source === "empty") {
+      return;
+    }
+
+    const handled = applyPasteConversion(snapshot, conversion, {
+      allowNativeUnchangedPlainText: true,
+    });
+    if (!handled) {
+      return;
+    }
+
+    event.preventDefault();
+  }
+
+  function handleTextareaChange(event: React.ChangeEvent<HTMLTextAreaElement>) {
+    if (pasteConversionActiveRef.current && !allowPasteCommitChangeRef.current) {
+      return;
+    }
+    onMarkdownChange?.(event.target.value);
+  }
+
+  useEffect(() => {
+    return () => {
+      pasteConversionJobRef.current += 1;
+      pasteConversionActiveRef.current = false;
+      clearPasteConversionTimers();
+    };
+  }, [clearPasteConversionTimers]);
 
   function commitTargeted(insert: TargetedInsert, fallbackValue: string) {
     const textarea = textareaRef.current;
@@ -387,6 +532,16 @@ export default function EditMode({
 
   return (
     <div className="markdown-edit-shell">
+      {isPasteConverting ? (
+        <div
+          className="markdown-paste-status"
+          role="status"
+          aria-live="polite"
+        >
+          <span className="markdown-paste-spinner" aria-hidden="true" />
+          Converting paste...
+        </div>
+      ) : null}
       <pre
         ref={(element) => {
           findHighlightRef.current = element;
@@ -405,7 +560,7 @@ export default function EditMode({
         }}
         className="markdown-edit-area"
         value={effectiveMarkdown}
-        onChange={(event) => onMarkdownChange?.(event.target.value)}
+        onChange={handleTextareaChange}
         onPaste={handleTextareaPaste}
         onScroll={handleEditorScroll}
         onKeyDown={handleTextareaKeyDown}
@@ -416,6 +571,8 @@ export default function EditMode({
           isComposingRef.current = false;
         }}
         aria-label="Edit markdown"
+        aria-busy={isPasteConverting}
+        readOnly={isPasteConverting}
       />
     </div>
   );

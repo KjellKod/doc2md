@@ -34,8 +34,8 @@
 
 ## Agents
 
-- **The Judge** (arbiter): 
-- **The Implementer** (builder): 
+- **The Judge** (arbiter):
+- **The Implementer** (builder):
 
 ## Quest Brief
 

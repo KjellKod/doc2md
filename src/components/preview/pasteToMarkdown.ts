@@ -22,13 +22,48 @@ export interface ClipboardPasteConversion {
 
 export { convertLinkedInUnicodeToMarkdown } from "./linkedInUnicode";
 
+function restorePlainTextHorizontalRuleMarkers(
+  markdown: string,
+  plainText: string,
+) {
+  const plainLines = plainText
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+  let plainLineIndex = 0;
+
+  return markdown
+    .split("\n")
+    .map((line) => {
+      if (line.trim().length === 0) return line;
+
+      const plainLine = plainLines[plainLineIndex];
+      plainLineIndex += 1;
+
+      if (
+        (plainLine === "---" || plainLine === "—") &&
+        (line.trim() === "—" || line.trim() === "\\—")
+      ) {
+        return `${line.match(/^\s*/)?.[0] ?? ""}\\---`;
+      }
+
+      return line;
+    })
+    .join("\n");
+}
+
 export function convertClipboardPasteToMarkdown({
   html,
   plainText,
 }: ClipboardPasteInput): ClipboardPasteConversion {
   if (html.trim().length > 0) {
-    const htmlMarkdown = restorePasteMarkdownPlaceholders(
-      convertHtmlFragmentToMarkdown(normalizePasteHtmlForMarkdown(html)),
+    const htmlMarkdown = restorePlainTextHorizontalRuleMarkers(
+      restorePasteMarkdownPlaceholders(
+        convertHtmlFragmentToMarkdown(normalizePasteHtmlForMarkdown(html), {
+          maxGoogleDocsInferredListDepth: 1,
+        }),
+      ),
+      plainText,
     );
 
     if (htmlMarkdown.trim().length > 0) {
