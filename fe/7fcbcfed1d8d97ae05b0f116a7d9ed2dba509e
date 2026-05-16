@@ -1,0 +1,61 @@
+docs/diary/2026-05-15.md
+  s_58728568bc1253::t_f56d42cf1447e9 1-11
+.codex/agents/arbiter.toml
+  s_e1c6ba34fd164f::t_31454b85e4a39d 1-44
+.codex/agents/builder.toml
+  s_e1c6ba34fd164f::t_31454b85e4a39d 1-35
+docs/quest-journal/paste-to-markdown_2026-05-15.md
+  s_58728568bc1253::t_f18b8a52585651 1-43,54-136
+  s_58728568bc1253::t_ab731fbeb382e7 44-53
+.quest-last-check
+  s_58728568bc1253::t_99d4e4e34a0be8 1
+.codex/agents/fixer.toml
+  s_e1c6ba34fd164f::t_31454b85e4a39d 1-38
+.codex/agents/plan-reviewer.toml
+  s_e1c6ba34fd164f::t_31454b85e4a39d 1-39
+docs/quest-journal/README.md
+  s_58728568bc1253::t_1de2188664abbb 5
+  s_58728568bc1253::t_f18b8a52585651 6
+.agents/skills/gpt/SKILL.md
+  s_e1c6ba34fd164f::t_31454b85e4a39d 1-7
+docs/dexter-journal/045-requiem-paste-to-markdown.md
+  s_58728568bc1253::t_f56d42cf1447e9 1-117
+.codex/agents/code-reviewer.toml
+  s_e1c6ba34fd164f::t_31454b85e4a39d 1-43
+.agents/skills/grill-me/SKILL.md
+  s_e1c6ba34fd164f::t_31454b85e4a39d 1-7
+docs/quest-journal/ux-improvements-v2_2026-05-15.md
+  s_58728568bc1253::t_1de2188664abbb 1-131
+docs/dexter-journal/README.md
+  s_58728568bc1253::t_f56d42cf1447e9 9
+.codex/agents/planner.toml
+  s_e1c6ba34fd164f::t_31454b85e4a39d 1-32
+ideas/README.md
+  s_58728568bc1253::t_ab731fbeb382e7 29
+.codex/hooks.json
+  s_e1c6ba34fd164f::t_31454b85e4a39d 1-25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "fe7fcbcfed1d8d97ae05b0f116a7d9ed2dba509e",
+  "prompts": {},
+  "sessions": {
+    "s_58728568bc1253": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e29b3-1f93-7c82-8700-7329ae773331",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_e1c6ba34fd164f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e2c2a-5fa9-7e00-97bb-670d25ea84d5",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
