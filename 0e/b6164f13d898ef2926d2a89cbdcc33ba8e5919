@@ -1,0 +1,32 @@
+src/__tests__/App.desktop.test.tsx
+  s_f00585f6db12ae::t_cca9ae1c18c708 1166-1246
+apps/macos/doc2mdTests/SessionStoreTests.swift
+  s_f00585f6db12ae::t_0beaa491ec63cf 346-426
+src/desktop/DesktopApp.tsx
+  s_f00585f6db12ae::t_f89d36ca62c5a6 2035,2091,2139,2193
+  s_f00585f6db12ae::t_4a1eaf6040c796 1969-1971,1974-1977
+  s_f00585f6db12ae::t_88a40c2984ae94 412
+  s_f00585f6db12ae::t_1c8f31b31399ff 1808,1848
+  s_f00585f6db12ae::t_307079f351bb33 1675-1677,1761
+  s_f00585f6db12ae::t_8e59222510e9ee 1458-1467,1476-1484,1501
+apps/macos/README.md
+  s_f00585f6db12ae::t_7f47c0f03ff95b 32
+apps/macos/doc2md/ShellBridge.swift
+  s_f00585f6db12ae::t_a413fa54dedf80 80,356,358,392-394,452-453,488
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "0eb6164f13d898ef2926d2a89cbdcc33ba8e5919",
+  "prompts": {},
+  "sessions": {
+    "s_f00585f6db12ae": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e2c99-3ab6-75f0-a5d3-13603768d478",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
