@@ -187,6 +187,58 @@ describe("convertClipboardPasteToMarkdown", () => {
     });
   });
 
+  it("preserves Google Docs li-bullet checkbox indentation inside one flat list", () => {
+    const result = convertClipboardPasteToMarkdown({
+      html: [
+        "<ul>",
+        '<li class="li-bullet-0"><img alt="unchecked" src="data:image/png;base64,abc"><span>Parent task</span></li>',
+        '<li class="li-bullet-1"><img alt="unchecked" src="data:image/png;base64,abc"><span>Child task</span></li>',
+        '<li class="li-bullet-2"><img alt="unchecked" src="data:image/png;base64,abc"><span>Grandchild task</span></li>',
+        '<li class="li-bullet-1"><img alt="unchecked" src="data:image/png;base64,abc"><span>Second child task</span></li>',
+        '<li class="li-bullet-0"><img alt="unchecked" src="data:image/png;base64,abc"><span>Next parent task</span></li>',
+        "</ul>",
+      ].join(""),
+      plainText:
+        "Parent task\nChild task\nGrandchild task\nSecond child task\nNext parent task",
+    });
+
+    expect(result).toEqual({
+      markdown: [
+        "- [ ] Parent task",
+        "    - [ ] Child task",
+        "        - [ ] Grandchild task",
+        "    - [ ] Second child task",
+        "- [ ] Next parent task",
+      ].join("\n"),
+      source: "html",
+    });
+  });
+
+  it("preserves Google Docs checkbox indentation from copied css margin classes", () => {
+    const result = convertClipboardPasteToMarkdown({
+      html: [
+        "<style>",
+        ".top{margin-left:36pt}.nested{margin-left:72pt}",
+        "</style>",
+        "<ul>",
+        '<li class="top"><img alt="unchecked" src="data:image/png;base64,abc"><span>Parent task</span></li>',
+        '<li class="nested"><img alt="unchecked" src="data:image/png;base64,abc"><span>Child task</span></li>',
+        '<li class="top"><img alt="unchecked" src="data:image/png;base64,abc"><span>Next parent task</span></li>',
+        "</ul>",
+      ].join(""),
+      plainText: "Parent task\nChild task\nNext parent task",
+    });
+
+    expect(result).toEqual({
+      markdown: [
+        "- [ ] Parent task",
+        "    - [ ] Child task",
+        "- [ ] Next parent task",
+      ].join("\n"),
+      source: "html",
+    });
+  });
+
   it("converts common sans-serif LinkedIn unicode emphasis to markdown", () => {
     expect(
       convertClipboardPasteToMarkdown({
@@ -249,6 +301,18 @@ describe("convertClipboardPasteToMarkdown", () => {
       convertClipboardPasteToMarkdown({
         html: "<p>—</p>",
         plainText: "---",
+      }),
+    ).toEqual({
+      markdown: "\\---",
+      source: "html",
+    });
+  });
+
+  it("restores a standalone Google Docs em dash line as an escaped ascii horizontal rule marker", () => {
+    expect(
+      convertClipboardPasteToMarkdown({
+        html: "<p>—</p>",
+        plainText: "—",
       }),
     ).toEqual({
       markdown: "\\---",

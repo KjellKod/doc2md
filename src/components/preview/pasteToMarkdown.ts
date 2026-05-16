@@ -40,7 +40,10 @@ function restorePlainTextHorizontalRuleMarkers(
       const plainLine = plainLines[plainLineIndex];
       plainLineIndex += 1;
 
-      if (plainLine === "---" && line.trim() === "—") {
+      if (
+        (plainLine === "---" || plainLine === "—") &&
+        (line.trim() === "—" || line.trim() === "\\—")
+      ) {
         return `${line.match(/^\s*/)?.[0] ?? ""}\\---`;
       }
 

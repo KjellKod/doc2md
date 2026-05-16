@@ -6,7 +6,8 @@ For the other perspective, see [Jean-Claude's Journal](../journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
-| 045 | [Requiem: Paste To Markdown](045-requiem-paste-to-markdown.md) | Burying raw LinkedIn Unicode paste, rich-text clipboard confusion, and the 200-character hesitation while keeping desktop shell promotion out of scope |
+| 046 | [Requiem: Paste To Markdown](046-requiem-paste-to-markdown.md) | Burying raw LinkedIn Unicode paste, rich-text clipboard confusion, and the 200-character hesitation while keeping desktop shell promotion out of scope |
+| 045 | [UX Improvements v2](045-ux-improvements-v2.md) | Markdown-only session restore, native-owned path trust, one recents source of truth, compact toolbar recovery, and a final overflow fix that stayed as small as the bug |
 | 044 | [Requiem: View Anchor Mode Switch](044-requiem-view-anchor-mode-switch.md) | Burying the scroll-ratio cache, the geometric fiction that two unlike surfaces shared one body, and the LinkedIn impersonator that forgot where the user had been |
 | 043 | [Requiem: Professional DMG Installer](043-requiem-professional-dmg-installer.md) | Separating drag-install polish from release trust, and refusing to let detach failure hide before UDZO conversion |
 | 042 | [Mac License Verifier](042-mac-license-verifier.md) | Public-key-only Mac token verification, empty release trust, integer-second claim enforcement, and no issuer drift |

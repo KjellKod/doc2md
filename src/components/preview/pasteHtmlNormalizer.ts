@@ -9,6 +9,8 @@ const CHECKBOX_PLACEHOLDERS = [
   CHECKED_CHECKBOX_PLACEHOLDER,
   OPEN_CHECKBOX_PLACEHOLDER,
 ] as const;
+const GOOGLE_DOCS_LIST_LEVEL_ATTRIBUTE = "data-doc2md-list-level";
+const GOOGLE_DOCS_LIST_ITEM_CLASS_PATTERN = /(?:^|\s)li-bullet-(\d+)(?:\s|$)/;
 const BLOCK_SELECTOR = [
   "address",
   "article",
@@ -34,10 +36,7 @@ const BLOCK_SELECTOR = [
   "ul",
 ].join(",");
 
-function getInlineStyle(element: Element, propertyName: string) {
-  const style = element.getAttribute("style");
-  if (!style) return "";
-
+function getStyleDeclarationValue(style: string, propertyName: string) {
   const property = propertyName.toLowerCase();
   const declaration = style
     .split(";")
@@ -47,6 +46,99 @@ function getInlineStyle(element: Element, propertyName: string) {
   if (!declaration) return "";
 
   return declaration.slice(declaration.indexOf(":") + 1).trim().toLowerCase();
+}
+
+function getInlineStyle(element: Element, propertyName: string) {
+  const style = element.getAttribute("style");
+  if (!style) return "";
+
+  return getStyleDeclarationValue(style, propertyName);
+}
+
+function getCssClassStyles(document: Document) {
+  const classStyles = new Map<string, string>();
+  const classRulePattern = /\.([A-Za-z_][\w-]*)\s*\{([^}]*)\}/g;
+
+  Array.from(document.querySelectorAll("style")).forEach((styleElement) => {
+    const cssText = styleElement.textContent ?? "";
+    let match: RegExpExecArray | null;
+
+    while ((match = classRulePattern.exec(cssText))) {
+      classStyles.set(match[1], match[2]);
+    }
+  });
+
+  return classStyles;
+}
+
+function getClassStyle(
+  element: Element,
+  propertyName: string,
+  classStyles: Map<string, string>,
+) {
+  for (const className of Array.from(element.classList)) {
+    const value = getStyleDeclarationValue(
+      classStyles.get(className) ?? "",
+      propertyName,
+    );
+    if (value) return value;
+  }
+
+  return "";
+}
+
+function cssLengthToPoints(value: string) {
+  const match = value.trim().match(/^(-?\d+(?:\.\d+)?)(px|pt|em|rem)?$/);
+  if (!match) return null;
+
+  const amount = Number.parseFloat(match[1]);
+  if (!Number.isFinite(amount)) return null;
+
+  const unit = match[2] ?? "px";
+  if (unit === "pt") return amount;
+  if (unit === "em" || unit === "rem") return amount * 12;
+  return amount * 0.75;
+}
+
+function listLevelFromMarginLeft(value: string) {
+  const points = cssLengthToPoints(value);
+  if (points === null || points <= 0) return null;
+
+  return Math.max(0, Math.round(points / 36) - 1);
+}
+
+function getGoogleDocsListItemLevel(
+  listItem: Element,
+  classStyles: Map<string, string>,
+) {
+  const classLevel = (listItem.getAttribute("class") ?? "").match(
+    GOOGLE_DOCS_LIST_ITEM_CLASS_PATTERN,
+  );
+  if (classLevel) return Number.parseInt(classLevel[1], 10);
+
+  const inlineMarginLevel = listLevelFromMarginLeft(
+    getInlineStyle(listItem, "margin-left"),
+  );
+  if (inlineMarginLevel !== null) return inlineMarginLevel;
+
+  const classMarginLevel = listLevelFromMarginLeft(
+    getClassStyle(listItem, "margin-left", classStyles),
+  );
+  if (classMarginLevel !== null) return classMarginLevel;
+
+  return null;
+}
+
+function annotateGoogleDocsListLevels(document: Document) {
+  const classStyles = getCssClassStyles(document);
+  const listItems = Array.from(document.body.querySelectorAll("li"));
+
+  listItems.forEach((listItem) => {
+    const level = getGoogleDocsListItemLevel(listItem, classStyles);
+    if (level === null) return;
+
+    listItem.setAttribute(GOOGLE_DOCS_LIST_LEVEL_ATTRIBUTE, String(level));
+  });
 }
 
 function fontWeightLooksBold(value: string) {
@@ -235,6 +327,7 @@ export function normalizePasteHtmlForMarkdown(html: string) {
   const parser = new DOMParserCtor();
   const document = parser.parseFromString(html, "text/html");
 
+  annotateGoogleDocsListLevels(document);
   replaceCheckboxes(document);
   unwrapTaskListItemBlocks(document);
   unwrapBlockStyleContainers(document);
