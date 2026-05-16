@@ -87,6 +87,56 @@ describe("convertClipboardPasteToMarkdown", () => {
     });
   });
 
+  it("renders Google Docs checkbox lists as task lists even when the parent is an <ol>", () => {
+    // Google Docs sometimes emits checklists as <ol class="lst-kix_*-N">
+    // (e.g. when a numbered list is converted to a checklist or when a
+    // mixed section reuses an existing ordered family). The presence of
+    // checkbox <img alt="checked|unchecked"> markers inside the items
+    // means this is a task list, not a numbered list. Output must use
+    // `- [ ]` / `- [x]`, never `1. [ ]` / `2. [ ]`.
+    const result = convertClipboardPasteToMarkdown({
+      html: [
+        '<ol class="lst-kix_x-0">',
+        '<li><img alt="unchecked" src="data:image/png;base64,abc"><span>100% completion</span></li>',
+        '<li><img alt="checked" src="data:image/png;base64,abc"><span>Done item</span></li>',
+        '<li><img alt="unchecked" src="data:image/png;base64,abc"><span>Another item</span></li>',
+        "</ol>",
+      ].join(""),
+      plainText: "100% completion\nDone item\nAnother item",
+    });
+
+    expect(result.markdown.split("\n")).toEqual([
+      "- [ ] 100% completion",
+      "- [x] Done item",
+      "- [ ] Another item",
+    ]);
+    expect(result.markdown).not.toMatch(/^\d+\.\s/m);
+  });
+
+  it("keeps a real ordered list as a numbered list when it has no checkbox markers", () => {
+    const result = convertClipboardPasteToMarkdown({
+      html: [
+        "<ol>",
+        "<li>First step</li>",
+        "<li>Second step</li>",
+        "<li>Third step</li>",
+        "</ol>",
+      ].join(""),
+      plainText: "First\nSecond\nThird",
+    });
+
+    // Turndown's default OL prefix is `N.  ` (two spaces); we don't
+    // override it because plain <ol> never gets `data-doc2md-list-level`
+    // or `data-doc2md-task-item` annotated, so this falls through to
+    // the default rule. The point of this test is that we did NOT
+    // accidentally force a bullet marker for non-task ordered lists.
+    expect(result.markdown.split("\n")).toEqual([
+      "1.  First step",
+      "2.  Second step",
+      "3.  Third step",
+    ]);
+  });
+
   it("converts Google Docs checkbox images without leaking data images or document-wide bold markers", () => {
     const googleDocsClipboardHtml = [
       "<strong>",

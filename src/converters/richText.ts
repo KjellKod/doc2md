@@ -7,6 +7,7 @@ const TABLE_PLACEHOLDER_PREFIX = "DOC2MDTABLE";
 const GDOCS_LIST_FAMILY_PATTERN = /(?:^|\s)lst-kix_[^\s-]+-(\d+)(?:\s|$)/;
 const GDOCS_LIST_ITEM_BULLET_PATTERN = /(?:^|\s)li-bullet-(\d+)(?:\s|$)/;
 const GOOGLE_DOCS_LIST_LEVEL_ATTRIBUTE = "data-doc2md-list-level";
+const TASK_LIST_ITEM_ATTRIBUTE = "data-doc2md-task-item";
 
 const turndownService = new TurndownService({
   headingStyle: "atx",
@@ -17,17 +18,22 @@ turndownService.addRule("googleDocsListItem", {
   filter: (node) => {
     if (node.nodeName !== "LI") return false;
     const element = node as unknown as Element;
+    if (typeof element.hasAttribute !== "function") return false;
     return (
-      typeof element.hasAttribute === "function" &&
-      element.hasAttribute(GOOGLE_DOCS_LIST_LEVEL_ATTRIBUTE)
+      element.hasAttribute(GOOGLE_DOCS_LIST_LEVEL_ATTRIBUTE) ||
+      element.hasAttribute(TASK_LIST_ITEM_ATTRIBUTE)
     );
   },
   replacement: (content, node, options) => {
     const element = node as unknown as Element;
     const parent = element.parentNode as Element | null;
+    const isTaskItem = element.hasAttribute(TASK_LIST_ITEM_ATTRIBUTE);
 
+    // Task-list items always use a bullet marker. Google Docs sometimes
+    // wraps checklists in <ol>, which would otherwise serialize as
+    // `1. [ ] text` and lose the task-list semantics in the editor.
     let prefix = options.bulletListMarker + "   ";
-    if (parent && parent.nodeName === "OL") {
+    if (!isTaskItem && parent && parent.nodeName === "OL") {
       const start = parent.getAttribute("start");
       const index = Array.prototype.indexOf.call(parent.children, element);
       prefix = (start ? Number(start) + index : index + 1) + ".  ";

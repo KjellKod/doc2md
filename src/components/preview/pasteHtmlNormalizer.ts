@@ -10,6 +10,7 @@ const CHECKBOX_PLACEHOLDERS = [
   OPEN_CHECKBOX_PLACEHOLDER,
 ] as const;
 const GOOGLE_DOCS_LIST_LEVEL_ATTRIBUTE = "data-doc2md-list-level";
+const TASK_LIST_ITEM_ATTRIBUTE = "data-doc2md-task-item";
 const GOOGLE_DOCS_LIST_FAMILY_PATTERN = /(?:^|\s)lst-kix_[^\s-]+-(\d+)(?:\s|$)/;
 const GOOGLE_DOCS_LIST_ITEM_CLASS_PATTERN = /(?:^|\s)li-bullet-(\d+)(?:\s|$)/;
 const BLOCK_SELECTOR = [
@@ -217,6 +218,24 @@ function replaceHeadingParagraphs(document: Document) {
   });
 }
 
+function markContainingListItemAsTask(node: Node, document: Document) {
+  // Walk up to the nearest <li> and mark it as a task-list item so the
+  // Turndown converter emits `- ` regardless of the parent <ol>/<ul>.
+  // Google Docs sometimes wraps checklists in <ol>, which would otherwise
+  // serialize as a numbered list with `[ ]` text.
+  let current: Node | null = node.parentNode;
+  while (current && current !== document.body) {
+    if (
+      current.nodeType === 1 &&
+      (current as Element).tagName === "LI"
+    ) {
+      (current as Element).setAttribute(TASK_LIST_ITEM_ATTRIBUTE, "");
+      return;
+    }
+    current = current.parentNode;
+  }
+}
+
 function replaceCheckboxes(document: Document) {
   const checkboxes = Array.from(
     document.body.querySelectorAll('li input[type="checkbox"]'),
@@ -226,6 +245,7 @@ function replaceCheckboxes(document: Document) {
     const marker = checkbox.hasAttribute("checked")
       ? CHECKED_CHECKBOX_PLACEHOLDER
       : OPEN_CHECKBOX_PLACEHOLDER;
+    markContainingListItemAsTask(checkbox, document);
     checkbox.replaceWith(document.createTextNode(`${marker} `));
   });
 
@@ -237,6 +257,7 @@ function replaceCheckboxes(document: Document) {
 
     const marker =
       alt === "checked" ? CHECKED_CHECKBOX_PLACEHOLDER : OPEN_CHECKBOX_PLACEHOLDER;
+    markContainingListItemAsTask(image, document);
     image.replaceWith(document.createTextNode(`${marker} `));
   });
 }
