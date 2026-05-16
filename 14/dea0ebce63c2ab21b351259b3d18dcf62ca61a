@@ -1,0 +1,25 @@
+src/components/preview/pasteToMarkdown.test.ts
+  s_8503ba623ffc5d::t_b840f02cac8068 272-443
+src/components/preview/pasteHtmlNormalizer.ts
+  s_8503ba623ffc5d::t_a4ebb6b415a396 13
+  s_8503ba623ffc5d::t_d674a4c3baffd3 115-124
+src/converters/richText.ts
+  s_8503ba623ffc5d::t_0e828dbe830621 180-182,189-190
+  s_8503ba623ffc5d::t_f6fb0351c44af8 7-10,16-56,94-123,128,142-147,150-153,156-159,162-167,169-173,176-178,183-186,192-195,199-205,207-208,211-215,218,221,233
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.8",
+  "base_commit_sha": "14dea0ebce63c2ab21b351259b3d18dcf62ca61a",
+  "prompts": {},
+  "sessions": {
+    "s_8503ba623ffc5d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "30a01b9c-8f6a-4d87-a7c7-e2bfe1fb10f6",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
