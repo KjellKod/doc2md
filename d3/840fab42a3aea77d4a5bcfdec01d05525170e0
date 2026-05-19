@@ -1,0 +1,31 @@
+src/components/preview/pasteToMarkdown.test.ts
+  s_e6524edf043b09::t_442ecdfb8300b6 552-555,563,567-572,579-580,585-587,599-604,611-612
+  s_e6524edf043b09::t_a5104f67e3aec1 755-759,761-762
+  s_e6524edf043b09::t_5f5de8f40d9af2 699-754,760,763-788
+src/components/preview/pasteToMarkdown.ts
+  s_e6524edf043b09::t_5be80c7c33c579 185-188
+  s_e6524edf043b09::t_ffb8b72d828729 95-101
+  s_e6524edf043b09::t_34f492bd9a785d 1,14-93,107-133,137
+  s_e6524edf043b09::t_269f6d172dd2f9 94,134-136
+  s_e6524edf043b09::t_64835c9783efb7 102-104
+  s_e6524edf043b09::t_6cf51d1ccedbbf 105
+  s_e6524edf043b09::t_550f2f698e8f82 106
+docs/diary/2026-05-19.md
+  s_e6524edf043b09::t_611adf2a4d17e6 1-51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.9",
+  "base_commit_sha": "d3840fab42a3aea77d4a5bcfdec01d05525170e0",
+  "prompts": {},
+  "sessions": {
+    "s_e6524edf043b09": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "36d052aa-8eba-45b9-9e8a-e834d2f847ce",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
