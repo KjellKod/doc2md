@@ -44,9 +44,12 @@ async function uploadFixture(
   if (await showUpload.isVisible().catch(() => false)) {
     await showUpload.click();
   }
+  // Heavier fixtures (XLSX, PDF, DOCX) take longer on shared CI runners
+  // before the file-list "Open ${name}" button mounts; widen past the 5s
+  // default so this helper does not flake on slow conversion paths.
   await expect(
     page.getByRole("button", { name: `Open ${fixture.name}` }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 15_000 });
 }
 
 async function openUploadedFile(page: Page, name: string) {
