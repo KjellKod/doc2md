@@ -1,0 +1,24 @@
+src/components/preview/pasteToMarkdown.test.ts
+  s_e6524edf043b09::t_6c5326364acbc0 768-829
+docs/diary/2026-05-19.md
+  s_e6524edf043b09::t_28a1c2b172c392 52-71
+src/components/preview/pasteToMarkdown.ts
+  s_e6524edf043b09::t_98b86d96fc12c4 94-121
+  s_e6524edf043b09::t_efd3dc9eaae06f 163-175
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.9",
+  "base_commit_sha": "e10679a910004a243d2de66005197713ed86f913",
+  "prompts": {},
+  "sessions": {
+    "s_e6524edf043b09": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "36d052aa-8eba-45b9-9e8a-e834d2f847ce",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
