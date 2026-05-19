@@ -549,7 +549,10 @@ describe("convertClipboardPasteToMarkdown", () => {
     expect(result.markdown).toMatch(/1\.\s+First/);
   });
 
-  it("removes unnecessary escapes before unicode dashes from html paste", () => {
+  it("passes unicode dashes through verbatim when html is just a wrapper", () => {
+    // The HTML adds no formatting beyond wrapping the dashes in a <p>,
+    // so the trivial-wrapper heuristic routes to the plain-text path
+    // and the user gets the exact characters they copied.
     expect(
       convertClipboardPasteToMarkdown({
         html: "<p>— and –</p>",
@@ -557,23 +560,31 @@ describe("convertClipboardPasteToMarkdown", () => {
       }),
     ).toEqual({
       markdown: "— and –",
-      source: "html",
+      source: "plainText",
     });
   });
 
-  it("keeps literal ascii horizontal-rule markers escaped", () => {
+  it("passes literal ascii horizontal-rule markers through verbatim when html is just a wrapper", () => {
+    // The HTML adds no formatting. The user copied literal `---` and
+    // we respect that — markdown will interpret it as an HR if rendered.
+    // The escape-to-`\\---` behavior only applies when Google Docs has
+    // auto-substituted dashes (html and plain text disagree); see the
+    // next test.
     expect(
       convertClipboardPasteToMarkdown({
         html: "<p>---</p>",
         plainText: "---",
       }),
     ).toEqual({
-      markdown: "\\---",
-      source: "html",
+      markdown: "---",
+      source: "plainText",
     });
   });
 
   it("uses the plain text marker when Google Docs html auto-substitutes dashes", () => {
+    // Plain text disagrees with HTML text (`---` vs `—`), so the
+    // wrapper heuristic does not fire and the HTML path runs with its
+    // dash-restoration logic.
     expect(
       convertClipboardPasteToMarkdown({
         html: "<p>—</p>",
@@ -585,15 +596,20 @@ describe("convertClipboardPasteToMarkdown", () => {
     });
   });
 
-  it("restores a standalone Google Docs em dash line as an escaped ascii horizontal rule marker", () => {
+  it("passes a standalone em dash through verbatim when html and plain text agree", () => {
+    // Both clipboard payloads contain `—`. The user really did copy an
+    // em dash, so we don't try to second-guess and restore it as
+    // `\\---`. The escape-to-`\\---` behavior only fires when the HTML
+    // says `—` but the plain text says `---` (the auto-substitution
+    // case above).
     expect(
       convertClipboardPasteToMarkdown({
         html: "<p>—</p>",
         plainText: "—",
       }),
     ).toEqual({
-      markdown: "\\---",
-      source: "html",
+      markdown: "—",
+      source: "plainText",
     });
   });
 
@@ -677,6 +693,158 @@ describe("convertClipboardPasteToMarkdown", () => {
       }),
     ).toEqual({
       markdown: "**Bold** fallback",
+      source: "plainText",
+    });
+  });
+
+  it("treats trivial Gmail-style div-per-line html as a plain-text wrapper", () => {
+    // Gmail wraps each visible line in a <div>, even after the user
+    // selects "remove formatting". When the source the user copied was
+    // itself markdown, the HTML's textContent matches the plain-text
+    // payload exactly and the HTML carries zero structural meaning.
+    // Routing it through Turndown escapes every markdown character in
+    // text nodes (#, **, `, _, [, ]) and corrupts the paste. Prefer the
+    // plain-text payload instead.
+    const plainText = [
+      "# Battery Alert for macOS",
+      "",
+      "A small Automator app that polls your battery level.",
+      "",
+      "## Setup",
+      "",
+      "1. Open **Automator**.",
+      "2. Save it as `Battery Alert.app`.",
+      "",
+      "```applescript",
+      'set batteryInfo to do shell script "pmset -g batt"',
+      "```",
+      "",
+      "- **20%** — low battery warning",
+      "- **10%** — critical battery warning",
+    ].join("\n");
+
+    const gmailWrappedHtml = plainText
+      .split("\n")
+      .map((line) => (line.length === 0 ? "<div><br></div>" : `<div>${line}</div>`))
+      .join("");
+
+    expect(
+      convertClipboardPasteToMarkdown({
+        html: gmailWrappedHtml,
+        plainText,
+      }),
+    ).toEqual({
+      markdown: plainText,
+      source: "plainText",
+    });
+  });
+
+  it("does not route through the trivial wrapper path when html carries real formatting", () => {
+    // Same plain text as the Gmail case, but the HTML now contains a
+    // <strong> element, so the user really did copy something with rich
+    // formatting and we should respect Turndown's output.
+    const result = convertClipboardPasteToMarkdown({
+      html: "<div>Plain line</div><div><strong>Bold line</strong></div>",
+      plainText: "Plain line\nBold line",
+    });
+
+    expect(result.source).toBe("html");
+    expect(result.markdown).toContain("**Bold line**");
+  });
+
+  it("does not route through the trivial wrapper path when html injects characters not in plain text", () => {
+    // The HTML carries different characters from plain text (Google
+    // Docs auto-substituted the ascii dashes with a unicode em dash).
+    // Since the payloads disagree on content, the wrapper heuristic
+    // does not fire and the HTML conversion path runs.
+    const result = convertClipboardPasteToMarkdown({
+      html: "<div>Word — another</div>",
+      plainText: "Word -- another",
+    });
+
+    expect(result.source).toBe("html");
+  });
+
+  it("ignores an extraneous Gmail signature image and styled name when plain text already looks like markdown", () => {
+    // Real user report: pasting markdown from Gmail without first
+    // removing the signature flips the heuristic back to the HTML
+    // path because the signature contains an <img> and a bold/colored
+    // name. The signature's visible text still matches plain text, so
+    // when plain text already has multiple markdown markers (headings,
+    // fences, lists, etc.) we trust it over Turndown's escape-everything
+    // pass.
+    const markdownBody = [
+      "# Battery Alert for macOS",
+      "",
+      "## Setup",
+      "",
+      "1. Open **Automator**.",
+      "2. Save it as `Battery Alert.app`.",
+      "",
+      "```applescript",
+      "use scripting additions",
+      "```",
+      "",
+      "- 20% — low",
+      "- 10% — critical",
+      "",
+      "---",
+    ].join("\n");
+
+    const plainText = `${markdownBody}\n\nKjell Hedstrom`;
+
+    const html = [
+      ...markdownBody
+        .split("\n")
+        .map((line) =>
+          line.length === 0 ? "<div><br></div>" : `<div>${line}</div>`,
+        ),
+      "<div><br></div>",
+      '<div><img src="https://example.com/avatar.png" alt="" height="64" style="vertical-align:middle"><b style="color:#1a73e8">Kjell Hedstrom</b></div>',
+    ].join("");
+
+    const result = convertClipboardPasteToMarkdown({ html, plainText });
+
+    expect(result.source).toBe("plainText");
+    expect(result.markdown).toBe(plainText);
+    expect(result.markdown).not.toMatch(/\\#/);
+    expect(result.markdown).not.toMatch(/\\\*\\\*/);
+  });
+
+  it("keeps the html path for a real rich-text paste even when plain text has a single markdown-looking line", () => {
+    // Defense-in-depth: a single markdown-looking line in plain text
+    // is not enough to override real HTML formatting. The user pasted
+    // genuine rich text from a web page; treat it as such.
+    const html =
+      "<h1>Real Heading</h1><p>Body text with <strong>bold</strong> and <a href=\"https://example.com\">a link</a>.</p>";
+    const plainText = "Real Heading\nBody text with bold and a link.";
+
+    const result = convertClipboardPasteToMarkdown({ html, plainText });
+
+    expect(result.source).toBe("html");
+    expect(result.markdown).toContain("# Real Heading");
+    expect(result.markdown).toContain("**bold**");
+    expect(result.markdown).toContain("[a link](https://example.com)");
+  });
+
+  it("treats span-wrapped plain markdown without formatting as a trivial wrapper", () => {
+    // Some apps wrap each line in styled <span> elements that only
+    // encode font-family or color (not bold/italic). These should not
+    // count as meaningful formatting.
+    const plainText = "# Heading\n\nSome **bold** text and `code`.";
+    const html = plainText
+      .split("\n")
+      .map((line) =>
+        line.length === 0
+          ? "<div><br></div>"
+          : `<div><span style="font-family: monospace; color: #333">${line}</span></div>`,
+      )
+      .join("");
+
+    expect(
+      convertClipboardPasteToMarkdown({ html, plainText }),
+    ).toEqual({
+      markdown: plainText,
       source: "plainText",
     });
   });
