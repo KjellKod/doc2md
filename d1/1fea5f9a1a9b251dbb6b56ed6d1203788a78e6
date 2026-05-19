@@ -1,0 +1,22 @@
+tests/e2e/dep-bump-format-smoke.spec.ts
+  s_28bb8e077547a0::t_805646a238100a 47-49,52
+src/__tests__/App.desktop.test.tsx
+  s_28bb8e077547a0::t_195d9730d9effc 939-943
+  s_28bb8e077547a0::t_fa53ccf3a1fd33 1434-1438
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.9",
+  "base_commit_sha": "d11fea5f9a1a9b251dbb6b56ed6d1203788a78e6",
+  "prompts": {},
+  "sessions": {
+    "s_28bb8e077547a0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6500232d-94ad-4a88-8345-ab2a76c6b8f9",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
