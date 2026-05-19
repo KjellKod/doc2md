@@ -1,0 +1,27 @@
+docs/diary/2026-05-18.md
+  s_28bb8e077547a0::t_5a1d0dd822b3ad 1-55
+docs/dexter-journal/047-requiem-appshell-dedup-phase-2.md
+  s_28bb8e077547a0::t_ad7e035ee39132 1-179
+docs/journal/044-celebrate-appshell-dedup-phase-2.md
+  s_28bb8e077547a0::t_f5e39db38c9094 1-67
+docs/journal/README.md
+  s_28bb8e077547a0::t_7b9bdc9be1d11d 9
+docs/dexter-journal/README.md
+  s_28bb8e077547a0::t_f7da3a10719c33 9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.9",
+  "base_commit_sha": "26b8da0ba51488187bb4f95e2e40a2cc194e962a",
+  "prompts": {},
+  "sessions": {
+    "s_28bb8e077547a0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6500232d-94ad-4a88-8345-ab2a76c6b8f9",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
