@@ -765,6 +765,68 @@ describe("convertClipboardPasteToMarkdown", () => {
     expect(result.source).toBe("html");
   });
 
+  it("ignores an extraneous Gmail signature image and styled name when plain text already looks like markdown", () => {
+    // Real user report: pasting markdown from Gmail without first
+    // removing the signature flips the heuristic back to the HTML
+    // path because the signature contains an <img> and a bold/colored
+    // name. The signature's visible text still matches plain text, so
+    // when plain text already has multiple markdown markers (headings,
+    // fences, lists, etc.) we trust it over Turndown's escape-everything
+    // pass.
+    const markdownBody = [
+      "# Battery Alert for macOS",
+      "",
+      "## Setup",
+      "",
+      "1. Open **Automator**.",
+      "2. Save it as `Battery Alert.app`.",
+      "",
+      "```applescript",
+      "use scripting additions",
+      "```",
+      "",
+      "- 20% — low",
+      "- 10% — critical",
+      "",
+      "---",
+    ].join("\n");
+
+    const plainText = `${markdownBody}\n\nKjell Hedstrom`;
+
+    const html = [
+      ...markdownBody
+        .split("\n")
+        .map((line) =>
+          line.length === 0 ? "<div><br></div>" : `<div>${line}</div>`,
+        ),
+      "<div><br></div>",
+      '<div><img src="https://example.com/avatar.png" alt="" height="64" style="vertical-align:middle"><b style="color:#1a73e8">Kjell Hedstrom</b></div>',
+    ].join("");
+
+    const result = convertClipboardPasteToMarkdown({ html, plainText });
+
+    expect(result.source).toBe("plainText");
+    expect(result.markdown).toBe(plainText);
+    expect(result.markdown).not.toMatch(/\\#/);
+    expect(result.markdown).not.toMatch(/\\\*\\\*/);
+  });
+
+  it("keeps the html path for a real rich-text paste even when plain text has a single markdown-looking line", () => {
+    // Defense-in-depth: a single markdown-looking line in plain text
+    // is not enough to override real HTML formatting. The user pasted
+    // genuine rich text from a web page; treat it as such.
+    const html =
+      "<h1>Real Heading</h1><p>Body text with <strong>bold</strong> and <a href=\"https://example.com\">a link</a>.</p>";
+    const plainText = "Real Heading\nBody text with bold and a link.";
+
+    const result = convertClipboardPasteToMarkdown({ html, plainText });
+
+    expect(result.source).toBe("html");
+    expect(result.markdown).toContain("# Real Heading");
+    expect(result.markdown).toContain("**bold**");
+    expect(result.markdown).toContain("[a link](https://example.com)");
+  });
+
   it("treats span-wrapped plain markdown without formatting as a trivial wrapper", () => {
     // Some apps wrap each line in styled <span> elements that only
     // encode font-family or color (not bold/italic). These should not

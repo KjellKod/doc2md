@@ -91,6 +91,34 @@ function htmlBodyHasMeaningfulFormatting(body: HTMLElement): boolean {
   return styled.some(inlineStyleEncodesEmphasis);
 }
 
+// Regexes that each match a distinct markdown construct. Two or more
+// hits across different patterns indicates the plain-text payload is
+// already markdown, which means any extraneous HTML formatting (Gmail
+// signature `<img>` and styled name, mail-tracking pixel, copy footer)
+// should NOT pull us into Turndown's escape-everything path.
+const MARKDOWN_SIGNAL_PATTERNS: readonly RegExp[] = [
+  /^#{1,6}\s+\S/m, // ATX heading
+  /^```/m, // fenced code block opener
+  /\[[^\]\n]+\]\([^\s)]+\)/, // markdown link [label](url)
+  /(\*\*|__)[^\s*_][^*_\n]*[^\s*_]\1/, // bold with **/__
+  /(?:^|\s)`[^`\n]+`/, // inline code
+  /^[-*+] \S.*\n[-*+] \S/m, // two consecutive bullet items
+  /^\d+\.\s\S.*\n\d+\.\s\S/m, // two consecutive ordered items
+  /^---+\s*$/m, // horizontal rule line
+  /^>\s/m, // blockquote
+];
+
+function plainTextHasStrongMarkdownSignals(plainText: string): boolean {
+  let hits = 0;
+  for (const pattern of MARKDOWN_SIGNAL_PATTERNS) {
+    if (pattern.test(plainText)) {
+      hits += 1;
+      if (hits >= 2) return true;
+    }
+  }
+  return false;
+}
+
 function reduceForWrapperComparison(text: string): string {
   // textContent across browsers does not insert whitespace at block
   // boundaries (e.g. `<div>a</div><div>b</div>` yields `"ab"`), while
@@ -129,11 +157,22 @@ export function htmlIsTrivialPasteWrapper(
   }
 
   if (!body) return false;
-  if (htmlBodyHasMeaningfulFormatting(body)) return false;
 
   const htmlReduced = reduceForWrapperComparison(body.textContent ?? "");
   const plainReduced = reduceForWrapperComparison(plainText);
-  return htmlReduced === plainReduced && plainReduced.length > 0;
+  if (plainReduced.length === 0) return false;
+  if (htmlReduced !== plainReduced) return false;
+
+  if (!htmlBodyHasMeaningfulFormatting(body)) return true;
+
+  // The HTML has some formatting but its visible text matches plain
+  // text exactly. If plain text itself already contains multiple
+  // markdown markers, the user copied markdown that picked up
+  // extraneous HTML along the way (most commonly a Gmail signature
+  // with a profile image and styled name). Honor the plain-text
+  // version instead of escaping every markdown character through
+  // Turndown.
+  return plainTextHasStrongMarkdownSignals(plainText);
 }
 
 export interface ClipboardPasteInput {
