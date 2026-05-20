@@ -1,0 +1,23 @@
+ideas/README.md
+  s_60847e527f19ba::t_b785f85fe4bee7 19
+ideas/ux-transformation.md
+  s_60847e527f19ba::t_b11c33244b29ef 38,49,56,164,297,306,386-391,393-401,448-453
+  s_60847e527f19ba::t_f72b7c0dc5b9d6 1-36,39-48,50-55,57-163,165-296,298-305,307-385,392,402-447,454-491
+  s_60847e527f19ba::t_0f69b9fd2504fd 37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "8487f04d8653b1893f308e05f3b5585f1540dd2a",
+  "prompts": {},
+  "sessions": {
+    "s_60847e527f19ba": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e4797-34c9-7753-b94f-6f8681766ae0",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
