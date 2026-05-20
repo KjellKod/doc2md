@@ -1,0 +1,19 @@
+.quest-manifest
+  s_af8952abb39e88::t_05c1ab2723d595 8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "fbf0ee0ab05aa0b226a33feb97c0efaaa5bca9b1",
+  "prompts": {},
+  "sessions": {
+    "s_af8952abb39e88": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "18c4a1ad-7726-45d6-8342-c0f858d0292b",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
