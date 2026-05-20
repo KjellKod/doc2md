@@ -17,7 +17,12 @@ import {
 // state. In the Mac shell, the WKWebView's createWebViewWith delegate
 // catches the target=_blank request and routes it to the system browser.
 const previewMarkdownComponents: Components = {
-  a({ children, ...props }) {
+  // react-markdown passes an extra `node` (the mdast node) into the component.
+  // Destructure it out so it can never be spread onto the underlying <a> as
+  // an unknown DOM attribute. The local lint config does not honor
+  // argsIgnorePattern, so use `void` to mark it as intentionally read.
+  a({ node, children, ...props }) {
+    void node;
     return (
       <a {...props} target="_blank" rel="noopener noreferrer">
         {children}

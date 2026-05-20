@@ -56,4 +56,35 @@ describe("PreviewMode markdown anchor handling", () => {
     expect(link?.textContent).toBe("OpenAI");
     expect(container.querySelector("strong a")).not.toBeNull();
   });
+
+  it("handles a link wrapping inline code", () => {
+    const { container } = renderPreview(
+      "Check [`@doc2md/core`](https://example.com/core) docs.",
+    );
+    const link = container.querySelector("a");
+    expect(link?.getAttribute("href")).toBe("https://example.com/core");
+    expect(link?.getAttribute("target")).toBe("_blank");
+    expect(container.querySelector("a code")).not.toBeNull();
+  });
+
+  it("handles a link wrapping an image", () => {
+    const { container } = renderPreview(
+      "[![Alt](https://example.com/img.png)](https://example.com/dest)",
+    );
+    const link = container.querySelector("a");
+    expect(link?.getAttribute("href")).toBe("https://example.com/dest");
+    expect(link?.getAttribute("target")).toBe("_blank");
+    expect(container.querySelector("a img")).not.toBeNull();
+  });
+
+  it("does not leak the mdast `node` prop onto the rendered anchor", () => {
+    const { container } = renderPreview(
+      "Visit [the site](https://example.com).",
+    );
+    const link = container.querySelector("a");
+    // react-markdown passes the mdast node as a `node` prop to component
+    // overrides. It must be stripped before reaching the DOM so React does
+    // not emit "unknown prop" warnings on every rendered link.
+    expect(link?.hasAttribute("node")).toBe(false);
+  });
 });

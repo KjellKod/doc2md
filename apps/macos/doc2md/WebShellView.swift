@@ -183,12 +183,20 @@ private struct WebView: NSViewRepresentable {
         //
         // Both hooks go through WebShellLinkPolicy.route(for:) so the two delegate
         // methods can't drift apart and the decision logic stays unit-testable.
+        //
+        // Only deliberate link clicks are handed off to the system browser. Form
+        // submissions and back/forward navigations to external URLs are canceled
+        // silently rather than launched — we don't want to lose POST bodies to a
+        // GET in Safari or replay external history.
         func webView(
             _ webView: WKWebView,
             decidePolicyFor navigationAction: WKNavigationAction,
             decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
         ) {
-            let routing = WebShellLinkPolicy.route(for: navigationAction.request.url)
+            let routing = WebShellLinkPolicy.route(
+                forNavigationActionWith: navigationAction.request.url,
+                navigationType: navigationAction.navigationType
+            )
             if let url = routing.openExternally {
                 externalURLOpener(url)
             }

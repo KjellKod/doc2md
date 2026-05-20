@@ -25,10 +25,10 @@ enum WebShellLinkPolicy {
     }
 
     // Decide both the in-shell policy and the system-browser handoff for a URL.
-    // Used by both `decidePolicyFor navigationAction` (which honors `.policy`
-    // and `.openExternally`) and `createWebViewWith` (which only consumes
-    // `.openExternally`). Centralizing the rule means the two delegate methods
-    // can never drift apart.
+    // Used by `createWebViewWith` (target=_blank / window.open) which is always
+    // a deliberate new-window request. `decidePolicyFor navigationAction` calls
+    // the navigation-type-aware variant below so non-link navigations (form
+    // submissions, back/forward, reloads) cannot trigger NSWorkspace.open.
     static func route(for url: URL?) -> Routing {
         guard let url else {
             return .allowInShell
@@ -42,6 +42,29 @@ enum WebShellLinkPolicy {
         return .cancelSilently
     }
 
+    // Variant for the navigation-policy delegate. Only deliberate link clicks
+    // are handed to the system browser; everything else with an external URL
+    // is canceled silently so we never quietly replay a form POST as a
+    // browser GET or launch external history items.
+    static func route(
+        forNavigationActionWith url: URL?,
+        navigationType: WKNavigationType
+    ) -> Routing {
+        let base = route(for: url)
+        if base.openExternally != nil, navigationType != .linkActivated {
+            return .cancelSilently
+        }
+        return base
+    }
+
+    #if DEBUG
+    // The Vite dev server is hardcoded to port 5173 in WebShellView.makeNSView,
+    // so the safety net mirrors that exact origin. Pinning the port means a
+    // markdown link to e.g. http://localhost:3000/ in DEBUG cannot turn the
+    // shell into a local browser.
+    static let debugDevServerPort = 5173
+    #endif
+
     // Production loads index.html from `doc2md://app/`. DEBUG additionally
     // loads from the Vite dev server at `http://localhost:5173/`. Everything
     // else is treated as a navigation away from our shell.
@@ -50,10 +73,12 @@ enum WebShellLinkPolicy {
             return false
         }
         if scheme == AppSchemeHandler.scheme {
-            return true
+            return url.host?.lowercased() == AppSchemeHandler.host
         }
         #if DEBUG
-        if scheme == "http", url.host?.lowercased() == "localhost" {
+        if scheme == "http",
+           url.host?.lowercased() == "localhost",
+           url.port == debugDevServerPort {
             return true
         }
         #endif
