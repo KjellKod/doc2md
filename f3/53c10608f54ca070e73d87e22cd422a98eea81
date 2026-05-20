@@ -1,0 +1,21 @@
+src/components/__tests__/markdownExternalLinks.test.tsx
+  s_e5efa84ee7b694::t_72097d7d669a9a 48-57
+src/components/preview/PreviewMode.tsx
+  s_e5efa84ee7b694::t_c436db5f937525 15,17,19-24,28-32,46-47,51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "f353c10608f54ca070e73d87e22cd422a98eea81",
+  "prompts": {},
+  "sessions": {
+    "s_e5efa84ee7b694": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e2c2f-ad90-7af2-85e8-911016f45c5a",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
