@@ -1,0 +1,33 @@
+apps/macos/doc2md/WebShellView.swift
+  s_af8952abb39e88::t_fff068d67f0010 186-190
+  s_af8952abb39e88::t_56a0c4152fa374 196-199
+apps/macos/doc2mdTests/WebShellLinkPolicyTests.swift
+  s_af8952abb39e88::t_6c4a4e99b8549d 247
+  s_af8952abb39e88::t_cb47581526a3e2 64-76
+  s_af8952abb39e88::t_6dc3ae135bfff7 181-246,248-260
+  s_af8952abb39e88::t_f531684c1efdf2 23-30
+src/components/preview/PreviewMode.tsx
+  s_af8952abb39e88::t_43273fc610f112 20-25
+src/components/__tests__/markdownExternalLinks.test.tsx
+  s_af8952abb39e88::t_d779f6107972ec 59-89
+apps/macos/doc2md/WebShellLinkPolicy.swift
+  s_af8952abb39e88::t_1ca91bae3741c4 28-31,45-50,52-57
+  s_af8952abb39e88::t_5ba891794f439e 51
+  s_af8952abb39e88::t_5c76f846c4d069 60-67,76,79-81
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "b9f2b03e4f5372632d6fb488a4c41be7e687faf4",
+  "prompts": {},
+  "sessions": {
+    "s_af8952abb39e88": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "18c4a1ad-7726-45d6-8342-c0f858d0292b",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
