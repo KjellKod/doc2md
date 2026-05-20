@@ -2519,6 +2519,24 @@ body.is-height-resizing * {
   background: rgba(247, 243, 237, 0.45);
 }
 
+.markdown-surface a.markdown-disabled-link,
+.markdown-surface a.markdown-disabled-link:hover,
+.markdown-surface a.markdown-disabled-link:focus,
+.markdown-surface a.markdown-disabled-link:visited {
+  color: var(--text-muted);
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  cursor: not-allowed;
+}
+
+/* Keyboard / AT users land here via screen-reader link navigation rather
+   than tab order (tabIndex={-1}). Show a clear focus ring so the user can
+   still tell the link is what's focused. */
+.markdown-surface a.markdown-disabled-link:focus-visible {
+  outline: 2px solid var(--text-muted);
+  outline-offset: 2px;
+}
+
 .about-content {
   color: var(--text-secondary);
 }
