@@ -16,6 +16,7 @@ Index of active proposals plus a pointer to the most recent audit. The full per-
 | `if-needed` | `remove-url-import` | Delete URL import path (still wired in `DropZone.tsx` + `remoteDocument.ts`). Trigger: next user-support thread where it's the cause. |
 | `if-needed` | `doc2md-editor-engine-evaluation` | Decision doc for textarea vs CodeMirror 6 vs ProseMirror. Read before the next big editor feature. |
 | `yagni` | `doc2md-multibrowser-playwright` | Firefox + WebKit in CI. Single-engine Chromium has caught everything that mattered; CI runtime would triple. |
+| active | `ux-transformation` | Successor to the archived UX hardening proposal. Scores cross-surface UX work across hosted web, Mac desktop, and `@doc2md/core` with `need` / `if-needed` / `yagni`. |
 | index | `mac-desktop-app-roadmap` | Planning artifact updated 2026-05-14. Phases 1–5c + 6 (MVP scope) + 7a done; **Phase 7b blocked on out-of-repo operational setup** (Cloudflare Worker, Lemon Squeezy, `doc2md.dev` DNS, support email, go-live approval). 6e/6f deferred. |
 | active | `mac-commercial-distribution-and-licensing` | Phase 7b research for `doc2md.dev`, direct-DMG distribution, merchant-of-record licensing, honest-user reminders. Binding: [decision record](../docs/implementation/mac-commercial-distribution-decision-record.md). |
 
