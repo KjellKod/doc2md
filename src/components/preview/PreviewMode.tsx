@@ -12,18 +12,24 @@ import {
   useRenderedAnchorApply,
 } from "./renderedSurfaceEffects";
 
-function shouldOpenMarkdownHrefExternally(href: unknown) {
+function externalMarkdownHref(href: unknown) {
   if (typeof href !== "string") {
-    return false;
+    return null;
   }
-  const normalizedHref = href.trim().toLowerCase();
-  return (
+  const trimmedHref = href.trim();
+  const normalizedHref = trimmedHref.toLowerCase();
+  if (normalizedHref.startsWith("//")) {
+    return `https:${trimmedHref}`;
+  }
+  if (
     normalizedHref.startsWith("http://") ||
     normalizedHref.startsWith("https://") ||
     normalizedHref.startsWith("mailto:") ||
-    normalizedHref.startsWith("tel:") ||
-    normalizedHref.startsWith("//")
-  );
+    normalizedHref.startsWith("tel:")
+  ) {
+    return trimmedHref;
+  }
+  return null;
 }
 
 // External anchors inside a converted document should not replace the SPA when
@@ -37,11 +43,12 @@ const previewMarkdownComponents: Components = {
   // argsIgnorePattern, so use `void` to mark it as intentionally read.
   a({ node, children, ...props }) {
     void node;
-    if (!shouldOpenMarkdownHrefExternally(props.href)) {
+    const externalHref = externalMarkdownHref(props.href);
+    if (externalHref === null) {
       return <a {...props}>{children}</a>;
     }
     return (
-      <a {...props} target="_blank" rel="noopener noreferrer">
+      <a {...props} href={externalHref} target="_blank" rel="noopener noreferrer">
         {children}
       </a>
     );

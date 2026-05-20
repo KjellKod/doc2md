@@ -45,6 +45,16 @@ describe("PreviewMode markdown anchor handling", () => {
     expect(link?.getAttribute("rel")).toBe("noopener noreferrer");
   });
 
+  it("normalizes protocol-relative links before opening them externally", () => {
+    const { container } = renderPreview(
+      "Read [docs](//example.com/docs).",
+    );
+    const link = container.querySelector("a");
+    expect(link?.getAttribute("href")).toBe("https://example.com/docs");
+    expect(link?.getAttribute("target")).toBe("_blank");
+    expect(link?.getAttribute("rel")).toBe("noopener noreferrer");
+  });
+
   it("keeps hash and relative links in the current preview surface", () => {
     const { container } = renderPreview(
       "Jump to [footnote](#fn-1), read [/about](/about), or open [sibling](./guide.md).",
