@@ -5,6 +5,7 @@
 .agents/skills/README.md
 .agents/skills/celebrate/SKILL.md
 .agents/skills/git-commit-assistant/SKILL.md
+.agents/skills/gpt/SKILL.md
 .agents/skills/pr-assistant/SKILL.md
 .agents/skills/pr-shepherd/SKILL.md
 .agents/skills/pre-commit-review/SKILL.md
