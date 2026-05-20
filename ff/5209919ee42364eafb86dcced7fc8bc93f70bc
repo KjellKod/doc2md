@@ -1,0 +1,26 @@
+src/components/preview/PreviewMode.tsx
+  s_e5efa84ee7b694::t_190c4299befa21 15-32,40-42
+src/components/__tests__/markdownExternalLinks.test.tsx
+  s_e5efa84ee7b694::t_d815976d55b88a 55-56
+  s_e5efa84ee7b694::t_a6a75229111390 38,40-50,53
+apps/macos/doc2md/WebShellLinkPolicy.swift
+  s_e5efa84ee7b694::t_4df344acd7046b 28-30
+apps/macos/doc2md/WebShellView.swift
+  s_e5efa84ee7b694::t_31fb7718999b1b 187-188,210-214
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "ff5209919ee42364eafb86dcced7fc8bc93f70bc",
+  "prompts": {},
+  "sessions": {
+    "s_e5efa84ee7b694": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e2c2f-ad90-7af2-85e8-911016f45c5a",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
