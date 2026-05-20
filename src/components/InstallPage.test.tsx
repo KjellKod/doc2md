@@ -1,11 +1,13 @@
 import "@testing-library/jest-dom/vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import InstallPage from "./InstallPage";
+import { installMockShell } from "../desktop/mockShellBridge";
 
 describe("InstallPage", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    cleanup();
   });
 
   it("does not fetch the tarball manifest while inactive", () => {
@@ -67,5 +69,46 @@ describe("InstallPage", () => {
     expect(
       screen.getAllByText("Latest released Pages tarball:", { exact: false }).length
     ).toBeGreaterThan(0);
+  });
+
+  describe("when running inside the desktop shell", () => {
+    it("skips the tarball manifest fetch", () => {
+      const fetchMock = vi.fn();
+      vi.stubGlobal("fetch", fetchMock);
+      const cleanupShell = installMockShell();
+
+      render(<InstallPage active />);
+
+      expect(fetchMock).not.toHaveBeenCalled();
+
+      cleanupShell();
+    });
+
+    it("hides the in-bundle download buttons and links to the Pages site", () => {
+      const fetchMock = vi.fn();
+      vi.stubGlobal("fetch", fetchMock);
+      const cleanupShell = installMockShell();
+
+      render(<InstallPage active />);
+
+      expect(
+        screen.queryByRole("link", { name: /Download tarball/i }),
+      ).toBeNull();
+      expect(
+        screen.queryByRole("link", { name: /Download skill/i }),
+      ).toBeNull();
+
+      const pagesLink = screen.getByRole("link", {
+        name: /Get tarball and skill from the doc2md site/i,
+      });
+      expect(pagesLink).toHaveAttribute(
+        "href",
+        "https://kjellkod.github.io/doc2md/",
+      );
+      expect(pagesLink).toHaveAttribute("target", "_blank");
+      expect(pagesLink).toHaveAttribute("rel", "noopener noreferrer");
+
+      cleanupShell();
+    });
   });
 });

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useDesktopCapability } from "../desktop/useDesktopCapability";
 
 interface TarballManifest {
   filename: string;
@@ -7,6 +8,7 @@ interface TarballManifest {
 }
 
 const BASE_PATH = import.meta.env.BASE_URL;
+const PAGES_SITE_URL = "https://kjellkod.github.io/doc2md/";
 const BEGINNER_INSTALL_URL =
   "https://github.com/KjellKod/doc2md/blob/main/INSTALL.md";
 const CORE_USAGE_URL =
@@ -66,6 +68,7 @@ function InstallStatus({
 }
 
 export default function InstallPage({ active }: { active: boolean }) {
+  const { isDesktop } = useDesktopCapability();
   const [manifest, setManifest] = useState<TarballManifest | null>(null);
   const [manifestState, setManifestState] = useState<
     "loading" | "ready" | "unavailable"
@@ -77,7 +80,10 @@ export default function InstallPage({ active }: { active: boolean }) {
   }
 
   useEffect(() => {
-    if (!active || manifestState !== "loading") {
+    // The Mac app bundle never ships the tarball or the manifest, so the
+    // fetch would 404 and the panel would show a permanent "unavailable"
+    // state. Users on the desktop are sent to the Pages site instead.
+    if (isDesktop || !active || manifestState !== "loading") {
       return;
     }
 
@@ -120,7 +126,7 @@ export default function InstallPage({ active }: { active: boolean }) {
     return () => {
       isCancelled = true;
     };
-  }, [active, manifestState]);
+  }, [active, isDesktop, manifestState]);
 
   const downloadHref = manifest ? `${BASE_PATH}${manifest.filename}` : null;
 
@@ -142,14 +148,23 @@ export default function InstallPage({ active }: { active: boolean }) {
         </div>
 
         <div className="install-actions" role="group" aria-label="Install actions">
-          {downloadHref ? (
+          {isDesktop ? (
+            <a
+              className="download-button"
+              href={PAGES_SITE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Get tarball and skill from the doc2md site
+            </a>
+          ) : downloadHref ? (
             <a className="download-button" href={downloadHref} download>
               Download tarball (.tgz)
             </a>
           ) : (
             <a
               className="download-button"
-              href="https://kjellkod.github.io/doc2md/"
+              href={PAGES_SITE_URL}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -172,21 +187,31 @@ export default function InstallPage({ active }: { active: boolean }) {
           >
             Core usage docs
           </a>
-          <a
-            className="ghost-button"
-            href={`${BASE_PATH}doc2md-skill.skill`}
-            download
-          >
-            Download skill (.skill ZIP bundle)
-          </a>
+          {!isDesktop && (
+            <a
+              className="ghost-button"
+              href={`${BASE_PATH}doc2md-skill.skill`}
+              download
+            >
+              Download skill (.skill ZIP bundle)
+            </a>
+          )}
         </div>
 
-        <InstallStatus
-          basePath={BASE_PATH}
-          manifest={manifest}
-          state={manifestState}
-          onRetry={retryManifestFetch}
-        />
+        {isDesktop ? (
+          <p className="install-download-note">
+            Tarball and skill downloads live on the Pages site. The desktop
+            app does not bundle them; use the button above to open the site
+            in your default browser.
+          </p>
+        ) : (
+          <InstallStatus
+            basePath={BASE_PATH}
+            manifest={manifest}
+            state={manifestState}
+            onRetry={retryManifestFetch}
+          />
+        )}
 
         <div className="install-card-grid">
           <article className="install-card">
