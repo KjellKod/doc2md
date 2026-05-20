@@ -1,0 +1,25 @@
+src/components/InstallPage.test.tsx
+  s_af8952abb39e88::t_2714c5dcdd3b81 2,5,10
+  s_af8952abb39e88::t_260d01068e5020 73-113
+src/components/InstallPage.tsx
+  s_af8952abb39e88::t_38e2c805c60437 2,11
+  s_af8952abb39e88::t_760ffe85d3d2ce 151-160,167,190-198,201-214
+  s_af8952abb39e88::t_f3df53ef942d5a 71,83-86
+  s_af8952abb39e88::t_ef41ca66be0249 129
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "9efadb0dbb91f8f35ed5e98e1bb18327dff6d533",
+  "prompts": {},
+  "sessions": {
+    "s_af8952abb39e88": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "18c4a1ad-7726-45d6-8342-c0f858d0292b",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
