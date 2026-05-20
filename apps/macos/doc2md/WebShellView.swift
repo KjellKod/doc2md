@@ -150,18 +150,67 @@ private struct WebView: NSViewRepresentable {
     }
 
     final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
+        typealias ExternalURLOpener = (URL) -> Void
+
         private static let appReadyProbeIntervalSeconds: TimeInterval = 0.5
         private static let appReadyProbeMaxAttempts = 5
         private static let appReadyProbeTimeoutMs =
             Int(Double(appReadyProbeMaxAttempts - 1) * appReadyProbeIntervalSeconds * 1000)
 
+        static let defaultExternalURLOpener: ExternalURLOpener = { url in
+            NSWorkspace.shared.open(url)
+        }
+
         private let shellHost: ShellHost
         private let setLoadError: (ShellLoadError?) -> Void
+        private let externalURLOpener: ExternalURLOpener
         let appSchemeHandler = AppSchemeHandler()
 
-        init(shellHost: ShellHost, loadError: Binding<ShellLoadError?>) {
+        init(
+            shellHost: ShellHost,
+            loadError: Binding<ShellLoadError?>,
+            externalURLOpener: @escaping ExternalURLOpener = Coordinator.defaultExternalURLOpener
+        ) {
             self.shellHost = shellHost
             setLoadError = { loadError.wrappedValue = $0 }
+            self.externalURLOpener = externalURLOpener
+        }
+
+        // The webview only renders our own app shell. Any link that points outside our
+        // origin is routed to the user's default browser. createWebViewWith handles
+        // target=_blank and window.open; this policy hook is a safety net for clicks
+        // that omit target=_blank (e.g. raw anchors inside rendered markdown).
+        func webView(
+            _ webView: WKWebView,
+            decidePolicyFor navigationAction: WKNavigationAction,
+            decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
+        ) {
+            guard let url = navigationAction.request.url else {
+                decisionHandler(.allow)
+                return
+            }
+
+            if WebShellLinkPolicy.isInternalURL(url) {
+                decisionHandler(.allow)
+                return
+            }
+
+            if WebShellLinkPolicy.isExternallyOpenable(url) {
+                externalURLOpener(url)
+            }
+            decisionHandler(.cancel)
+        }
+
+        func webView(
+            _ webView: WKWebView,
+            createWebViewWith configuration: WKWebViewConfiguration,
+            for navigationAction: WKNavigationAction,
+            windowFeatures: WKWindowFeatures
+        ) -> WKWebView? {
+            if let url = navigationAction.request.url, WebShellLinkPolicy.isExternallyOpenable(url) {
+                externalURLOpener(url)
+            }
+            return nil
         }
 
         func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
