@@ -1,0 +1,27 @@
+src/shell/desktopAdapter.tsx
+  s_af8952abb39e88::t_c9489ac6742186 1096-1111
+  s_af8952abb39e88::t_26d4ae9581bfca 2283
+  s_af8952abb39e88::t_3458e4a7b44f70 420-430
+  s_af8952abb39e88::t_6137ea38867d87 298-306
+  s_af8952abb39e88::t_111b7e2e45fc52 321-323
+src/__tests__/App.desktop.test.tsx
+  s_af8952abb39e88::t_cbac67010e4afa 667-703
+tests/e2e/large-paste-auto-shrink.spec.ts
+  s_af8952abb39e88::t_1cc21e36961eb3 1-76
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "4d7395bbe770dcee5a14a56668667a65740c6874",
+  "prompts": {},
+  "sessions": {
+    "s_af8952abb39e88": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "18c4a1ad-7726-45d6-8342-c0f858d0292b",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
