@@ -664,6 +664,43 @@ describe("App desktop bridge", () => {
     cleanupShell();
   });
 
+  it("promotes desktop scratch entry to working mode after a large paste", async () => {
+    // Regression guard. PR #135 ("Refactor: collapse App.tsx and
+    // DesktopApp.tsx into shared AppShell") wired onLargeMarkdownPaste to a
+    // no-op in the desktop adapter, which silently broke the auto-shrink-on-
+    // paste flow that the hosted web build had always supported. Catch it
+    // here so the desktop adapter stays in step with the web adapter.
+    const cleanupShell = installMockShell();
+    const { container } = render(<DesktopApp />);
+
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
+    expect(await awaitOpenButton(/untitled\.md/i)).toBeInTheDocument();
+    expect(container.querySelector(".page")).not.toHaveClass("is-working-mode");
+
+    const editor = await screen.findByRole("textbox", {
+      name: "Edit markdown",
+    });
+    fireEvent.paste(editor, {
+      clipboardData: {
+        getData: (type: string) => (type === "text/plain" ? "x".repeat(201) : ""),
+      },
+    });
+
+    await waitFor(() => {
+      expect(container.querySelector(".page")).toHaveClass("is-working-mode");
+    });
+    expect(
+      screen.queryByRole("heading", {
+        name: "Edit or convert to Markdown, without leaving the browser.",
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Show intro and return to landing" }),
+    ).toBeInTheDocument();
+
+    cleanupShell();
+  });
+
   it("keeps desktop scratch entries on landing chrome", async () => {
     const cleanupShell = installMockShell();
     const { container } = render(<DesktopApp />);

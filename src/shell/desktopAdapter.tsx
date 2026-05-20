@@ -295,6 +295,15 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
   const [checkedEntryIds, setCheckedEntryIds] = useState<Set<string>>(
     () => new Set(),
   );
+  // Scratch entries that the user has paste-promoted into a real working
+  // document. Mirrors the same state in webAdapter so a desktop user who
+  // pastes a large markdown blob into a fresh draft gets the small-header
+  // working-mode chrome instead of staying stuck on the hero. Cleaned up
+  // when the underlying scratch leaves the entry list (see the pruning
+  // useEffect below).
+  const [pastePromotedEntryIds, setPastePromotedEntryIds] = useState<
+    Set<string>
+  >(() => new Set());
   const [isDesktopSettingsOpen, setIsDesktopSettingsOpen] = useState(false);
   const [unavailableRecentPaths, setUnavailableRecentPaths] = useState<Set<string>>(
     () => new Set(),
@@ -309,7 +318,9 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     target: "editor";
   }>({ id: 0, target: "editor" });
   const selectedEntryId = selectedEntry?.id ?? null;
-  const hasWorkingEntry = selectedEntry !== null && !selectedEntry.isScratch;
+  const hasWorkingEntry =
+    selectedEntry !== null &&
+    (!selectedEntry.isScratch || pastePromotedEntryIds.has(selectedEntry.id));
   const isWorkingMode = hasWorkingEntry && !showLandingChrome;
   let convertedCount = 0;
   let draftCount = 0;
@@ -406,6 +417,17 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
         Object.entries(current).filter(([entryId]) => liveEntryIds.has(entryId)),
       ),
     );
+    // Drop paste-promoted ids that no longer correspond to a live scratch
+    // entry. Mirrors the same pruning step in webAdapter.
+    setPastePromotedEntryIds((current) => {
+      const liveScratchEntryIds = new Set(
+        entries.filter((entry) => entry.isScratch).map((entry) => entry.id),
+      );
+      const next = new Set(
+        [...current].filter((entryId) => liveScratchEntryIds.has(entryId)),
+      );
+      return next.size === current.size ? current : next;
+    });
   }, [entries]);
 
   useEffect(() => {
@@ -1070,6 +1092,22 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     setIsDesktopSettingsOpen(false);
     setShowLandingChrome(false);
   }, [hasWorkingEntry]);
+
+  const handleLargeMarkdownPaste = useCallback(() => {
+    if (!selectedEntry?.isScratch) {
+      return;
+    }
+    const scratchId = selectedEntry.id;
+    setPastePromotedEntryIds((current) => {
+      if (current.has(scratchId)) {
+        return current;
+      }
+      const next = new Set(current);
+      next.add(scratchId);
+      return next;
+    });
+    setShowLandingChrome(false);
+  }, [selectedEntry]);
 
   const handleOpenFileResult = useCallback(
     async (
@@ -2242,7 +2280,7 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     onNewDocument: handleNewDocument,
     onReturnHome: handleReturnHome,
     onCollapseFromHero: handleCollapseFromHero,
-    onLargeMarkdownPaste: () => {},
+    onLargeMarkdownPaste: handleLargeMarkdownPaste,
     onMarkdownChange: (text) => {
       if (selectedEntry) {
         updateMarkdown(selectedEntry.id, text);
