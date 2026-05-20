@@ -70,7 +70,8 @@ describe("convertFile", () => {
   it("routes .docx files to the DOCX converter", async () => {
     vi.spyOn(office, "convertDocxToHtml").mockResolvedValue({
       value: "<h1>Overview</h1><p>Body copy.</p>",
-      messages: []
+      messages: [],
+      imageCount: 0
     });
     const file = new File([new Uint8Array([1, 2, 3])], "report.docx", {
       type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
