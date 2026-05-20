@@ -1,0 +1,36 @@
+src/converters/docx.test.ts
+  s_6d3a16ba597276::t_a0587e6b6edbd4 32,43-44,53-90
+src/converters/index.test.ts
+  s_6d3a16ba597276::t_19c904f9b69dd5 73-74
+src/converters/messages.ts
+  s_6d3a16ba597276::t_3db17c5fa49a5a 19-21
+src/converters/docx.ts
+  s_6d3a16ba597276::t_ea03a1a041d5a0 5-6,10,19,23-34,38-39
+src/converters/office.ts
+  s_6d3a16ba597276::t_ee38444378d477 4-19,22-31,33-38
+  s_6d3a16ba597276::t_9ffb54af637201 20-21,32
+src/converters/office.test.ts
+  s_6d3a16ba597276::t_e3156a181b5b21 8-16,35,38,41-45,49-50,65-71
+  s_6d3a16ba597276::t_29626f2b1c878a 39-40,51-64
+src/converters/pdf.ts
+  s_6d3a16ba597276::t_2b3361652ef271 13-14
+  s_6d3a16ba597276::t_c8d6b0f17eb070 1206,1217,1232
+docs/diary/2026-05-19.md
+  s_6d3a16ba597276::t_38960929306443 72-116
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "6fac5e05b37a62995212f72bc53f39fc4090f62a",
+  "prompts": {},
+  "sessions": {
+    "s_6d3a16ba597276": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "46231be7-b724-4f93-827f-28b1733e9fad",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
