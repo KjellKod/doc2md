@@ -87,7 +87,15 @@ describe("PreviewMode markdown anchor handling", () => {
       expect(link?.getAttribute("aria-disabled")).toBe("true");
       expect(link?.hasAttribute("target")).toBe(false);
       expect(link?.hasAttribute("rel")).toBe(false);
-      expect(link?.getAttribute("title")).toContain("Repository link");
+      // Native `title` is intentionally avoided (slow OS tooltip). The
+      // project's CSS-only tooltip pattern lives on a sibling span.
+      expect(link?.hasAttribute("title")).toBe(false);
+      const tooltip = container.querySelector(
+        ".markdown-disabled-link-tooltip",
+      );
+      expect(tooltip).not.toBeNull();
+      expect(tooltip?.getAttribute("role")).toBe("tooltip");
+      expect(tooltip?.textContent).toContain("Repository link");
     });
 
     it("preserves the original href so right-click copy-link still works", () => {

@@ -112,24 +112,30 @@ const previewMarkdownComponents: Components = {
       : "markdown-disabled-link";
     const hrefAttribute =
       classification.href === null ? {} : { href: classification.href };
+    // Wrap the anchor so the project's CSS-only tooltip pattern can hang off
+    // it without resorting to the native `title` attribute (slow, OS-styled).
     return (
-      <a
-        {...props}
-        {...hrefAttribute}
-        className={disabledClassName}
-        aria-disabled="true"
-        // Out of tab order: keyboard users cannot focus a link they cannot
-        // follow. Mouse and right-click (Copy Link) still work.
-        tabIndex={-1}
-        title="Repository link — open in your editor"
-        onClick={preventDisabledLinkNavigation}
-        // Middle-click and other auxiliary buttons would otherwise open the
-        // preserved href in a new tab/window in browser-like hosts.
-        onAuxClick={preventDisabledLinkNavigation}
-        onKeyDown={preventDisabledLinkKeyActivation}
-      >
-        {children}
-      </a>
+      <span className="markdown-disabled-link-group">
+        <a
+          {...props}
+          {...hrefAttribute}
+          className={disabledClassName}
+          aria-disabled="true"
+          // Out of tab order: keyboard users cannot focus a link they cannot
+          // follow. Mouse and right-click (Copy Link) still work.
+          tabIndex={-1}
+          onClick={preventDisabledLinkNavigation}
+          // Middle-click and other auxiliary buttons would otherwise open the
+          // preserved href in a new tab/window in browser-like hosts.
+          onAuxClick={preventDisabledLinkNavigation}
+          onKeyDown={preventDisabledLinkKeyActivation}
+        >
+          {children}
+        </a>
+        <span role="tooltip" className="markdown-disabled-link-tooltip">
+          Repository link, open in your editor
+        </span>
+      </span>
     );
   },
 };

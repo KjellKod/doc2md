@@ -2370,9 +2370,15 @@ body.is-height-resizing * {
 .markdown-surface h1,
 .markdown-surface h2,
 .markdown-surface h3,
-.markdown-surface h4 {
+.markdown-surface h4,
+.markdown-surface h5,
+.markdown-surface h6 {
   color: var(--accent-strong);
   text-wrap: balance;
+  /* When the user clicks a hash link, scroll the heading down past the
+     sticky preview toolbar (12px top offset + ~44px buttons + padding)
+     instead of jamming it under the buttons. */
+  scroll-margin-top: 88px;
 }
 
 .markdown-surface h1 {
@@ -2535,6 +2541,41 @@ body.is-height-resizing * {
 .markdown-surface a.markdown-disabled-link:focus-visible {
   outline: 2px solid var(--text-muted);
   outline-offset: 2px;
+}
+
+/* Custom (CSS-only, no JS, no native delay) tooltip explaining why the
+   link is disabled. Matches the file-list-status-tooltip pattern: a sibling
+   span with role="tooltip", hidden by default, faded in on hover/focus. */
+.markdown-surface .markdown-disabled-link-group {
+  position: relative;
+  display: inline-block;
+}
+
+.markdown-surface .markdown-disabled-link-tooltip {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 3;
+  width: max-content;
+  max-width: min(22rem, 72vw);
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(20, 25, 31, 0.96);
+  box-shadow: 0 14px 30px rgba(27, 39, 49, 0.16);
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.25;
+  opacity: 0;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+  text-transform: none;
+  transition: opacity 0.12s ease-out;
+}
+
+.markdown-surface .markdown-disabled-link-group:hover .markdown-disabled-link-tooltip,
+.markdown-surface .markdown-disabled-link-group:focus-within .markdown-disabled-link-tooltip {
+  opacity: 1;
 }
 
 .about-content {
