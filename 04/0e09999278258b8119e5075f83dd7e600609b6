@@ -1,0 +1,23 @@
+src/components/preview/PreviewMode.tsx
+  s_af8952abb39e88::t_655c4dc2bb8f11 20-21
+  s_af8952abb39e88::t_a03d3486213e55 2,15-19,22-28
+  s_af8952abb39e88::t_b5917c9e1fa4d3 122
+src/components/__tests__/markdownExternalLinks.test.tsx
+  s_af8952abb39e88::t_a9bab92933a3db 1-59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "040e09999278258b8119e5075f83dd7e600609b6",
+  "prompts": {},
+  "sessions": {
+    "s_af8952abb39e88": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "18c4a1ad-7726-45d6-8342-c0f858d0292b",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
