@@ -25,10 +25,9 @@ enum WebShellLinkPolicy {
     }
 
     // Decide both the in-shell policy and the system-browser handoff for a URL.
-    // Used by `createWebViewWith` (target=_blank / window.open) which is always
-    // a deliberate new-window request. `decidePolicyFor navigationAction` calls
-    // the navigation-type-aware variant below so non-link navigations (form
-    // submissions, back/forward, reloads) cannot trigger NSWorkspace.open.
+    // Keep this URL-only helper for pure classification tests; delegate methods
+    // use the navigation-type-aware variant below so only deliberate link clicks
+    // can trigger NSWorkspace.open.
     static func route(for url: URL?) -> Routing {
         guard let url else {
             return .allowInShell

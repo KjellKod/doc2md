@@ -35,15 +35,25 @@ describe("PreviewMode markdown anchor handling", () => {
     expect(link?.getAttribute("rel")).toBe("noopener noreferrer");
   });
 
-  it("applies the same handling to relative or mailto links", () => {
+  it("opens mailto links in a new tab with safe rel", () => {
     const { container } = renderPreview(
-      "Email <hello@example.com> or visit [/about](/about).",
+      "Email <hello@example.com>.",
+    );
+    const link = container.querySelector("a");
+    expect(link?.getAttribute("href")).toBe("mailto:hello@example.com");
+    expect(link?.getAttribute("target")).toBe("_blank");
+    expect(link?.getAttribute("rel")).toBe("noopener noreferrer");
+  });
+
+  it("keeps hash and relative links in the current preview surface", () => {
+    const { container } = renderPreview(
+      "Jump to [footnote](#fn-1), read [/about](/about), or open [sibling](./guide.md).",
     );
     const anchors = container.querySelectorAll("a");
-    expect(anchors.length).toBeGreaterThanOrEqual(2);
+    expect(anchors).toHaveLength(3);
     anchors.forEach((anchor) => {
-      expect(anchor.getAttribute("target")).toBe("_blank");
-      expect(anchor.getAttribute("rel")).toBe("noopener noreferrer");
+      expect(anchor.hasAttribute("target")).toBe(false);
+      expect(anchor.hasAttribute("rel")).toBe(false);
     });
   });
 

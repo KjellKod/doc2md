@@ -181,13 +181,11 @@ private struct WebView: NSViewRepresentable {
         // target=_blank and window.open; this policy hook is a safety net for clicks
         // that omit target=_blank (e.g. raw anchors inside rendered markdown).
         //
-        // Both hooks go through WebShellLinkPolicy.route(for:) so the two delegate
-        // methods can't drift apart and the decision logic stays unit-testable.
-        //
         // Only deliberate link clicks are handed off to the system browser. Form
         // submissions and back/forward navigations to external URLs are canceled
         // silently rather than launched — we don't want to lose POST bodies to a
-        // GET in Safari or replay external history.
+        // GET in Safari, replay external history, or let programmatic window.open
+        // calls launch the user's browser.
         func webView(
             _ webView: WKWebView,
             decidePolicyFor navigationAction: WKNavigationAction,
@@ -209,7 +207,11 @@ private struct WebView: NSViewRepresentable {
             for navigationAction: WKNavigationAction,
             windowFeatures: WKWindowFeatures
         ) -> WKWebView? {
-            if let url = WebShellLinkPolicy.route(for: navigationAction.request.url).openExternally {
+            let routing = WebShellLinkPolicy.route(
+                forNavigationActionWith: navigationAction.request.url,
+                navigationType: navigationAction.navigationType
+            )
+            if let url = routing.openExternally {
                 externalURLOpener(url)
             }
             return nil

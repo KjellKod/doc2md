@@ -12,10 +12,24 @@ import {
   useRenderedAnchorApply,
 } from "./renderedSurfaceEffects";
 
-// Anchors inside a converted document should not replace the SPA when
-// clicked. Open them in a new tab/window so the user keeps their working
-// state. In the Mac shell, the WKWebView's createWebViewWith delegate
-// catches the target=_blank request and routes it to the system browser.
+function shouldOpenMarkdownHrefExternally(href: unknown) {
+  if (typeof href !== "string") {
+    return false;
+  }
+  const normalizedHref = href.trim().toLowerCase();
+  return (
+    normalizedHref.startsWith("http://") ||
+    normalizedHref.startsWith("https://") ||
+    normalizedHref.startsWith("mailto:") ||
+    normalizedHref.startsWith("tel:") ||
+    normalizedHref.startsWith("//")
+  );
+}
+
+// External anchors inside a converted document should not replace the SPA when
+// clicked. Open them in a new tab/window so the user keeps their working state.
+// Relative links and same-document hash links stay in-shell so TOCs and
+// footnotes keep working like normal rendered Markdown.
 const previewMarkdownComponents: Components = {
   // react-markdown passes an extra `node` (the mdast node) into the component.
   // Destructure it out so it can never be spread onto the underlying <a> as
@@ -23,6 +37,9 @@ const previewMarkdownComponents: Components = {
   // argsIgnorePattern, so use `void` to mark it as intentionally read.
   a({ node, children, ...props }) {
     void node;
+    if (!shouldOpenMarkdownHrefExternally(props.href)) {
+      return <a {...props}>{children}</a>;
+    }
     return (
       <a {...props} target="_blank" rel="noopener noreferrer">
         {children}
