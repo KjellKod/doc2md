@@ -180,25 +180,19 @@ private struct WebView: NSViewRepresentable {
         // origin is routed to the user's default browser. createWebViewWith handles
         // target=_blank and window.open; this policy hook is a safety net for clicks
         // that omit target=_blank (e.g. raw anchors inside rendered markdown).
+        //
+        // Both hooks go through WebShellLinkPolicy.route(for:) so the two delegate
+        // methods can't drift apart and the decision logic stays unit-testable.
         func webView(
             _ webView: WKWebView,
             decidePolicyFor navigationAction: WKNavigationAction,
             decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
         ) {
-            guard let url = navigationAction.request.url else {
-                decisionHandler(.allow)
-                return
-            }
-
-            if WebShellLinkPolicy.isInternalURL(url) {
-                decisionHandler(.allow)
-                return
-            }
-
-            if WebShellLinkPolicy.isExternallyOpenable(url) {
+            let routing = WebShellLinkPolicy.route(for: navigationAction.request.url)
+            if let url = routing.openExternally {
                 externalURLOpener(url)
             }
-            decisionHandler(.cancel)
+            decisionHandler(routing.policy)
         }
 
         func webView(
@@ -207,7 +201,7 @@ private struct WebView: NSViewRepresentable {
             for navigationAction: WKNavigationAction,
             windowFeatures: WKWindowFeatures
         ) -> WKWebView? {
-            if let url = navigationAction.request.url, WebShellLinkPolicy.isExternallyOpenable(url) {
+            if let url = WebShellLinkPolicy.route(for: navigationAction.request.url).openExternally {
                 externalURLOpener(url)
             }
             return nil

@@ -17,8 +17,7 @@ import {
 // state. In the Mac shell, the WKWebView's createWebViewWith delegate
 // catches the target=_blank request and routes it to the system browser.
 const previewMarkdownComponents: Components = {
-  a({ node, children, ...props }) {
-    void node;
+  a({ children, ...props }) {
     return (
       <a {...props} target="_blank" rel="noopener noreferrer">
         {children}
