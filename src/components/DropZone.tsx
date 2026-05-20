@@ -4,7 +4,7 @@ import { MAX_BROWSER_FILE_SIZE_BYTES } from "../converters/messages";
 export const BROWSER_FILE_ACCEPT =
   ".md,.txt,.json,.csv,.tsv,.html,.docx,.xlsx,.pdf,.pptx,text/markdown,text/plain,application/json,text/csv,text/tab-separated-values,text/html,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.presentationml.presentation";
 
-interface DropZoneProps {
+export interface DropZoneProps {
   onFilesAdded: (files: FileList | File[]) => void;
   onUrlAdded: (url: string) => Promise<void>;
   // When provided, the browse-file affordance routes through this callback

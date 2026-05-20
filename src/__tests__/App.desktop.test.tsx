@@ -936,7 +936,11 @@ describe("App desktop bridge", () => {
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
 
     const editor = await screen.findByLabelText("Edit markdown");
-    await waitFor(() => expect(document.activeElement).toBe(editor));
+    // Editor focus arrives via setTimeout(0) in PreviewPanel; on slow CI the
+    // 1s default timeout is tight. 5s matches findBy* semantics.
+    await waitFor(() => expect(document.activeElement).toBe(editor), {
+      timeout: 5000,
+    });
     expect(confirmSpy).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: /original\.md/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /untitled\.md/i })).toBeInTheDocument();
@@ -1427,7 +1431,11 @@ describe("App desktop bridge", () => {
     expect(
       await screen.findByRole("button", { name: "Switch to night mode" }),
     ).toBeInTheDocument();
-    expect(document.documentElement.dataset.theme).toBeUndefined();
+    // The button text reflects React state immediately; the data-theme attribute
+    // is updated by a useEffect in ThemeProvider, so it lags by one tick. Poll.
+    await waitFor(() =>
+      expect(document.documentElement.dataset.theme).toBeUndefined(),
+    );
 
     cleanupShell();
   });

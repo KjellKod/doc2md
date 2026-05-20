@@ -6,6 +6,7 @@ For the other perspective, see [Dexter's Journal](../dexter-journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 044 | [Celebration: AppShell Dedup Phase 2](044-celebrate-appshell-dedup-phase-2.md) | App.tsx 1342→66, DesktopApp.tsx 3262→65, four-file shared shell with typed adapter slot contract, characterization tests first across four commits, ceiling negotiation between two authoritative briefs resolved as hard-vs-aspirational, desktop harness downgrade documented, one fix loop landed clean |
 | 043 | [Celebration: UX Improvements v2](043-celebrate-ux-improvements-v2.md) | Mac session restore split into Markdown-only state, native recents as the single source of truth, compact toolbar controls preserved, preview/mobile space reclaimed, and one final clipped-menu fix closed with a CSS regression |
 | 042 | [Find-in-Preview Table Cells](042-celebrate-find-table-cells.md) | PR #128 the day after #127: the table-cell preview-find bug that Phase 1 pre-staged closed in 321 lines of diff, shared `elementBoundarySeparator` rule across DOM and hast walks, whitespace-text-node skip in table/list containers, test-first three-commit shape held |
 | 041 | [PreviewPanel Refactor, Phase 1](041-celebrate-preview-panel-refactor-phase-1.md) | 1285-line load-bearing component split into shell + 3 modes + 2 hooks across 8 commits, test-first ordering held throughout, two-iteration plan loop caught a 200-line shell-budget gap and an anchor-handoff invariant, three flat extractions kept the shell at exactly 350, baseline rot correctly fenced as a separate concern |

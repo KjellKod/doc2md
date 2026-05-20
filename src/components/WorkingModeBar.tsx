@@ -7,9 +7,9 @@ import type {
 } from "react";
 import type { DesktopRecentFile } from "../types/doc2mdShell";
 
-type WorkingModeBarVariant = "browser" | "desktop";
+export type WorkingModeBarVariant = "browser" | "desktop";
 
-interface WorkingModeBarProps {
+export interface WorkingModeBarProps {
   variant: WorkingModeBarVariant;
   onHome: () => void;
   onOpen: () => void | Promise<void>;
