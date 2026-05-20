@@ -1,0 +1,29 @@
+src/components/preview/PreviewMode.tsx
+  s_af8952abb39e88::t_db4511d28d01fe 20
+apps/macos/doc2mdTests/WebShellLinkPolicyTests.swift
+  s_af8952abb39e88::t_0433780f94a448 2
+  s_af8952abb39e88::t_e0f817740c412b 103-159
+  s_af8952abb39e88::t_09bc59b835d19e 49-55
+  s_af8952abb39e88::t_7c16e370c7f480 18-22
+apps/macos/doc2md/WebShellView.swift
+  s_af8952abb39e88::t_0ae8df3115cb76 183-185,191-192,195,204
+apps/macos/doc2md/WebShellLinkPolicy.swift
+  s_af8952abb39e88::t_0a8c7e3eb35de3 2,12-44
+  s_af8952abb39e88::t_fc3400043ed374 56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "e61082bc9be0ca869e44e22f0dbdb9ccd266dda2",
+  "prompts": {},
+  "sessions": {
+    "s_af8952abb39e88": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "18c4a1ad-7726-45d6-8342-c0f858d0292b",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
