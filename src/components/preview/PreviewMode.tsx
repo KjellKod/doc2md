@@ -1,5 +1,5 @@
 import { useLayoutEffect, useMemo } from "react";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { FindMatch } from "../useFindReplace";
 import { sourceLineRehype } from "../sourceLineRehype";
@@ -11,6 +11,21 @@ import {
   useRenderedActiveMatchCentering,
   useRenderedAnchorApply,
 } from "./renderedSurfaceEffects";
+
+// Anchors inside a converted document should not replace the SPA when
+// clicked. Open them in a new tab/window so the user keeps their working
+// state. In the Mac shell, the WKWebView's createWebViewWith delegate
+// catches the target=_blank request and routes it to the system browser.
+const previewMarkdownComponents: Components = {
+  a({ node, children, ...props }) {
+    void node;
+    return (
+      <a {...props} target="_blank" rel="noopener noreferrer">
+        {children}
+      </a>
+    );
+  },
+};
 
 interface MutableElementRef<T> {
   current: T | null;
@@ -104,6 +119,7 @@ export default function PreviewMode({
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={previewRehypePlugins}
+        components={previewMarkdownComponents}
       >
         {previewMarkdown}
       </ReactMarkdown>
