@@ -1,0 +1,21 @@
+docs/journal/045-celebrate-external-link-routing.md
+  s_af8952abb39e88::t_07e8a032d8a169 1-94
+docs/journal/README.md
+  s_af8952abb39e88::t_9cbad1337d6cb6 9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "2e566b137ac0d27974d29d4d63834ac7f69eb5a8",
+  "prompts": {},
+  "sessions": {
+    "s_af8952abb39e88": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "18c4a1ad-7726-45d6-8342-c0f858d0292b",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
