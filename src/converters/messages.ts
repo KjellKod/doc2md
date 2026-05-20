@@ -16,6 +16,10 @@ export const CONVERSION_TIMEOUT_MS = 60_000;
 export const TIMEOUT_MESSAGE =
   "Conversion timed out. The file may be too complex for in-browser processing.";
 
+export function formatImageCountNote(count: number): string {
+  return ` ${count} image(s) detected that could not be converted to markdown.`;
+}
+
 export function createErrorResult(message: string): ConversionResult {
   return {
     markdown: "",

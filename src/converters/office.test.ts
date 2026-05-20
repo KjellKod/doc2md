@@ -5,11 +5,15 @@ const { convertToHtmlMock, readXlsxFileMock } = vi.hoisted(() => ({
   readXlsxFileMock: vi.fn()
 }));
 
-vi.mock("mammoth", () => ({
-  default: {
-    convertToHtml: convertToHtmlMock
-  }
-}));
+vi.mock("mammoth", () => {
+  const imgElement = (handler: (image: unknown) => Promise<unknown>) => handler;
+  return {
+    default: {
+      convertToHtml: convertToHtmlMock,
+      images: { imgElement }
+    }
+  };
+});
 
 // read-excel-file v9 exposes a single default export that returns every
 // sheet at once. The old named `readSheetNames` is gone.
@@ -28,12 +32,43 @@ describe("office helpers", () => {
     const arrayBuffer = new Uint8Array([1, 2, 3]).buffer;
     convertToHtmlMock.mockResolvedValue({ value: "<p>ok</p>", messages: [] });
 
-    await convertDocxToHtml(arrayBuffer);
+    const result = await convertDocxToHtml(arrayBuffer);
 
     expect(convertToHtmlMock).toHaveBeenCalledTimes(1);
-    expect(convertToHtmlMock).toHaveBeenCalledWith({
-      buffer: Buffer.from(arrayBuffer)
+    expect(convertToHtmlMock).toHaveBeenCalledWith(
+      { buffer: Buffer.from(arrayBuffer) },
+      expect.objectContaining({ convertImage: expect.any(Function) })
+    );
+    expect(result).toEqual({
+      value: "<p>ok</p>",
+      messages: [],
+      imageCount: 0
     });
+  });
+
+  it("counts images via convertImage and strips <img> tags from the output HTML", async () => {
+    const arrayBuffer = new Uint8Array([1, 2, 3]).buffer;
+    convertToHtmlMock.mockImplementation(
+      async (
+        _input: unknown,
+        options: { convertImage: (image: unknown) => Promise<unknown> }
+      ) => {
+        await options.convertImage({});
+        await options.convertImage({});
+        return {
+          value:
+            '<h1>Title</h1><p><img src="data:image/png;base64,AAAA"></p><p>Body<img src="" /></p>',
+          messages: []
+        };
+      }
+    );
+
+    const result = await convertDocxToHtml(arrayBuffer);
+
+    expect(result.imageCount).toBe(2);
+    expect(result.value).toBe("<h1>Title</h1><p></p><p>Body</p>");
+    expect(result.value).not.toMatch(/<img/i);
+    expect(result.value).not.toMatch(/data:image\//);
   });
 
   it("reads every sheet in order with trim disabled", async () => {

@@ -10,7 +10,8 @@ import type {
 import {
   CORRUPT_FILE_MESSAGE,
   LOW_QUALITY_PDF_MESSAGE,
-  SCANNED_PDF_MESSAGE
+  SCANNED_PDF_MESSAGE,
+  formatImageCountNote
 } from "./messages";
 import { readFileAsArrayBuffer } from "./readBinary";
 import type { ConversionQuality, Converter } from "./types";
@@ -1168,10 +1169,6 @@ export interface PdfQualityAssessment {
   signals: PdfQualitySignals;
 }
 
-function imageCountNote(count: number) {
-  return ` ${count} image(s) detected that could not be converted to markdown.`;
-}
-
 export function classifyPdfQuality(pageTexts: string[], imageCount = 0): PdfQualityAssessment {
   const nonEmptyPages = pageTexts.filter((pageText) => pageText.trim().length > 0);
   const totalCharacters = pageTexts.reduce(
@@ -1206,7 +1203,7 @@ export function classifyPdfQuality(pageTexts: string[], imageCount = 0): PdfQual
   };
 
   if (lowSelectableText) {
-    const summary = POOR_PDF_QUALITY_SUMMARY + (imageCount > 0 ? imageCountNote(imageCount) : "");
+    const summary = POOR_PDF_QUALITY_SUMMARY + (imageCount > 0 ? formatImageCountNote(imageCount) : "");
     return {
       status: "error" as const,
       warnings: [PDF_LOW_TEXT_MESSAGE],
@@ -1217,7 +1214,7 @@ export function classifyPdfQuality(pageTexts: string[], imageCount = 0): PdfQual
 
   if (sparseText || fragmentedLines) {
     const summary = "Review: Text was extracted, but layout may be fragmented or out of reading order."
-      + (imageCount > 0 ? imageCountNote(imageCount) : "");
+      + (imageCount > 0 ? formatImageCountNote(imageCount) : "");
     return {
       status: "warning" as const,
       warnings: [PDF_LAYOUT_WARNING_MESSAGE],
@@ -1232,7 +1229,7 @@ export function classifyPdfQuality(pageTexts: string[], imageCount = 0): PdfQual
       warnings: [],
       quality: {
         level: "review" as const,
-        summary: "Review: Selectable text detected. Layout looks straightforward." + imageCountNote(imageCount)
+        summary: "Review: Selectable text detected. Layout looks straightforward." + formatImageCountNote(imageCount)
       },
       signals
     };

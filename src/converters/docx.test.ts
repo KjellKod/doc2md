@@ -29,6 +29,7 @@ describe("convertDocx", () => {
       warnings: [],
       status: "success"
     });
+    expect(result.quality).toBeUndefined();
     expect(result.markdown).toContain("**Sample Document**");
     expect(result.markdown).toContain("# Overview");
     expect(result.markdown).toContain("- Clear heading hierarchy for easy scanning");
@@ -39,7 +40,8 @@ describe("convertDocx", () => {
   it("includes mammoth warnings and downgrades the status", async () => {
     vi.spyOn(office, "convertDocxToHtml").mockResolvedValue({
       value: "<h1>Overview</h1><p>Body copy.</p>",
-      messages: [{ type: "warning", message: "Unrecognized paragraph style: Aside" }]
+      messages: [{ message: "Unrecognized paragraph style: Aside" }],
+      imageCount: 0
     });
 
     const result = await convertDocx(createDocxFile());
@@ -48,6 +50,44 @@ describe("convertDocx", () => {
     expect(result.warnings).toEqual(["Unrecognized paragraph style: Aside"]);
     expect(result.markdown).toContain("# Overview");
     expect(result.markdown).toContain("Body copy.");
+    expect(result.quality).toBeUndefined();
+  });
+
+  it("strips embedded images from markdown and surfaces the count via quality", async () => {
+    // Reproduces the bug where Mammoth's default behaviour inlined images as
+    // base64 data URIs, ballooning .md output to hundreds of KB per image.
+    vi.spyOn(office, "convertDocxToHtml").mockResolvedValue({
+      value: "<h1>Title</h1><p>Body copy with no image tags here.</p>",
+      messages: [],
+      imageCount: 2
+    });
+
+    const result = await convertDocx(createDocxFile());
+
+    expect(result.markdown).not.toMatch(/data:image\//);
+    expect(result.markdown).not.toMatch(/!\[\]\(/);
+    expect(result.markdown).toContain("# Title");
+    expect(result.status).toBe("warning");
+    expect(result.warnings).toEqual([]);
+    expect(result.quality).toEqual({
+      level: "review",
+      summary:
+        "Review: Document converted. 2 image(s) detected that could not be converted to markdown."
+    });
+  });
+
+  it("treats an image-only document as a warning rather than empty", async () => {
+    vi.spyOn(office, "convertDocxToHtml").mockResolvedValue({
+      value: "",
+      messages: [],
+      imageCount: 3
+    });
+
+    const result = await convertDocx(createDocxFile());
+
+    expect(result.status).toBe("warning");
+    expect(result.markdown).toBe("");
+    expect(result.quality?.summary).toContain("3 image(s) detected");
   });
 
   it("handles corrupt DOCX files with an error result", async () => {
