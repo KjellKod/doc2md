@@ -5,6 +5,13 @@ Promoted out of `doc2md-ux-hardening-proposal.md` Phase 1. Phase 1 ships
 switches and tab toggles). True reload-surviving recovery needs a stable
 identity layer that the current architecture doesn't provide.
 
+Status checked after PR #140 merged: still open for hosted reload-surviving
+draft recovery. The app now has in-session state protection and a
+`beforeunload` guard for dirty work, and the Mac app has separate session
+restore. Those are useful shipped protections, but they are not this idea.
+This idea remains specifically about recovering unsaved hosted-browser drafts
+after reload, tab crash, or browser restart.
+
 ## The blocker
 
 Entries are React state (`useFileConversion.ts`). IDs are generated fresh at
