@@ -38,7 +38,6 @@ Scoring scale: **1–5**. Value is impact on users or maintainer velocity if shi
 | `doc2md-browser-crash-recovery` | **4** | **3** | `if-needed` | Real value: a browser tab crash today loses unsaved drafts. But it requires a stable-identity layer the architecture doesn't have. The right trigger is the first user-report of meaningful work lost. |
 | `doc2md-mac-file-watchers` | **3** | **3** | `if-needed` | `NSFilePresenter` live watcher for iCloud / Dropbox / OneDrive coordination. Mtime-at-save-time already catches the most common case. Trigger: a user reports a silent overwrite when iCloud sync raced with Save. |
 | `pdf-multi-line-cell-tables` | **3** | **3** | `if-needed` | Healthcare / legal / compliance documents specifically. The Molina example in the doc is real. Trigger: a paying-customer-shaped use case where current PDF table conversion is the blocker. |
-| `ci-trustworthiness` | **3** | **2** | `if-needed` | Real DX irritation (cubic noise, codex skipping, pr-body-gate mismatches in our recent PRs). Worth a focused half-day, not a quest. Trigger: the next PR where CI signal opacity actively slows a decision. |
 | `doc2md-folder-view` | **4** | **4** | `if-needed` | Two-tab Active/Folder rail with browser FS API + Mac `chooseDirectory` (currently `canChooseDirectories = false` in both shells). Big feature, real polish if shipped, but optional. Trigger: a clear pivot toward "doc2md is your local markdown workspace" positioning. |
 | `markdown-editing-and-rendering-stack` | **3** | **4** | `if-needed` | Pipeline unification across edit / preview / read. Risk is high because it touches every surface. Trigger: the next time edit and preview render the same input differently and a fix in one breaks the other. |
 | `remove-url-import` | **3** | **1** | `if-needed` | URL import still wired in `src/utils/remoteDocument.ts` + `DropZone.tsx`. The proposal notes low success rate and CORS confusion. Pure deletion is easy. Trigger: the next user-support thread where URL import is the cause. |
@@ -61,6 +60,13 @@ Scoring scale: **1–5**. Value is impact on users or maintainer velocity if shi
 | Idea | Notes |
 |---|---|
 | `mac-desktop-app-roadmap` | Phase index, updated in this commit. Status now reflects: Phases 1–5c done, Phase 6 done at MVP scope (6e/6f deferred), Phase 7a done, **Phase 7b blocked on out-of-repo operational setup** (Cloudflare Worker issuer, Lemon Squeezy merchant account, `doc2md.dev` DNS, support email, maintainer go-live approval). In-repo deliverables for 7b have all shipped (decision record #108, issuer spec #109, in-app verifier #110, license boundary #103). |
+
+## Post-audit corrections — 2026-05-21
+
+| Idea | Correction | Evidence |
+|---|---|---|
+| `ci-trustworthiness` | Moved from active `if-needed` to archived/shipped. | Quest `ci-trustworthiness_2026-04-05__2258` and `docs/quest-journal/ci-trustworthiness_2026-04-06.md`; current workflows split CI into named jobs, keep Codex review visible, add an advisory intent-review lane, and document required versus advisory checks. |
+| `doc2md-browser-crash-recovery` | Kept active `if-needed`, with narrower wording. | Hosted app has in-session protection and a `beforeunload` guard, and Mac session restore is separately shipped. No hosted reload-surviving draft index, stable scratch identity, IndexedDB fallback, or boot-time Restore / Discard UI exists yet. |
 
 ## What changed in `ideas/README.md`
 
