@@ -1,0 +1,33 @@
+tests/e2e/appshell-dedup-characterization.spec.ts
+  s_84b24cb06c51c2::t_384f1253fc6aed 14,18
+src/styles/global.css
+  s_84b24cb06c51c2::t_1e338e8b70eaac 1056-1057,2043-2044
+  s_84b24cb06c51c2::t_384f1253fc6aed 125-129,566,628-657,1506-1511,1531-1541,2365-2372,3179-3180
+  s_84b24cb06c51c2::t_9d70f4f00737d0 353
+  s_84b24cb06c51c2::t_d11ce1c42641a2 1643,1651
+src/App.test.tsx
+  s_84b24cb06c51c2::t_384f1253fc6aed 398,404,425,441,453,488,529
+  s_84b24cb06c51c2::t_1ca8c2408da6b0 411,416,419,422,450,458,472,497,502
+src/__tests__/appshell-dedup-desktop-characterization.test.tsx
+  s_84b24cb06c51c2::t_384f1253fc6aed 39
+src/shell/AppShell.tsx
+  s_84b24cb06c51c2::t_384f1253fc6aed 292
+src/shell/useWorkspaceResize.ts
+  s_84b24cb06c51c2::t_384f1253fc6aed 15,21,23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.11",
+  "base_commit_sha": "52b78d19c256123743b2bb4cd607721b59b117a7",
+  "prompts": {},
+  "sessions": {
+    "s_84b24cb06c51c2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e48c2-b3a4-7751-b8bd-da5ebabb9438",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
