@@ -46,6 +46,7 @@ struct PersistenceSettings: Codable, Equatable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(persistenceEnabled, forKey: .persistenceEnabled)
         try container.encodeIfPresent(theme, forKey: .theme)
+        try container.encode(recentFiles, forKey: .recentFiles)
     }
 }
 
@@ -121,38 +122,48 @@ final class PersistenceStore {
     }
 
     func clearRecentFiles() throws -> PersistenceSettings {
-        let settings = load()
+        var settings = load()
         guard settings.persistenceEnabled else {
             return .disabled
         }
 
+        settings.recentFiles = []
+        try write(settings)
         recentDocumentController.clearRecentDocuments(nil)
         return settings
     }
 
     func recentFiles(now: Date = Date()) -> [RecentFile] {
-        Array(
-            recentDocumentController.recentDocumentURLs
-                .map { url in
-                    let standardizedPath = Self.standardPath(for: url)
-                    return RecentFile(
-                        path: standardizedPath,
-                        displayName: URL(fileURLWithPath: standardizedPath).lastPathComponent,
-                        lastOpenedAt: Self.timestamp(from: now)
-                    )
-                }
-                .prefix(Self.maxRecentFiles)
-        )
+        let settings = load()
+        guard settings.persistenceEnabled else {
+            return []
+        }
+
+        let nativeRecentFiles = recentDocumentController.recentDocumentURLs
+            .map { recentFile(for: $0, now: now) }
+        return Self.dedupedRecentFiles(nativeRecentFiles + settings.recentFiles)
     }
 
-    func recordRecentDocument(url: URL) throws -> PersistenceSettings {
-        let settings = load()
+    func recordRecentDocument(url: URL, now: Date = Date()) throws -> PersistenceSettings {
+        var settings = load()
         guard settings.persistenceEnabled else {
             return .disabled
         }
 
+        let recentFile = recentFile(for: url, now: now)
+        settings.recentFiles = Self.dedupedRecentFiles([recentFile] + settings.recentFiles)
+        try write(settings)
         recentDocumentController.noteNewRecentDocumentURL(url.standardizedFileURL)
         return settings
+    }
+
+    private func recentFile(for url: URL, now: Date) -> RecentFile {
+        let standardizedPath = Self.standardPath(for: url)
+        return RecentFile(
+            path: standardizedPath,
+            displayName: URL(fileURLWithPath: standardizedPath).lastPathComponent,
+            lastOpenedAt: Self.timestamp(from: now)
+        )
     }
 
     private func write(_ settings: PersistenceSettings) throws {
@@ -217,6 +228,32 @@ final class PersistenceStore {
 
     static func standardPath(for url: URL) -> String {
         URL(fileURLWithPath: url.path).standardizedFileURL.path
+    }
+
+    private static func dedupedRecentFiles(_ recentFiles: [RecentFile]) -> [RecentFile] {
+        var seen = Set<String>()
+        var result: [RecentFile] = []
+
+        for recentFile in recentFiles {
+            let standardizedPath = standardPath(for: URL(fileURLWithPath: recentFile.path))
+            guard seen.insert(standardizedPath).inserted else {
+                continue
+            }
+
+            result.append(
+                RecentFile(
+                    path: standardizedPath,
+                    displayName: URL(fileURLWithPath: standardizedPath).lastPathComponent,
+                    lastOpenedAt: recentFile.lastOpenedAt
+                )
+            )
+
+            if result.count == maxRecentFiles {
+                break
+            }
+        }
+
+        return result
     }
 
     private static func defaultSettingsURL(fileManager: FileManager) -> URL {

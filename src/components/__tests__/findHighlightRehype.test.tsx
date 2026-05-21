@@ -187,4 +187,42 @@ describe("findHighlightRehype", () => {
     expect(marks[0].textContent).toBe("Atlas");
     expect(marks[1].textContent).toBe("Jordan");
   });
+
+  it("keeps rendered offsets aligned inside fenced XML code blocks", () => {
+    const md = [
+      "# Launch Agent",
+      "",
+      "Inspect the generated plist:",
+      "",
+      "```xml",
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+      "<plist version=\"1.0\">",
+      "<dict>",
+      "  <key>Label</key>",
+      "  <string>com.example.agent</string>",
+      "  <key>RunAtLoad</key>",
+      "  <true/>",
+      "</dict>",
+      "</plist>",
+      "```",
+    ].join("\n");
+
+    const { container: corpusContainer, unmount: unmountCorpus } =
+      renderMarkdown(md, null);
+    const corpus = deriveRenderedText(corpusContainer as HTMLElement);
+    unmountCorpus();
+
+    const start = corpus.indexOf("RunAtLoad");
+    expect(start).toBeGreaterThanOrEqual(0);
+
+    const { container } = renderMarkdown(md, {
+      start,
+      end: start + "RunAtLoad".length,
+    });
+    const marks = container.querySelectorAll(
+      "mark.markdown-rendered-find-highlight",
+    );
+    expect(marks).toHaveLength(1);
+    expect(marks[0].textContent).toBe("RunAtLoad");
+  });
 });

@@ -1547,6 +1547,37 @@ describe("PreviewPanel", () => {
     expect(screen.getByRole("search")).toBeInTheDocument();
   });
 
+  it("keeps preview find offsets aligned after disabled repository links", async () => {
+    const markdown = [
+      "[Repository guide](../README.md)",
+      "",
+      "```xml",
+      "<dict>",
+      "  <key>RunAtLoad</key>",
+      "  <true/>",
+      "</dict>",
+      "```",
+    ].join("\n");
+    const { container } = render(
+      <PreviewPanel entry={createEntry({ markdown })} />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Find and replace" }));
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Find markdown text" }),
+      { target: { value: "RunAtLoad" } },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("1 of 1")).toBeInTheDocument();
+      expect(
+        container.querySelector(
+          ".markdown-surface mark.markdown-rendered-find-highlight",
+        ),
+      ).toHaveTextContent("RunAtLoad");
+    });
+  });
+
   it("zero-width preview matches do not leak the sentinel ZWSP into renderedViewText", async () => {
     // Reviewer-B regression: the rehype plugin inserts a U+200B sentinel
     // inside `<mark class="markdown-rendered-find-highlight-zero">` when
