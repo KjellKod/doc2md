@@ -395,34 +395,34 @@ describe("App", () => {
 
     Object.defineProperty(sidebar!, "getBoundingClientRect", {
       configurable: true,
-      value: () => new DOMRect(0, 0, 430, 600),
+      value: () => new DOMRect(0, 0, 380, 600),
     });
 
     const getSidebarWidth = () =>
       Number(workspace!.style.getPropertyValue("--sidebar-width").replace("px", ""));
 
-    expect(getSidebarWidth()).toBe(430);
+    expect(getSidebarWidth()).toBe(380);
 
     fireEvent.mouseDown(splitBar, { clientX: 200 });
     fireEvent.mouseMove(window, { clientX: 80 });
     fireEvent.mouseUp(window);
 
     expect(pageFrame).toHaveStyle("--page-max-width: 1680px");
-    expect(getSidebarWidth()).toBe(310);
+    expect(getSidebarWidth()).toBe(260);
 
     fireEvent.mouseDown(splitBar, { clientX: 80 });
     fireEvent.mouseMove(window, { clientX: 140 });
     fireEvent.mouseUp(window);
-    expect(getSidebarWidth()).toBe(370);
+    expect(getSidebarWidth()).toBe(320);
 
     fireEvent.keyDown(splitBar, { key: "ArrowRight" });
-    expect(getSidebarWidth()).toBe(386);
+    expect(getSidebarWidth()).toBe(336);
 
     fireEvent.keyDown(splitBar, { key: "ArrowLeft" });
-    expect(getSidebarWidth()).toBe(370);
+    expect(getSidebarWidth()).toBe(320);
 
     fireEvent.keyDown(splitBar, { key: "Home" });
-    expect(getSidebarWidth()).toBe(430);
+    expect(getSidebarWidth()).toBe(380);
   });
 
   it("resets and snap-collapses the upload panel from the split bar", () => {
@@ -438,7 +438,7 @@ describe("App", () => {
 
     Object.defineProperty(sidebar!, "getBoundingClientRect", {
       configurable: true,
-      value: () => new DOMRect(0, 0, 430, 600),
+      value: () => new DOMRect(0, 0, 380, 600),
     });
 
     const getSidebarWidth = () =>
@@ -447,15 +447,15 @@ describe("App", () => {
     fireEvent.mouseDown(splitBar, { clientX: 200 });
     fireEvent.mouseMove(window, { clientX: 80 });
     fireEvent.mouseUp(window);
-    expect(getSidebarWidth()).toBe(310);
+    expect(getSidebarWidth()).toBe(260);
 
     fireEvent.doubleClick(splitBar);
-    expect(getSidebarWidth()).toBe(430);
+    expect(getSidebarWidth()).toBe(380);
 
     fireEvent.mouseDown(splitBar, { clientX: 200 });
     fireEvent.mouseMove(window, { clientX: 80 });
     fireEvent.mouseUp(window);
-    expect(getSidebarWidth()).toBe(310);
+    expect(getSidebarWidth()).toBe(260);
 
     fireEvent.mouseDown(splitBar, { clientX: 200 });
     fireEvent.mouseMove(window, { clientX: 40 });
@@ -469,7 +469,7 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "Show upload panel" }));
 
     expect(workspace).not.toHaveClass("sidebar-collapsed");
-    expect(getSidebarWidth()).toBe(310);
+    expect(getSidebarWidth()).toBe(260);
   });
 
   it("grows the upload panel when dragging the split bar right", () => {
@@ -485,7 +485,7 @@ describe("App", () => {
 
     Object.defineProperty(sidebar!, "getBoundingClientRect", {
       configurable: true,
-      value: () => new DOMRect(0, 0, 430, 600),
+      value: () => new DOMRect(0, 0, 380, 600),
     });
 
     const getSidebarWidth = () =>
@@ -494,12 +494,12 @@ describe("App", () => {
     fireEvent.mouseDown(splitBar, { clientX: 200 });
     fireEvent.mouseMove(window, { clientX: 80 });
     fireEvent.mouseUp(window);
-    expect(getSidebarWidth()).toBe(310);
+    expect(getSidebarWidth()).toBe(260);
 
     fireEvent.mouseDown(splitBar, { clientX: 80 });
     fireEvent.mouseMove(window, { clientX: 140 });
     fireEvent.mouseUp(window);
-    expect(getSidebarWidth()).toBe(370);
+    expect(getSidebarWidth()).toBe(320);
   });
 
   it("lets users grow and reset the editor height with the bottom handle", () => {
@@ -526,7 +526,7 @@ describe("App", () => {
     fireEvent.mouseUp(window);
 
     expect(preview!.style.height).toBe("764px");
-    expect(workspace!.style.getPropertyValue("--sidebar-width")).toBe("430px");
+    expect(workspace!.style.getPropertyValue("--sidebar-width")).toBe("380px");
 
     fireEvent.keyDown(heightHandle, { key: "ArrowDown" });
     expect(preview!.style.height).toBe("796px");
