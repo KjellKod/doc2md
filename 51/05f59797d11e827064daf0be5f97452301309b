@@ -1,0 +1,21 @@
+ideas/ux-transformation.md
+  s_966b013f76b4d2::t_e29a6e25dad987 501
+  s_966b013f76b4d2::t_e0360d075b13d8 72,108,117,121
+  s_966b013f76b4d2::t_a7af075a6da491 43,66-71,73-107,109-116,118-120,122-133,542-549
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.11",
+  "base_commit_sha": "5105f59797d11e827064daf0be5f97452301309b",
+  "prompts": {},
+  "sessions": {
+    "s_966b013f76b4d2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e486c-b69d-7e50-9cd9-9ecf32b437c5",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
