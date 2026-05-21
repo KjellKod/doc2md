@@ -1,0 +1,36 @@
+ideas/archive/ci-trustworthiness.md
+  s_966b013f76b4d2::t_a669cce10cb94a 1-195
+ideas/agentic-ci-scale-and-signal.md
+  s_82c0dc78d8a0d0::t_3bbc55017af5a3 9-14
+  s_82c0dc78d8a0d0::t_c175d1320b5630 1-8,15-97,111-178,187-213,240-315
+  s_82c0dc78d8a0d0::t_c939ddd38ac34a 98-110
+  s_82c0dc78d8a0d0::t_939ecf5a826fa9 179-186
+  s_82c0dc78d8a0d0::t_9bedf2013beb3d 214-239
+ideas/README.md
+  s_966b013f76b4d2::t_83a48d348c9e25 29
+  s_82c0dc78d8a0d0::t_c15ad51c026464 21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.11",
+  "base_commit_sha": "0f6873d47b271fd8f5eefdd226563f4d3f5bcf0c",
+  "prompts": {},
+  "sessions": {
+    "s_82c0dc78d8a0d0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "269fbcfd-4df2-4543-9d89-2eff190296c3",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_966b013f76b4d2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e486c-b69d-7e50-9cd9-9ecf32b437c5",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
