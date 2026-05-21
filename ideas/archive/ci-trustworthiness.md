@@ -1,5 +1,26 @@
 # CI Trustworthiness
 
+Status: archived as shipped.
+
+Archived: 2026-05-21.
+
+Shipped via: Quest `ci-trustworthiness_2026-04-05__2258`; see
+[`docs/quest-journal/ci-trustworthiness_2026-04-06.md`](../../docs/quest-journal/ci-trustworthiness_2026-04-06.md).
+
+Code evidence checked after PR #140 merged:
+
+- `.github/workflows/ci.yml` now has named `lint-and-type`, `test`, `build`,
+  `e2e`, and aggregate `ci` jobs.
+- `.github/workflows/codex-ci-review.yml` stages review helper scripts from the
+  trusted base ref, uploads review artifacts, and posts a visible result on
+  every path through `scripts/codex_review_post.py`.
+- `.github/workflows/intent-review.yml` provides the advisory intent-review
+  lane.
+- `docs/ci-check-policy.md` separates required checks from advisory review
+  signals, and `docs/agentic-ci-guide.md` documents the trust model.
+
+The original proposal remains below as historical context.
+
 ## Summary
 
 `doc2md` should make its CI easier to trust by making results more legible, review automation less opaque, and unstable checks clearly advisory until they earn required-check status.
