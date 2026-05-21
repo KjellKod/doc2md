@@ -1,0 +1,34 @@
+src/components/preview/renderedTextCorpus.ts
+  s_84b24cb06c51c2::t_50dd081f886c02 53-56,71-73,80-82
+src/components/__tests__/findHighlightRehype.test.tsx
+  s_84b24cb06c51c2::t_806496e1b50e5c 190-227
+apps/macos/README.md
+  s_84b24cb06c51c2::t_66bffc7bd83644 31,33
+apps/macos/doc2mdTests/PersistenceStoreTests.swift
+  s_84b24cb06c51c2::t_ceb66f27afd380 63,106-107,186,203-204,211,233-234
+  s_84b24cb06c51c2::t_4e514c30194315 159-185
+apps/macos/doc2md/PersistenceStore.swift
+  s_84b24cb06c51c2::t_4b67e0664c9f66 49,125,130-131,137-144,147-148,153-155,160-168,233-256
+src/components/PreviewPanel.test.tsx
+  s_84b24cb06c51c2::t_f3a2878859adc2 1550,1552-1553,1572
+  s_84b24cb06c51c2::t_ff4c46748493af 1551,1554-1571,1573-1580
+tests/e2e/find-fenced-code-mode-switch.spec.ts
+  s_84b24cb06c51c2::t_9ab224cf6eb3dc 7-8
+  s_84b24cb06c51c2::t_01f26068fb7cb3 1-6,9-60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.11",
+  "base_commit_sha": "fd9c53d9f00eedb5af8b8c3b1d0375687892897e",
+  "prompts": {},
+  "sessions": {
+    "s_84b24cb06c51c2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e48c2-b3a4-7751-b8bd-da5ebabb9438",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
