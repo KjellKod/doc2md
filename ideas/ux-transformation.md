@@ -40,6 +40,7 @@ Every item must explicitly mark Hosted, Mac, and Core as `yes`, `if needed`, `no
 
 | Item | Hosted | Mac | Core | Gut | Why |
 |---|---:|---:|---:|---|---|
+| Workspace real-estate and working-area density | yes | yes | n/a | `need` | Editing and previewing are the core working tasks, but the shared shell can still make document content feel cramped through vertical chrome, default split choices, and repeated manual resizing. |
 | Theme parity audit | yes | yes | n/a | `need` | Theme support exists, but the product needs a deliberate light/dark pass across editor, preview, highlights, errors, empty states, menus, and disabled states. |
 | Mobile and tablet layout pass | yes | n/a | n/a | `need` | Hosted web is a browser product. Phone and tablet layouts should not be incidental desktop collapse behavior. |
 | Performance perception pass | yes | yes | yes | `need` | Conversion, search, paste, batch output, and remote fetch all need visible, honest progress or bounded waiting. |
@@ -61,6 +62,74 @@ Every item must explicitly mark Hosted, Mac, and Core as `yes`, `if needed`, `no
 | Source-tree file operations | no | no | n/a | `yagni` | Rename, move, delete, and two-way folder sync would turn doc2md into a file manager. |
 
 ## Need items
+
+### Workspace real-estate and working-area density
+
+Surfaces: Hosted, Mac.
+
+Gut: `need`.
+
+The current workspace problem is not "the app needs a full visual redesign." It is more concrete: while working on a document, the editor and preview should own the dominant share of the viewport, but the shared shell can still spend too much space above the workspace and inside it through page padding, panel chrome, headings, toolbars, default split widths, and resize recovery. Working mode already hides the landing hero and view switcher, which is the right direction, but users should not need repeated left/right/up/down adjustments before editing feels comfortable, and the document area should not still feel cramped after adjustment.
+
+Affected surfaces:
+
+- Hosted: yes. The browser app owns the responsive shell, working-mode bar, sidebar collapse, preview/editor panel, toolbar placement, and laptop/tablet viewport behavior.
+- Mac: yes. The desktop app shares the same React `AppShell`, preview panel, working-mode bar, and resize contracts, while preserving Mac-specific native menus, save/reload/reveal behavior, and "desktop is not a browser" link routing.
+- Core: n/a. `@doc2md/core` has no workspace chrome. Do not change API, CLI, conversion semantics, or result shapes for this item.
+
+Treat this as distinct from:
+
+- theme parity, which checks visual states in light/dark
+- mobile and tablet layout, which handles touch and narrow responsive behavior
+- copy polish, which clarifies labels and errors
+- folder view, which would change product positioning toward a local Markdown workspace
+
+Mobile and tablet layout is related, but it is not the same problem. This item starts with common laptop and desktop working space, then records where narrow tablet behavior needs coordination with the separate mobile/tablet pass.
+
+Decision frame:
+
+- Targeted layout compaction: likely first move. Reduce or collapse non-document chrome, make panel headings and toolbar rows earn their height, and tighten spacing where it increases editor/preview acreage without hiding required controls.
+- Workspace-first working mode: keep the current state-based direction, but make the working state feel intentionally document-first. The landing story should stay available through Home; it should not continue to tax the working viewport.
+- Focus/fullscreen writing mode: useful as an optional escape hatch after the default workspace improves. It should not become a workaround for poor defaults.
+- Better default split ratios: the first useful document state should give editor/preview content a comfortable width and height on common laptops, with upload/session controls reachable but not dominant.
+- Broader visual redesign: optional only if measured, targeted changes still fail to make the workspace feel clear and roomy. A redesign must not be used as a vague substitute for fixing document-area allocation.
+
+Pros and cons:
+
+- Targeted layout improvements preserve KISS/SRP/YAGNI, keep the shared shell recognizable, reduce implementation risk, and can be verified with viewport screenshots and simple measurements. The risk is local patchwork if each row is compacted without a coherent document-first rule.
+- A broader visual redesign could reset hierarchy and remove accumulated chrome in one pass. The cost is high: larger review surface, more accessibility regression risk, more Mac/browser boundary risk, and a greater chance of changing style while dodging the actual working-area problem.
+
+Before considering a full redesign, achieve and verify:
+
+- working mode has a clear document-first allocation rule
+- default sidebar width/collapse behavior and preview/editor height work at common laptop sizes without repeated resizing
+- primary controls remain reachable through compact placement, not through extra vertical rows
+- preview, edit, and LinkedIn modes preserve useful scroll/context when switching without reserving unnecessary chrome
+- before/after validation measures the editor/preview content rectangle, not just the total preview panel or the whole app shell
+- resize handles remain keyboard-accessible, visible enough, and resettable without native `title` tooltips
+- no regression against `docs/accessibility-notes.md`
+- no regression to Mac shell behavior from PR #138: external links still leave the desktop shell, and desktop-only actions stay native where appropriate
+
+Acceptance:
+
+- In working mode, editor/preview content receives the dominant share of viewport height at common laptop sizes, not only on large desktop monitors.
+- The first loaded or pasted document opens into a comfortable editor/preview workspace without repeated manual resizing.
+- At 1280x800 and 1440x900, future implementation validation records before/after screenshots or measurements for the actual editable/rendered content rectangle and shows that space above the workspace no longer dominates the first working view.
+- Primary controls for New/Open, Save, Find, mode switching, Copy, sidebar show/hide, and resize/reset stay reachable without occupying excessive vertical space.
+- Default panel sizing gives document content the priority over upload/session chrome while keeping session context recoverable.
+- Preview and edit modes preserve useful context during mode switches without using fixed chrome as a crutch.
+- The layout feels less cramped at 1280px-wide and 1440px-wide laptop viewports because the document area is visibly larger, not because decorative chrome was restyled.
+- Narrow tablet behavior is coordinated with the mobile/tablet item rather than solved through accidental desktop shrinkage.
+
+Out of scope unless evidence justifies it:
+
+- a full visual redesign of the whole app
+- a new design system or token rewrite
+- a new editor engine
+- command palette, shortcut remapping, or IDE-style panels
+- source-tree file operations or folder workspace scope
+- `@doc2md/core` API/CLI changes
+- hiding required controls so aggressively that keyboard, screen-reader, or low-vision users lose the current accessibility contract
 
 ### Theme parity audit
 
@@ -429,6 +498,7 @@ Acceptance if revived:
 
 Do not build these as part of this transformation:
 
+- full visual redesign unless the workspace real-estate acceptance criteria prove targeted work is insufficient
 - command palette
 - configurable shortcut remapping
 - vim/emacs modes
@@ -437,7 +507,6 @@ Do not build these as part of this transformation:
 - source-tree rename/move/delete
 - two-way sync with folders
 - formal WCAG certification matrix
-- visual redesign of the whole app
 - `@doc2md/core` interactive TUI
 
 These may become reasonable later, but none is needed for the current north-star.
@@ -470,13 +539,14 @@ Examples that would require this block:
 
 ## Suggested order
 
-1. Theme parity audit plus custom tooltip cleanup. Same visual QA pass, small code surface when implemented.
-2. Mobile/tablet layout pass for the hosted app. It is the biggest missing product surface.
-3. Error and empty-state copy pass across Hosted, Mac, and Core. Cheap, high clarity.
-4. Performance perception pass. Keep it honest and bounded.
-5. Keyboard discoverability and lightweight a11y audit. The shortcut list and a11y pass should reference the same real controls.
-6. Copy-paste UX loop polish. Keep it near the mode switcher if it earns the pixels.
-7. Reconsider `if-needed` items only after a concrete trigger lands.
+1. Workspace real-estate and working-area density. Make working mode document-first before polishing surrounding surfaces.
+2. Theme parity audit plus custom tooltip cleanup. Same visual QA pass, small code surface when implemented.
+3. Mobile/tablet layout pass for the hosted app. Related to workspace density, but focused on touch and narrow responsive behavior.
+4. Error and empty-state copy pass across Hosted, Mac, and Core. Cheap, high clarity.
+5. Performance perception pass. Keep it honest and bounded.
+6. Keyboard discoverability and lightweight a11y audit. The shortcut list and a11y pass should reference the same real controls.
+7. Copy-paste UX loop polish. Keep it near the mode switcher if it earns the pixels.
+8. Reconsider `if-needed` items only after a concrete trigger lands.
 
 ## Validation expectations for future implementation quests
 
