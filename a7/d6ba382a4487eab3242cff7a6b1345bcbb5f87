@@ -1,0 +1,23 @@
+ideas/ux-transformation.md
+  s_966b013f76b4d2::t_af78a9ac4b6acd 565,594-601
+  s_966b013f76b4d2::t_6933fc2a108274 449-454
+  s_966b013f76b4d2::t_bb60fa8dd5125f 556-564,566-593,602-731
+ideas/doc2md-browser-crash-recovery.md
+  s_966b013f76b4d2::t_c2966a98a5f01b 8-14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.11",
+  "base_commit_sha": "a7d6ba382a4487eab3242cff7a6b1345bcbb5f87",
+  "prompts": {},
+  "sessions": {
+    "s_966b013f76b4d2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e486c-b69d-7e50-9cd9-9ecf32b437c5",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
