@@ -1644,6 +1644,53 @@ describe("App desktop bridge", () => {
     cleanupShell();
   });
 
+  it("keeps session-restored native recent files available in the working-mode Open menu", async () => {
+    const openFile = vi.fn(async (args?: { path?: string }) => ({
+      ok: true as const,
+      kind: "markdown" as const,
+      path: args?.path ?? "/Users/me/Manual.md",
+      content: "# Alpha\n",
+      mtimeMs: 10,
+      lineEnding: "lf" as const,
+    }));
+    const cleanupShell = installMockShell({
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: true,
+        recentFiles: [],
+      })),
+      getSessionState: vi.fn(async () => ({
+        ok: true as const,
+        openPaths: ["/Users/me/Alpha.md"],
+        selectedPath: "/Users/me/Alpha.md",
+        recentFiles: [
+          {
+            path: "/Users/me/Alpha.md",
+            displayName: "Alpha.md",
+            lastOpenedAt: "2026-05-21T12:00:00.000Z",
+          },
+        ],
+      })),
+      openFile,
+    });
+
+    render(<DesktopApp />);
+
+    await screen.findByRole("heading", { name: "Alpha" });
+    const open = screen.getByRole("button", { name: "Open" });
+
+    expect(open).toHaveAttribute("aria-haspopup", "menu");
+    fireEvent.click(open);
+
+    const recentMenu = screen.getByRole("menu", { name: "Recent files" });
+    expect(
+      within(recentMenu).getByRole("menuitem", { name: /Alpha\.md/ }),
+    ).toBeInTheDocument();
+    expect(openFile).toHaveBeenCalledTimes(1);
+
+    cleanupShell();
+  });
+
   it("skips unopenable restored paths without blocking startup", async () => {
     const openFile = vi.fn(async (args?: { path?: string }) => {
       if (args?.path === "/Users/me/Missing.md") {
