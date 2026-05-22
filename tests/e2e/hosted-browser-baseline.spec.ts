@@ -103,13 +103,15 @@ async function expectNoOverlap(first: Locator, second: Locator) {
 test("loads hosted app regions and empty states", async ({ page }) => {
   await openHostedApp(page);
 
-  await expect(page.getByRole("heading", { name: "Files" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Files", exact: true }),
+  ).toBeVisible();
   await expect(page.getByRole("heading", { name: "Preview" })).toBeVisible();
   await expect(
-    page.getByText("Drop files or start writing.", { exact: true }),
+    page.getByText("No files or drafts yet.", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByText("Start with writing or drop a file.", { exact: true }),
+    page.getByText("Nothing to preview yet.", { exact: true }),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "Start writing", exact: true })).toBeVisible();
 });

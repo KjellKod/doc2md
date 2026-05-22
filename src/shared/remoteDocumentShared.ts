@@ -1,5 +1,5 @@
 export const INVALID_REMOTE_DOCUMENT_URL_MESSAGE =
-  "Enter a valid http:// or https:// document URL.";
+  "Enter a valid http:// or https:// document URL, or download the file and open it locally.";
 
 const MIME_TYPE_EXTENSION_MAP: Record<string, string> = {
   "application/json": "json",
@@ -125,12 +125,12 @@ export function deriveRemoteDocumentFileName(
 
 export function getRemoteDocumentResponseMessage(status: number) {
   if (status === 401 || status === 403) {
-    return "We couldn't download that document because the URL requires sign-in or additional access.";
+    return "We couldn't download that document because the URL requires sign-in or additional access. Download it locally, then open the file in doc2md.";
   }
 
   if (status === 404) {
-    return "We couldn't download that document because the URL returned 404 Not Found.";
+    return "We couldn't download that document because the URL returned 404 Not Found. Check the link or download the file locally first.";
   }
 
-  return `We couldn't download that document because the server responded with HTTP ${status}.`;
+  return `We couldn't download that document because the server responded with HTTP ${status}. Try a direct download link or open a local copy.`;
 }

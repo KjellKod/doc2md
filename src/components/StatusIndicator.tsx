@@ -49,7 +49,7 @@ const statusDescriptions: Record<ConversionStatus, string> = {
   converting: "Converting to Markdown.",
   success: "Markdown is ready to review.",
   warning: "Converted with warnings. Review before using.",
-  error: "Unable to convert this file.",
+  error: "Unable to convert this file. Try another file or paste the text into a draft.",
 };
 
 export default function StatusIndicator({

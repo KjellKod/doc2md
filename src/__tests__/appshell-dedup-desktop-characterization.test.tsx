@@ -171,7 +171,7 @@ describe("AppShell dedup characterization (desktop)", () => {
     );
     expect(
       document.querySelector(".view-switcher-meta")?.textContent,
-    ).toBe("Start from scratch or with single and mixed-format batches");
+    ).toBe("Start writing, open files, or import a direct document URL");
   });
 
   it("updates desktop view switcher meta from the same source state as the shell", async () => {

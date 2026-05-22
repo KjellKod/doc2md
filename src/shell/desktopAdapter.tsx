@@ -56,9 +56,9 @@ import type {
   PageView,
 } from "./AppShell";
 const CONVERSION_FAILED_SAVE_MESSAGE =
-  "Cannot save: conversion failed. Please re-open the file or choose another.";
+  "Cannot save because conversion failed. Re-open the source file or choose another document.";
 const PERSISTENCE_UNAVAILABLE_MESSAGE =
-  "Desktop persistence settings unavailable.";
+  "Desktop persistence settings are unavailable. You can keep working, but recents and restore may not update.";
 const DEFAULT_DESKTOP_PERSISTENCE_SETTINGS: DesktopPersistenceSettings = {
   ok: true,
   persistenceEnabled: false,
@@ -80,6 +80,23 @@ function suggestedNameForEntry(entry: FileEntry | null) {
 
 function basenameForPath(path: string) {
   return path.split(/[\\/]/).filter(Boolean).pop() || path || "Untitled.md";
+}
+
+function addSentenceFollowUp(message: string, followUp: string) {
+  const trimmedMessage = message.trim();
+  if (!trimmedMessage) {
+    return followUp;
+  }
+
+  const separator = /[.!?:;]$/.test(trimmedMessage) ? " " : ". ";
+  return `${trimmedMessage}${separator}${followUp}`;
+}
+
+function reloadFailureMessage(message: string) {
+  return `Unable to reload file from disk: ${addSentenceFollowUp(
+    message,
+    "Check the file, then try Reload again.",
+  )}`;
 }
 
 type DesktopFileMetadata = {
@@ -114,9 +131,10 @@ function omitRecordKey<T>(record: Record<string, T>, key: string) {
   return next;
 }
 
-const IMPORT_HANDOFF_EXPIRED_MESSAGE = "Import handoff expired. Open the file again.";
+const IMPORT_HANDOFF_EXPIRED_MESSAGE =
+  "Import handoff expired. Open the file again from the File menu.";
 const IMPORT_HANDOFF_FAILED_MESSAGE =
-  "Import failed before the app received the file bytes.";
+  "Import failed before the app received the file bytes. Open the file again, or choose another supported file.";
 
 function noticeFromPermission(result: ShellPermissionNeeded): DesktopNotice {
   return {
@@ -368,10 +386,13 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     );
   };
   const heroSummary = buildSummary(
-    "Start from scratch or with single and mixed-format batches",
+    "Start writing, open files, or import a direct document URL",
     " open",
   );
-  const fileSummary = buildSummary("No files or drafts yet.", "");
+  const fileSummary = buildSummary(
+    "Converted files and drafts stay in this list.",
+    "",
+  );
 
   useEffect(() => {
     entriesRef.current = entries;
@@ -1071,7 +1092,8 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
 
         setDocumentNotice(entryId, {
           kind: "error",
-          message: "Stat failed before the app received a native result.",
+          message:
+            "Could not check the file on disk. Re-open the file if the save state looks wrong.",
         });
         setEntryDesktopSaveState(entryId, "error");
         console.error("doc2md desktop statFile transport failure", error);
@@ -1249,7 +1271,8 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
       saveState.markError();
       setDesktopNotice({
         kind: "error",
-        message: "Open failed before the app received a native result.",
+        message:
+          "Open failed before the app received a native result. Try opening the file again.",
       });
       console.error("doc2md desktop openFile transport failure", error);
     }
@@ -1300,7 +1323,8 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
         saveState.markError();
         setDesktopNotice({
           kind: "error",
-          message: "Open failed before the app received a native result.",
+          message:
+            "Open failed before the app received a native result. Try opening the recent file again.",
         });
         console.error("doc2md desktop openFile transport failure", error);
         return false;
@@ -1396,7 +1420,8 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
         if (!cancelled) {
           setDesktopNotice({
             kind: "error",
-            message: "Session restore failed before the app received a native result.",
+            message:
+              "Session restore failed before the app received a native result. Open a file or start a new draft.",
           });
           console.error("doc2md desktop session restore failure", error);
         }
@@ -1554,7 +1579,8 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
         setEntryDesktopSaveState(entry.id, "error");
         setDocumentNotice(entry.id, {
           kind: "error",
-          message: "Save failed before the app received a native result.",
+          message:
+            "Save failed before the app received a native result. Try Save again or choose Save As.",
         });
         console.error("doc2md desktop saveFile transport failure", error);
       } finally {
@@ -1657,7 +1683,8 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
       setEntryDesktopSaveState(entry.id, "error");
       setDocumentNotice(entry.id, {
         kind: "error",
-        message: "Save As failed before the app received a native result.",
+        message:
+          "Save As failed before the app received a native result. Choose Save As and try again.",
       });
       console.error("doc2md desktop saveFileAs transport failure", error);
     } finally {
@@ -1681,7 +1708,7 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     if (!selectedEntry) {
       setDesktopNotice({
         kind: "info",
-        message: "Select a document before saving.",
+        message: "Select a document before saving, or start a new draft.",
       });
       return;
     }
@@ -1788,7 +1815,8 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
         setEntryDesktopSaveState(selectedEntryId, "error");
         setDocumentNotice(selectedEntryId, {
           kind: "error",
-          message: "Reveal failed before the app received a native result.",
+          message:
+            "Reveal in Finder failed before the app received a native result. Save or reload the file, then try again.",
         });
       }
       console.error("doc2md desktop revealInFinder transport failure", error);
@@ -1919,7 +1947,8 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
           setEntryDesktopSaveState(entry.id, "error");
           setDocumentNotice(entry.id, {
             kind: "error",
-            message: "Reload failed: file is no longer a Markdown target.",
+            message:
+              "Reload failed because the file is no longer Markdown. Choose a Markdown file to continue.",
           });
           return;
         }
@@ -1942,14 +1971,15 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
         setEntryDesktopSaveState(entry.id, "error");
         setDocumentNotice(entry.id, {
           kind: "error",
-          message: `Unable to reload file from disk: ${result.message}`,
+          message: reloadFailureMessage(result.message),
         });
       }
     } catch (error) {
       setEntryDesktopSaveState(entry.id, "error");
       setDocumentNotice(entry.id, {
         kind: "error",
-        message: "Reload failed before the app received a native result.",
+        message:
+          "Reload failed before the app received a native result. Try Reload again or open the file manually.",
       });
       console.error("doc2md desktop reload transport failure", error);
     }
@@ -2006,7 +2036,8 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
           setEntryDesktopSaveState(entry.id, "error");
           setDocumentNotice(entry.id, {
             kind: "error",
-            message: "Reload failed: selected file is not a Markdown target.",
+            message:
+              "Reload failed because the selected file is not Markdown. Choose the saved Markdown file instead.",
           });
           return;
         }
@@ -2029,14 +2060,15 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
         setEntryDesktopSaveState(entry.id, "error");
         setDocumentNotice(entry.id, {
           kind: "error",
-          message: `Unable to reload file from disk: ${result.message}`,
+          message: reloadFailureMessage(result.message),
         });
       }
     } catch (error) {
       setEntryDesktopSaveState(entry.id, "error");
       setDocumentNotice(entry.id, {
         kind: "error",
-        message: "Reload failed before the app received a native result.",
+        message:
+          "Reload failed before the app received a native result. Try Reload again or open the file manually.",
       });
       console.error("doc2md desktop reload-via-picker transport failure", error);
     }
@@ -2060,7 +2092,8 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     if (!entry) {
       setDesktopNotice({
         kind: "error",
-        message: "The conflicted document is no longer available.",
+        message:
+          "The conflicted document is no longer available. Select another document to keep working.",
       });
       setPendingConflicts((current) => {
         return omitRecordKey(current, activePendingConflict.entryId);
@@ -2081,7 +2114,8 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
           setEntryDesktopSaveState(entry.id, "error");
           setDocumentNotice(entry.id, {
             kind: "error",
-            message: "Reload failed: file is no longer a Markdown target.",
+            message:
+              "Reload failed because the file is no longer Markdown. Choose a Markdown file to continue.",
           });
           return;
         }
@@ -2108,7 +2142,8 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
       setEntryDesktopSaveState(entry.id, "error");
       setDocumentNotice(entry.id, {
         kind: "error",
-        message: "Reload failed before the app received a native result.",
+        message:
+          "Reload failed before the app received a native result. Try Reload again or open the file manually.",
       });
       console.error("doc2md desktop reload transport failure", error);
     }
@@ -2133,7 +2168,8 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     if (!entry) {
       setDesktopNotice({
         kind: "error",
-        message: "The conflicted document is no longer available.",
+        message:
+          "The conflicted document is no longer available. Select another document to keep working.",
       });
       setPendingConflicts((current) => {
         return omitRecordKey(current, activePendingConflict.entryId);

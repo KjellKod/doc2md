@@ -27,9 +27,9 @@ const SAVE_STATUS_DESCRIPTIONS: Record<SaveState, string> = {
   saved: "Saved to disk.",
   edited: "Edited. Save to update the file.",
   saving: "Saving changes.",
-  conflict: "File changed on disk. Review before saving.",
-  error: "Save failed.",
-  "permission-needed": "Permission needed to save.",
+  conflict: "File changed on disk. Reload to use the disk version, or Overwrite to keep your changes.",
+  error: "Save failed. Try Save again or choose Save As.",
+  "permission-needed": "Permission needed to save. Grant access, then try again.",
 };
 
 function statusDescription(entry: FileEntry, hasScratchContent: boolean) {
@@ -44,7 +44,7 @@ function statusDescription(entry: FileEntry, hasScratchContent: boolean) {
   }
 
   if (entry.status === "error") {
-    return "Unable to convert this file.";
+    return "Unable to convert this file. Try another file or paste the text into a draft.";
   }
 
   if (entry.status === "converting") {

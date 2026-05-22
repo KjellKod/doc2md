@@ -131,9 +131,9 @@ export default function DropZone({
       <p className="drop-zone-kicker">
         YOUR FILES STAY ON YOUR DEVICE. NOTHING IS UPLOADED.
       </p>
-      <p className="drop-zone-title">Drop files to convert</p>
+      <p className="drop-zone-title">Drop files here to convert</p>
       <p className="drop-zone-copy">
-        Drag in one or more files, or{" "}
+        Drag in one or more supported files, or{" "}
         <button
           type="button"
           className="inline-button"
@@ -151,8 +151,8 @@ export default function DropZone({
         .
       </p>
       <p className="drop-zone-note">
-        Mix supported file types. URL imports must allow direct browser access.
-        Up to {maxSizeInMb} MB each.
+        Mix supported file types in one drop. For web links, use a direct file
+        URL. Files can be up to {maxSizeInMb} MB each.
       </p>
       <form
         className="drop-zone-url-form"

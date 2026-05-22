@@ -6,9 +6,9 @@ import {
 
 export const DEFAULT_REMOTE_DOCUMENT_TIMEOUT_MS = 30_000;
 export const REMOTE_DOCUMENT_ACCESS_FAILED_MESSAGE =
-  "We couldn't download that document from this machine. The host may block access, require sign-in, or the network request failed.";
+  "We couldn't download that document from this machine. Try a direct download URL or save the file locally first.";
 export const REMOTE_DOCUMENT_TIMEOUT_MESSAGE =
-  "Downloading the remote document timed out. Try again or download it locally first.";
+  "Downloading the remote document timed out. Try again, use a smaller direct file link, or convert a local copy.";
 
 type FetchLike = typeof fetch;
 

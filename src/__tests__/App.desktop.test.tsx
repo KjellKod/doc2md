@@ -251,6 +251,51 @@ describe("App desktop bridge", () => {
     cleanupShell();
   });
 
+  it.each([
+    {
+      nativeMessage: "Alpha stat failed.",
+      notice:
+        "Unable to reload file from disk: Alpha stat failed. Check the file, then try Reload again.",
+    },
+    {
+      nativeMessage: "Alpha stat failed",
+      notice:
+        "Unable to reload file from disk: Alpha stat failed. Check the file, then try Reload again.",
+    },
+    {
+      nativeMessage: "Alpha stat failed:",
+      notice:
+        "Unable to reload file from disk: Alpha stat failed: Check the file, then try Reload again.",
+    },
+  ])("shows reload failures with one sentence break before the next action", async ({ nativeMessage, notice }) => {
+    const openFile = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/Reload.md",
+        content: "# Local",
+        mtimeMs: 40,
+        lineEnding: "lf" as const,
+      })
+      .mockResolvedValueOnce({
+        ok: false as const,
+        code: "error" as const,
+        message: nativeMessage,
+      });
+    const cleanupShell = installMockShell({ openFile });
+
+    render(<DesktopApp />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await screen.findByRole("heading", { name: "Local" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Reload from disk" }));
+
+    expect(await screen.findByText(notice)).toBeInTheDocument();
+
+    cleanupShell();
+  });
+
   it("confirms before reloading an edited desktop file", async () => {
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValueOnce(false);
     const openFile = vi
@@ -657,7 +702,7 @@ describe("App desktop bridge", () => {
     expect(screen.getByRole("button", { name: "Show intro and return to landing" })).toBeInTheDocument();
     expect(
       screen.queryByRole("heading", {
-        name: "Edit or convert to Markdown, without leaving the browser.",
+        name: "Start writing or convert files to Markdown.",
       }),
     ).not.toBeInTheDocument();
 
@@ -691,7 +736,7 @@ describe("App desktop bridge", () => {
     });
     expect(
       screen.queryByRole("heading", {
-        name: "Edit or convert to Markdown, without leaving the browser.",
+        name: "Start writing or convert files to Markdown.",
       }),
     ).not.toBeInTheDocument();
     expect(
@@ -711,7 +756,7 @@ describe("App desktop bridge", () => {
     expect(container.querySelector(".page")).not.toHaveClass("is-working-mode");
     expect(
       screen.getByRole("heading", {
-        name: "Edit or convert to Markdown, without leaving the browser.",
+        name: "Start writing or convert files to Markdown.",
       }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Show intro and return to landing" })).not.toBeInTheDocument();
@@ -750,7 +795,7 @@ describe("App desktop bridge", () => {
     expect(screen.getByRole("button", { name: "Open Alpha.md" })).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
-        name: "Edit or convert to Markdown, without leaving the browser.",
+        name: "Start writing or convert files to Markdown.",
       }),
     ).toBeInTheDocument();
 
@@ -1788,7 +1833,7 @@ describe("App desktop bridge", () => {
     render(<DesktopApp />);
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Session restore failed before the app received a native result.",
+      "Session restore failed before the app received a native result. Open a file or start a new draft.",
     );
     await waitFor(() => expect(getSessionState).toHaveBeenCalledTimes(1));
     await new Promise((resolve) => setTimeout(resolve, 250));
@@ -2244,8 +2289,44 @@ describe("App desktop bridge", () => {
       ),
     ).toBeInTheDocument();
     expect(
-      screen.queryByText("Import failed before the app received the file bytes."),
+      screen.queryByText(
+        "Import failed before the app received the file bytes. Open the file again, or choose another supported file.",
+      ),
     ).not.toBeInTheDocument();
+    expect(convertFileMock).not.toHaveBeenCalled();
+
+    cleanupShell();
+  });
+
+  it("shows a generic import handoff next action for non-size failures", async () => {
+    mockDoc2mdProtocol();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response("handoff failed", {
+          status: 500,
+          headers: { "Content-Type": "text/plain" },
+        }),
+      ),
+    );
+    const cleanupShell = installMockShell({
+      openFile: vi.fn(async () =>
+        createMockImportShellFile({
+          path: "/Users/me/sample.txt",
+          name: "sample.txt",
+          mtimeMs: 10,
+        }),
+      ),
+    });
+
+    render(<DesktopApp />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+
+    expect(
+      await screen.findByText(
+        "Import failed before the app received the file bytes. Open the file again, or choose another supported file.",
+      ),
+    ).toBeInTheDocument();
     expect(convertFileMock).not.toHaveBeenCalled();
 
     cleanupShell();
@@ -2436,7 +2517,7 @@ describe("App desktop bridge", () => {
 
     expect(
       await screen.findByText(
-        "Cannot save: conversion failed. Please re-open the file or choose another.",
+        "Cannot save because conversion failed. Re-open the source file or choose another document.",
       ),
     ).toBeInTheDocument();
     expect(saveFile).not.toHaveBeenCalled();
@@ -2944,7 +3025,9 @@ describe("App desktop bridge", () => {
     fireEvent.click(screen.getByRole("button", { name: "Reload" }));
 
     expect(
-      await screen.findByText("Reload failed: file is no longer a Markdown target."),
+      await screen.findByText(
+        "Reload failed because the file is no longer Markdown. Choose a Markdown file to continue.",
+      ),
     ).toBeInTheDocument();
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       "conflict-reload received non-markdown kind",

@@ -342,13 +342,13 @@ export default function AppShell(props: AppShellProps) {
               <div className="hero-actions">{heroActionsSlot}</div>
             </div>
             <h1>
-              {"Edit or convert to Markdown, "}
+              {"Start writing or convert files to "}
               <br />
-              {"without leaving the browser."}
+              {"Markdown."}
             </h1>
             <p className="hero-copy">
-              Browser only, privacy first. Start with a blank draft, edit
-              existing content, or convert{" "}
+              Privacy first. Start with a blank draft, edit existing Markdown,
+              open a direct document URL, or convert{" "}
               <strong>.md</strong>, <strong>.txt</strong>,{" "}
               <strong>.json</strong>, <strong>.csv</strong>,{" "}
               <strong>.tsv</strong>, <strong>.html</strong>,{" "}
@@ -462,9 +462,8 @@ export default function AppShell(props: AppShellProps) {
                     <div>
                       <h2 id="upload-title">Upload</h2>
                       <p className="panel-copy">
-                        Drop in documents, spreadsheets, PDFs, or presentations,
-                        add a doc URL, or start writing from scratch and keep
-                        everything in one session.
+                        Drop files, open a direct document URL, or start writing
+                        from scratch.
                       </p>
                     </div>
                     <button
@@ -537,7 +536,7 @@ export default function AppShell(props: AppShellProps) {
                     <p className="panel-copy">
                       {selectedEntry
                         ? entryDisplayName(selectedEntry)
-                        : "Start writing, paste Markdown, or convert a file and review it here."}
+                        : "Markdown preview appears here."}
                     </p>
                   </div>
                 </div>
