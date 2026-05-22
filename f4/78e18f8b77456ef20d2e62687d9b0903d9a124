@@ -1,0 +1,25 @@
+src/shell/useWorkspaceResize.ts
+  s_8c546b3a28af69::t_7467589315b6ed 132-135
+tests/e2e/hosted-mobile-tablet-layout.spec.ts
+  s_8c546b3a28af69::t_07d802cd43c36c 150-153
+  s_8c546b3a28af69::t_958b4c51aa15e4 47-52,61-62,64,67-71,193,278-315
+src/styles/global.css
+  s_8c546b3a28af69::t_333ab6fde25b42 3301-3305
+  s_8c546b3a28af69::t_80730dadfb0231 3306-3329
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "f478e18f8b77456ef20d2e62687d9b0903d9a124",
+  "prompts": {},
+  "sessions": {
+    "s_8c546b3a28af69": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e5075-e784-70a3-8d6d-33b1fd8bae20",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
