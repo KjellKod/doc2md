@@ -8,7 +8,7 @@ import {
   type ListKind,
 } from "../markdownFormatting";
 import { computeAutoContinueEdit } from "../markdownAutoContinue";
-import { scrollTextareaToLine } from "../viewportAnchor";
+import { scrollTextareaToOffset } from "../viewportAnchor";
 import {
   convertClipboardPasteToMarkdown,
   type ClipboardPasteConversion,
@@ -211,13 +211,11 @@ export default function EditMode({
       const textarea = textareaRef.current;
       textarea.setSelectionRange(activeFindMatch.end, activeFindMatch.end);
 
-      const matchLine =
-        effectiveMarkdown.slice(0, activeFindMatch.start).split("\n").length;
-      scrollTextareaToLine(
+      scrollTextareaToOffset(
         textarea,
         findHighlightRef.current,
         effectiveMarkdown,
-        matchLine,
+        activeFindMatch.start,
         viewportTopFloor(),
         0.5,
       );
