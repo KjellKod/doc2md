@@ -20,6 +20,11 @@
   min-width: 0;
 }
 
+.desktop-shell-title-wrap {
+  display: inline-flex;
+  min-width: 0;
+}
+
 .desktop-shell-title {
   min-width: 0;
   overflow: hidden;
@@ -27,6 +32,11 @@
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.desktop-shell-title:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
 }
 
 .desktop-save-pill {

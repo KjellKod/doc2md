@@ -1128,6 +1128,18 @@ describe("App desktop bridge", () => {
     );
     expect(screen.getAllByText("Untitled.md").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Saved").length).toBeGreaterThan(0);
+    const shellTitle = document.querySelector(".desktop-shell-title");
+    expect(shellTitle).toHaveTextContent("Untitled.md");
+    expect(shellTitle).not.toHaveAttribute("title");
+    const tooltipId = shellTitle?.getAttribute("aria-describedby");
+    expect(tooltipId).toBeTruthy();
+    expect(document.getElementById(tooltipId ?? "")).toHaveAttribute(
+      "role",
+      "tooltip",
+    );
+    expect(document.getElementById(tooltipId ?? "")).toHaveTextContent(
+      "Untitled.md",
+    );
 
     cleanupShell();
   });

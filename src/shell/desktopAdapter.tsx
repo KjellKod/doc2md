@@ -2399,10 +2399,21 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
       data-app-ready={appReady ? "true" : undefined}
     >
       <div className="desktop-shell-main">
-        <span
-          className="desktop-shell-title"
-        >
-          {selectedEntry ? desktopTitle : "doc2md"}
+        <span className="desktop-shell-title-wrap instant-tooltip-anchor">
+          <span
+            className="desktop-shell-title"
+            tabIndex={0}
+            aria-describedby="desktop-title-tooltip"
+          >
+            {selectedEntry ? desktopTitle : "doc2md"}
+          </span>
+          <span
+            id="desktop-title-tooltip"
+            role="tooltip"
+            className="instant-tooltip instant-tooltip--right"
+          >
+            {selectedEntry ? desktopTitle : "doc2md"}
+          </span>
         </span>
         {selectedEntry ? (
           <>
