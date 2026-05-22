@@ -105,12 +105,12 @@ describe("App", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: "Edit or convert to Markdown, without leaving the browser.",
+        name: "Start writing or convert files to Markdown.",
       }),
     ).toBeInTheDocument();
 
     expect(
-      screen.getByText(/Browser only, privacy first\./),
+      screen.getByText(/Privacy first\./),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Switch to day mode" }),
@@ -142,19 +142,16 @@ describe("App", () => {
   it("renders the current empty upload, file-list, and preview states", () => {
     render(<App />);
 
-    expect(
-      screen.getByText("Drop files or start writing."),
-    ).toBeInTheDocument();
     expect(screen.getByText("No files or drafts yet.")).toBeInTheDocument();
     expect(
-      screen.getByText("Start with writing or drop a file."),
+      screen.getByText("Nothing to preview yet."),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Start writing" }),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        /Open the editor to paste or write Markdown from scratch/,
+        /Start writing or convert a file; the Markdown result will appear here/,
       ),
     ).toBeInTheDocument();
     expect(
@@ -210,7 +207,7 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Show intro and return to landing" })).toBeInTheDocument();
     expect(
       screen.queryByRole("heading", {
-        name: "Edit or convert to Markdown, without leaving the browser.",
+        name: "Start writing or convert files to Markdown.",
       }),
     ).not.toBeInTheDocument();
   });
@@ -226,7 +223,7 @@ describe("App", () => {
     expect(container.querySelector(".page")).not.toHaveClass("is-working-mode");
     expect(
       screen.getByRole("heading", {
-        name: "Edit or convert to Markdown, without leaving the browser.",
+        name: "Start writing or convert files to Markdown.",
       }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Show intro and return to landing" })).not.toBeInTheDocument();
@@ -247,7 +244,7 @@ describe("App", () => {
     });
     expect(
       screen.queryByRole("heading", {
-        name: "Edit or convert to Markdown, without leaving the browser.",
+        name: "Start writing or convert files to Markdown.",
       }),
     ).not.toBeInTheDocument();
     expect(
@@ -265,7 +262,7 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Open alpha.txt" })).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
-        name: "Edit or convert to Markdown, without leaving the browser.",
+        name: "Start writing or convert files to Markdown.",
       }),
     ).toBeInTheDocument();
 
@@ -860,7 +857,7 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "Import URL" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "We couldn't fetch that URL in the browser. Try downloading it first or use @doc2md/core.",
+      "We couldn't fetch that URL in the browser. Try a direct download link, or download the file and open it locally.",
     );
   });
 
@@ -883,7 +880,7 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "Import URL" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "We couldn't download that document because the URL requires sign-in or additional access.",
+      "We couldn't download that document because the URL requires sign-in or additional access. Download it locally, then open the file in doc2md.",
     );
   });
 
@@ -910,7 +907,7 @@ describe("App", () => {
       });
 
       expect(screen.getByRole("alert")).toHaveTextContent(
-        "Downloading that document URL timed out. Try again or download it locally first.",
+        "Downloading that document URL timed out. Try again, use a smaller direct file link, or open a local copy.",
       );
     } finally {
       vi.useRealTimers();
@@ -975,7 +972,7 @@ describe("App", () => {
 
     fireEvent.click(screen.getByRole("tab", { name: "Convert" }));
 
-    expect(screen.getByText("Drop files or start writing.")).toBeInTheDocument();
+    expect(screen.getByText("No files or drafts yet.")).toBeInTheDocument();
   });
 
   it("keeps both tab panels mounted and hides the inactive one", () => {

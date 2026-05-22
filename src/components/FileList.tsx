@@ -50,10 +50,9 @@ export default function FileList({
   if (entries.length === 0) {
     return (
       <div className="empty-state">
-        <p className="empty-state-title">Drop files or start writing.</p>
+        <p className="empty-state-title">No files or drafts yet.</p>
         <p className="empty-state-copy">
-          Uploaded files convert one by one, and scratch drafts stay beside them
-          in the same browser session.
+          Drop a file, import a direct URL, or start writing in the preview.
         </p>
       </div>
     );

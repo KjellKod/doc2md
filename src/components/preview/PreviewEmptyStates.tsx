@@ -9,6 +9,9 @@ interface PreviewEmptyStatesProps {
   onStartWriting?: () => void;
 }
 
+const CONVERSION_FAILED_FALLBACK_MESSAGE =
+  "Conversion failed. Try another file or start writing and paste the text.";
+
 export default function PreviewEmptyStates({
   entry,
   canEditFromEmptyState,
@@ -41,11 +44,10 @@ export default function PreviewEmptyStates({
           }
         }}
       >
-        <p className="empty-state-title">Start with writing or drop a file.</p>
+        <p className="empty-state-title">Nothing to preview yet.</p>
         <p className="empty-state-copy">
-          Open the editor to paste or write Markdown from scratch, or convert a
-          document and review the result here. Click anywhere here to start
-          writing.
+          Start writing or convert a file; the Markdown result will appear here.
+          Click anywhere here to start writing.
         </p>
         {onStartWriting ? (
           <div className="empty-state-actions">
@@ -68,7 +70,8 @@ export default function PreviewEmptyStates({
         <span className="loading-orb" aria-hidden="true" />
         <p className="empty-state-title">Converting locally.</p>
         <p className="empty-state-copy">
-          Preparing a Markdown preview for {entryDisplayName(entry)}.
+          Preparing Markdown for {entryDisplayName(entry)}. The preview will
+          appear here when it is ready.
         </p>
       </div>
     );
@@ -79,20 +82,28 @@ export default function PreviewEmptyStates({
       return (
         <div className="preview-body">
           <PdfQualityIndicator quality={entry.quality} />
-          <ErrorMessage message={entry.warnings[0] ?? "Conversion failed."} />
+          <ErrorMessage
+            message={
+              entry.warnings[0] ?? CONVERSION_FAILED_FALLBACK_MESSAGE
+            }
+          />
         </div>
       );
     }
 
-    return <ErrorMessage message={entry.warnings[0] ?? "Conversion failed."} />;
+    return (
+      <ErrorMessage
+        message={entry.warnings[0] ?? CONVERSION_FAILED_FALLBACK_MESSAGE}
+      />
+    );
   }
 
   if (entry.markdown.length === 0 && !canEditFromEmptyState) {
     return (
       <div className="preview-empty-state">
-        <p className="empty-state-title">No Markdown output.</p>
+        <p className="empty-state-title">No Markdown was produced.</p>
         <p className="empty-state-copy">
-          This file finished processing, but there is nothing useful to render.
+          Try another file, or start a draft and paste the content manually.
         </p>
       </div>
     );

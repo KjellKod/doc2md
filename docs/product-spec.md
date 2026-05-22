@@ -81,7 +81,7 @@ When a PDF is uploaded, the system attempts text extraction, detects whether usa
 
 ### Feedback language
 
-* "This PDF appears to contain little or no selectable text. Scanned/image-based PDFs are not supported in this version."
+* "This PDF appears to be scanned, so there is no selectable text to convert. Run OCR first, then import the searchable PDF."
 * "Conversion completed, but this PDF layout is likely to produce imperfect Markdown. Please review before use."
 
 ## Technical stack
@@ -108,10 +108,10 @@ Every failure mode produces feedback that is specific, actionable when possible,
 
 | Scenario | Message |
 |----------|---------|
-| Unsupported format | "Unsupported file type. Please upload one of the supported formats." |
-| Corrupt file | "We couldn't read this file. It may be corrupted or use a structure not supported by this tool." |
-| Scanned PDF | "This PDF appears to be image-based. Scanned PDFs are not supported in this version." |
-| Large file | "This file is too large for reliable in-browser conversion in this version." |
+| Unsupported format | "Unsupported file type. Choose a supported document, spreadsheet, PDF, presentation, text, HTML, or Markdown file." |
+| Corrupt file | "We couldn't read this file. Save a fresh copy from the source app, then import it again." |
+| Scanned PDF | "This PDF appears to be scanned, so there is no selectable text to convert. Run OCR first, then import the searchable PDF." |
+| Large file | "This file is too large for reliable in-browser conversion. Try a smaller file or use @doc2md/core locally." |
 
 ## Testing
 

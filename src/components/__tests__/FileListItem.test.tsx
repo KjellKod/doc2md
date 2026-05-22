@@ -100,8 +100,10 @@ describe("FileListItem", () => {
     );
 
     expect(screen.getByText("Failed")).toBeInTheDocument();
-    expect(screen.getByLabelText("Unable to convert this file.")).not.toHaveClass(
-      "status-indicator--compact",
-    );
+    expect(
+      screen.getByLabelText(
+        "Unable to convert this file. Try another file or paste the text into a draft.",
+      ),
+    ).not.toHaveClass("status-indicator--compact");
   });
 });

@@ -14,10 +14,10 @@ export {
 };
 
 export const REMOTE_DOCUMENT_BROWSER_ACCESS_MESSAGE =
-  "We couldn't fetch that URL in the browser. Try downloading it first or use @doc2md/core.";
+  "We couldn't fetch that URL in the browser. Try a direct download link, or download the file and open it locally.";
 export const REMOTE_DOCUMENT_DOWNLOAD_TIMEOUT_MS = 30_000;
 export const REMOTE_DOCUMENT_TIMEOUT_MESSAGE =
-  "Downloading that document URL timed out. Try again or download it locally first.";
+  "Downloading that document URL timed out. Try again, use a smaller direct file link, or open a local copy.";
 
 type HeaderLookup = Pick<Headers, "get">;
 type FetchLike = typeof fetch;

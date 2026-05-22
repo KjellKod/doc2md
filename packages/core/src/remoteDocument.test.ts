@@ -99,7 +99,7 @@ describe("core remoteDocument", () => {
         }),
       }),
     ).rejects.toThrow(
-      "We couldn't download that document because the URL requires sign-in or additional access.",
+      "We couldn't download that document because the URL requires sign-in or additional access. Download it locally, then open the file in doc2md.",
     );
   });
 
@@ -114,7 +114,7 @@ describe("core remoteDocument", () => {
         }),
       }),
     ).rejects.toThrow(
-      "We couldn't download that document because the URL returned 404 Not Found.",
+      "We couldn't download that document because the URL returned 404 Not Found. Check the link or download the file locally first.",
     );
   });
 

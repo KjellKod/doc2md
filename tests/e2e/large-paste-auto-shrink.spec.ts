@@ -39,7 +39,7 @@ test("large paste into a scratch draft promotes the page into working mode", asy
   await expect(page.locator(".page")).not.toHaveClass(/is-working-mode/);
   await expect(
     page.getByRole("heading", {
-      name: "Edit or convert to Markdown, without leaving the browser.",
+      name: "Start writing or convert files to Markdown.",
     }),
   ).toBeVisible();
 
@@ -54,7 +54,7 @@ test("large paste into a scratch draft promotes the page into working mode", asy
   ).toBeVisible();
   await expect(
     page.getByRole("heading", {
-      name: "Edit or convert to Markdown, without leaving the browser.",
+      name: "Start writing or convert files to Markdown.",
     }),
   ).not.toBeVisible();
 });
@@ -70,7 +70,7 @@ test("small paste into a scratch draft does not promote it into working mode", a
   await expect(page.locator(".page")).not.toHaveClass(/is-working-mode/);
   await expect(
     page.getByRole("heading", {
-      name: "Edit or convert to Markdown, without leaving the browser.",
+      name: "Start writing or convert files to Markdown.",
     }),
   ).toBeVisible();
 });

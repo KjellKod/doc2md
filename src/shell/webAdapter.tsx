@@ -126,10 +126,13 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     );
   };
   const heroSummary = buildSummary(
-    "Start from scratch or with single and mixed-format batches",
+    "Start writing, open files, or import a direct document URL",
     " open",
   );
-  const fileSummary = buildSummary("No files or drafts yet.", "");
+  const fileSummary = buildSummary(
+    "Converted files and drafts stay in this list.",
+    "",
+  );
 
   useEffect(() => {
     entriesRef.current = entries;

@@ -139,7 +139,7 @@ describe("useFileConversion helpers", () => {
       TIMEOUT_MESSAGE,
     );
     expect(getConversionFailureWarning(new Error("bad"), timeoutError)).toBe(
-      "We couldn't read this file. It may be corrupted or use a structure not supported by this tool.",
+      "We couldn't read this file. Save a fresh copy from the source app, then import it again.",
     );
   });
 
