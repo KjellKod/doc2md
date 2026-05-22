@@ -428,10 +428,13 @@ export default function AppShell(props: AppShellProps) {
                 resizing.
               </span>
               {sidebarCollapsed ? (
-                <section className="panel collapse-rail" aria-label="Upload rail">
+                <section
+                  className="panel collapse-rail instant-tooltip-anchor"
+                  aria-label="Upload rail"
+                >
                   <button
                     type="button"
-                    className="collapse-rail-button instant-tooltip-anchor"
+                    className="collapse-rail-button"
                     onClick={handleShowSidebar}
                     aria-label="Show upload panel"
                     aria-describedby={showSidebarTooltipId}
@@ -441,14 +444,14 @@ export default function AppShell(props: AppShellProps) {
                       aria-hidden="true"
                     />
                     <span className="collapse-rail-label">Upload</span>
-                    <span
-                      id={showSidebarTooltipId}
-                      role="tooltip"
-                      className="instant-tooltip instant-tooltip--right"
-                    >
-                      Show upload panel
-                    </span>
                   </button>
+                  <span
+                    id={showSidebarTooltipId}
+                    role="tooltip"
+                    className="instant-tooltip collapse-rail-tooltip"
+                  >
+                    Show upload panel
+                  </span>
                 </section>
               ) : (
                 <section

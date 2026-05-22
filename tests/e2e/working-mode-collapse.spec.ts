@@ -35,6 +35,49 @@ test("auto-collapses the upload panel on first file open", async ({ page }) => {
   ).toHaveCount(0);
 });
 
+test("shows the upload rail tooltip while collapsed", async ({ page }) => {
+  await openHostedApp(page);
+  await uploadOne(page, "alpha.md", "# Alpha");
+
+  const showUpload = page.getByRole("button", { name: "Show upload panel" });
+  await showUpload.focus();
+
+  const tooltipId = await showUpload.getAttribute("aria-describedby");
+  expect(tooltipId).toBeTruthy();
+
+  const tooltip = page.locator(`#${tooltipId}`);
+  await expect(tooltip).toHaveAttribute("role", "tooltip");
+  await expect(tooltip).toHaveText("Show upload panel");
+  await expect(tooltip).toHaveCSS("opacity", "1");
+
+  const railOverflow = await showUpload
+    .locator("xpath=..")
+    .evaluate((element) => getComputedStyle(element).overflow);
+  expect(railOverflow).toBe("visible");
+
+  const tooltipBox = await tooltip.boundingBox();
+  const showUploadBox = await showUpload.boundingBox();
+  const viewport = page.viewportSize();
+  expect(tooltipBox).not.toBeNull();
+  expect(showUploadBox).not.toBeNull();
+  expect(viewport).not.toBeNull();
+
+  expect(tooltipBox!.x).toBeGreaterThanOrEqual(
+    showUploadBox!.x + showUploadBox!.width,
+  );
+  expect(tooltipBox!.x).toBeGreaterThanOrEqual(0);
+  expect(tooltipBox!.x + tooltipBox!.width).toBeLessThanOrEqual(viewport!.width);
+  expect(tooltipBox!.y).toBeGreaterThanOrEqual(0);
+  expect(tooltipBox!.y + tooltipBox!.height).toBeLessThanOrEqual(viewport!.height);
+  expect(
+    Math.abs(
+      tooltipBox!.y +
+        tooltipBox!.height / 2 -
+        (showUploadBox!.y + showUploadBox!.height / 2),
+    ),
+  ).toBeLessThanOrEqual(8);
+});
+
 test("does not auto-collapse when the user has already adjusted the sidebar", async ({
   page,
 }) => {

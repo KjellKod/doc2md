@@ -1136,7 +1136,8 @@ button.eyebrow.eyebrow-toggle {
 
 .collapse-rail {
   padding: 0;
-  overflow: hidden;
+  overflow: visible;
+  z-index: 8;
 }
 
 .collapse-rail-button {
@@ -1178,6 +1179,19 @@ button.eyebrow.eyebrow-toggle {
   text-transform: uppercase;
   writing-mode: vertical-rl;
   transform: rotate(180deg);
+}
+
+.collapse-rail-tooltip {
+  top: 50%;
+  right: auto;
+  left: calc(100% + 10px);
+  transform: translate(-4px, -50%);
+}
+
+.instant-tooltip-anchor:hover > .collapse-rail-tooltip,
+.instant-tooltip-anchor:focus-visible > .collapse-rail-tooltip,
+.instant-tooltip-anchor:focus-within > .collapse-rail-tooltip {
+  transform: translate(0, -50%);
 }
 
 .workspace-split-bar {
