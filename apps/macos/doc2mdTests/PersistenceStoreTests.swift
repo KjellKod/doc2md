@@ -60,6 +60,7 @@ final class PersistenceStoreTests: XCTestCase {
 
         settings = try store.recordRecentDocument(url: sourceURL)
         XCTAssertEqual(recentController.recentDocumentURLs.count, 1)
+        XCTAssertEqual(settings.recentFiles.count, 1)
 
         settings = try store.setPersistenceEnabled(false)
 
@@ -102,6 +103,8 @@ final class PersistenceStoreTests: XCTestCase {
 
         XCTAssertTrue(settings.persistenceEnabled)
         XCTAssertEqual(settings.theme, .dark)
+        XCTAssertEqual(settings.recentFiles, [])
+        XCTAssertEqual(store.recentFiles(), [])
         XCTAssertEqual(recentController.clearCallCount, 1)
         XCTAssertTrue(recentController.recentDocumentURLs.isEmpty)
         XCTAssertTrue(FileManager.default.fileExists(atPath: settingsURL.path))
@@ -153,7 +156,34 @@ final class PersistenceStoreTests: XCTestCase {
         XCTAssertFalse(recentFiles.contains { $0.displayName == "dedupe.md" })
     }
 
-    func testSettingsFileStoresMetadataOnly() throws {
+    func testRecentFilesSurviveNativeRecentDocumentListReset() throws {
+        let settingsURL = try makeSettingsURL()
+        let sourceURL = try makeFile(name: "survives-reinstall.md")
+        let recentController = TestRecentDocumentController()
+        let store = PersistenceStore(
+            settingsURL: settingsURL,
+            recentDocumentController: recentController
+        )
+        _ = try store.setPersistenceEnabled(true)
+        _ = try store.recordRecentDocument(url: sourceURL)
+
+        let reinstalledController = TestRecentDocumentController()
+        let reinstalledStore = PersistenceStore(
+            settingsURL: settingsURL,
+            recentDocumentController: reinstalledController
+        )
+
+        XCTAssertTrue(reinstalledController.recentDocumentURLs.isEmpty)
+        let recentFiles = reinstalledStore.recentFiles()
+        XCTAssertEqual(recentFiles.count, 1)
+        XCTAssertEqual(
+            recentFiles.first?.path,
+            PersistenceStore.standardPath(for: sourceURL)
+        )
+        XCTAssertEqual(recentFiles.first?.displayName, "survives-reinstall.md")
+    }
+
+    func testSettingsFileStoresRecentMetadataOnly() throws {
         let settingsURL = try makeSettingsURL()
         let store = PersistenceStore(
             settingsURL: settingsURL,
@@ -170,14 +200,15 @@ final class PersistenceStoreTests: XCTestCase {
 
         XCTAssertTrue(rawJSON.contains("\"persistenceEnabled\""))
         XCTAssertTrue(rawJSON.contains("\"theme\""))
-        XCTAssertFalse(rawJSON.contains("\"recentFiles\""))
+        XCTAssertTrue(rawJSON.contains("\"recentFiles\""))
+        XCTAssertTrue(rawJSON.contains("\"metadata.md\""))
         XCTAssertFalse(rawJSON.contains("content"))
         XCTAssertFalse(rawJSON.contains("markdown"))
         XCTAssertFalse(rawJSON.contains("credential"))
         XCTAssertFalse(rawJSON.contains("license"))
     }
 
-    func testLegacyRecentFilesDecodeButAreNotPersistedAgain() throws {
+    func testPersistedRecentFilesDecodeAndArePreservedOnSettingsUpdate() throws {
         let settingsURL = try makeSettingsURL()
         try FileManager.default.createDirectory(
             at: settingsURL.deletingLastPathComponent(),
@@ -199,7 +230,8 @@ final class PersistenceStoreTests: XCTestCase {
 
         _ = try store.setTheme(.light)
         let rawJSON = try XCTUnwrap(String(data: Data(contentsOf: settingsURL), encoding: .utf8))
-        XCTAssertFalse(rawJSON.contains("\"recentFiles\""))
+        XCTAssertTrue(rawJSON.contains("\"recentFiles\""))
+        XCTAssertTrue(rawJSON.contains("legacy.md"))
     }
 
     private func makeSettingsURL() throws -> URL {

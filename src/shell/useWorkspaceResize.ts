@@ -12,15 +12,15 @@ import type { CSSProperties, KeyboardEvent, MouseEvent, RefObject } from "react"
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export const BASE_PAGE_MAX_WIDTH = 1680;
-export const DEFAULT_SIDEBAR_WIDTH = 430;
+export const DEFAULT_SIDEBAR_WIDTH = 380;
 export const SIDEBAR_COLLAPSE_WIDTH = 56;
 export const SIDEBAR_SNAP_THRESHOLD = 200;
 export const SIDEBAR_WIDTH_STEP = 16;
 export const MIN_EDIT_SHELL_HEIGHT = 240;
 export const EDIT_SHELL_HEIGHT_STEP = 32;
-export const EDIT_SHELL_BOTTOM_GUTTER = 36;
+export const EDIT_SHELL_BOTTOM_GUTTER = 20;
 export const DEFAULT_HEADER_OFFSET_PX = 280;
-export const MAX_SIDEBAR_WIDTH = DEFAULT_SIDEBAR_WIDTH;
+export const MAX_SIDEBAR_WIDTH = 430;
 
 export type ResizeAxis = "sidebar" | "height";
 

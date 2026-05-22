@@ -11,11 +11,11 @@ import { Buffer } from "node:buffer";
 
 // Baseline snapshot constants. Asserted byte-identical across pre- and
 // post-refactor `main`. Values picked at deterministic resize breakpoints
-// from the resize helpers in src/App.tsx (DEFAULT_SIDEBAR_WIDTH=430,
+// from the resize helpers in src/App.tsx (DEFAULT_SIDEBAR_WIDTH=380,
 // BASE_PAGE_MAX_WIDTH=1680, SIDEBAR_COLLAPSE_WIDTH=56,
 // MIN_EDIT_SHELL_HEIGHT=240).
 const BASELINE_PAGE_MAX_WIDTH_PX = "1680px";
-const BASELINE_DEFAULT_SIDEBAR_WIDTH_PX = "430px";
+const BASELINE_DEFAULT_SIDEBAR_WIDTH_PX = "380px";
 const BASELINE_MIN_EDIT_SHELL_HEIGHT = 240;
 const BASELINE_BODY_IDLE_CLASS_INCLUDES_RESIZING = false;
 

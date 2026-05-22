@@ -50,6 +50,10 @@ export function elementBoundarySeparator(tagName: string): string {
 //   - DOM node types other than text / element are skipped (comments,
 //     CDATA, processing instructions) — they don't appear in the
 //     react-markdown output but we stay defensive.
+//   - Preview-only UI injected by React component overrides (for example
+//     disabled-link tooltips) is skipped. It is not part of the Markdown
+//     document text and has no equivalent node in the rehype tree that
+//     findHighlightRehype walks.
 //   - The separator is emitted AFTER recursing into the element, so
 //     the cursor position in offset-space matches what
 //     findHighlightRehype's walk produces.
@@ -64,9 +68,16 @@ export function deriveRenderedText(element: HTMLElement): string {
     }
     if (child.nodeType === Node.ELEMENT_NODE) {
       const elementChild = child as HTMLElement;
+      if (isPreviewUiText(elementChild)) {
+        continue;
+      }
       out += deriveRenderedText(elementChild);
       out += elementBoundarySeparator(elementChild.tagName);
     }
   }
   return out;
+}
+
+function isPreviewUiText(element: HTMLElement): boolean {
+  return element.getAttribute("role") === "tooltip";
 }

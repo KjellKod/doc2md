@@ -289,7 +289,7 @@ export default function AppShell(props: AppShellProps) {
   };
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell${isWorkingMode ? " app-shell-working-mode" : ""}`}>
       {nativeMenuBridgeSlot}
       <main
         className={`page-frame${activeResizeAxis !== null ? " is-resizing" : ""}`}

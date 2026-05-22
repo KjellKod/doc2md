@@ -286,3 +286,30 @@ test("keeps the file sidebar usable at a narrow viewport", async ({ page }) => {
   await expectNoOverlap(longCheckbox, longRow);
   await expectNoHorizontalOverflow(page);
 });
+
+test("keeps the LinkedIn tooltip inside a narrow viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await openHostedApp(page);
+  await uploadMarkdownFiles(page, [
+    {
+      name: "linkedin-tooltip.md",
+      body: "# LinkedIn tooltip\n\nToolbar tooltip should stay contained.",
+    },
+  ]);
+
+  await page.getByRole("button", { name: "LinkedIn", exact: true }).focus();
+
+  const tooltipRect = await page
+    .locator("#linkedin-toggle-tooltip")
+    .evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return {
+        left: rect.left,
+        right: rect.right,
+      };
+    });
+
+  expect(tooltipRect.left).toBeGreaterThanOrEqual(0);
+  expect(tooltipRect.right).toBeLessThanOrEqual(375);
+  await expectNoHorizontalOverflow(page);
+});

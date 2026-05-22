@@ -383,13 +383,37 @@ export function scrollTextareaToLine(
   offsetFraction = 0,
 ) {
   const offset = offsetForLine(source, line);
+  scrollTextareaToOffset(
+    textarea,
+    mirror,
+    source,
+    offset,
+    viewportTopFloor,
+    offsetFraction,
+  );
+}
+
+/**
+ * Set `textarea.scrollTop` so the character at `offset` lands at the requested
+ * vertical position in the viewport. Find uses this instead of line anchoring
+ * because a match can be many wrapped visual rows into one long source line.
+ */
+export function scrollTextareaToOffset(
+  textarea: HTMLTextAreaElement,
+  mirror: HTMLElement | null,
+  source: string,
+  offset: number,
+  viewportTopFloor = 0,
+  offsetFraction = 0,
+) {
+  const targetOffset = Math.min(Math.max(offset, 0), source.length);
   const measureMirror = mirror ?? buildShadowMirror(textarea);
   const cleanup = mirror ? null : measureMirror;
   const fraction = Math.min(Math.max(offsetFraction, 0), 1);
 
   try {
     measureMirror.scrollTop = 0;
-    const top = measureCharacterTop(measureMirror, offset);
+    const top = measureCharacterTop(measureMirror, targetOffset);
 
     if (top === null) {
       return;
@@ -437,28 +461,26 @@ function measureCharacterTop(
   mirror: HTMLElement,
   offset: number,
 ): number | null {
-  const walker = document.createTreeWalker(mirror, NodeFilter.SHOW_TEXT);
-  let cursor = 0;
-  let current: Node | null = walker.nextNode();
+  const { nodes, totalLength } = collectTextNodes(mirror);
 
-  while (current) {
-    const textNode = current as Text;
-    const length = textNode.data.length;
-    if (offset >= cursor && offset <= cursor + length) {
-      const localOffset = Math.min(Math.max(offset - cursor, 0), length);
-      const safeStart = Math.min(localOffset, Math.max(length - 1, 0));
-      const range = document.createRange();
-      range.setStart(textNode, safeStart);
-      range.setEnd(textNode, Math.min(safeStart + 1, length));
-      const rect = rangeRect(range);
-      range.detach?.();
-      return rect ? rect.top : null;
-    }
-    cursor += length;
-    current = walker.nextNode();
+  if (totalLength === 0) {
+    return null;
   }
 
-  return null;
+  const targetOffset = Math.min(Math.max(offset, 0), totalLength - 1);
+  const entry =
+    nodes.find((node) => targetOffset < node.startOffset + node.length) ??
+    nodes[nodes.length - 1];
+  const localOffset = Math.min(
+    Math.max(targetOffset - entry.startOffset, 0),
+    Math.max(entry.length - 1, 0),
+  );
+  const range = document.createRange();
+  range.setStart(entry.node, localOffset);
+  range.setEnd(entry.node, Math.min(localOffset + 1, entry.length));
+  const rect = rangeRect(range);
+  range.detach?.();
+  return rect ? rect.top : null;
 }
 
 function buildShadowMirror(textarea: HTMLTextAreaElement): HTMLPreElement {

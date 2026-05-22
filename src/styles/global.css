@@ -122,6 +122,11 @@ a {
   padding: 28px 20px 48px;
 }
 
+.app-shell-working-mode {
+  padding-top: 14px;
+  padding-bottom: 24px;
+}
+
 .page-frame {
   --page-max-width: 1680px;
   width: min(100%, var(--page-max-width));
@@ -345,7 +350,7 @@ button.eyebrow.eyebrow-toggle {
   display: inline-flex;
   align-items: center;
   flex: 1 1 auto;
-  min-height: 38px;
+  min-height: 44px;
   min-width: 0;
   padding: 0 10px;
   border: 0;
@@ -558,7 +563,7 @@ button.eyebrow.eyebrow-toggle {
 }
 
 .workspace {
-  --sidebar-width: 430px;
+  --sidebar-width: 380px;
   display: grid;
   grid-template-columns: var(--sidebar-width) 8px minmax(0, 1fr);
   gap: 0;
@@ -618,6 +623,38 @@ button.eyebrow.eyebrow-toggle {
   min-height: min(620px, var(--preview-panel-ceiling));
   max-height: var(--preview-panel-ceiling);
   overflow: visible;
+}
+
+.page.is-working-mode .working-mode-bar {
+  margin-bottom: 12px;
+  padding: 6px 8px;
+  box-shadow: 0 10px 24px rgba(27, 39, 49, 0.06);
+}
+
+.page.is-working-mode .panel {
+  gap: 12px;
+  padding: 16px;
+  border-radius: 20px;
+}
+
+.page.is-working-mode .preview-panel {
+  min-height: min(640px, var(--preview-panel-ceiling));
+}
+
+.page.is-working-mode .preview-panel > .panel-heading {
+  align-items: center;
+  gap: 12px;
+}
+
+.page.is-working-mode .preview-panel > .panel-heading h2 {
+  font-size: 1.28rem;
+}
+
+.page.is-working-mode .preview-panel > .panel-heading .panel-copy {
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .about-section {
@@ -1016,6 +1053,8 @@ button.eyebrow.eyebrow-toggle {
   align-items: center;
   justify-content: center;
   gap: 14px;
+  width: 100%;
+  min-width: 44px;
   min-height: 100%;
   padding: 18px 8px;
   border: 0;
@@ -1464,6 +1503,12 @@ body.is-height-resizing * {
   gap: 12px;
 }
 
+.page.is-working-mode .preview-body {
+  gap: 8px;
+  padding: 12px;
+  border-radius: 18px;
+}
+
 .preview-toolbar {
   position: sticky;
   top: 12px;
@@ -1481,6 +1526,19 @@ body.is-height-resizing * {
   background: rgba(249, 246, 241, 0.96);
   box-shadow: 0 14px 30px rgba(27, 39, 49, 0.08);
   backdrop-filter: blur(12px);
+}
+
+.page.is-working-mode .preview-toolbar {
+  top: 8px;
+  gap: 8px;
+  margin: -4px -4px 0;
+  padding: 6px;
+  border-radius: 14px;
+}
+
+.page.is-working-mode .preview-toolbar-actions,
+.page.is-working-mode .preview-toggle {
+  gap: 6px;
 }
 
 .preview-loading-state {
@@ -1580,8 +1638,9 @@ body.is-height-resizing * {
 .preview-toggle-tooltip {
   position: absolute;
   top: calc(100% + 8px);
-  left: 50%;
+  right: 0;
   z-index: 1;
+  max-width: min(18rem, calc(100vw - 32px));
   padding: 7px 10px;
   border-radius: 12px;
   background: rgba(20, 25, 31, 0.94);
@@ -1589,9 +1648,9 @@ body.is-height-resizing * {
   font-size: 0.8rem;
   line-height: 1.2;
   pointer-events: none;
-  white-space: nowrap;
+  white-space: normal;
   opacity: 0;
-  transform: translate(-50%, -4px);
+  transform: translateY(-4px);
   transition:
     opacity 80ms ease,
     transform 80ms ease;
@@ -1600,7 +1659,7 @@ body.is-height-resizing * {
 .preview-toggle-with-tooltip:hover .preview-toggle-tooltip,
 .preview-toggle-with-tooltip:focus-within .preview-toggle-tooltip {
   opacity: 1;
-  transform: translate(-50%, 0);
+  transform: translateY(0);
 }
 
 .preview-actions {
@@ -1981,8 +2040,8 @@ body.is-height-resizing * {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2.75rem;
+  height: 2.75rem;
   padding: 0;
   border: 1px solid rgba(23, 56, 76, 0.12);
   border-radius: 999px;
@@ -2301,6 +2360,14 @@ body.is-height-resizing * {
     inset 0 1px 0 rgba(255, 255, 255, 0.75),
     inset 0 0 0 1px rgba(255, 255, 255, 0.2);
   overflow: auto;
+}
+
+.page.is-working-mode .markdown-surface,
+.page.is-working-mode .linkedin-surface,
+.page.is-working-mode .markdown-edit-area,
+.page.is-working-mode .markdown-find-overlay {
+  padding: 16px;
+  border-radius: 16px;
 }
 
 .linkedin-surface {
@@ -3107,6 +3174,10 @@ body.is-height-resizing * {
 @media (max-width: 720px) {
   .app-shell {
     padding: 18px 12px 28px;
+  }
+
+  .app-shell-working-mode {
+    padding-top: 12px;
   }
 
   .hero {

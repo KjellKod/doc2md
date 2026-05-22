@@ -36,7 +36,7 @@ const { convertFileMock } = vi.hoisted(() => ({
 // constants used by the hosted web characterization spec at
 // tests/e2e/appshell-dedup-characterization.spec.ts.
 const BASELINE_PAGE_MAX_WIDTH_PX = "1680px";
-const BASELINE_DEFAULT_SIDEBAR_WIDTH_PX = "430px";
+const BASELINE_DEFAULT_SIDEBAR_WIDTH_PX = "380px";
 const BASELINE_MIN_EDIT_SHELL_HEIGHT = 240;
 
 afterEach(() => {

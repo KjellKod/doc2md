@@ -28,8 +28,9 @@ When `Persistence` is enabled, the native shell writes a small JSON file under t
 
 - `persistenceEnabled`
 - optional `theme` (`light` or `dark`)
+- up to 10 `recentFiles` metadata rows (`path`, `displayName`, and `lastOpenedAt`)
 
-Recent files are recorded through the app's recent-document controller only after successful native Markdown open, source import open, Save, or Save As operations with a real path. Paths are standardized, deduped newest-first, and capped at 10 before they are exposed to the web UI as `path`, `displayName`, and `lastOpenedAt` rows. Clicking a recent row asks the native shell to reopen that exact path; if the file is missing or no longer reachable, the row stays in history and is marked unavailable until a later retry succeeds. `Clear history` removes the recent-file list and automatic session restore for currently open files without disabling persistence or closing the current editor; explicit Open, Save, or Save As records the path again.
+Recent files are recorded in the settings file and through the app's recent-document controller after successful native Markdown open, source import open, Save, or Save As operations with a real path. Paths are standardized, deduped newest-first, and capped at 10 before they are exposed to the web UI. Clicking a recent row asks the native shell to reopen that exact path; if the file is missing or no longer reachable, the row stays in history and is marked unavailable until a later retry succeeds. `Clear history` removes the recent-file list and automatic session restore for currently open files without disabling persistence or closing the current editor; explicit Open, Save, or Save As records the path again.
 
 Disabling `Persistence` deletes the settings file and returns the app to the disabled/default persistence snapshot. No document contents, imported bytes, credentials, signing material, release secrets, license data, or payment data are stored.
 

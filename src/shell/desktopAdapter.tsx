@@ -166,6 +166,25 @@ function isSessionState(
   return result.ok;
 }
 
+function mergeDesktopRecentFiles(
+  primary: DesktopPersistenceSettings["recentFiles"],
+  fallback: DesktopPersistenceSettings["recentFiles"],
+): DesktopPersistenceSettings["recentFiles"] {
+  const seen = new Set<string>();
+  const merged: DesktopPersistenceSettings["recentFiles"] = [];
+
+  for (const file of [...primary, ...fallback]) {
+    if (seen.has(file.path)) {
+      continue;
+    }
+
+    seen.add(file.path);
+    merged.push(file);
+  }
+
+  return merged;
+}
+
 async function readImportFailureMessage(
   importResponse: Response,
 ): Promise<string> {
@@ -1336,6 +1355,16 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
         if (!isSessionState(sessionResult)) {
           setDesktopNotice(noticeFromPersistenceIssue(sessionResult));
           return;
+        }
+
+        if (sessionResult.recentFiles.length > 0) {
+          setPersistenceSettings((current) => ({
+            ...current,
+            recentFiles: mergeDesktopRecentFiles(
+              sessionResult.recentFiles,
+              current.recentFiles,
+            ),
+          }));
         }
 
         for (const path of sessionResult.openPaths) {
