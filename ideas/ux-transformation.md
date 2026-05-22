@@ -57,6 +57,7 @@ Every item must explicitly mark Hosted, Mac, and Core as `yes`, `if needed`, `no
 | Hosted scratch-buffer preservation | if needed | n/a | n/a | `if-needed` | Parked Phase 6g item: session-local scratch buffer so refresh or accidental navigation does not erase unsaved hosted-browser work. |
 | Mac file watchers | n/a | if needed | n/a | `if-needed` | Save-time mtime checks already catch the common case. Live watchers wait for a real iCloud/Dropbox conflict report. |
 | System theme follow | if needed | if needed | n/a | `if-needed` | Useful after parity is proven. Do parity first; automatic system sync can wait. |
+| sketch2md cross-product discovery | if needed | if needed | n/a | `if-needed` | Wait until sketch2md is launched. Crosslinks may help users understand the product suite later, but they should not add chrome to active document workspaces before that launch. |
 | Command palette / shortcut remapping | no | no | n/a | `yagni` | Too much product surface for today's app. A compact reference solves discoverability without building an IDE. |
 | Formal WCAG certification matrix | no | no | n/a | `yagni` | A lightweight audit is enough. Certification-level work is not proportional today. |
 | Source-tree file operations | no | no | n/a | `yagni` | Rename, move, delete, and two-way folder sync would turn doc2md into a file manager. |
@@ -446,7 +447,12 @@ Surfaces: Hosted.
 
 Gut: `if-needed`.
 
-`ideas/doc2md-browser-crash-recovery.md` remains the right tracker. The hosted app already has in-session protection and a before-unload guard. Reload-surviving drafts need stable identity, an index, localStorage/IndexedDB behavior, and recovery UI.
+`ideas/doc2md-browser-crash-recovery.md` remains the right tracker. It is not
+shipped for hosted-browser reload survival. The hosted app already has
+in-session protection and a before-unload guard, and the Mac app has separate
+session restore; those shipped protections are easy to confuse with this idea.
+Reload-surviving hosted drafts still need stable identity, an index,
+localStorage/IndexedDB behavior, and recovery UI.
 
 Trigger:
 
@@ -493,6 +499,33 @@ Acceptance if revived:
 - explicit user choice beats system default
 - Mac persistence and hosted persistence stay separate
 - no flicker on first paint
+
+### sketch2md cross-product discovery
+
+Surfaces: Hosted, Mac.
+
+Gut: `if-needed`.
+
+Do not add sketch2md links or analytics to product UI yet. sketch2md is not
+launched, so cross-product discovery would be premature and would add noise to
+the current doc2md workspace.
+
+Trigger:
+
+- sketch2md is publicly launched and ready to receive doc2md users, and
+- there is an explicit product decision that doc2md and sketch2md should be
+  presented as related tools.
+
+Acceptance if revived:
+
+- Link only to a live, useful sketch2md destination.
+- Prefer low-interruption surfaces first: landing, help/about, footer-level
+  resources, or an empty/onboarding state.
+- Do not add cross-product links to `WorkingModeBar` or other active
+  document-workspace chrome unless validation shows users need that shortcut
+  while editing.
+- If analytics are added, use an allowlisted payload and make click tracking
+  best-effort so outbound navigation is never blocked.
 
 ## YAGNI list
 
@@ -547,6 +580,185 @@ Examples that would require this block:
 6. Keyboard discoverability and lightweight a11y audit. The shortcut list and a11y pass should reference the same real controls.
 7. Copy-paste UX loop polish. Keep it near the mode switcher if it earns the pixels.
 8. Reconsider `if-needed` items only after a concrete trigger lands.
+
+## Execution roadmap
+
+This is the runbook for turning the `need` items above into reviewable PRs.
+It uses the team's current execution vocabulary:
+
+- `/goal`: create a durable objective before a multi-PR sequence.
+- `just do it`: direct implementation by the current agent, best for narrow copy or docs/code cleanup.
+- `quest:solo`: one-agent Quest execution for focused UI work with bounded file scope.
+- `quest:workflow`: full Quest workflow for broad cross-surface changes.
+- `pr-assist` / `pr-assistant`: create or update the draft PR with an explicit validation section.
+- `pr-shepherd`: push, follow CI and review comments, then mark ready when clean.
+
+Trust contract for every PR:
+
+- Do not ask Kjell to approve plans for these roadmap items. Use repo auto
+  approvals where available, keep the implementation plan in artifacts or PR
+  notes, and ask Kjell only to validate the resulting PR behavior.
+- If a Quest runner enforces a non-optional implementation gate, pause once
+  with the exact gate name and the smallest possible approval request. Do not
+  ask for plan approval.
+- Each PR starts from current `main` on a fresh branch and keeps one reviewable
+  product slice.
+- Each PR body includes a "Kjell validation" checkbox with the exact manual
+  behavior to inspect.
+- `pr-shepherd` may fix CI and review comments autonomously. It should not mark
+  ready while CI is failing or while unresolved review comments remain.
+
+Already settled before execution:
+
+- `ci-trustworthiness` is shipped and archived. Do not run it as an active UX
+  roadmap item.
+- `doc2md-browser-crash-recovery` is still open only for hosted
+  reload-surviving drafts. Do not count Mac session restore or the hosted
+  `beforeunload` guard as completion.
+- sketch2md cross-product discovery is deferred until sketch2md has launched.
+  Do not add links, analytics, CSS, or React UI for it in the current execution
+  sequence.
+
+| Step | Scope | Tool path | Order | Parallel rule | Kjell validation |
+|---:|---|---|---|---|---|
+| 0 | Open the multi-PR objective and confirm current idea status | `/goal` | First | Must run first | Confirm the roadmap order still matches priority. |
+| 1 | Workspace real-estate and working-area density | `quest:workflow` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | Sequential backbone | Do not run other layout/theme/mobile UI PRs in parallel. | Compare 1280x800 and 1440x900 working-mode screenshots; editor/preview content should visibly own more of the viewport without hiding primary controls. |
+| 2 | Theme parity audit plus custom tooltip cleanup | `quest:solo` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After step 1 | Do not overlap with mobile layout unless write scopes are explicitly split. | Inspect light/dark editor, preview, errors, disabled states, and tooltip hints. |
+| 3 | Mobile and tablet layout pass | `quest:workflow` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After step 1; preferably after step 2 | Do not overlap with step 1. Can overlap with copy-only step 4 in separate worktrees. | Inspect hosted app at 375px and 768px; controls should fit, touch targets should be usable, no text overlap. |
+| 4 | Onboarding, empty-state, and error-state copy pass | `just do it` or `quest:solo` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After step 1 | Can run in parallel with step 3 or 5 if it stays to copy/tests. | Read first-run, empty, and failure states; each should name the next useful action without adding architecture lectures. |
+| 5 | Keyboard discoverability plus lightweight a11y audit | `quest:solo` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After step 1 | Can run in parallel with step 4. Avoid parallel edits to the same toolbar/menu files as step 2. | Use keyboard-only navigation and the shortcut reference; focus, labels, and shortcut claims should match real controls. |
+| 6 | Performance perception pass | `quest:workflow` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After copy language in step 4 | Sequential with copy-paste polish if both touch status messaging. | Convert, search, paste, and batch output should show honest progress or bounded wait states. |
+| 7 | Copy-paste UX loop polish | `quest:solo` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After steps 1 and 4 | Can run after performance pass or in parallel only if write scopes avoid status/progress components. | Paste Markdown/HTML, copy Markdown, and copy LinkedIn output; actions should be discoverable and not add excess chrome. |
+| 8 | Revisit `if-needed` items: folder view, browser crash recovery, scratch-buffer preservation, Mac file watchers, system theme follow, sketch2md cross-product discovery | `quest:workflow` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | Only after a trigger lands | Not part of the default parallel pool. Treat each as its own proposal. | Validate against the trigger that revived the item, not against speculative acceptance. |
+
+### Prompt pack
+
+Use these prompts as written, replacing `<branch-suffix>` only when the
+executor needs a branch name.
+
+#### Step 0 prompt
+
+```text
+/goal "Execute the doc2md UX transformation roadmap with high trust. Work from current main, keep each PR focused, do not ask Kjell to approve plans, and ask Kjell to validate the result of each ready PR. Treat ci-trustworthiness as shipped/archived and doc2md-browser-crash-recovery as still open only for hosted reload-surviving drafts."
+```
+
+#### Step 1 prompt
+
+```text
+quest:workflow
+Implement doc2md UX transformation step 1: workspace real-estate and working-area density.
+
+Read ideas/ux-transformation.md sections "Workspace real-estate and working-area density", "Execution roadmap", and "Validation expectations for future implementation quests". Start from current main on a fresh branch named like ux/workspace-density-<branch-suffix>.
+
+Trust mode: do not ask Kjell to approve a plan. Keep the plan in Quest artifacts or PR notes. If the runner enforces a non-optional implementation gate, pause once with the exact gate name and the smallest approval request. Ask Kjell only to validate the resulting PR behavior.
+
+Scope: make working mode document-first for Hosted and Mac shared React surfaces. Preserve Mac desktop link routing, save/reload behavior, beforeunload behavior, accessibility notes, and Core API/CLI behavior. Do not build a new design system, command palette, editor engine, folder view, or crash recovery layer.
+
+Validation required before PR: run relevant unit/component tests, run hosted visual checks at 1280x800 and 1440x900, and capture before/after evidence for the actual editor/preview content rectangle. Then run pr-assist to create a draft PR whose validation section asks Kjell to compare those working-mode screenshots and confirm primary controls remain reachable. Run pr-shepherd until CI and review comments are clean, then mark ready for Kjell validation.
+```
+
+#### Step 2 prompt
+
+```text
+quest:solo
+Implement doc2md UX transformation step 2: theme parity audit plus custom tooltip cleanup.
+
+Read ideas/ux-transformation.md sections "Theme parity audit", "Custom tooltip cleanup", "Execution roadmap", and "Validation expectations for future implementation quests". Start from current main on a fresh branch named like ux/theme-tooltip-parity-<branch-suffix>.
+
+Trust mode: do not ask Kjell to approve a plan. Keep the plan brief and execute. Ask Kjell only to validate the resulting PR behavior.
+
+Scope: audit and fix light/dark parity across editor, preview, highlights, errors, empty states, menus, disabled states, and user-facing hints. Replace user-facing native title tooltips with the project's instant custom tooltip pattern using role="tooltip" and aria-describedby. Avoid broad restyling and do not change layout density, mobile behavior, Core conversion behavior, or Mac link routing.
+
+Validation required before PR: run relevant tests, inspect light and dark states for the touched surfaces, and include a PR validation checkbox asking Kjell to inspect theme parity and tooltip timing. Then run pr-assist for a draft PR and pr-shepherd until CI and review comments are clean.
+```
+
+#### Step 3 prompt
+
+```text
+quest:workflow
+Implement doc2md UX transformation step 3: hosted mobile and tablet layout pass.
+
+Read ideas/ux-transformation.md sections "Mobile and tablet layout pass", "Execution roadmap", and "Validation expectations for future implementation quests". Start from current main on a fresh branch named like ux/mobile-tablet-layout-<branch-suffix>.
+
+Trust mode: do not ask Kjell to approve a plan. Ask Kjell only to validate the ready PR result.
+
+Scope: improve hosted app behavior at 375px and 768px without changing Core, Mac-native shell behavior, or desktop workspace priorities from step 1. Controls must fit, touch targets should be usable, text must not overlap, and the first useful action should stay visible.
+
+Validation required before PR: run relevant unit/component tests plus Playwright or browser screenshots at 375px and 768px in light/dark where touched. Use pr-assist to create a draft PR with a Kjell validation checkbox for phone/tablet screenshots, then run pr-shepherd until clean and ready.
+```
+
+#### Step 4 prompt
+
+```text
+just do it
+Implement doc2md UX transformation step 4: onboarding, empty-state, and error-state copy pass.
+
+Read ideas/ux-transformation.md sections "Onboarding clarity", "Empty-state copy pass", "Error-state copy pass", and "Execution roadmap". Start from current main on a fresh branch named like ux/state-copy-<branch-suffix>.
+
+Trust mode: do not ask Kjell to approve a plan. Keep edits narrow and ask Kjell only to validate the PR result.
+
+Scope: improve copy so first-run, empty, and failure states say what happened and what the user can do next. Do not add new product surfaces, architecture explanations, modals, or visual redesign. Update tests only where copy assertions change.
+
+Validation required before PR: run relevant tests and inspect touched states locally. Use pr-assist to create a draft PR with a Kjell validation checkbox asking him to read the changed states for clarity, then run pr-shepherd until clean and ready.
+```
+
+#### Step 5 prompt
+
+```text
+quest:solo
+Implement doc2md UX transformation step 5: keyboard discoverability plus lightweight a11y audit.
+
+Read ideas/ux-transformation.md sections "Keyboard discoverability", "Lightweight a11y audit", "Execution roadmap", and docs/accessibility-notes.md. Start from current main on a fresh branch named like ux/keyboard-a11y-<branch-suffix>.
+
+Trust mode: do not ask Kjell to approve a plan. Ask Kjell only to validate the resulting PR behavior.
+
+Scope: add or refine a compact shortcut reference for shortcuts that already exist, and fix lightweight accessibility gaps discovered while validating real controls. No command palette, shortcut remapping, formal WCAG matrix, or new editor engine.
+
+Validation required before PR: verify keyboard-only navigation, focus visibility, labels, and shortcut claims against actual controls. Use pr-assist to create a draft PR with a Kjell validation checkbox for keyboard walkthrough, then run pr-shepherd until clean and ready.
+```
+
+#### Step 6 prompt
+
+```text
+quest:workflow
+Implement doc2md UX transformation step 6: performance perception pass.
+
+Read ideas/ux-transformation.md sections "Performance perception pass", "Execution roadmap", and "Validation expectations for future implementation quests". Start from current main on a fresh branch named like ux/performance-perception-<branch-suffix>.
+
+Trust mode: do not ask Kjell to approve a plan. Ask Kjell only to validate the resulting PR behavior.
+
+Scope: make conversion, search, paste, batch output, and remote fetch feel honest and bounded through existing status surfaces. Add progress or waiting feedback only where work can actually take long enough to matter. Do not add fake precision, new background infrastructure, or broad telemetry.
+
+Validation required before PR: run relevant tests and manually exercise conversion, search, paste, batch output, and remote fetch paths where available. Use pr-assist to create a draft PR with a Kjell validation checkbox for perceived progress and wait-state honesty, then run pr-shepherd until clean and ready.
+```
+
+#### Step 7 prompt
+
+```text
+quest:solo
+Implement doc2md UX transformation step 7: copy-paste UX loop polish.
+
+Read ideas/ux-transformation.md sections "Copy-paste UX loop", "Execution roadmap", and current paste/copy implementation. Start from current main on a fresh branch named like ux/copy-paste-loop-<branch-suffix>.
+
+Trust mode: do not ask Kjell to approve a plan. Ask Kjell only to validate the resulting PR behavior.
+
+Scope: make paste, copy Markdown, and copy LinkedIn output feel intentional and discoverable without adding excess chrome. Preserve shipped paste-to-Markdown behavior, LinkedIn output behavior, and Core contracts unless a concrete Core workflow justifies otherwise.
+
+Validation required before PR: test paste Markdown/HTML, copy Markdown, and copy LinkedIn output in the touched surfaces. Use pr-assist to create a draft PR with a Kjell validation checkbox for the copy-paste walkthrough, then run pr-shepherd until clean and ready.
+```
+
+#### Step 8 prompt template
+
+```text
+quest:workflow
+Revive the if-needed item <idea-name> from ideas/ux-transformation.md because this concrete trigger landed: <trigger>.
+
+Before planning, validate the trigger against current code and current user evidence. If the trigger does not hold, update the idea instead of implementing it.
+
+Trust mode: do not ask Kjell to approve a plan unless the Quest runner enforces a non-optional implementation gate. Ask Kjell only to validate the resulting PR behavior against the trigger.
+
+Scope: implement only the acceptance criteria needed for the trigger. Use pr-assist for a draft PR with trigger-specific Kjell validation, then run pr-shepherd until clean and ready.
+```
 
 ## Validation expectations for future implementation quests
 

@@ -10,7 +10,6 @@ Index of active proposals plus a pointer to the most recent audit. The full per-
 | `if-needed` | `doc2md-browser-crash-recovery` | Hosted-tab crash recovery via persisted drafts + stable identity. Trigger: first real-world data-loss report. |
 | `if-needed` | `doc2md-mac-file-watchers` | `NSFilePresenter` live watcher. Trigger: silent overwrite from iCloud/Dropbox racing with Save. |
 | `if-needed` | `pdf-multi-line-cell-tables` | Multi-line cell table detection. Trigger: customer use case where current PDF table conversion is the blocker. |
-| `if-needed` | `ci-trustworthiness` | Decompose CI, expose Codex review signal, separate advisory vs required. Trigger: next PR where signal opacity slows a decision. |
 | `if-needed` | `doc2md-folder-view` | Active/Folder rail + browser FS API + Mac `chooseDirectory`. Trigger: pivot toward "doc2md is your local markdown workspace". |
 | `if-needed` | `markdown-editing-and-rendering-stack` | Pipeline unification across edit/preview/read. Trigger: next time edit and preview render the same input differently. |
 | `if-needed` | `remove-url-import` | Delete URL import path (still wired in `DropZone.tsx` + `remoteDocument.ts`). Trigger: next user-support thread where it's the cause. |
@@ -19,6 +18,7 @@ Index of active proposals plus a pointer to the most recent audit. The full per-
 | active | `ux-transformation` | Successor to the archived UX hardening proposal. Scores cross-surface UX work across hosted web, Mac desktop, and `@doc2md/core` with `need` / `if-needed` / `yagni`. |
 | index | `mac-desktop-app-roadmap` | Planning artifact updated 2026-05-14. Phases 1–5c + 6 (MVP scope) + 7a done; **Phase 7b blocked on out-of-repo operational setup** (Cloudflare Worker, Lemon Squeezy, `doc2md.dev` DNS, support email, go-live approval). 6e/6f deferred. |
 | active | `mac-commercial-distribution-and-licensing` | Phase 7b research for `doc2md.dev`, direct-DMG distribution, merchant-of-record licensing, honest-user reminders. Binding: [decision record](../docs/implementation/mac-commercial-distribution-decision-record.md). |
+| `need` | `agentic-ci-scale-and-signal` | Successor to the shipped `ci-trustworthiness`. Partitioned review for large diffs, risk router (skip/light/deep), findings-to-fix verification, durable project-rules injection, Mac Swift tests in CI. See [`agentic-ci-scale-and-signal.md`](agentic-ci-scale-and-signal.md). |
 
 ## Archived (shipped or absorbed)
 
@@ -26,6 +26,7 @@ Pointers below link to the archive copy or to the journal entry that documents w
 
 | Archived | Idea | Shipped via |
 |---|---|---|
+| 2026-05-21 | ~~`ci-trustworthiness`~~ | Quest `ci-trustworthiness_2026-04-05__2258` — CI is split into named jobs, Codex review always posts visible results, review processing lives in helper scripts, and intent-review is advisory. See [archive](archive/ci-trustworthiness.md) and [quest journal](../docs/quest-journal/ci-trustworthiness_2026-04-06.md). |
 | 2026-05-15 | ~~`paste-to-markdown-in-editor`~~ | Quest `paste-to-markdown_2026-05-14__2155` — editor paste now converts LinkedIn-style Unicode/basic HTML to Markdown and large hosted scratch paste enters Working Mode. See [quest journal](../docs/quest-journal/paste-to-markdown_2026-05-15.md). |
 | 2026-05-15 | ~~`doc2md-mac-session-restore`~~ | Quest `ux-improvements-v2` — native recents via `NSDocumentController`, Markdown-only `session.json` restore, and native trust filtering. See [quest journal](../docs/quest-journal/ux-improvements-v2_2026-05-15.md). |
 | 2026-05-14 | ~~`bug_report_find_preview_table_cells`~~ | PR #128 — `renderedTextCorpus.ts` injects virtual cell separators (space at td/th/dt/dd/li close, newline at tr/p/div/br/heading close); offset-coherent hast walk skips whitespace-only text nodes inside table/list containers. See [archive](archive/bug_report_find_preview_table_cells.md). |
