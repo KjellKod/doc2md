@@ -175,6 +175,28 @@ button:disabled {
   transform: translateY(0);
 }
 
+.recent-file-tooltip {
+  grid-column: 2;
+  position: static;
+  width: auto;
+  max-width: 100%;
+  max-height: 0;
+  margin-top: 0;
+  padding: 0 10px;
+  overflow: hidden;
+  transform: none;
+}
+
+.instant-tooltip-anchor:hover > .recent-file-tooltip,
+.instant-tooltip-anchor:focus-visible > .recent-file-tooltip,
+.instant-tooltip-anchor:focus-within > .recent-file-tooltip {
+  max-height: 8rem;
+  margin-top: 6px;
+  padding-top: 7px;
+  padding-bottom: 7px;
+  transform: none;
+}
+
 a {
   color: inherit;
 }

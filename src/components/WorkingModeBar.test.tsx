@@ -130,6 +130,9 @@ describe("WorkingModeBar", () => {
       "role",
       "tooltip",
     );
+    expect(document.getElementById(tooltipId ?? "")).toHaveClass(
+      "recent-file-tooltip",
+    );
     expect(document.getElementById(tooltipId ?? "")).toHaveTextContent(
       "Not available. Click to retry opening this file.",
     );

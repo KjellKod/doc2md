@@ -246,7 +246,7 @@ export default function WorkingModeBar({
                     <span
                       id={tooltipId}
                       role="tooltip"
-                      className="instant-tooltip instant-tooltip--menu"
+                      className="instant-tooltip instant-tooltip--menu recent-file-tooltip"
                     >
                       {tooltipText}
                     </span>
