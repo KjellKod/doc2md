@@ -71,7 +71,7 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     updateMarkdown,
   } = useFileConversion();
   const saveState = useSaveState();
-  const resize = useWorkspaceResize();
+  const resize = useWorkspaceResize({ autoCollapseResponsiveWidths: true });
   const activeEntryIdRef = useRef<string | null>(null);
   const saveStateRef = useRef<SaveState>(saveState.state);
   const entriesRef = useRef<FileEntry[]>([]);
