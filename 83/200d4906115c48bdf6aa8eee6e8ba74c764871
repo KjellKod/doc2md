@@ -1,0 +1,23 @@
+src/App.tsx
+  s_8c546b3a28af69::t_fcc2aced70e52f 51
+src/styles/global.css
+  s_8c546b3a28af69::t_73a141cdd0e0b7 3291-3292,3301,3306,3312,3317,3324-3326,3354,3361,3365,3370,3375,3382,3387,3393-3394,3398,3403,3408,3412,3419-3428,3432,3436-3437,3445-3448,3459-3466,3470,3506-3509,3602-3611,3615,3623
+src/shell/AppShell.tsx
+  s_8c546b3a28af69::t_af6dc66d2c52e4 161-164,250,268,303
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "83200d4906115c48bdf6aa8eee6e8ba74c764871",
+  "prompts": {},
+  "sessions": {
+    "s_8c546b3a28af69": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e5075-e784-70a3-8d6d-33b1fd8bae20",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
