@@ -1,0 +1,23 @@
+src/components/findHighlightRehype.ts
+  s_a789bcf39061ef::t_317c5d743eb654 66-70
+src/components/__tests__/findHighlightRehype.test.tsx
+  s_a789bcf39061ef::t_3438c1a8461eba 228-254
+tests/e2e/find-rendered-dense-list-highlight.spec.ts
+  s_a789bcf39061ef::t_56713285458041 1-48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "c6d48c449ae5052e361634f73351956fa6f58240",
+  "prompts": {},
+  "sessions": {
+    "s_a789bcf39061ef": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e4cd5-5c33-7242-8a8a-5ce2c4de6d6f",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
