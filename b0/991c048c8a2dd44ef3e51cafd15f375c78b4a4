@@ -1,0 +1,36 @@
+src/components/preview/PreviewToolbar.tsx
+  s_f7e222be26f8ce::t_c7b3b6dacf2f31 91-97,100-104
+  s_f7e222be26f8ce::t_38551f7c120c63 33-34,36-43
+  s_f7e222be26f8ce::t_44633e8673640d 1-2,27-32,35,44-53,71-90,98-99,105-106,111-115,191-230
+src/components/PreviewPanel.test.tsx
+  s_f7e222be26f8ce::t_8743e56747704d 178-226,228-236
+  s_f7e222be26f8ce::t_e01add0af8a7d2 227
+docs/accessibility-notes.md
+  s_f7e222be26f8ce::t_4c3c8048dbc0d2 52-63,107-110
+src/styles/global.css
+  s_f7e222be26f8ce::t_8b2245c9deaf1e 3091-3101
+  s_f7e222be26f8ce::t_cc1fd2686ef752 1815-1871
+ideas/ux-transformation.md
+  s_f7e222be26f8ce::t_13f26885811204 53-54,64
+  s_f7e222be26f8ce::t_59cd372d2b2d63 341,353,355-358,360,362-367,369-370,374-375
+  s_f7e222be26f8ce::t_12c99ee11cbe6b 578,635,705,707,711-713,715
+tests/e2e/inline-formatting.spec.ts
+  s_f7e222be26f8ce::t_84b6e9178231a0 59-92
+  s_f7e222be26f8ce::t_bfd23817e2d2b6 102-121
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "b0991c048c8a2dd44ef3e51cafd15f375c78b4a4",
+  "prompts": {},
+  "sessions": {
+    "s_f7e222be26f8ce": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e51f3-470c-7f90-ab00-5ac9fcf26c32",
+        "model": "gpt-5.5"
+      },
+      "human_author": null
+    }
+  }
+}
