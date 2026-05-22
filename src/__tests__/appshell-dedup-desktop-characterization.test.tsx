@@ -67,6 +67,19 @@ function mockDoc2mdProtocol() {
   });
 }
 
+function mockResponsiveWidth() {
+  vi.stubGlobal("matchMedia", (query: string) => ({
+    matches: query === "(max-width: 980px)",
+    media: query,
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  }));
+}
+
 describe("AppShell dedup characterization (desktop)", () => {
   it("page-frame --page-max-width inline style is byte-identical to web baseline", () => {
     render(<DesktopApp />);
@@ -231,6 +244,33 @@ describe("AppShell dedup characterization (desktop)", () => {
         screen.queryByRole("button", { name: "Show upload panel" }),
       ).toBeInTheDocument();
     });
+
+    cleanupShell();
+  });
+
+  it("keeps native narrow windows out of responsive auto-collapse", async () => {
+    mockResponsiveWidth();
+    const cleanupShell = installMockShell({
+      openFile: async () => ({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/mock/Narrow.md",
+        content: "# Narrow",
+        mtimeMs: 10,
+        lineEnding: "lf" as const,
+      }),
+    });
+
+    render(<DesktopApp />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await screen.findByRole("heading", { name: "Narrow" });
+
+    expect(
+      screen.queryByRole("button", { name: "Show upload panel" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Hide upload panel" }),
+    ).toBeInTheDocument();
 
     cleanupShell();
   });

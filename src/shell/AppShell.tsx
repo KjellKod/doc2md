@@ -158,6 +158,10 @@ export type AppShellProps = {
   // desktop adapter to mark the hero when the settings popover is open.
   heroClassExtension?: string;
 
+  // Optional class extension applied to the .app-shell root. Used by the
+  // hosted adapter to scope hosted-only responsive layout behavior.
+  appShellClassExtension?: string;
+
   // Optional view-switcher-meta override for the install page. Defaults
   // to the canonical static copy below.
   installViewMetaText?: string;
@@ -243,6 +247,7 @@ export default function AppShell(props: AppShellProps) {
     hiddenInputSlot,
     nativeMenuBridgeSlot,
     heroClassExtension,
+    appShellClassExtension,
     installViewMetaText,
   } = props;
 
@@ -260,6 +265,7 @@ export default function AppShell(props: AppShellProps) {
     ? undefined
     : workspaceStyle;
   const heroClassName = `hero${heroClassExtension ? ` ${heroClassExtension}` : ""}`;
+  const appShellClassName = `app-shell${isWorkingMode ? " app-shell-working-mode" : ""}${appShellClassExtension ? ` ${appShellClassExtension}` : ""}`;
 
   const focusPageTab = (page: PageView) => {
     const tab =
@@ -294,7 +300,7 @@ export default function AppShell(props: AppShellProps) {
   };
 
   return (
-    <div className={`app-shell${isWorkingMode ? " app-shell-working-mode" : ""}`}>
+    <div className={appShellClassName}>
       {nativeMenuBridgeSlot}
       <main
         className={`page-frame${activeResizeAxis !== null ? " is-resizing" : ""}`}

@@ -129,8 +129,9 @@ export type WorkspaceResizeResult = {
   handleHeightResizeReset: () => void;
   /**
    * Notifies the hook that the user opened a non-scratch entry for the first
-   * time. The hook fires the one-shot auto-collapse if the layout is desktop
-   * width and the user has not yet expressed a sidebar preference. Calling
+   * time. The hook fires the one-shot auto-collapse if the user has not yet
+   * expressed a sidebar preference. Responsive-width auto-collapse is opt-in
+   * so native shells keep their previous narrow-window behavior. Calling
    * adapters wire this from their post-commit "non-scratch selectedEntry"
    * effect; the hook tracks the one-shot guard and the "user touched sidebar"
    * preference internally.
@@ -138,7 +139,15 @@ export type WorkspaceResizeResult = {
   triggerFirstOpenAutoCollapse: (selectedEntryIsScratch: boolean) => void;
 };
 
-export function useWorkspaceResize(): WorkspaceResizeResult {
+export type WorkspaceResizeOptions = {
+  autoCollapseResponsiveWidths?: boolean;
+};
+
+export function useWorkspaceResize(
+  options: WorkspaceResizeOptions = {},
+): WorkspaceResizeResult {
+  const autoCollapseResponsiveWidths =
+    options.autoCollapseResponsiveWidths ?? false;
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeResizeAxis, setActiveResizeAxis] = useState<ResizeAxis | null>(
     null,
@@ -593,20 +602,19 @@ export function useWorkspaceResize(): WorkspaceResizeResult {
         return;
       }
       if (
+        !autoCollapseResponsiveWidths &&
         typeof window !== "undefined" &&
-        typeof window.matchMedia === "function"
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(max-width: 980px)").matches
       ) {
-        if (window.matchMedia("(max-width: 980px)").matches) {
-          return;
-        }
+        return;
       }
-
       firstAutoCollapseFiredRef.current = true;
       restoreSidebarWidthRef.current =
         sidebarWidth ?? measureSidebarWidth() ?? DEFAULT_SIDEBAR_WIDTH;
       setSidebarCollapsed(true);
     },
-    [sidebarCollapsed, sidebarWidth],
+    [autoCollapseResponsiveWidths, sidebarCollapsed, sidebarWidth],
   );
 
   const pageFrameStyle = {

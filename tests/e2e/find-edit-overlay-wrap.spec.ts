@@ -143,6 +143,7 @@ test("editor find scrolls long unbroken wrapped text to the active match", async
     .getByRole("textbox", { name: "Find markdown text" })
     .fill("TARGET");
   await expect(page.locator(".find-replace-count")).toHaveText("1 of 1");
+  await expect(page.locator(".markdown-find-overlay mark")).toHaveCount(1);
 
   const metrics = await page.evaluate(() => {
     const textarea = document.querySelector(
@@ -152,6 +153,9 @@ test("editor find scrolls long unbroken wrapped text to the active match", async
       ".markdown-find-overlay",
     ) as HTMLPreElement;
     const mark = overlay.querySelector("mark") as HTMLElement;
+    if (!textarea || !overlay || !mark) {
+      throw new Error("Expected textarea, find overlay, and active mark");
+    }
     const overlayRect = overlay.getBoundingClientRect();
     const markRect = mark.getBoundingClientRect();
     const lineHeight = Number.parseFloat(getComputedStyle(textarea).lineHeight);
