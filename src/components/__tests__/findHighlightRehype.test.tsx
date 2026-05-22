@@ -225,4 +225,31 @@ describe("findHighlightRehype", () => {
     expect(marks).toHaveLength(1);
     expect(marks[0].textContent).toBe("RunAtLoad");
   });
+
+  it("keeps rendered offsets aligned after list-item formatting whitespace", () => {
+    const md = [
+      "- **Name:** Alpha Beta",
+      "- **Role:** Gamma Delta",
+      "- **Email:** x@example.com",
+      "- **Phone:** 1234567890",
+    ].join("\n");
+
+    const { container: corpusContainer, unmount: unmountCorpus } =
+      renderMarkdown(md, null);
+    const corpus = deriveRenderedText(corpusContainer as HTMLElement);
+    unmountCorpus();
+
+    const start = corpus.indexOf("Gamma");
+    expect(start).toBeGreaterThanOrEqual(0);
+
+    const { container } = renderMarkdown(md, {
+      start,
+      end: start + "Gamma".length,
+    });
+    const marks = container.querySelectorAll(
+      "mark.markdown-rendered-find-highlight",
+    );
+    expect(marks).toHaveLength(1);
+    expect(marks[0].textContent).toBe("Gamma");
+  });
 });

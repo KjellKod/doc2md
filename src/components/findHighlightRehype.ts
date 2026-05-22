@@ -63,15 +63,17 @@ export function findHighlightRehype(match: RenderedFindMatch | null) {
 // emitted by remark-gfm / rehype but stripped from the rendered DOM by
 // React. Skipping them keeps the hast cursor in lockstep with the
 // deriveRenderedText DOM walk (preview/renderedTextCorpus.ts).
+//
+// Do not include ul/ol here. React preserves the newline text nodes between
+// rendered list items, and the live DOM corpus includes them. Skipping those
+// nodes shifts matches to the right inside formatted metadata lists such as
+// `- **Role:** Gamma Delta`.
 const TEXT_STRIPPING_PARENTS = new Set([
   "table",
   "thead",
   "tbody",
   "tfoot",
   "tr",
-  "ul",
-  "ol",
-  "dl",
 ]);
 
 function isWhitespaceOnly(value: string): boolean {
