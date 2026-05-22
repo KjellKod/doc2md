@@ -1,0 +1,22 @@
+src/styles/global.css
+  s_f0aa1604c67d90::t_fbc709bce7823c 1139
+tests/e2e/working-mode-collapse.spec.ts
+  s_f0aa1604c67d90::t_e502dbfc74f0dd 54,60-61
+  s_f0aa1604c67d90::t_b6a64dadc92a2e 38-53,55-59,62-63
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "e4bb37ef375d81296cee61b938d841261a61b971",
+  "prompts": {},
+  "sessions": {
+    "s_f0aa1604c67d90": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e4da6-88fb-7cf3-b0a0-059bf0016d90",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
