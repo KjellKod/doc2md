@@ -1,0 +1,85 @@
+tests/e2e/large-paste-auto-shrink.spec.ts
+  s_3fc9626a7f1470::t_0790e597434a30 42,57,73
+src/App.test.tsx
+  s_3fc9626a7f1470::t_0790e597434a30 108,113,147,154,210,226,247,265,860,883,910,975
+src/__tests__/App.desktop.test.tsx
+  s_3fc9626a7f1470::t_66aceba2f86734 705,739,759,798,1836,2292,2294,2520,3028-3030
+  s_3fc9626a7f1470::t_427439b311ceca 254-264,270,284,294,2293,2301-2329
+  s_3fc9626a7f1470::t_fd3502959cd958 271-283,285-293,295-298
+  s_3fc9626a7f1470::t_db44f7a7868532 265-269
+src/hooks/useFileConversion.helpers.test.ts
+  s_3fc9626a7f1470::t_b065db781b0e51 142
+src/components/__tests__/FileListItem.test.tsx
+  s_3fc9626a7f1470::t_66aceba2f86734 103-107
+docs/product-spec.md
+  s_3fc9626a7f1470::t_d360d8e3acf7e4 111-114
+  s_3fc9626a7f1470::t_016932673d0b3c 84
+src/components/StatusIndicator.tsx
+  s_3fc9626a7f1470::t_41368e7880c8e3 52
+src/components/preview/PreviewEmptyStates.tsx
+  s_3fc9626a7f1470::t_2f4105a4d9e46e 47,49-50,73-74,85-86,88-89,94-95,97-98,104,106
+  s_3fc9626a7f1470::t_8c2916211739a1 12-14,87,96
+src/utils/remoteDocument.ts
+  s_3fc9626a7f1470::t_e3e8dd34805a9c 17,20
+src/components/FileList.tsx
+  s_3fc9626a7f1470::t_2f4105a4d9e46e 53
+  s_3fc9626a7f1470::t_c57f528cbf4e7b 55
+src/converters/messages.ts
+  s_3fc9626a7f1470::t_e3e8dd34805a9c 4,6,8,12-14,18
+src/utils/remoteDocument.test.ts
+  s_3fc9626a7f1470::t_66aceba2f86734 104,122,140
+tests/e2e/hosted-browser-baseline.spec.ts
+  s_3fc9626a7f1470::t_0790e597434a30 111,114
+  s_3fc9626a7f1470::t_7d4b131e3931d5 106-108
+packages/core/src/remoteDocument.test.ts
+  s_3fc9626a7f1470::t_66aceba2f86734 102,117
+src/__tests__/appshell-dedup-desktop-characterization.test.tsx
+  s_3fc9626a7f1470::t_66aceba2f86734 174
+docs/diary/2026-05-22.md
+  s_3fc9626a7f1470::t_aab108b182d7ca 1-35
+src/shell/desktopAdapter.tsx
+  s_3fc9626a7f1470::t_41368e7880c8e3 59,61,134-135
+  s_3fc9626a7f1470::t_7d7b4c91b456f8 389,392,394-395
+  s_3fc9626a7f1470::t_fd3502959cd958 87-90
+  s_3fc9626a7f1470::t_c57f528cbf4e7b 85-86,92-101,1974,2063
+  s_3fc9626a7f1470::t_7158a86c355bc5 137
+  s_3fc9626a7f1470::t_426dea66a2ac16 91,393
+  s_3fc9626a7f1470::t_4de2f9daef41d9 1095-1096,1274-1275,1326-1327,1423-1424,1582-1583,1686-1687,1711,1818-1819,1950-1951,1981-1982,2039-2040,2070-2071,2095-2096,2117-2118,2145-2146,2171-2172
+src/components/DropZone.tsx
+  s_3fc9626a7f1470::t_c57f528cbf4e7b 154
+  s_3fc9626a7f1470::t_2f4105a4d9e46e 134,136
+  s_3fc9626a7f1470::t_2d122cedee2e3c 155
+src/shell/AppShell.tsx
+  s_3fc9626a7f1470::t_c57f528cbf4e7b 345,347
+  s_3fc9626a7f1470::t_e582c48f7006ac 350-351,465
+  s_3fc9626a7f1470::t_2d122cedee2e3c 466
+  s_3fc9626a7f1470::t_7158a86c355bc5 539
+src/components/FileListItem.tsx
+  s_3fc9626a7f1470::t_41368e7880c8e3 31-32,47
+  s_3fc9626a7f1470::t_7259f495be089e 30
+src/shared/remoteDocumentShared.ts
+  s_3fc9626a7f1470::t_e3e8dd34805a9c 2,128,132,135
+src/shell/webAdapter.tsx
+  s_3fc9626a7f1470::t_426dea66a2ac16 133
+  s_3fc9626a7f1470::t_7d7b4c91b456f8 129,132,134-135
+packages/core/src/remoteDocument.ts
+  s_3fc9626a7f1470::t_e3e8dd34805a9c 9,11
+tests/e2e/appshell-dedup-characterization.spec.ts
+  s_3fc9626a7f1470::t_66aceba2f86734 235
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "43318ab8a50660df87ce3651e9849cf68990fbce",
+  "prompts": {},
+  "sessions": {
+    "s_3fc9626a7f1470": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e5078-aa65-7c41-bca7-46f695734765",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
