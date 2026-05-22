@@ -1,0 +1,19 @@
+ideas/ux-transformation.md
+  s_3fc9626a7f1470::t_2687bc664f137f 621-626
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "ff33e471eb6515fa98a270032dd31752fddaa6ad",
+  "prompts": {},
+  "sessions": {
+    "s_3fc9626a7f1470": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e5078-aa65-7c41-bca7-46f695734765",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
