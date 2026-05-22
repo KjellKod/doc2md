@@ -2188,6 +2188,7 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     }
 
     const popoverId = `desktop-settings-popover-${placement}`;
+    const settingsTooltipId = `${popoverId}-tooltip`;
     const recentFiles = persistenceSettings.recentFiles;
 
     return (
@@ -2198,14 +2199,21 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
       >
         <button
           type="button"
-          className="ghost-button desktop-settings-button"
+          className="ghost-button desktop-settings-button instant-tooltip-anchor"
           aria-label="Desktop settings"
           aria-expanded={isDesktopSettingsOpen}
           aria-controls={popoverId}
+          aria-describedby={settingsTooltipId}
           onClick={() => setIsDesktopSettingsOpen((isOpen) => !isOpen)}
-          title="Desktop settings"
         >
           <Settings className="desktop-settings-icon" aria-hidden="true" />
+          <span
+            id={settingsTooltipId}
+            role="tooltip"
+            className="instant-tooltip instant-tooltip--left"
+          >
+            Desktop settings
+          </span>
         </button>
         {isDesktopSettingsOpen ? (
           <div
@@ -2245,20 +2253,21 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
                 </div>
                 {recentFiles.length > 0 ? (
                   <ol className="desktop-recent-list">
-                    {recentFiles.map((file) => {
+                    {recentFiles.map((file, index) => {
                       const isUnavailable = unavailableRecentPaths.has(file.path);
+                      const tooltipId = `${popoverId}-recent-${index}-tooltip`;
+                      const tooltipText = isUnavailable
+                        ? "Not available. Click to retry opening this file."
+                        : `Open ${file.path}`;
                       return (
                         <li key={file.path}>
                           <button
                             type="button"
-                            className={`desktop-recent-item${
+                            className={`desktop-recent-item instant-tooltip-anchor${
                               isUnavailable ? " is-unavailable" : ""
                             }`}
-                            title={
-                              isUnavailable
-                                ? "Not available. Click to retry opening this file."
-                                : file.path
-                            }
+                            aria-label={`Open ${file.displayName}`}
+                            aria-describedby={tooltipId}
                             onClick={() => {
                               // eslint-disable-next-line react-hooks/refs -- click handler opens recent file after user action
                               void handleOpenRecentFile(file.path).then((opened) => {
@@ -2289,6 +2298,13 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
                             >
                               {file.lastOpenedAt}
                             </time>
+                            <span
+                              id={tooltipId}
+                              role="tooltip"
+                              className="instant-tooltip instant-tooltip--menu"
+                            >
+                              {tooltipText}
+                            </span>
                           </button>
                         </li>
                       );
@@ -2385,7 +2401,6 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
       <div className="desktop-shell-main">
         <span
           className="desktop-shell-title"
-          title={selectedEntry ? desktopTitle : "doc2md"}
         >
           {selectedEntry ? desktopTitle : "doc2md"}
         </span>
@@ -2395,7 +2410,7 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
             {!activePendingConflict ? (
               <button
                 type="button"
-                className="ghost-button desktop-reload-button"
+                className="ghost-button desktop-reload-button instant-tooltip-anchor"
                 onClick={() => {
                   if (selectedPath) {
                     void handleReloadSelectedDocument();
@@ -2415,26 +2430,38 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
                       ? "Reload from disk (pick file)"
                       : "Discard edits and restore original"
                 }
-                title={
-                  selectedPath
+                aria-describedby="desktop-reload-tooltip"
+              >
+                Reload
+                <span
+                  id="desktop-reload-tooltip"
+                  role="tooltip"
+                  className="instant-tooltip instant-tooltip--menu"
+                >
+                  {selectedPath
                     ? "Reload from disk and discard unsaved changes"
                     : shell
                       ? "Pick the source file to reload from disk"
-                      : "Discard your edits and restore the original document content"
-                }
-              >
-                Reload
+                      : "Discard your edits and restore the original document content"}
+                </span>
               </button>
             ) : null}
             <button
               type="button"
-              className="ghost-button desktop-reveal-button"
+              className="ghost-button desktop-reveal-button instant-tooltip-anchor"
               onClick={() => void handleRevealInFinder()}
               disabled={!selectedPath}
               aria-label="Reveal in Finder"
-              title="Reveal in Finder"
+              aria-describedby="desktop-reveal-tooltip"
             >
               Reveal
+              <span
+                id="desktop-reveal-tooltip"
+                role="tooltip"
+                className="instant-tooltip instant-tooltip--menu"
+              >
+                Reveal in Finder
+              </span>
             </button>
           </>
         ) : null}

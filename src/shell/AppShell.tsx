@@ -26,7 +26,7 @@ import type {
   RefObject,
   SVGProps,
 } from "react";
-import { useRef } from "react";
+import { useId, useRef } from "react";
 import AboutSection from "../components/AboutSection";
 import DropZone from "../components/DropZone";
 import type { DropZoneProps } from "../components/DropZone";
@@ -248,6 +248,11 @@ export default function AppShell(props: AppShellProps) {
 
   const convertTabRef = useRef<HTMLButtonElement>(null);
   const installTabRef = useRef<HTMLButtonElement>(null);
+  const eyebrowTooltipId = useId();
+  const showSidebarTooltipId = useId();
+  const hideSidebarTooltipId = useId();
+  const splitBarTooltipId = useId();
+  const previewHeightTooltipId = useId();
   const convertPageActive = activePage === "convert";
   const workingModeBarInertProps = { inert: !isWorkingMode || undefined };
   const landingChromeInertProps = { inert: isWorkingMode || undefined };
@@ -311,23 +316,28 @@ export default function AppShell(props: AppShellProps) {
             <div className="hero-top">
               <button
                 type="button"
-                className="eyebrow eyebrow-toggle"
+                className="eyebrow eyebrow-toggle instant-tooltip-anchor"
                 aria-label={
                   hasWorkingEntry
                     ? "Hide intro and return to editor"
                     : "doc2md, private markdown workspace"
                 }
                 aria-disabled={!hasWorkingEntry}
+                aria-describedby={hasWorkingEntry ? eyebrowTooltipId : undefined}
                 onClick={callbacks.onCollapseFromHero}
-                title={
-                  hasWorkingEntry
-                    ? "Hide intro and return to editor"
-                    : undefined
-                }
               >
                 <span className="eyebrow-brand">doc2md</span>
                 <span className="eyebrow-sep" aria-hidden="true"> - </span>
                 <span className="eyebrow-tagline">PRIVATE MARKDOWN WORKSPACE</span>
+                {hasWorkingEntry ? (
+                  <span
+                    id={eyebrowTooltipId}
+                    role="tooltip"
+                    className="instant-tooltip instant-tooltip--left"
+                  >
+                    Hide intro and return to editor
+                  </span>
+                ) : null}
               </button>
               <div className="hero-actions">{heroActionsSlot}</div>
             </div>
@@ -421,16 +431,23 @@ export default function AppShell(props: AppShellProps) {
                 <section className="panel collapse-rail" aria-label="Upload rail">
                   <button
                     type="button"
-                    className="collapse-rail-button"
+                    className="collapse-rail-button instant-tooltip-anchor"
                     onClick={handleShowSidebar}
                     aria-label="Show upload panel"
-                    title="Show upload panel"
+                    aria-describedby={showSidebarTooltipId}
                   >
                     <PanelRightOpenIcon
                       className="collapse-toggle-icon"
                       aria-hidden="true"
                     />
                     <span className="collapse-rail-label">Upload</span>
+                    <span
+                      id={showSidebarTooltipId}
+                      role="tooltip"
+                      className="instant-tooltip instant-tooltip--right"
+                    >
+                      Show upload panel
+                    </span>
                   </button>
                 </section>
               ) : (
@@ -449,15 +466,22 @@ export default function AppShell(props: AppShellProps) {
                     </div>
                     <button
                       type="button"
-                      className="ghost-button collapse-toggle"
+                      className="ghost-button collapse-toggle instant-tooltip-anchor"
                       onClick={handleCollapseSidebar}
                       aria-label="Hide upload panel"
-                      title="Hide upload panel"
+                      aria-describedby={hideSidebarTooltipId}
                     >
                       <PanelRightCloseIcon
                         className="collapse-toggle-icon"
                         aria-hidden="true"
                       />
+                      <span
+                        id={hideSidebarTooltipId}
+                        role="tooltip"
+                        className="instant-tooltip instant-tooltip--left"
+                      >
+                        Hide upload panel
+                      </span>
                     </button>
                   </div>
 
@@ -481,20 +505,28 @@ export default function AppShell(props: AppShellProps) {
                 style={previewPanelStyle}
               >
                 {!sidebarCollapsed ? (
-                  <button
-                    type="button"
-                    className="workspace-split-bar"
-                    role="separator"
-                    aria-orientation="vertical"
-                    aria-label="Resize upload panel"
-                    aria-describedby="split-bar-resize-hint"
-                    title="Drag to resize the upload panel; double-click to reset"
-                    onMouseDown={handleSidebarResizeStart}
-                    onMouseUp={handleSidebarResizeMouseUp}
-                    onClick={handleSidebarResizeClickReset}
-                    onDoubleClick={handleSidebarResizeReset}
-                    onKeyDown={handleSidebarResizeKeyDown}
-                  />
+                  <>
+                    <button
+                      type="button"
+                      className="workspace-split-bar"
+                      role="separator"
+                      aria-orientation="vertical"
+                      aria-label="Resize upload panel"
+                      aria-describedby={`split-bar-resize-hint ${splitBarTooltipId}`}
+                      onMouseDown={handleSidebarResizeStart}
+                      onMouseUp={handleSidebarResizeMouseUp}
+                      onClick={handleSidebarResizeClickReset}
+                      onDoubleClick={handleSidebarResizeReset}
+                      onKeyDown={handleSidebarResizeKeyDown}
+                    />
+                    <span
+                      id={splitBarTooltipId}
+                      role="tooltip"
+                      className="instant-tooltip resize-handle-tooltip resize-handle-tooltip--split"
+                    >
+                      Drag to resize the upload panel; double-click to reset
+                    </span>
+                  </>
                 ) : null}
                 <div className="panel-heading">
                   <div>
@@ -521,20 +553,28 @@ export default function AppShell(props: AppShellProps) {
                   onLargeMarkdownPaste={callbacks.onLargeMarkdownPaste}
                 />
                 {selectedEntry ? (
-                  <button
-                    type="button"
-                    className="preview-height-handle"
-                    role="separator"
-                    aria-orientation="horizontal"
-                    aria-label="Resize editor height"
-                    aria-describedby="preview-height-resize-hint"
-                    title="Drag to resize the editor height; double-click to reset"
-                    onMouseDown={handleHeightResizeStart}
-                    onMouseUp={handleHeightResizeMouseUp}
-                    onClick={handleHeightResizeClickReset}
-                    onDoubleClick={handleHeightResizeReset}
-                    onKeyDown={handleHeightResizeKeyDown}
-                  />
+                  <>
+                    <button
+                      type="button"
+                      className="preview-height-handle"
+                      role="separator"
+                      aria-orientation="horizontal"
+                      aria-label="Resize editor height"
+                      aria-describedby={`preview-height-resize-hint ${previewHeightTooltipId}`}
+                      onMouseDown={handleHeightResizeStart}
+                      onMouseUp={handleHeightResizeMouseUp}
+                      onClick={handleHeightResizeClickReset}
+                      onDoubleClick={handleHeightResizeReset}
+                      onKeyDown={handleHeightResizeKeyDown}
+                    />
+                    <span
+                      id={previewHeightTooltipId}
+                      role="tooltip"
+                      className="instant-tooltip resize-handle-tooltip resize-handle-tooltip--height"
+                    >
+                      Drag to resize the editor height; double-click to reset
+                    </span>
+                  </>
                 ) : null}
               </section>
             </section>

@@ -110,6 +110,71 @@ button:disabled {
   cursor: not-allowed;
 }
 
+.instant-tooltip-anchor {
+  position: relative;
+}
+
+.instant-tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  z-index: 40;
+  width: max-content;
+  max-width: min(22rem, calc(100vw - 32px));
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: rgba(20, 25, 31, 0.96);
+  box-shadow: 0 14px 30px rgba(27, 39, 49, 0.16);
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.25;
+  opacity: 0;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+  text-align: left;
+  text-transform: none;
+  transform: translate(-50%, -4px);
+  transition:
+    opacity 80ms ease,
+    transform 80ms ease;
+  white-space: normal;
+}
+
+.instant-tooltip--left,
+.instant-tooltip--menu {
+  right: 0;
+  left: auto;
+  transform: translateY(-4px);
+}
+
+.instant-tooltip--right {
+  right: auto;
+  left: 0;
+  transform: translateY(-4px);
+}
+
+.instant-tooltip-anchor:hover > .instant-tooltip,
+.instant-tooltip-anchor:focus-visible > .instant-tooltip,
+.instant-tooltip-anchor:focus-within > .instant-tooltip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  transition-delay: 0ms;
+}
+
+.instant-tooltip-anchor:hover > .instant-tooltip--left,
+.instant-tooltip-anchor:hover > .instant-tooltip--right,
+.instant-tooltip-anchor:hover > .instant-tooltip--menu,
+.instant-tooltip-anchor:focus-visible > .instant-tooltip--left,
+.instant-tooltip-anchor:focus-visible > .instant-tooltip--right,
+.instant-tooltip-anchor:focus-visible > .instant-tooltip--menu,
+.instant-tooltip-anchor:focus-within > .instant-tooltip--left,
+.instant-tooltip-anchor:focus-within > .instant-tooltip--right,
+.instant-tooltip-anchor:focus-within > .instant-tooltip--menu {
+  transform: translateY(0);
+}
+
 a {
   color: inherit;
 }
@@ -344,6 +409,12 @@ button.eyebrow.eyebrow-toggle {
     padding 200ms ease-out,
     margin-bottom 200ms ease-out,
     visibility 0ms linear 0ms;
+}
+
+.working-mode-logo-tooltip-wrap {
+  display: inline-flex;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .working-mode-logo {
@@ -1156,6 +1227,34 @@ button.eyebrow.eyebrow-toggle {
 .preview-height-handle:focus-visible,
 .preview-height-handle:active {
   opacity: 1;
+}
+
+.resize-handle-tooltip {
+  opacity: 0;
+}
+
+.resize-handle-tooltip--split {
+  top: 12px;
+  left: 8px;
+  max-width: min(20rem, calc(100vw - 72px));
+  transform: translateX(-4px);
+}
+
+.resize-handle-tooltip--height {
+  top: auto;
+  right: 12px;
+  bottom: 12px;
+  left: auto;
+  transform: translateY(4px);
+}
+
+.workspace-split-bar:hover + .resize-handle-tooltip,
+.workspace-split-bar:focus-visible + .resize-handle-tooltip,
+.preview-height-handle:hover + .resize-handle-tooltip,
+.preview-height-handle:focus-visible + .resize-handle-tooltip {
+  opacity: 1;
+  transform: translate(0, 0);
+  transition-delay: 0ms;
 }
 
 .view-tab:focus-visible,

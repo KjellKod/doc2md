@@ -1330,8 +1330,14 @@ describe("App desktop bridge", () => {
       name: /Recent\.md/,
     });
     await waitFor(() => expect(recentButton).toHaveClass("is-unavailable"));
-    expect(recentButton).toHaveAttribute(
-      "title",
+    expect(recentButton).not.toHaveAttribute("title");
+    const tooltipId = recentButton.getAttribute("aria-describedby");
+    expect(tooltipId).toBeTruthy();
+    expect(document.getElementById(tooltipId ?? "")).toHaveAttribute(
+      "role",
+      "tooltip",
+    );
+    expect(document.getElementById(tooltipId ?? "")).toHaveTextContent(
       "Not available. Click to retry opening this file.",
     );
 
