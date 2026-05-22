@@ -1,0 +1,25 @@
+src/__tests__/appshell-dedup-desktop-characterization.test.tsx
+  s_8c546b3a28af69::t_60dee50467484a 70-82,251-273
+src/shell/useWorkspaceResize.ts
+  s_8c546b3a28af69::t_7467589315b6ed 132
+  s_8c546b3a28af69::t_121098efc5353e 602-603,142-150,604-611,617
+  s_8c546b3a28af69::t_be17ccc36dd9a9 133-137
+src/shell/webAdapter.tsx
+  s_8c546b3a28af69::t_d67b30c8bdf402 74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "43f9132e6f9bb36b6bb234efbeeb17be714a22d6",
+  "prompts": {},
+  "sessions": {
+    "s_8c546b3a28af69": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e5075-e784-70a3-8d6d-33b1fd8bae20",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}

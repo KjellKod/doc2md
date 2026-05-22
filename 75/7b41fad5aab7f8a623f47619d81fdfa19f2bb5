@@ -1,0 +1,50 @@
+tests/e2e/hosted-mobile-tablet-layout.spec.ts
+  s_686343c0b36dea::t_5be1d4c85dab34 1-46,48-55,65-84,86-90,102-105,107-113,117-130,132-143,146-147,154-162,170-184,186-191,193-197,199-214,221,224,227,230,232-234,236-237,239-240,266-270,277-282,294-296,298-300
+  s_686343c0b36dea::t_8ad0cdec1b712b 58,60-61,91-101,106,131,144-145,148-153,163-169,185,192,198,215-220,222-223,225-226,228-229,231,235,271-276,283-293
+  s_522995f103ce2f::t_b4c72f476661cc 85,114-116,241-243,245-251,259,261
+  s_8c546b3a28af69::t_267e31dd472d88 238
+  s_522995f103ce2f::t_2adc0d9092e2c9 244,252,297
+  s_522995f103ce2f::t_736f844f4484b8 253-258,260
+src/styles/global.css
+  s_686343c0b36dea::t_98edc3496eb202 2328
+  s_686343c0b36dea::t_208109a55ecbed 3286-3295
+  s_686343c0b36dea::t_957076c23b15e9 3320-3328,3346-3412,3416-3418,3558-3584
+  s_686343c0b36dea::t_ad806ab5e93ab6 3329-3345
+  s_686343c0b36dea::t_0168b74f039027 3425-3428,3430-3434
+  s_686343c0b36dea::t_205b36b254c5d4 3469-3470
+tests/e2e/hosted-browser-baseline.spec.ts
+  s_522995f103ce2f::t_8cb5f2679fa0c7 103-106,299-301,324-330,332-337
+  s_686343c0b36dea::t_25bf098e948cf3 296-298,302-323,331,338-341
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "757b41fad5aab7f8a623f47619d81fdfa19f2bb5",
+  "prompts": {},
+  "sessions": {
+    "s_522995f103ce2f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e50b7-ece0-75d1-aee7-3726d203dd1c",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_686343c0b36dea": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "94bcd73c-9a94-4454-8fb1-f908a9e63565",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_8c546b3a28af69": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e5075-e784-70a3-8d6d-33b1fd8bae20",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
