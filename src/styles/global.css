@@ -3288,8 +3288,8 @@ body.is-height-resizing * {
    * collapses to a single column. Without this, the desktop column index
    * creates implicit columns and squeezes the sidebar-panel to its
    * min-content width. */
-  .workspace:not(.sidebar-collapsed) .preview-panel,
-  .workspace.sidebar-collapsed .preview-panel {
+  .app-shell-hosted .workspace:not(.sidebar-collapsed) .preview-panel,
+  .app-shell-hosted .workspace.sidebar-collapsed .preview-panel {
     grid-column: auto;
   }
 
@@ -3298,32 +3298,32 @@ body.is-height-resizing * {
     min-height: auto;
   }
 
-  .page.is-working-mode .collapse-rail {
+  .app-shell-hosted .page.is-working-mode .collapse-rail {
     padding: 0;
     border-radius: 14px;
   }
 
-  .collapse-rail-button {
+  .app-shell-hosted .collapse-rail-button {
     flex-direction: row;
     min-height: 44px;
     padding: 10px 14px;
   }
 
-  .collapse-rail-label {
+  .app-shell-hosted .collapse-rail-label {
     writing-mode: horizontal-tb;
     transform: none;
   }
 
-  .collapse-rail-tooltip {
+  .app-shell-hosted .collapse-rail-tooltip {
     top: calc(100% + 8px);
     right: auto;
     left: 50%;
     transform: translate(-50%, -4px);
   }
 
-  .instant-tooltip-anchor:hover > .collapse-rail-tooltip,
-  .instant-tooltip-anchor:focus-visible > .collapse-rail-tooltip,
-  .instant-tooltip-anchor:focus-within > .collapse-rail-tooltip {
+  .app-shell-hosted .instant-tooltip-anchor:hover > .collapse-rail-tooltip,
+  .app-shell-hosted .instant-tooltip-anchor:focus-visible > .collapse-rail-tooltip,
+  .app-shell-hosted .instant-tooltip-anchor:focus-within > .collapse-rail-tooltip {
     transform: translate(-50%, 0);
   }
 
@@ -3351,96 +3351,100 @@ body.is-height-resizing * {
  * above the 720px phone block so phone rules can still override where
  * needed, and below the 980px block so sidebar collapse already applies. */
 @media (max-width: 768px) {
-  .app-shell {
+  .app-shell.app-shell-hosted {
     padding: 22px 16px 32px;
   }
 
   /* Compress hero at tablet portrait so the DropZone CTA lands inside
    * the initial viewport without scroll (AC4). Desktop and the >768
    * range keep their richer hero. */
-  .hero {
+  .app-shell-hosted .hero {
     padding: 20px 6px 22px;
   }
 
-  .hero h1 {
+  .app-shell-hosted .hero h1 {
     font-size: clamp(2.2rem, 4.5vw, 3rem);
     line-height: 1.02;
   }
 
-  .hero-copy {
+  .app-shell-hosted .hero-copy {
     margin-top: 14px;
     font-size: 1rem;
   }
 
-  .preview-panel {
+  .app-shell-hosted .preview-panel {
     /* Use dvh to handle dynamic browser chrome (mobile/tablet URL bar
      * collapse/expand) without clipping the editor. */
     height: max(60dvh, min(720px, var(--preview-panel-ceiling)));
     min-height: 60dvh;
   }
 
-  .working-mode-bar {
+  .app-shell-hosted .working-mode-bar {
     flex-wrap: wrap;
     row-gap: 8px;
   }
 
-  .working-mode-actions {
+  .app-shell-hosted .working-mode-actions {
     flex-wrap: wrap;
     justify-content: flex-start;
     row-gap: 8px;
   }
 
-  .working-mode-button,
-  .working-mode-logo {
+  .app-shell-hosted .working-mode-button,
+  .app-shell-hosted .working-mode-logo {
     min-height: 44px;
   }
 
-  .preview-toolbar {
+  .app-shell-hosted .preview-toolbar {
     flex-wrap: wrap;
     row-gap: 10px;
   }
 
-  .preview-toolbar-actions {
+  .app-shell-hosted .preview-toolbar-actions {
     flex-wrap: wrap;
     row-gap: 8px;
   }
 
-  .preview-toggle {
+  .app-shell-hosted .preview-toggle {
     flex-wrap: wrap;
   }
 
-  .file-list-item-top {
+  .app-shell-hosted .file-list-item-top {
     flex-wrap: wrap;
     row-gap: 6px;
   }
 
   /* Tap-target floor at tablet portrait. 44px is the design intent (HIG);
    * applied to the controls users hit most often in this width band. */
-  .save-button,
-  .preview-toggle-button,
-  .preview-copy-button,
-  .find-entry-button,
-  .find-replace-icon-button,
-  .find-replace-action-button,
-  .secondary-button,
-  .ghost-button,
-  .download-button,
-  .view-tab {
+  .app-shell-hosted .save-button,
+  .app-shell-hosted .preview-toggle-button,
+  .app-shell-hosted .preview-copy-button,
+  .app-shell-hosted .find-entry-button,
+  .app-shell-hosted .find-replace-icon-button,
+  .app-shell-hosted .find-replace-action-button,
+  .app-shell-hosted .secondary-button,
+  .app-shell-hosted .ghost-button,
+  .app-shell-hosted .download-button,
+  .app-shell-hosted .view-tab {
     min-height: 44px;
   }
 
-  .file-list-item {
+  .app-shell-hosted .file-list-item {
     min-height: 56px;
   }
 
-  .drop-zone-url-button,
-  .drop-zone-url-input {
+  .app-shell-hosted .drop-zone-url-button,
+  .app-shell-hosted .drop-zone-url-input {
     min-height: 46px;
   }
 }
 
 @media (max-width: 720px) {
   .app-shell {
+    padding: 18px 12px 28px;
+  }
+
+  .app-shell.app-shell-hosted {
     padding: 18px 12px 28px;
     /* Honor safe-area insets on phones with notches; container-level only. */
     padding-left: max(12px, env(safe-area-inset-left));
@@ -3451,15 +3455,19 @@ body.is-height-resizing * {
     padding-top: 12px;
   }
 
-  /* Compress the hero on phones so the first useful action (DropZone or
-   * "Start writing") is reachable in the initial viewport without scroll.
-   * The h1 and hero-copy still convey the value prop; we lean on the
-   * smaller font and tighter padding to make room. */
   .hero {
+    padding: 22px 4px 26px;
+  }
+
+  /* Compress the hosted hero on phones so the first useful action (DropZone
+   * or "Start writing") is reachable in the initial viewport without scroll.
+   * The h1 still carries the value prop; we lean on smaller type and tighter
+   * padding to make room. */
+  .app-shell-hosted .hero {
     padding: 12px 4px 14px;
   }
 
-  .hero-copy {
+  .app-shell-hosted .hero-copy {
     display: none;
   }
 
@@ -3495,6 +3503,10 @@ body.is-height-resizing * {
 
   .hero h1 {
     max-width: none;
+    font-size: clamp(2.4rem, 10vw, 3.5rem);
+  }
+
+  .app-shell-hosted .hero h1 {
     font-size: clamp(1.9rem, 7vw, 2.6rem);
     line-height: 1;
   }
@@ -3587,20 +3599,20 @@ body.is-height-resizing * {
 
   /* Phone tap-target floor. Mirrors the tablet rule but is repeated here
    * so phone overrides (e.g. label collapses) still meet the 44px height. */
-  .save-button,
-  .preview-toggle-button,
-  .preview-copy-button,
-  .find-entry-button,
-  .find-replace-icon-button,
-  .find-replace-action-button,
-  .secondary-button,
-  .ghost-button,
-  .download-button,
-  .view-tab {
+  .app-shell-hosted .save-button,
+  .app-shell-hosted .preview-toggle-button,
+  .app-shell-hosted .preview-copy-button,
+  .app-shell-hosted .find-entry-button,
+  .app-shell-hosted .find-replace-icon-button,
+  .app-shell-hosted .find-replace-action-button,
+  .app-shell-hosted .secondary-button,
+  .app-shell-hosted .ghost-button,
+  .app-shell-hosted .download-button,
+  .app-shell-hosted .view-tab {
     min-height: 44px;
   }
 
-  .file-list-item {
+  .app-shell-hosted .file-list-item {
     min-height: 56px;
   }
 
@@ -3608,7 +3620,7 @@ body.is-height-resizing * {
    * shove the editor below the visible viewport. Combined with the
    * sticky toolbar above, the Save action remains reachable when the
    * keyboard is open. */
-  .preview-panel {
+  .app-shell-hosted .preview-panel {
     height: max(55dvh, min(620px, var(--preview-panel-ceiling)));
     min-height: 55dvh;
   }

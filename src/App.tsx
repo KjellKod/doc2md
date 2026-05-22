@@ -48,6 +48,7 @@ function AppContent() {
       desktopStatusSlot={adapter.desktopStatusSlot}
       hiddenInputSlot={adapter.hiddenInputSlot}
       nativeMenuBridgeSlot={adapter.nativeMenuBridgeSlot}
+      appShellClassExtension="app-shell-hosted"
     />
   );
 }
