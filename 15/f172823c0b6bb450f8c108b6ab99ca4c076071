@@ -1,0 +1,29 @@
+src/components/WorkingModeBar.tsx
+  s_3e223a8ae535ec::t_a57cab32e3d26b 1,8-9,149-156,260-269
+src/styles/global.css
+  s_3e223a8ae535ec::t_a57cab32e3d26b 426-429
+src/components/WorkingModeBar.test.tsx
+  s_3e223a8ae535ec::t_a57cab32e3d26b 92-102
+src/lib/crosslinkAnalytics.test.ts
+  s_3e223a8ae535ec::t_896613259698ab 1-42
+src/lib/crosslinks.ts
+  s_3e223a8ae535ec::t_a57cab32e3d26b 1
+src/lib/crosslinkAnalytics.ts
+  s_3e223a8ae535ec::t_a57cab32e3d26b 1-33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "15f172823c0b6bb450f8c108b6ab99ca4c076071",
+  "prompts": {},
+  "sessions": {
+    "s_3e223a8ae535ec": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e4d4d-07c2-73f2-a835-9165e2c40a15",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
