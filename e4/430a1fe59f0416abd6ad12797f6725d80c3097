@@ -1,0 +1,19 @@
+tests/e2e/find-edit-overlay-wrap.spec.ts
+  s_8c546b3a28af69::t_23c8e199a260dc 146,156-158
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "e4430a1fe59f0416abd6ad12797f6725d80c3097",
+  "prompts": {},
+  "sessions": {
+    "s_8c546b3a28af69": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e5075-e784-70a3-8d6d-33b1fd8bae20",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
