@@ -1162,7 +1162,14 @@ describe("App desktop bridge", () => {
 
     render(<DesktopApp />);
 
-    fireEvent.click(await screen.findByRole("button", { name: "Desktop settings" }));
+    const settingsButton = await screen.findByRole("button", {
+      name: "Desktop settings",
+    });
+    expect(settingsButton).toHaveAttribute("aria-describedby");
+
+    fireEvent.click(settingsButton);
+    expect(settingsButton).not.toHaveAttribute("aria-describedby");
+    expect(within(settingsButton).queryByRole("tooltip")).not.toBeInTheDocument();
 
     const settingsDialog = screen.getByRole("dialog", { name: "Desktop settings" });
     expect(settingsDialog.closest(".hero")).toHaveClass("hero--settings-open");

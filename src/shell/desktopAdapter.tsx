@@ -2203,17 +2203,19 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
           aria-label="Desktop settings"
           aria-expanded={isDesktopSettingsOpen}
           aria-controls={popoverId}
-          aria-describedby={settingsTooltipId}
+          aria-describedby={isDesktopSettingsOpen ? undefined : settingsTooltipId}
           onClick={() => setIsDesktopSettingsOpen((isOpen) => !isOpen)}
         >
           <Settings className="desktop-settings-icon" aria-hidden="true" />
-          <span
-            id={settingsTooltipId}
-            role="tooltip"
-            className="instant-tooltip instant-tooltip--left"
-          >
-            Desktop settings
-          </span>
+          {!isDesktopSettingsOpen ? (
+            <span
+              id={settingsTooltipId}
+              role="tooltip"
+              className="instant-tooltip instant-tooltip--left"
+            >
+              Desktop settings
+            </span>
+          ) : null}
         </button>
         {isDesktopSettingsOpen ? (
           <div
