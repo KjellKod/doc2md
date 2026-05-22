@@ -57,6 +57,7 @@ Every item must explicitly mark Hosted, Mac, and Core as `yes`, `if needed`, `no
 | Hosted scratch-buffer preservation | if needed | n/a | n/a | `if-needed` | Parked Phase 6g item: session-local scratch buffer so refresh or accidental navigation does not erase unsaved hosted-browser work. |
 | Mac file watchers | n/a | if needed | n/a | `if-needed` | Save-time mtime checks already catch the common case. Live watchers wait for a real iCloud/Dropbox conflict report. |
 | System theme follow | if needed | if needed | n/a | `if-needed` | Useful after parity is proven. Do parity first; automatic system sync can wait. |
+| sketch2md cross-product discovery | if needed | if needed | n/a | `if-needed` | Wait until sketch2md is launched. Crosslinks may help users understand the product suite later, but they should not add chrome to active document workspaces before that launch. |
 | Command palette / shortcut remapping | no | no | n/a | `yagni` | Too much product surface for today's app. A compact reference solves discoverability without building an IDE. |
 | Formal WCAG certification matrix | no | no | n/a | `yagni` | A lightweight audit is enough. Certification-level work is not proportional today. |
 | Source-tree file operations | no | no | n/a | `yagni` | Rename, move, delete, and two-way folder sync would turn doc2md into a file manager. |
@@ -499,6 +500,33 @@ Acceptance if revived:
 - Mac persistence and hosted persistence stay separate
 - no flicker on first paint
 
+### sketch2md cross-product discovery
+
+Surfaces: Hosted, Mac.
+
+Gut: `if-needed`.
+
+Do not add sketch2md links or analytics to product UI yet. sketch2md is not
+launched, so cross-product discovery would be premature and would add noise to
+the current doc2md workspace.
+
+Trigger:
+
+- sketch2md is publicly launched and ready to receive doc2md users, and
+- there is an explicit product decision that doc2md and sketch2md should be
+  presented as related tools.
+
+Acceptance if revived:
+
+- Link only to a live, useful sketch2md destination.
+- Prefer low-interruption surfaces first: landing, help/about, footer-level
+  resources, or an empty/onboarding state.
+- Do not add cross-product links to `WorkingModeBar` or other active
+  document-workspace chrome unless validation shows users need that shortcut
+  while editing.
+- If analytics are added, use an allowlisted payload and make click tracking
+  best-effort so outbound navigation is never blocked.
+
 ## YAGNI list
 
 Do not build these as part of this transformation:
@@ -587,6 +615,9 @@ Already settled before execution:
 - `doc2md-browser-crash-recovery` is still open only for hosted
   reload-surviving drafts. Do not count Mac session restore or the hosted
   `beforeunload` guard as completion.
+- sketch2md cross-product discovery is deferred until sketch2md has launched.
+  Do not add links, analytics, CSS, or React UI for it in the current execution
+  sequence.
 
 | Step | Scope | Tool path | Order | Parallel rule | Kjell validation |
 |---:|---|---|---|---|---|
@@ -598,7 +629,7 @@ Already settled before execution:
 | 5 | Keyboard discoverability plus lightweight a11y audit | `quest:solo` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After step 1 | Can run in parallel with step 4. Avoid parallel edits to the same toolbar/menu files as step 2. | Use keyboard-only navigation and the shortcut reference; focus, labels, and shortcut claims should match real controls. |
 | 6 | Performance perception pass | `quest:workflow` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After copy language in step 4 | Sequential with copy-paste polish if both touch status messaging. | Convert, search, paste, and batch output should show honest progress or bounded wait states. |
 | 7 | Copy-paste UX loop polish | `quest:solo` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After steps 1 and 4 | Can run after performance pass or in parallel only if write scopes avoid status/progress components. | Paste Markdown/HTML, copy Markdown, and copy LinkedIn output; actions should be discoverable and not add excess chrome. |
-| 8 | Revisit `if-needed` items: folder view, browser crash recovery, scratch-buffer preservation, Mac file watchers, system theme follow | `quest:workflow` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | Only after a trigger lands | Not part of the default parallel pool. Treat each as its own proposal. | Validate against the trigger that revived the item, not against speculative acceptance. |
+| 8 | Revisit `if-needed` items: folder view, browser crash recovery, scratch-buffer preservation, Mac file watchers, system theme follow, sketch2md cross-product discovery | `quest:workflow` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | Only after a trigger lands | Not part of the default parallel pool. Treat each as its own proposal. | Validate against the trigger that revived the item, not against speculative acceptance. |
 
 ### Prompt pack
 
