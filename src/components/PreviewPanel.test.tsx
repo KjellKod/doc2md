@@ -175,6 +175,65 @@ describe("PreviewPanel", () => {
     );
   });
 
+  it("shows only verified editor shortcuts in the compact reference", () => {
+    render(<PreviewPanel entry={createEntry()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Keyboard shortcuts" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Keyboard shortcuts" });
+    expect(dialog).toHaveTextContent("Find");
+    expect(dialog).toHaveTextContent("Cmd/Ctrl+F");
+    expect(dialog).toHaveTextContent("Find with replace focus");
+    expect(dialog).toHaveTextContent("Cmd/Ctrl+Alt/Option+F");
+    expect(dialog).toHaveTextContent("Bold");
+    expect(dialog).toHaveTextContent("Cmd/Ctrl+B");
+    expect(dialog).toHaveTextContent("Italic");
+    expect(dialog).toHaveTextContent("Cmd/Ctrl+I");
+    expect(dialog).toHaveTextContent("Link");
+    expect(dialog).toHaveTextContent("Cmd/Ctrl+K");
+    expect(dialog).toHaveTextContent("Ordered list");
+    expect(dialog).toHaveTextContent("Cmd/Ctrl+Shift+7");
+    expect(dialog).toHaveTextContent("Bulleted list");
+    expect(dialog).toHaveTextContent("Cmd/Ctrl+Shift+8");
+    expect(dialog).toHaveTextContent("Task list");
+    expect(dialog).toHaveTextContent("Cmd/Ctrl+Shift+9");
+    expect(dialog).toHaveTextContent("Close find or menu");
+    expect(dialog).toHaveTextContent("Escape");
+    expect(dialog).not.toHaveTextContent("Save document");
+    expect(dialog).not.toHaveTextContent("Mode switch");
+  });
+
+  it("adds Save to the shortcut reference only when the shell exposes a save shortcut", () => {
+    render(
+      <PreviewPanel
+        entry={createEntry()}
+        onSave={() => undefined}
+        saveKeyShortcuts="Meta+S"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Keyboard shortcuts" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Keyboard shortcuts" });
+    expect(dialog).toHaveTextContent("Save document");
+    expect(dialog).toHaveTextContent("Cmd+S");
+  });
+
+  it("closes the shortcut reference on Escape and returns focus", async () => {
+    render(<PreviewPanel entry={createEntry()} />);
+
+    const button = screen.getByRole("button", { name: "Keyboard shortcuts" });
+    fireEvent.click(button);
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("dialog", { name: "Keyboard shortcuts" }),
+      ).not.toBeInTheDocument();
+      expect(button).toHaveFocus();
+    });
+  });
+
   it("renders toggle buttons when entry is warning with markdown", () => {
     render(
       <PreviewPanel

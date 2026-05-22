@@ -56,6 +56,40 @@ test("Cmd-K inserts a link skeleton at the caret", async ({ page }) => {
   await expect(editor).toHaveValue("hi[](url)");
 });
 
+test("shortcut reference is reachable and dismisses with Escape", async ({ page }) => {
+  await openScratchEditor(page);
+  const shortcuts = page.getByRole("button", { name: "Keyboard shortcuts" });
+
+  await shortcuts.click();
+
+  const dialog = page.getByRole("dialog", { name: "Keyboard shortcuts" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("Find");
+  await expect(dialog).toContainText("Cmd/Ctrl+F");
+  await expect(dialog).toContainText("Find with replace focus");
+  await expect(dialog).toContainText("Cmd/Ctrl+Alt/Option+F");
+  await expect(dialog).toContainText("Bold");
+  await expect(dialog).toContainText("Cmd/Ctrl+B");
+  await expect(dialog).toContainText("Italic");
+  await expect(dialog).toContainText("Cmd/Ctrl+I");
+  await expect(dialog).toContainText("Link");
+  await expect(dialog).toContainText("Cmd/Ctrl+K");
+  await expect(dialog).toContainText("Ordered list");
+  await expect(dialog).toContainText("Cmd/Ctrl+Shift+7");
+  await expect(dialog).toContainText("Bulleted list");
+  await expect(dialog).toContainText("Cmd/Ctrl+Shift+8");
+  await expect(dialog).toContainText("Task list");
+  await expect(dialog).toContainText("Cmd/Ctrl+Shift+9");
+  await expect(dialog).toContainText("Close find or menu");
+  await expect(dialog).toContainText("Escape");
+  await expect(dialog).not.toContainText("Save document");
+
+  await page.keyboard.press("Escape");
+
+  await expect(dialog).toBeHidden();
+  await expect(shortcuts).toBeFocused();
+});
+
 test("Cmd-Shift-8 toggles an unordered list across selected lines", async ({ page }) => {
   await openScratchEditor(page);
   const editor = page.getByLabel("Edit markdown");
@@ -64,4 +98,24 @@ test("Cmd-Shift-8 toggles an unordered list across selected lines", async ({ pag
   const isMac = process.platform === "darwin";
   await page.keyboard.press(isMac ? "Meta+Shift+8" : "Control+Shift+8");
   await expect(editor).toHaveValue("- alpha\n- beta\n- gamma");
+});
+
+test("Cmd-Shift-7 toggles an ordered list across selected lines", async ({ page }) => {
+  await openScratchEditor(page);
+  const editor = page.getByLabel("Edit markdown");
+  await editor.fill("alpha\nbeta\ngamma");
+  await selectAll(page);
+  const isMac = process.platform === "darwin";
+  await page.keyboard.press(isMac ? "Meta+Shift+7" : "Control+Shift+7");
+  await expect(editor).toHaveValue("1. alpha\n2. beta\n3. gamma");
+});
+
+test("Cmd-Shift-9 toggles a task list across selected lines", async ({ page }) => {
+  await openScratchEditor(page);
+  const editor = page.getByLabel("Edit markdown");
+  await editor.fill("alpha\nbeta\ngamma");
+  await selectAll(page);
+  const isMac = process.platform === "darwin";
+  await page.keyboard.press(isMac ? "Meta+Shift+9" : "Control+Shift+9");
+  await expect(editor).toHaveValue("- [ ] alpha\n- [ ] beta\n- [ ] gamma");
 });

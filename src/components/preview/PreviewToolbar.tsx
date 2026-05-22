@@ -1,4 +1,5 @@
-import { FilePlus, Search } from "lucide-react";
+import { FilePlus, Keyboard, Search } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { SaveState } from "../../types/saveState";
 import SaveButton from "../SaveButton";
 import SaveStatePill from "../SaveStatePill";
@@ -23,6 +24,33 @@ interface PreviewToolbarProps {
   onCopy: () => void;
 }
 
+interface ShortcutRow {
+  label: string;
+  keys: string;
+}
+
+function shortcutRows(saveKeyShortcuts?: string): ShortcutRow[] {
+  const mod = "Cmd/Ctrl";
+  const shift = "Shift";
+  const rows: ShortcutRow[] = [
+    { label: "Find", keys: `${mod}+F` },
+    { label: "Find with replace focus", keys: `${mod}+Alt/Option+F` },
+    { label: "Bold", keys: `${mod}+B` },
+    { label: "Italic", keys: `${mod}+I` },
+    { label: "Link", keys: `${mod}+K` },
+    { label: "Ordered list", keys: `${mod}+${shift}+7` },
+    { label: "Bulleted list", keys: `${mod}+${shift}+8` },
+    { label: "Task list", keys: `${mod}+${shift}+9` },
+    { label: "Close find or menu", keys: "Escape" },
+  ];
+
+  if (saveKeyShortcuts) {
+    rows.unshift({ label: "Save document", keys: "Cmd+S" });
+  }
+
+  return rows;
+}
+
 export default function PreviewToolbar({
   toolbarRef,
   mode,
@@ -40,8 +68,49 @@ export default function PreviewToolbar({
   onOpenFind,
   onCopy,
 }: PreviewToolbarProps) {
+  const shortcutsPanelId = useId();
+  const shortcutsButtonRef = useRef<HTMLButtonElement | null>(null);
+  const shortcutsRef = useRef<HTMLDivElement | null>(null);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const rows = shortcutRows(saveKeyShortcuts);
+
+  useEffect(() => {
+    if (!isShortcutsOpen) {
+      return;
+    }
+
+    const handleMouseDown = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (
+        !shortcutsRef.current?.contains(target) &&
+        !shortcutsButtonRef.current?.contains(target)
+      ) {
+        setIsShortcutsOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setIsShortcutsOpen(false);
+        window.setTimeout(() => shortcutsButtonRef.current?.focus(), 0);
+      }
+    };
+
+    document.addEventListener("mousedown", handleMouseDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleMouseDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isShortcutsOpen]);
+
   if (!showToggle && !showCopyButton && !onSave) {
     return null;
+  }
+
+  function closeShortcuts() {
+    setIsShortcutsOpen(false);
+    window.setTimeout(() => shortcutsButtonRef.current?.focus(), 0);
   }
 
   return (
@@ -118,6 +187,47 @@ export default function PreviewToolbar({
             <Search className="find-entry-icon" aria-hidden="true" />
             <span className="find-entry-label">Find</span>
           </button>
+        ) : null}
+        {showToggle ? (
+          <div className="shortcut-reference-wrap">
+            <button
+              ref={shortcutsButtonRef}
+              type="button"
+              className="find-entry-button shortcut-reference-button"
+              onClick={() => setIsShortcutsOpen((isOpen) => !isOpen)}
+              aria-label="Keyboard shortcuts"
+              aria-expanded={isShortcutsOpen}
+              aria-controls={shortcutsPanelId}
+            >
+              <Keyboard className="find-entry-icon" aria-hidden="true" />
+              <span className="find-entry-label">Shortcuts</span>
+            </button>
+            {isShortcutsOpen ? (
+              <div
+                ref={shortcutsRef}
+                id={shortcutsPanelId}
+                className="shortcut-reference-popover"
+                role="dialog"
+                aria-label="Keyboard shortcuts"
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    closeShortcuts();
+                  }
+                }}
+              >
+                <dl className="shortcut-reference-list">
+                  {rows.map((row) => (
+                    <div className="shortcut-reference-row" key={row.label}>
+                      <dt>{row.label}</dt>
+                      <dd>{row.keys}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            ) : null}
+          </div>
         ) : null}
         {onSave ? (
           <div className="save-control-group">

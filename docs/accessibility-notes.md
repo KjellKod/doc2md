@@ -49,6 +49,18 @@ find/replace bar, save controls, or the upload/working-mode chrome.
   `isComposingRef` driven by `compositionstart`/`compositionend`. Auto-continue
   on Enter does NOT fire during composition.
 
+## Shortcut reference contract
+
+- The compact shortcut reference is discoverability for existing shortcuts, not
+  a command palette or settings surface.
+- It lists Save only when the active shell exposes a real save shortcut
+  (`Meta+S` in the Mac desktop shell today). Hosted browser Save remains a
+  button/download action with no claimed global shortcut.
+- It does not list mode-switch shortcuts because Edit, Preview, and LinkedIn
+  mode changes are button actions today.
+- It may list Escape only for existing close/dismiss behavior such as the
+  find/replace bar, desktop Recent menu, and the reference popover itself.
+
 ## Working-mode auto-collapse
 
 - The sidebar collapse and rail buttons retain their explicit `aria-label`
@@ -92,6 +104,10 @@ find/replace bar, save controls, or the upload/working-mode chrome.
 
 ## Out-of-scope (tracked in follow-up quests)
 
+- WCAG audit/certification matrices, Lighthouse accessibility targets,
+  screen-reader audits, broad focus-ring redesigns, command palettes, shortcut
+  remapping/settings, and aspirational shortcut lists are outside the Step 5
+  keyboard-discoverability contract.
 - Cross-browser Playwright coverage (only Chromium ships today). See
   `ideas/doc2md-multibrowser-playwright.md`.
 - True browser crash recovery (reload-surviving drafts). See
