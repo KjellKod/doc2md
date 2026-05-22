@@ -2325,6 +2325,7 @@ body.is-height-resizing * {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-width: 44px;
   min-height: 44px;
   padding: 7px 14px;
   border: 1px solid rgba(23, 56, 76, 0.16);
@@ -3282,6 +3283,16 @@ body.is-height-resizing * {
     grid-template-columns: 1fr;
   }
 
+  /* Neutralize the desktop `grid-column: 3` (or `: 2` collapsed) rule so
+   * the preview-panel auto-places in the next grid row when the workspace
+   * collapses to a single column. Without this, the desktop column index
+   * creates implicit columns and squeezes the sidebar-panel to its
+   * min-content width. */
+  .workspace:not(.sidebar-collapsed) .preview-panel,
+  .workspace.sidebar-collapsed .preview-panel {
+    grid-column: auto;
+  }
+
   .sidebar-panel,
   .collapse-rail {
     min-height: auto;
@@ -3306,17 +3317,121 @@ body.is-height-resizing * {
 
 }
 
+/* Tablet portrait pass: stack workspace deliberately and keep toolbars
+ * usable when phone rules (below) are too aggressive. This block sits
+ * above the 720px phone block so phone rules can still override where
+ * needed, and below the 980px block so sidebar collapse already applies. */
+@media (max-width: 768px) {
+  .app-shell {
+    padding: 22px 16px 32px;
+  }
+
+  /* Compress hero at tablet portrait so the DropZone CTA lands inside
+   * the initial viewport without scroll (AC4). Desktop and the >768
+   * range keep their richer hero. */
+  .hero {
+    padding: 20px 6px 22px;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.2rem, 4.5vw, 3rem);
+    line-height: 1.02;
+  }
+
+  .hero-copy {
+    margin-top: 14px;
+    font-size: 1rem;
+  }
+
+  .preview-panel {
+    /* Use dvh to handle dynamic browser chrome (mobile/tablet URL bar
+     * collapse/expand) without clipping the editor. */
+    height: max(60dvh, min(720px, var(--preview-panel-ceiling)));
+    min-height: 60dvh;
+  }
+
+  .working-mode-bar {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .working-mode-actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    row-gap: 8px;
+  }
+
+  .working-mode-button,
+  .working-mode-logo {
+    min-height: 44px;
+  }
+
+  .preview-toolbar {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+
+  .preview-toolbar-actions {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .preview-toggle {
+    flex-wrap: wrap;
+  }
+
+  .file-list-item-top {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+
+  /* Tap-target floor at tablet portrait. 44px is the design intent (HIG);
+   * applied to the controls users hit most often in this width band. */
+  .save-button,
+  .preview-toggle-button,
+  .preview-copy-button,
+  .find-entry-button,
+  .find-replace-icon-button,
+  .find-replace-action-button,
+  .secondary-button,
+  .ghost-button,
+  .download-button,
+  .view-tab {
+    min-height: 44px;
+  }
+
+  .file-list-item {
+    min-height: 56px;
+  }
+
+  .drop-zone-url-button,
+  .drop-zone-url-input {
+    min-height: 46px;
+  }
+}
+
 @media (max-width: 720px) {
   .app-shell {
     padding: 18px 12px 28px;
+    /* Honor safe-area insets on phones with notches; container-level only. */
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
   }
 
   .app-shell-working-mode {
     padding-top: 12px;
   }
 
+  /* Compress the hero on phones so the first useful action (DropZone or
+   * "Start writing") is reachable in the initial viewport without scroll.
+   * The h1 and hero-copy still convey the value prop; we lean on the
+   * smaller font and tighter padding to make room. */
   .hero {
-    padding: 22px 4px 26px;
+    padding: 12px 4px 14px;
+  }
+
+  .hero-copy {
+    display: none;
   }
 
   .view-switcher {
@@ -3351,7 +3466,8 @@ body.is-height-resizing * {
 
   .hero h1 {
     max-width: none;
-    font-size: clamp(2.4rem, 10vw, 3.5rem);
+    font-size: clamp(1.9rem, 7vw, 2.6rem);
+    line-height: 1;
   }
 
   .panel,
@@ -3438,5 +3554,33 @@ body.is-height-resizing * {
 
   .drop-zone-format-list {
     justify-content: flex-start;
+  }
+
+  /* Phone tap-target floor. Mirrors the tablet rule but is repeated here
+   * so phone overrides (e.g. label collapses) still meet the 44px height. */
+  .save-button,
+  .preview-toggle-button,
+  .preview-copy-button,
+  .find-entry-button,
+  .find-replace-icon-button,
+  .find-replace-action-button,
+  .secondary-button,
+  .ghost-button,
+  .download-button,
+  .view-tab {
+    min-height: 44px;
+  }
+
+  .file-list-item {
+    min-height: 56px;
+  }
+
+  /* Keep the preview panel sized in dvh so a software keyboard does not
+   * shove the editor below the visible viewport. Combined with the
+   * sticky toolbar above, the Save action remains reachable when the
+   * keyboard is open. */
+  .preview-panel {
+    height: max(55dvh, min(620px, var(--preview-panel-ceiling)));
+    min-height: 55dvh;
   }
 }

@@ -100,6 +100,10 @@ async function expectNoOverlap(first: Locator, second: Locator) {
   expect(overlaps).toBe(false);
 }
 
+function expectWithinTolerance(actual: number, expected: number, tolerancePx = 2) {
+  expect(Math.abs(actual - expected)).toBeLessThanOrEqual(tolerancePx);
+}
+
 test("loads hosted app regions and empty states", async ({ page }) => {
   await openHostedApp(page);
 
@@ -287,6 +291,52 @@ test("keeps the file sidebar usable at a narrow viewport", async ({ page }) => {
   });
   await expectNoOverlap(longCheckbox, longRow);
   await expectNoHorizontalOverflow(page);
+});
+
+test("keeps desktop working-mode layout characterized at 1280 and 1440", async ({
+  page,
+}) => {
+  // AC5 regression shield: step-1 desktop geometry characterization.
+  // The hosted shell keeps 20px page padding on each side, sidebar width
+  // 380px, and an 8px split gutter at these widths.
+  for (const viewport of [
+    { width: 1280, height: 800 },
+    { width: 1440, height: 900 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await openHostedApp(page);
+    await uploadMarkdownFiles(page, [
+      {
+        name: "desktop-characterization.md",
+        body: "# Desktop characterization\n\nWidth regression anchor.",
+      },
+    ]);
+
+    const sidebar = page.locator(".sidebar-panel");
+    const preview = page.locator(".preview-panel");
+    const [sidebarBox, previewBox] = await Promise.all([
+      sidebar.boundingBox(),
+      preview.boundingBox(),
+    ]);
+
+    expect(sidebarBox).not.toBeNull();
+    expect(previewBox).not.toBeNull();
+    const expectedWorkspaceWidth = viewport.width - 40;
+    const expectedSidebarWidth = 380;
+    const expectedGutterWidth = 8;
+    const expectedPreviewWidth =
+      expectedWorkspaceWidth - expectedSidebarWidth - expectedGutterWidth;
+
+    // Two-column layout and tight desktop geometry characterization.
+    expect(previewBox!.x).toBeGreaterThan(sidebarBox!.x + sidebarBox!.width - 1);
+    expectWithinTolerance(sidebarBox!.width, expectedSidebarWidth);
+    expectWithinTolerance(
+      previewBox!.x - (sidebarBox!.x + sidebarBox!.width),
+      expectedGutterWidth,
+    );
+    expectWithinTolerance(previewBox!.width, expectedPreviewWidth);
+    await expectNoHorizontalOverflow(page);
+  }
 });
 
 test("keeps the LinkedIn tooltip inside a narrow viewport", async ({ page }) => {
