@@ -27,6 +27,8 @@ This follows `docs/ideas-audit-2026-05-14.md`:
 - `need`: should ship soon because it improves a real current workflow or removes current confusion.
 - `if-needed`: valuable, but wait for a concrete trigger or a larger positioning decision.
 - `yagni`: do not ship unless we explicitly walk back the rationale.
+- `shipped`: implemented and kept here as roadmap history; do not schedule as
+  active work unless a regression or new trigger reopens it.
 
 Surfaces:
 
@@ -44,9 +46,9 @@ Every item must explicitly mark Hosted, Mac, and Core as `yes`, `if needed`, `no
 | Theme parity audit | yes | yes | n/a | `need` | Theme support exists, but the product needs a deliberate light/dark pass across editor, preview, highlights, errors, empty states, menus, and disabled states. |
 | Mobile and tablet layout pass | yes | n/a | n/a | `need` | Hosted web is a browser product. Phone and tablet layouts should not be incidental desktop collapse behavior. |
 | Performance perception pass | yes | yes | yes | `need` | Conversion, search, paste, batch output, and remote fetch all need visible, honest progress or bounded waiting. |
-| Onboarding clarity | yes | yes | yes | `need` | First-run copy should make the user's next action obvious without restating the architecture. |
-| Empty-state copy pass | yes | yes | yes | `need` | Empty states are the first onboarding screen. They should name the action that fills them. |
-| Error-state copy pass | yes | yes | yes | `need` | Errors should say what happened, why if known, and what the user can do next. |
+| Onboarding clarity | yes | yes | yes | `shipped` | Completed in PR #144; first-run copy now makes the user's next action obvious without restating the architecture. |
+| Empty-state copy pass | yes | yes | yes | `shipped` | Completed in PR #144; empty states now name the action that fills them. |
+| Error-state copy pass | yes | yes | yes | `shipped` | Completed in PR #144; errors now say what happened, why if known, and what the user can do next. |
 | Copy-paste UX loop | yes | yes | if needed | `need` Hosted/Mac, `if-needed` Core | Paste-to-Markdown has shipped; now the product should make paste, copy Markdown, and copy LinkedIn feel intentional and discoverable. Core remains if-needed until a concrete CLI/script paste workflow exists. |
 | Keyboard discoverability | yes | yes | n/a | `need` | Enough real shortcuts now exist to justify a compact reference. No command palette. |
 | Lightweight a11y audit | yes | yes | docs only | `need` | Phase 6f can be revived now as a focused audit against the existing accessibility contract. |
@@ -618,17 +620,25 @@ Already settled before execution:
 - sketch2md cross-product discovery is deferred until sketch2md has launched.
   Do not add links, analytics, CSS, or React UI for it in the current execution
   sequence.
+- Step 4, onboarding/empty/error-state copy, is complete in PR #144. Do not
+  schedule it again unless a regression or new copy surface reopens the need.
+- Step 4 validation surfaced two pre-existing Fast Refresh lint warnings in
+  `src/shell/desktopAdapter.tsx` for `DesktopMenuBridge` and
+  `DesktopMenuEventBridge` living in the adapter module. They are non-blocking
+  for production behavior and should be handled as a small desktop-shell cleanup
+  by moving those bridge components into a component-only module when the
+  desktop shell is next touched.
 
 | Step | Scope | Tool path | Order | Parallel rule | Kjell validation |
 |---:|---|---|---|---|---|
 | 0 | Open the multi-PR objective and confirm current idea status | `/goal` | First | Must run first | Confirm the roadmap order still matches priority. |
 | 1 | Workspace real-estate and working-area density | `quest:workflow` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | Sequential backbone | Do not run other layout/theme/mobile UI PRs in parallel. | Compare 1280x800 and 1440x900 working-mode screenshots; editor/preview content should visibly own more of the viewport without hiding primary controls. |
 | 2 | Theme parity audit plus custom tooltip cleanup | `quest:solo` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After step 1 | Do not overlap with mobile layout unless write scopes are explicitly split. | Inspect light/dark editor, preview, errors, disabled states, and tooltip hints. |
-| 3 | Mobile and tablet layout pass | `quest:workflow` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After step 1; preferably after step 2 | Do not overlap with step 1. Can overlap with copy-only step 4 in separate worktrees. | Inspect hosted app at 375px and 768px; controls should fit, touch targets should be usable, no text overlap. |
-| 4 | Onboarding, empty-state, and error-state copy pass | `just do it` or `quest:solo` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After step 1 | Can run in parallel with step 3 or 5 if it stays to copy/tests. | Read first-run, empty, and failure states; each should name the next useful action without adding architecture lectures. |
-| 5 | Keyboard discoverability plus lightweight a11y audit | `quest:solo` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After step 1 | Can run in parallel with step 4. Avoid parallel edits to the same toolbar/menu files as step 2. | Use keyboard-only navigation and the shortcut reference; focus, labels, and shortcut claims should match real controls. |
-| 6 | Performance perception pass | `quest:workflow` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After copy language in step 4 | Sequential with copy-paste polish if both touch status messaging. | Convert, search, paste, and batch output should show honest progress or bounded wait states. |
-| 7 | Copy-paste UX loop polish | `quest:solo` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After steps 1 and 4 | Can run after performance pass or in parallel only if write scopes avoid status/progress components. | Paste Markdown/HTML, copy Markdown, and copy LinkedIn output; actions should be discoverable and not add excess chrome. |
+| 3 | Mobile and tablet layout pass | `quest:workflow` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After step 1; preferably after step 2 | Do not overlap with step 1. | Inspect hosted app at 375px and 768px; controls should fit, touch targets should be usable, no text overlap. |
+| 4 | Onboarding, empty-state, and error-state copy pass | Complete in PR #144 | Done | Do not rerun unless reopened by regression or a new copy surface. | Read first-run, empty, and failure states; each should name the next useful action without adding architecture lectures. |
+| 5 | Keyboard discoverability plus lightweight a11y audit | `quest:solo` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After step 1 | Avoid parallel edits to the same toolbar/menu files as step 2. | Use keyboard-only navigation and the shortcut reference; focus, labels, and shortcut claims should match real controls. |
+| 6 | Performance perception pass | `quest:workflow` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After PR #144 copy language | Sequential with copy-paste polish if both touch status messaging. | Convert, search, paste, and batch output should show honest progress or bounded wait states. |
+| 7 | Copy-paste UX loop polish | `quest:solo` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After step 1 and PR #144 | Can run after performance pass or in parallel only if write scopes avoid status/progress components. | Paste Markdown/HTML, copy Markdown, and copy LinkedIn output; actions should be discoverable and not add excess chrome. |
 | 8 | Revisit `if-needed` items: folder view, browser crash recovery, scratch-buffer preservation, Mac file watchers, system theme follow, sketch2md cross-product discovery | `quest:workflow` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | Only after a trigger lands | Not part of the default parallel pool. Treat each as its own proposal. | Validate against the trigger that revived the item, not against speculative acceptance. |
 
 ### Prompt pack
@@ -687,20 +697,10 @@ Scope: improve hosted app behavior at 375px and 768px without changing Core, Mac
 Validation required before PR: run relevant unit/component tests plus Playwright or browser screenshots at 375px and 768px in light/dark where touched. Use pr-assist to create a draft PR with a Kjell validation checkbox for phone/tablet screenshots, then run pr-shepherd until clean and ready.
 ```
 
-#### Step 4 prompt
+#### Step 4
 
-```text
-just do it
-Implement doc2md UX transformation step 4: onboarding, empty-state, and error-state copy pass.
-
-Read ideas/ux-transformation.md sections "Onboarding clarity", "Empty-state copy pass", "Error-state copy pass", and "Execution roadmap". Start from current main on a fresh branch named like ux/state-copy-<branch-suffix>.
-
-Trust mode: do not ask Kjell to approve a plan. Keep edits narrow and ask Kjell only to validate the PR result.
-
-Scope: improve copy so first-run, empty, and failure states say what happened and what the user can do next. Do not add new product surfaces, architecture explanations, modals, or visual redesign. Update tests only where copy assertions change.
-
-Validation required before PR: run relevant tests and inspect touched states locally. Use pr-assist to create a draft PR with a Kjell validation checkbox asking him to read the changed states for clarity, then run pr-shepherd until clean and ready.
-```
+Completed in PR #144. Do not rerun this prompt as active roadmap work unless a
+regression or new copy surface reopens the need.
 
 #### Step 5 prompt
 
