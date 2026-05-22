@@ -1128,6 +1128,18 @@ describe("App desktop bridge", () => {
     );
     expect(screen.getAllByText("Untitled.md").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Saved").length).toBeGreaterThan(0);
+    const shellTitle = document.querySelector(".desktop-shell-title");
+    expect(shellTitle).toHaveTextContent("Untitled.md");
+    expect(shellTitle).not.toHaveAttribute("title");
+    const tooltipId = shellTitle?.getAttribute("aria-describedby");
+    expect(tooltipId).toBeTruthy();
+    expect(document.getElementById(tooltipId ?? "")).toHaveAttribute(
+      "role",
+      "tooltip",
+    );
+    expect(document.getElementById(tooltipId ?? "")).toHaveTextContent(
+      "Untitled.md",
+    );
 
     cleanupShell();
   });
@@ -1150,7 +1162,14 @@ describe("App desktop bridge", () => {
 
     render(<DesktopApp />);
 
-    fireEvent.click(await screen.findByRole("button", { name: "Desktop settings" }));
+    const settingsButton = await screen.findByRole("button", {
+      name: "Desktop settings",
+    });
+    expect(settingsButton).toHaveAttribute("aria-describedby");
+
+    fireEvent.click(settingsButton);
+    expect(settingsButton).not.toHaveAttribute("aria-describedby");
+    expect(within(settingsButton).queryByRole("tooltip")).not.toBeInTheDocument();
 
     const settingsDialog = screen.getByRole("dialog", { name: "Desktop settings" });
     expect(settingsDialog.closest(".hero")).toHaveClass("hero--settings-open");
@@ -1330,8 +1349,17 @@ describe("App desktop bridge", () => {
       name: /Recent\.md/,
     });
     await waitFor(() => expect(recentButton).toHaveClass("is-unavailable"));
-    expect(recentButton).toHaveAttribute(
-      "title",
+    expect(recentButton).not.toHaveAttribute("title");
+    const tooltipId = recentButton.getAttribute("aria-describedby");
+    expect(tooltipId).toBeTruthy();
+    expect(document.getElementById(tooltipId ?? "")).toHaveAttribute(
+      "role",
+      "tooltip",
+    );
+    expect(document.getElementById(tooltipId ?? "")).toHaveClass(
+      "recent-file-tooltip",
+    );
+    expect(document.getElementById(tooltipId ?? "")).toHaveTextContent(
       "Not available. Click to retry opening this file.",
     );
 

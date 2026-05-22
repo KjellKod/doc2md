@@ -123,8 +123,17 @@ describe("WorkingModeBar", () => {
     const beta = screen.getByRole("menuitem", { name: /Beta\.md/ });
 
     expect(beta).toHaveClass("is-unavailable");
-    expect(beta).toHaveAttribute(
-      "title",
+    expect(beta).not.toHaveAttribute("title");
+    const tooltipId = beta.getAttribute("aria-describedby");
+    expect(tooltipId).toBeTruthy();
+    expect(document.getElementById(tooltipId ?? "")).toHaveAttribute(
+      "role",
+      "tooltip",
+    );
+    expect(document.getElementById(tooltipId ?? "")).toHaveClass(
+      "recent-file-tooltip",
+    );
+    expect(document.getElementById(tooltipId ?? "")).toHaveTextContent(
       "Not available. Click to retry opening this file.",
     );
 

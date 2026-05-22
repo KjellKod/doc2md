@@ -31,6 +31,7 @@ export default function WorkingModeBar({
   onOpenRecentFile,
 }: WorkingModeBarProps) {
   const menuId = useId();
+  const homeTooltipId = useId();
   const rootRef = useRef<HTMLDivElement | null>(null);
   const openButtonRef = useRef<HTMLButtonElement | null>(null);
   const menuItemRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -150,19 +151,28 @@ export default function WorkingModeBar({
 
   return (
     <div ref={rootRef} className={`working-mode-bar working-mode-bar-${variant}`}>
-      <button
-        type="button"
-        className="working-mode-logo"
-        aria-label="Show intro and return to landing"
-        title="Show intro and return to landing"
-        onClick={handleHome}
-      >
-        <span className="working-mode-wordmark">
-          <span className="working-mode-brand">doc2md</span>
-          <span className="working-mode-wordmark-sep" aria-hidden="true"> - </span>
-          <span className="working-mode-tagline">PRIVATE MARKDOWN WORKSPACE</span>
+      <span className="working-mode-logo-tooltip-wrap instant-tooltip-anchor">
+        <button
+          type="button"
+          className="working-mode-logo"
+          aria-label="Show intro and return to landing"
+          aria-describedby={homeTooltipId}
+          onClick={handleHome}
+        >
+          <span className="working-mode-wordmark">
+            <span className="working-mode-brand">doc2md</span>
+            <span className="working-mode-wordmark-sep" aria-hidden="true"> - </span>
+            <span className="working-mode-tagline">PRIVATE MARKDOWN WORKSPACE</span>
+          </span>
+        </button>
+        <span
+          id={homeTooltipId}
+          role="tooltip"
+          className="instant-tooltip instant-tooltip--left"
+        >
+          Show intro and return to landing
         </span>
-      </button>
+      </span>
 
       <div className="working-mode-actions">
         <div className="working-mode-open-group">
@@ -201,6 +211,10 @@ export default function WorkingModeBar({
               </button>
               {recentFiles.map((file, index) => {
                 const isUnavailable = unavailableRecentPaths.has(file.path);
+                const tooltipId = `${menuId}-recent-${index}-tooltip`;
+                const tooltipText = isUnavailable
+                  ? "Not available. Click to retry opening this file."
+                  : `Open ${file.path}`;
                 return (
                   <button
                     key={file.path}
@@ -209,14 +223,11 @@ export default function WorkingModeBar({
                     }}
                     type="button"
                     role="menuitem"
-                    className={`working-mode-recent-item${
+                    className={`working-mode-recent-item instant-tooltip-anchor${
                       isUnavailable ? " is-unavailable" : ""
                     }`}
-                    title={
-                      isUnavailable
-                        ? "Not available. Click to retry opening this file."
-                        : file.path
-                    }
+                    aria-label={`Open ${file.displayName}`}
+                    aria-describedby={tooltipId}
                     onClick={() =>
                       runAndClose(() => onOpenRecentFile?.(file.path))
                     }
@@ -232,6 +243,13 @@ export default function WorkingModeBar({
                       {file.displayName}
                     </span>
                     <span className="working-mode-recent-path">{file.path}</span>
+                    <span
+                      id={tooltipId}
+                      role="tooltip"
+                      className="instant-tooltip instant-tooltip--menu recent-file-tooltip"
+                    >
+                      {tooltipText}
+                    </span>
                   </button>
                 );
               })}
