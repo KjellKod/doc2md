@@ -1,0 +1,39 @@
+src/__tests__/App.desktop.test.tsx
+  s_f0aa1604c67d90::t_f1210eecf39406 1333-1340
+src/components/WorkingModeBar.tsx
+  s_f0aa1604c67d90::t_cef4927b251cbf 217
+  s_f0aa1604c67d90::t_51c5bef39f5cca 154-167,175
+  s_f0aa1604c67d90::t_9590f44287d9ba 34,168-173,214-216,226,229-230,246-252
+src/shell/AppShell.tsx
+  s_f0aa1604c67d90::t_79cb52dc30e72d 29,251-255,319,326,332-340,434,437,444-450,469,472,478-484
+  s_f0aa1604c67d90::t_c725556b1d0c68 508-529,556-577
+src/shell/desktopAdapter.tsx
+  s_f0aa1604c67d90::t_145bca03bc824e 2261
+  s_f0aa1604c67d90::t_6ac56a6a9a31b2 2213
+  s_f0aa1604c67d90::t_19d11a00a8fdeb 2413
+  s_f0aa1604c67d90::t_ba5a317459dcf7 2191,2202,2206,2210-2212,2214-2216,2256,2258-2260,2266,2269-2270,2301-2307,2433-2441,2445-2446,2451,2455,2458-2464
+src/components/WorkingModeBar.test.tsx
+  s_f0aa1604c67d90::t_03f9d6b51b37b5 126-133
+src/styles/global.css
+  s_f0aa1604c67d90::t_8ab64215a03240 1232-1238,1240-1259
+  s_f0aa1604c67d90::t_c5747d0558bdd5 113-140,142-177
+  s_f0aa1604c67d90::t_5aacd0fc69889f 414-419
+  s_f0aa1604c67d90::t_d9c312a8c4d9cc 1239
+  s_f0aa1604c67d90::t_00ec1bd4017e7d 141
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "db7c4b44c0c4a907b1c6d0bdec5f300ad9a92690",
+  "prompts": {},
+  "sessions": {
+    "s_f0aa1604c67d90": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e4da6-88fb-7cf3-b0a0-059bf0016d90",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
