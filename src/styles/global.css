@@ -423,10 +423,6 @@ button.eyebrow.eyebrow-toggle {
   height: 16px;
 }
 
-.working-mode-crosslink {
-  text-decoration: none;
-}
-
 .working-mode-trailing-controls {
   display: inline-flex;
   align-items: center;

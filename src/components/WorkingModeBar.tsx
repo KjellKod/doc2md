@@ -1,12 +1,10 @@
-import { FilePlus, FolderOpen, PencilRuler } from "lucide-react";
+import { FilePlus, FolderOpen } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import type {
   KeyboardEvent,
   MouseEvent as ReactMouseEvent,
   ReactNode,
 } from "react";
-import { trackCrosslinkClick } from "../lib/crosslinkAnalytics";
-import { SKETCH2MD_URL } from "../lib/crosslinks";
 import type { DesktopRecentFile } from "../types/doc2mdShell";
 
 export type WorkingModeBarVariant = "browser" | "desktop";
@@ -146,14 +144,6 @@ export default function WorkingModeBar({
     onNew();
   };
 
-  const handleSketchLinkClick = () => {
-    trackCrosslinkClick({
-      source_product: "doc2md",
-      source_surface: "working_mode_bar",
-      target_product: "sketch2md",
-    });
-  };
-
   const stopMenuMouseDown = (event: ReactMouseEvent) => {
     event.stopPropagation();
   };
@@ -257,16 +247,6 @@ export default function WorkingModeBar({
           <FilePlus className="working-mode-button-icon" aria-hidden="true" />
           <span>New</span>
         </button>
-        <a
-          href={SKETCH2MD_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="secondary-button working-mode-button working-mode-crosslink"
-          onClick={handleSketchLinkClick}
-        >
-          <PencilRuler className="working-mode-button-icon" aria-hidden="true" />
-          <span>Sketch a UI →</span>
-        </a>
         {trailingControls ? (
           <div className="working-mode-trailing-controls">
             {trailingControls}

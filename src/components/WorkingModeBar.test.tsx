@@ -89,17 +89,6 @@ describe("WorkingModeBar", () => {
       "New",
       "Theme",
     ]);
-    expect(screen.getByRole("link", { name: "Sketch a UI →" })).toBeInTheDocument();
-  });
-
-  it("renders the sketch2md cross-product link", () => {
-    renderBar();
-
-    const link = screen.getByRole("link", { name: "Sketch a UI →" });
-
-    expect(link).toHaveAttribute("href", "https://sketch2md.dev/");
-    expect(link).toHaveAttribute("target", "_blank");
-    expect(link).toHaveAttribute("rel", "noopener noreferrer");
   });
 
   it("opens desktop recent menu with aria-expanded", () => {
