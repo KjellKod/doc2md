@@ -129,11 +129,10 @@ export type WorkspaceResizeResult = {
   handleHeightResizeReset: () => void;
   /**
    * Notifies the hook that the user opened a non-scratch entry for the first
-   * time. The hook fires the one-shot auto-collapse if the layout is desktop
-   * width and the user has not yet expressed a sidebar preference. Calling
-   * adapters wire this from their post-commit "non-scratch selectedEntry"
-   * effect; the hook tracks the one-shot guard and the "user touched sidebar"
-   * preference internally.
+   * time. The hook fires the one-shot auto-collapse if the user has not yet
+   * expressed a sidebar preference. Calling adapters wire this from their
+   * post-commit "non-scratch selectedEntry" effect; the hook tracks the
+   * one-shot guard and the "user touched sidebar" preference internally.
    */
   triggerFirstOpenAutoCollapse: (selectedEntryIsScratch: boolean) => void;
 };
@@ -592,15 +591,6 @@ export function useWorkspaceResize(): WorkspaceResizeResult {
       if (sidebarCollapsed) {
         return;
       }
-      if (
-        typeof window !== "undefined" &&
-        typeof window.matchMedia === "function"
-      ) {
-        if (window.matchMedia("(max-width: 980px)").matches) {
-          return;
-        }
-      }
-
       firstAutoCollapseFiredRef.current = true;
       restoreSidebarWidthRef.current =
         sidebarWidth ?? measureSidebarWidth() ?? DEFAULT_SIDEBAR_WIDTH;

@@ -3298,6 +3298,35 @@ body.is-height-resizing * {
     min-height: auto;
   }
 
+  .page.is-working-mode .collapse-rail {
+    padding: 0;
+    border-radius: 14px;
+  }
+
+  .collapse-rail-button {
+    flex-direction: row;
+    min-height: 44px;
+    padding: 10px 14px;
+  }
+
+  .collapse-rail-label {
+    writing-mode: horizontal-tb;
+    transform: none;
+  }
+
+  .collapse-rail-tooltip {
+    top: calc(100% + 8px);
+    right: auto;
+    left: 50%;
+    transform: translate(-50%, -4px);
+  }
+
+  .instant-tooltip-anchor:hover > .collapse-rail-tooltip,
+  .instant-tooltip-anchor:focus-visible > .collapse-rail-tooltip,
+  .instant-tooltip-anchor:focus-within > .collapse-rail-tooltip {
+    transform: translate(-50%, 0);
+  }
+
   .sidebar-panel,
   .preview-panel {
     min-width: 0;

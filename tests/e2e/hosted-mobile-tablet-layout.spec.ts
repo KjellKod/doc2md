@@ -44,7 +44,12 @@ async function expectTapTargetFloor(locator: Locator) {
   expect(box!.width).toBeGreaterThanOrEqual(TAP_FLOOR_PX);
 }
 
-async function uploadMarkdownFile(page: Page, name: string, body: string) {
+async function uploadMarkdownFile(
+  page: Page,
+  name: string,
+  body: string,
+  options: { expandUploadPanel?: boolean } = {},
+) {
   const fileChooserPromise = page.waitForEvent("filechooser");
   await page
     .getByRole("button", { name: "browse from your device", exact: true })
@@ -53,15 +58,17 @@ async function uploadMarkdownFile(page: Page, name: string, body: string) {
   await fileChooser.setFiles([
     { name, mimeType: "text/markdown", buffer: Buffer.from(body) },
   ]);
-  // First upload auto-collapses upload panel on desktop. At narrow widths
-  // the collapse logic short-circuits, so this re-expand is a no-op then.
+  // First upload auto-collapses the upload panel. Tests that need file-list
+  // controls can opt back into the expanded state explicitly.
   const showUpload = page.getByRole("button", { name: "Show upload panel" });
-  if (await showUpload.isVisible().catch(() => false)) {
+  if (options.expandUploadPanel && (await showUpload.isVisible().catch(() => false))) {
     await showUpload.click();
   }
-  await expect(
-    page.getByRole("button", { name: `Open ${name}` }),
-  ).toBeVisible();
+  if (options.expandUploadPanel) {
+    await expect(
+      page.getByRole("button", { name: `Open ${name}` }),
+    ).toBeVisible();
+  }
 }
 
 async function uploadInvalidPdf(page: Page, name: string) {
@@ -140,6 +147,10 @@ test.describe("hosted mobile and tablet layout", () => {
       await page.setViewportSize(viewport);
       await openHostedApp(page);
       await uploadInvalidPdf(page, "broken.pdf");
+      const showUpload = page.getByRole("button", { name: "Show upload panel" });
+      if (await showUpload.isVisible().catch(() => false)) {
+        await showUpload.click();
+      }
 
       // Wait for the row's status indicator to settle into "error" so the
       // FileList row stops shifting before we interact with it.
@@ -179,6 +190,7 @@ test.describe("hosted mobile and tablet layout", () => {
       page,
       "tap-targets.md",
       "# Tap targets\n\nReady for measurement.",
+      { expandUploadPanel: true },
     );
 
     const saveButton = page.getByRole("button", { name: "Save document" });
@@ -259,6 +271,48 @@ test.describe("hosted mobile and tablet layout", () => {
 
       const saveButton = page.getByRole("button", { name: "Save document" });
       await expectInViewport(saveButton, page);
+      await expectNoHorizontalOverflow(page);
+    }
+  });
+
+  test("AC4 at 375px and 768px: loaded documents collapse upload chrome and keep preview real estate visible", async ({
+    page,
+  }) => {
+    for (const viewport of [PHONE, TABLET_PORTRAIT]) {
+      await page.setViewportSize(viewport);
+      await openHostedApp(page);
+      await uploadMarkdownFile(
+        page,
+        `loaded-${viewport.width}.md`,
+        `# Loaded ${viewport.width}\n\nThe uploaded document should own the first view.`,
+      );
+
+      await expect(page.locator(".workspace")).toHaveClass(
+        /sidebar-collapsed/,
+      );
+      await expect(
+        page.getByRole("button", { name: "Show upload panel" }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Hide upload panel" }),
+      ).toHaveCount(0);
+
+      const previewPanel = page.locator(".preview-panel");
+      await expectInViewport(previewPanel, page);
+      const previewBox = await previewPanel.boundingBox();
+      const viewportSize = page.viewportSize();
+      expect(previewBox).not.toBeNull();
+      expect(viewportSize).not.toBeNull();
+      expect(previewBox!.height).toBeGreaterThanOrEqual(
+        Math.floor(viewportSize!.height * 0.55),
+      );
+
+      await page.getByRole("button", { name: "Preview", exact: true }).click();
+      await expect(
+        page
+          .getByRole("region", { name: "Preview" })
+          .getByRole("heading", { name: `Loaded ${viewport.width}` }),
+      ).toBeVisible();
       await expectNoHorizontalOverflow(page);
     }
   });
