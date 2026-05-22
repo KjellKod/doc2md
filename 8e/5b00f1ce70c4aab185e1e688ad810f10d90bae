@@ -1,0 +1,21 @@
+src/styles/global.css
+  s_a789bcf39061ef::t_b39209f625fdb6 1641,1653,1662
+tests/e2e/hosted-browser-baseline.spec.ts
+  s_a789bcf39061ef::t_3ae936a9673754 289-315
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "8e5b00f1ce70c4aab185e1e688ad810f10d90bae",
+  "prompts": {},
+  "sessions": {
+    "s_a789bcf39061ef": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e4cd5-5c33-7242-8a8a-5ce2c4de6d6f",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
