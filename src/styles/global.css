@@ -1638,7 +1638,7 @@ body.is-height-resizing * {
 .preview-toggle-tooltip {
   position: absolute;
   top: calc(100% + 8px);
-  left: 50%;
+  right: 0;
   z-index: 1;
   max-width: min(18rem, calc(100vw - 32px));
   padding: 7px 10px;
@@ -1650,7 +1650,7 @@ body.is-height-resizing * {
   pointer-events: none;
   white-space: normal;
   opacity: 0;
-  transform: translate(-50%, -4px);
+  transform: translateY(-4px);
   transition:
     opacity 80ms ease,
     transform 80ms ease;
@@ -1659,7 +1659,7 @@ body.is-height-resizing * {
 .preview-toggle-with-tooltip:hover .preview-toggle-tooltip,
 .preview-toggle-with-tooltip:focus-within .preview-toggle-tooltip {
   opacity: 1;
-  transform: translate(-50%, 0);
+  transform: translateY(0);
 }
 
 .preview-actions {
