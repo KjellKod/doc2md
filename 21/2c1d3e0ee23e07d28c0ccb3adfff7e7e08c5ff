@@ -1,0 +1,46 @@
+ideas/mac-desktop-app-roadmap.md
+  s_59e999a6c2fdc2::t_bedd0901f41644 231,235,239-241,358
+scripts/validate-mac-local.sh
+  s_59e999a6c2fdc2::t_1a37fc5f0e77a5 1-303
+package.json
+  s_59e999a6c2fdc2::t_054fef059b638c 21
+  s_59e999a6c2fdc2::t_4610a6e5d337b0 22
+README.md
+  s_59e999a6c2fdc2::t_5ab4cabe8df6c4 34-64,67-68,70-78,141
+  s_59e999a6c2fdc2::t_379f7b355799d8 65-66,69
+docs/runbooks/release-mac-local.md
+  s_59e999a6c2fdc2::t_6670ed828aa5d7 18
+  s_59e999a6c2fdc2::t_bc724f51eec9c7 86-92
+  s_59e999a6c2fdc2::t_d15add721fc0d0 76,80-85,93-94
+docs/security/2026-05-12-ci-supply-chain-review.md
+  s_59e999a6c2fdc2::t_eb44b40f004d29 55,93,96
+  s_59e999a6c2fdc2::t_7ed7029767885e 154
+ideas/agentic-ci-scale-and-signal.md
+  s_59e999a6c2fdc2::t_7e6e4e2dbd37e9 62,65-67,202,204,206-208,210-212
+scripts/validate-local.sh
+  s_59e999a6c2fdc2::t_8d93f152492477 9,22-24,39-42
+  s_59e999a6c2fdc2::t_eb611b10d242d0 1-8,10-21,25-38,43-95
+.github/pull_request_template.md
+  s_59e999a6c2fdc2::t_1b5f4af5a42ecb 16-17,19-22,24-26,28
+  s_59e999a6c2fdc2::t_8125c2854a64fc 18,23,27
+apps/macos/README.md
+  s_59e999a6c2fdc2::t_e6114034a24b31 180-181
+  s_59e999a6c2fdc2::t_0b2f7397216a9e 174,177-179,182-184,310,313,316,426
+  s_59e999a6c2fdc2::t_39960e14e78d92 176,185-188,311-312,314,331
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "212c1d3e0ee23e07d28c0ccb3adfff7e7e08c5ff",
+  "prompts": {},
+  "sessions": {
+    "s_59e999a6c2fdc2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e5594-92dc-7303-ac19-6d610e372956",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
