@@ -1,0 +1,19 @@
+tests/e2e/working-mode-collapse.spec.ts
+  s_59e999a6c2fdc2::t_0be2cd031ab1db 53-56,60,64,79
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "123ace8b23d6a3f4ea2245a3114297eda3cbeada",
+  "prompts": {},
+  "sessions": {
+    "s_59e999a6c2fdc2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e5594-92dc-7303-ac19-6d610e372956",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
