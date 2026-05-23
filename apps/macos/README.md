@@ -171,7 +171,21 @@ The final output line is:
 Built: <absolute path to .build/mac/Build/Products/Release/doc2md.app>
 ```
 
-Every pull request against `main` runs this unsigned Release build on `macos-latest` through [`.github/workflows/mac-pr-check.yml`](../../.github/workflows/mac-pr-check.yml), so Mac regressions surface before merge.
+PR-time CI does not build the Mac app or DMG. The full local validation command runs the ordinary web/test/security checks and then runs Mac validation by default:
+
+```bash
+npm run validate:local
+```
+
+`npm run validate:local -- --signed` is equivalent and can be used when you want the command itself to state that signed Mac validation is required.
+
+Use `npm run validate:local -- --skip-mac` only when Mac validation is intentionally out of scope. Maintainers can run the Mac-only validation command directly when debugging desktop, DMG, signing/notarization, Sparkle, or desktop-specific release paths:
+
+```bash
+npm run validate:mac
+```
+
+The default validation command requires local Apple/Sparkle credentials and fails loudly when they are missing. Use `npm run validate:mac -- --unsigned-only` only for contributor machines or reduced smoke checks where signed/notarized validation is intentionally deferred to a maintainer.
 
 This is an unsigned local build. Signed, notarized, DMG-packaged release artifacts are produced by the protected Phase 5c release workflow.
 
@@ -293,7 +307,13 @@ Only the public key is committed. To rotate the key, generate a new Sparkle key 
 
 ## Local Signed Release (Maintainer Only)
 
-For end-to-end validation of the signing/notarization pipeline before tagging, maintainers can run [`scripts/release/release_mac_local.sh`](../../scripts/release/release_mac_local.sh). The full procedure, prerequisites, environment variables, and licensing constraints live in [`docs/runbooks/release-mac-local.md`](../../docs/runbooks/release-mac-local.md). Locally signed builds are for evaluation and debugging only; distribution requires using the protected release workflow below.
+For end-to-end validation of the Mac desktop pipeline before tagging or merging Mac-sensitive changes, maintainers should run the full local gate:
+
+```bash
+npm run validate:local
+```
+
+That command runs lint, typecheck, unit tests, production build, Playwright e2e, Python unit tests, workflow/security guard, and then the Mac validation wrapper. The Mac validation wrapper runs the unsigned app launch smoke, unsigned DMG mount test, DMG determinism check, Sparkle ZIP/appcast generation, and the signed/notarized local release path from [`scripts/release/release_mac_local.sh`](../../scripts/release/release_mac_local.sh). The full signing/notarization prerequisites, environment variables, and licensing constraints live in [`docs/runbooks/release-mac-local.md`](../../docs/runbooks/release-mac-local.md). Locally signed builds are for evaluation and debugging only; distribution requires using the protected release workflow below.
 
 ## Protected Release Workflow
 
@@ -308,7 +328,7 @@ Required `mac-release` Environment secrets:
 - `APPLE_NOTARY_API_ISSUER_ID`: App Store Connect issuer ID.
 - `SPARKLE_EDDSA_PRIVATE_KEY`: Sparkle EdDSA private key matching the committed `SUPublicEDKey`.
 
-Apple signing/notarization secrets and Sparkle signing secrets are intentionally consumed by separate workflow jobs. Normal PRs and forks use the unsigned [Mac PR check](../../.github/workflows/mac-pr-check.yml) and cannot access the release Environment.
+Apple signing/notarization secrets and Sparkle signing secrets are intentionally consumed by separate workflow jobs. Normal PRs and forks do not run cloud macOS build jobs; maintainers run local Mac validation before merge when a PR touches Mac-sensitive paths.
 
 Credential reuse guidance:
 
@@ -403,7 +423,7 @@ Use these checks for this phase:
 8. Open a supported non-Markdown source file, confirm it converts into Markdown, Save As to `.md`, and verify subsequent saves update only the chosen Markdown target.
 9. Serve `apps/macos/doc2mdTests/Fixtures/Sparkle/appcast.xml`, launch with `DOC2MD_SPARKLE_FEED_URL`, and confirm `Check for Updates...` detects the fixture update.
 10. Stop the fixture server, launch again, and confirm offline launch is not blocked by Sparkle.
-11. `npm run build:dmg` creates `.build/release/doc2md-<version>.dmg`; the package script reports the mandatory self-test passed for `doc2md.app`, the `/Applications` symlink, `.DS_Store`, `.background.png` byte equality, and signed-app preservation when signing is active.
+11. `npm run validate:local` passes on a maintainer Mac with Apple/Sparkle credentials. If credentials are intentionally unavailable, `npm run validate:local -- --unsigned-only` passes and the signed local validation remains pending for a maintainer.
 12. `test -f apps/macos/dmg/doc2md-dmg-background.png && test ! -e .build/mac/Build/Products/Release/doc2md.app/Contents/Resources/doc2md-dmg-background.png` passes after a Release build.
 
 If full Xcode is not available, record that the Mac app build and launch checks were not run. The command line tools package alone is not enough; `xcodebuild` must point at a full Xcode developer directory.

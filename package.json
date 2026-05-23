@@ -18,6 +18,8 @@
     "build:core": "npm run build --workspace=@doc2md/core",
     "build:mac": "bash scripts/build-mac-app.sh",
     "build:dmg": "bash scripts/build-mac-dmg.sh",
+    "validate:local": "bash scripts/validate-local.sh",
+    "validate:mac": "bash scripts/validate-mac-local.sh",
     "lint": "eslint .",
     "test": "vitest --exclude 'tests/e2e/**'",
     "test:e2e": "playwright test",
