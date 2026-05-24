@@ -59,15 +59,16 @@ async function uploadMarkdownFile(
     { name, mimeType: "text/markdown", buffer: Buffer.from(body) },
   ]);
   // First upload auto-collapses the upload panel. Tests that need file-list
-  // controls can opt back into the expanded state explicitly.
+  // controls can opt back into the expanded state explicitly once the collapse
+  // has completed.
   const showUpload = page.getByRole("button", { name: "Show upload panel" });
-  if (options.expandUploadPanel && (await showUpload.isVisible().catch(() => false))) {
-    await showUpload.click();
-  }
   if (options.expandUploadPanel) {
+    await expect(showUpload).toBeVisible({ timeout: 15_000 });
+    await showUpload.click();
+    await expect(page.getByRole("heading", { name: "Files" })).toBeVisible();
     await expect(
       page.getByRole("button", { name: `Open ${name}` }),
-    ).toBeVisible();
+    ).toHaveCount(1);
   }
 }
 

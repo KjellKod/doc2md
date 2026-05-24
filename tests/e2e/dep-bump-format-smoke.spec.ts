@@ -41,9 +41,9 @@ async function uploadFixture(
   // panel collapses into a rail, re-expand it so the file-list buttons
   // remain locatable. Mirrors tests/e2e/hosted-browser-baseline.spec.ts.
   const showUpload = page.getByRole("button", { name: "Show upload panel" });
-  if (await showUpload.isVisible().catch(() => false)) {
-    await showUpload.click();
-  }
+  await expect(showUpload).toBeVisible({ timeout: 15_000 });
+  await showUpload.click();
+  await expect(page.getByRole("heading", { name: "Files" })).toBeVisible();
   // Heavier fixtures (XLSX, PDF, DOCX) take longer on shared CI runners
   // before the file-list "Open ${name}" button mounts; widen past the 5s
   // default so this helper does not flake on slow conversion paths.
