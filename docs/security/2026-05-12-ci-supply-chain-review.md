@@ -30,7 +30,6 @@ The review below maps each workflow against these vectors.
 | Workflow | Trigger | Secrets | Token writes | Runs npm install? | Notes |
 |---|---|---|---|---|---|
 | `ci.yml` | PR | none | none | yes (`npm ci`, 4 jobs) | Default workflow token; `cache: npm`. |
-| `mac-pr-check.yml` | PR | none | none | yes (`npm ci`) | Builds unsigned Mac app; `cache: npm`. |
 | `security.yml` | PR | none | none | no | gitleaks + `security_ci_guard.py`. |
 | `pr-body-gate.yml` | PR | none | `pull-requests: read` | no | Section validation. |
 | `intent-review.yml` | PR | GITHUB_TOKEN | `pull-requests: write` | no | Trusted-author gate; base-SHA checkout. |
@@ -53,7 +52,7 @@ The review below maps each workflow against these vectors.
 
 ### C2. `actions/setup-node` cache shared across PR/test/release boundaries (low severity, defense-in-depth)
 
-- `cache: npm` appears in `ci.yml` (4 jobs), `mac-pr-check.yml`, `release-mac.yml` `build`, and `deploy-pages.yml` `build`.
+- `cache: npm` appears in `ci.yml` (4 jobs), `release-mac.yml` `build`, and `deploy-pages.yml` `build`.
 - GitHub scopes Actions caches per-branch with read access also granted to the base branch (and `main`). PRs cannot directly write into a cache visible to the release path unless they are merged. The real risk is therefore narrow: a malicious commit that lands on `main` could pre-warm a poisoned cache that the next tag-push release picks up. Single-maintainer reduces this risk further, but does not eliminate it (e.g. a compromise of the maintainer's Git identity for one commit).
 - **Recommendation:** remove `cache: npm` from `release-mac.yml` (`build` job, line 88) and from `deploy-pages.yml` (`build` job, line 81). Cost is roughly 30 seconds per release; gain is one fewer state-carrying surface across the PR -> release trust boundary. Keep the cache in PR-only workflows where the threat surface is the same as the runner itself.
 
@@ -91,10 +90,10 @@ The review below maps each workflow against these vectors.
 ### R3. `npm ci` runs without `--ignore-scripts` in PR-only jobs (low)
 
 - `package-lock.json` reports `hasInstallScript: true` for only two transitive packages: `node_modules/fsevents` and `node_modules/playwright/node_modules/fsevents`. Both are macOS-only optional deps; on Linux runners they are skipped.
-- A future dependency addition could quietly introduce a postinstall step that runs in `ci.yml` (no secrets, low blast radius) or `mac-pr-check.yml` (no secrets but does build a signable unsigned `.app`).
+- A future dependency addition could quietly introduce a postinstall step that runs in `ci.yml` (no secrets, low blast radius).
 - **Recommendation to validate:**
   - In `ci.yml`, switch `npm ci` to `npm ci --ignore-scripts`. The repo's current scripts (`prebuild:desktop`) are user-scripts run via `npm run`, not lifecycle hooks, so they are unaffected.
-  - In `mac-pr-check.yml`, `release-mac.yml` build, and `deploy-pages.yml` build, keep `npm ci` as-is for now because `fsevents` install scripts may genuinely be needed for `vite` on macOS. Validate the desktop build still works locally with `--ignore-scripts` before applying it there too.
+  - In `release-mac.yml` build and `deploy-pages.yml` build, keep `npm ci` as-is for now because install scripts may genuinely be needed for release/deploy packaging. Validate the desktop build still works locally with `--ignore-scripts` before applying it there too.
   - Optionally add `scripts/security_ci_guard.py` rule: any workflow that has secrets AND runs `npm ci|install` (without `--ignore-scripts`) is flagged.
 
 ---
@@ -152,7 +151,7 @@ Skip these:
 ## Open questions for KjellKod
 
 1. Pin policy for `@openai/codex`: exact version (more friction, fewer surprises) or tilde range (more friction-free updates, narrower attack window)?
-2. Is `mac-pr-check.yml` allowed to break if `npm ci --ignore-scripts` fails on macOS due to fsevents? If yes, apply uniformly. If no, only apply in pure-Linux PR workflows.
+2. Is the protected Mac release build allowed to break if `npm ci --ignore-scripts` fails on macOS due to fsevents? If yes, apply uniformly. If no, only apply in pure-Linux PR workflows.
 3. Are there any planned additions (e.g., self-hosted runners, additional CI vendors) that would change the threat model in the next quarter? If yes, R2 (artifact manifests) should be elevated to confirmed-issue priority.
 
 — Jean-Claude

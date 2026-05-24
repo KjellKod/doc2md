@@ -50,15 +50,18 @@ test("shows the upload rail tooltip while collapsed", async ({ page }) => {
   await expect(tooltip).toHaveText("Show upload panel");
   await expect(tooltip).toHaveCSS("opacity", "1");
 
-  const railOverflow = await showUpload
-    .locator("xpath=..")
-    .evaluate((element) => getComputedStyle(element).overflow);
+  const rail = showUpload.locator("xpath=..");
+  const railOverflow = await rail.evaluate(
+    (element) => getComputedStyle(element).overflow,
+  );
   expect(railOverflow).toBe("visible");
 
   const tooltipBox = await tooltip.boundingBox();
+  const railBox = await rail.boundingBox();
   const showUploadBox = await showUpload.boundingBox();
   const viewport = page.viewportSize();
   expect(tooltipBox).not.toBeNull();
+  expect(railBox).not.toBeNull();
   expect(showUploadBox).not.toBeNull();
   expect(viewport).not.toBeNull();
 
@@ -73,7 +76,7 @@ test("shows the upload rail tooltip while collapsed", async ({ page }) => {
     Math.abs(
       tooltipBox!.y +
         tooltipBox!.height / 2 -
-        (showUploadBox!.y + showUploadBox!.height / 2),
+        (railBox!.y + railBox!.height / 2),
     ),
   ).toBeLessThanOrEqual(8);
 });

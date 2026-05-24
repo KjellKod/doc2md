@@ -228,21 +228,17 @@ Validation:
 
 Phase 5 as originally written bundled CI, Sparkle, and signing/notarization into one unit. Splitting into 5a/5b/5c so each quest is independently reviewable, lands in working state, and sequences risk from low (5a, no secrets) to high (5c, Apple + Sparkle keys).
 
-### Phase 5a: Mac PR CI Check
+### Phase 5a: Local Mac PR Validation
 
 Goal:
 
-Close the "Mac-only code has zero CI" gap before we introduce release automation. Every PR should get an unsigned Mac build + Swift parse + forbidden-API grep on `macos-latest`, with no secrets scope.
+Close the "Mac-only code has zero validation" gap without running paid macOS cloud CI on every PR. Mac-sensitive PRs should get maintainer-local validation through `npm run validate:mac`, with unsigned smoke coverage for contributors and signed/notarized coverage for maintainers with local credentials.
 
 Expected changes:
 
-- Add a new GitHub Actions workflow (for example `.github/workflows/mac-pr-check.yml`):
-  - Triggers: `pull_request` (never `pull_request_target`).
-  - Runner: `macos-latest`.
-  - Permissions: `contents: read` only. No secrets scope.
-  - Steps: checkout, Node setup, `npm ci`, `npm run build:desktop`, `bash scripts/build-mac-app.sh --configuration Release` (the helper already runs `swiftc`-equivalent checks and the forbidden-API grep via `xcodebuild` + the allowlist scan).
-  - Optional: upload the unsigned `.app` as a workflow artifact for reviewer smoke on macOS hosts.
-- Pin third-party actions by full SHA (repo CI-trustworthiness convention).
+- Add `npm run validate:mac` as the maintainer-local Mac validation entry point.
+- Keep cloud macOS jobs deployment-only.
+- Require signed/notarized validation by default, with an explicit `--unsigned-only` mode for contributor machines.
 
 Acceptance criteria:
 
@@ -359,7 +355,7 @@ Acceptance criteria:
 - Sparkle can detect a newer signed update from a test appcast.
 - Offline launch does not block on update checks.
 - Release CI workflow runs on tag push only, requires Environment approval, and never exposes secrets to PR or forked workflows.
-- Mac PR check workflow catches broken Swift or broken desktop bundles without signing.
+- Local Mac validation catches broken Swift, desktop bundles, DMG layout regressions, notarization failures, and Sparkle signing/appcast issues before merge.
 - No secret has ever appeared in repo history, workflow YAML, or logs.
 
 Validation:

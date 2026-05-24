@@ -59,12 +59,12 @@ Concrete gaps observed on shipped PRs:
    would not have caught them by reference to "the desktop is not a browser"
    because that principle lives nowhere the reviewer reads.
 
-5. **Mac Swift tests do not run in CI.** `apps/macos/doc2mdTests/`
+5. **Mac Swift tests do not run in PR CI.** `apps/macos/doc2mdTests/`
    carries 36 tests (`WebShellLinkPolicyTests`) plus older suites that are the
    only thing covering WebKit navigation policy, the URL classifier, and the
-   external opener boundary. `.github/workflows/mac-pr-check.yml` builds the
-   `.app` but never runs `xcodebuild -only-testing`. A regression to the link
-   policy enum would land on `main` with a green check today.
+   external opener boundary. Cloud PR CI intentionally no longer builds the
+   `.app`; Mac-sensitive PRs rely on maintainer-local validation via
+   `npm run validate:mac`.
 
 ## Goal
 
@@ -199,17 +199,17 @@ trusted-base staging path the prompt template already uses. The rules are
 enforced as review constraints, not nits: a finding that contradicts a rule
 is `high` severity by default.
 
-### 5. Mac Swift tests in CI
+### 5. Mac Swift Tests in Local Validation
 
-In `mac-pr-check.yml`, after the existing build step, add:
+Extend `npm run validate:mac` to run:
 
-- on every PR (cheap, runs on the macos-latest runner already in this job):
-  `xcodebuild -only-testing:doc2mdTests test -project apps/macos/doc2md.xcodeproj -scheme doc2md`
-- promote `mac-pr-check` to a required check (it currently is required for
-  build per branch protection; add the test result to that)
+```bash
+xcodebuild -only-testing:doc2mdTests test -project apps/macos/doc2md.xcodeproj -scheme doc2md
+```
 
-The runner is already paid for. The tests are already written. Wiring them
-in is a five-line change to the workflow plus a branch-protection update.
+Do this after the current cost-reduction slice settles, so the local Mac
+validation command remains the single maintainer-owned gate for Mac-sensitive
+PRs.
 
 ## What we keep that Quest does not have
 

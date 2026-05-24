@@ -15,6 +15,7 @@ How to produce a fully signed, notarized, and stapled `doc2md.dmg` on a maintain
 
 Use the local pipeline when you need to:
 
+- **Validate a PR that touches Mac-sensitive paths** after cloud PR CI has finished. The normal entry point is `npm run validate:local`, which runs the full local gate and wraps this signed release script through `npm run validate:mac`.
 - **Validate the release plumbing end to end** before pushing a release tag (e.g., confirming `notarize_mac_dmg.sh` works against a real Apple notary submission).
 - **Debug a release-CI failure** that you cannot reproduce in a workflow run.
 - **Smoke-test a Developer-ID-signed app** locally on a clean Mac to confirm Gatekeeper acceptance, drag-install, and launch behavior before tagging.
@@ -72,9 +73,25 @@ export APPLE_NOTARY_API_ISSUER_ID="00000000-0000-0000-0000-000000000000"
 | `APPLE_NOTARY_API_KEY_ID` | 10-character key ID shown next to the `.p8` in App Store Connect. | https://appstoreconnect.apple.com/access/api |
 | `APPLE_NOTARY_API_ISSUER_ID` | UUID issuer ID for your team. | Top of the App Store Connect API keys page. |
 
-`VERSION` is optional; if unset the script reads `CFBundleShortVersionString` from `apps/macos/doc2md/Info.plist`.
+`SPARKLE_EDDSA_PRIVATE_KEY` is additionally required by `npm run validate:mac` so it can sign the Sparkle ZIP and generate a production-shape appcast. `VERSION` is optional; if unset, `npm run validate:mac` derives it from the repo release-version helper before calling the signed local release script.
 
 ## Run the pipeline
+
+For PR validation, run the wrapper:
+
+```bash
+npm run validate:mac
+```
+
+The full local gate is:
+
+```bash
+npm run validate:local
+```
+
+`npm run validate:local -- --signed` is equivalent and accepted for clarity. It fails loudly if credentials are missing. Use `npm run validate:local -- --unsigned-only` only when signed/notarized validation is intentionally deferred to a maintainer.
+
+For the signed/notarized release path alone, run:
 
 ```bash
 ./scripts/release/release_mac_local.sh

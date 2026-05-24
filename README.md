@@ -31,6 +31,51 @@ Open `http://localhost:5173/` in your browser.
 
 The live site now includes an **Install & Use** tab for the package, tarball, and portable skill paths.
 
+## Local Commands
+
+Use `npm run validate:local` as the default pre-PR local gate. It runs lint, typecheck, unit tests, production build, Playwright e2e, Python workflow/security tests, and then Mac validation. Mac validation is signed by default and fails loudly if Apple/Sparkle credentials are missing.
+
+```bash
+npm run validate:local
+```
+
+Useful validation variants:
+
+| Command | Purpose |
+|---|---|
+| `npm run validate:local` | Full local validation, including signed Mac validation by default. |
+| `npm run validate:local -- --signed` | Same as default, but explicit about requiring signed Mac validation. |
+| `npm run validate:local -- --unsigned-only` | Full local validation with reduced unsigned Mac validation; use only when signed credentials are intentionally unavailable. |
+| `npm run validate:local -- --skip-mac` | Full non-Mac validation only; use only when Mac validation is intentionally out of scope. |
+| `npm run validate:mac` | Mac-only validation: app launch smoke, DMG checks, Sparkle ZIP/appcast, signed/notarized local release path. |
+| `npm run validate:mac -- --unsigned-only` | Mac-only reduced unsigned validation. |
+
+All package scripts:
+
+| Command | Purpose |
+|---|---|
+| `npm run dev` | Start the Vite development server at `http://localhost:5173/`. |
+| `npm run preview` | Preview the production Vite build locally. |
+| `npm run lint` | Run ESLint. |
+| `npm run typecheck` | Run TypeScript without emitting files. |
+| `npm test -- --run` | Run the Vitest suite once. |
+| `npm run test:e2e` | Run Playwright e2e tests. |
+| `npm run test:e2e:ui` | Open the Playwright UI runner. |
+| `npm run test:core` | Run tests for the `@doc2md/core` workspace. |
+| `npm run validate:local` | Run the full local validation gate. |
+| `npm run validate:mac` | Run Mac-only validation. |
+| `npm run build` | Build the hosted browser app. |
+| `npm run build:desktop` | Build the desktop web bundle used by the Mac app. |
+| `npm run prebuild:desktop` | Lifecycle helper for `build:desktop`; regenerates Mac supported formats before the desktop build. |
+| `npm run build:core` | Build the `@doc2md/core` workspace. |
+| `npm run build:mac` | Build the unsigned Release `.app` locally. Requires macOS with full Xcode. |
+| `npm run build:dmg` | Build an unsigned local DMG and run the DMG mount self-test. Requires macOS and pinned `dmgbuild`. |
+| `npm run generate:mac-supported-formats` | Regenerate the Swift supported-format list from shared source format metadata. |
+| `npm run generate:notices` | Generate the Mac third-party notice inventory. |
+| `npm run generate:notices:check` | Verify the committed Mac third-party notice inventory is current. |
+
+Mac signing/notarization prerequisites are documented in [Local Signed Mac Release](docs/runbooks/release-mac-local.md).
+
 ## Use As A Package, CLI, Or Skill
 
 If you want automation, batch jobs, MCP/server-side preprocessing, or a reusable function call, use `@doc2md/core`. Public npm publication is not planned at this time, so start with the beginner-first [INSTALL.md](INSTALL.md) guide and then use [Using `@doc2md/core`](docs/using-doc2md-core.md) for the package and API details.
@@ -93,6 +138,7 @@ doc2md is a browser-first tool: conversion runs in the browser, output stays loc
 * [INSTALL.md](INSTALL.md) — beginner install guide for the tarball, global CLI, project-local setup, upgrades, and troubleshooting
 * [Using `@doc2md/core`](docs/using-doc2md-core.md) — Node/package usage, CLI usage, output contract, copy-paste examples, and skill setup
 * [Publishing `@doc2md/core`](docs/publishing-doc2md-core.md) — what publish-ready means, real npm publication, and local package testing
+* [Local Signed Mac Release](docs/runbooks/release-mac-local.md) — maintainer-only signing/notarization prerequisites for `npm run validate:local`
 * [Product Specification](docs/product-spec.md) — full design, architecture, scope, and UX direction
 * [Provenance Guidance](docs/provenance.md) — lightweight attribution hygiene for future borrowed material
 * [Testing Strategy](docs/testing.md) — test coverage, fixtures, and manual review checklist
