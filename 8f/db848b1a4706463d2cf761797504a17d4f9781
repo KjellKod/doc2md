@@ -1,0 +1,22 @@
+tests/e2e/dep-bump-format-smoke.spec.ts
+  s_59e999a6c2fdc2::t_67e447c1b4e283 44-46
+tests/e2e/hosted-mobile-tablet-layout.spec.ts
+  s_59e999a6c2fdc2::t_91db37bc3e27f7 68,71
+  s_59e999a6c2fdc2::t_ebf8c112f22acf 62-63,66-67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "8fdb848b1a4706463d2cf761797504a17d4f9781",
+  "prompts": {},
+  "sessions": {
+    "s_59e999a6c2fdc2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e5594-92dc-7303-ac19-6d610e372956",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
