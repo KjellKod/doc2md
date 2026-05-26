@@ -206,6 +206,11 @@ export default function PreviewPanel({
         : (linkedinPreviewState?.text ?? null)
       : effectiveMarkdown;
   const showCopyButton = showToggle && typeof copyText === "string";
+  const autoFocusEditorOnMount = Boolean(
+    editorFocusRequestId &&
+      editorFocusRequestId > 0 &&
+      editorFocusRequestTarget === "editor",
+  );
   const activeFindSource =
     mode === "edit" ? effectiveMarkdown : renderedViewText;
   const editAnchor = useViewportAnchor(textareaRef, "textarea", {
@@ -325,6 +330,7 @@ export default function PreviewPanel({
           effectiveMarkdown={effectiveMarkdown}
           textareaRef={textareaRef}
           findHighlightRef={findHighlightRef}
+          autoFocusOnMount={autoFocusEditorOnMount}
           onMarkdownChange={onMarkdownChange}
           onLargeMarkdownPaste={onLargeMarkdownPaste}
         />

@@ -36,6 +36,29 @@ async function expectInViewport(locator: Locator, page: Page) {
   expect(box!.y + box!.height).toBeLessThanOrEqual(viewport!.height + 1);
 }
 
+async function expectHorizontallyInViewport(locator: Locator, page: Page) {
+  await expect(locator).toBeVisible();
+  const box = await locator.boundingBox();
+  expect(box).not.toBeNull();
+  const viewport = page.viewportSize();
+  expect(viewport).not.toBeNull();
+  expect(box!.x).toBeGreaterThanOrEqual(-1);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(viewport!.width + 1);
+}
+
+async function expectAlignedWidths(first: Locator, second: Locator) {
+  await expect(first).toBeVisible();
+  await expect(second).toBeVisible();
+  const [firstBox, secondBox] = await Promise.all([
+    first.boundingBox(),
+    second.boundingBox(),
+  ]);
+  expect(firstBox).not.toBeNull();
+  expect(secondBox).not.toBeNull();
+  expect(Math.abs(firstBox!.x - secondBox!.x)).toBeLessThanOrEqual(2);
+  expect(Math.abs(firstBox!.width - secondBox!.width)).toBeLessThanOrEqual(2);
+}
+
 async function expectTapTargetFloor(locator: Locator) {
   await expect(locator).toBeVisible();
   const box = await locator.boundingBox();
@@ -72,6 +95,14 @@ async function uploadMarkdownFile(
   }
 }
 
+async function expandUploadPanelIfCollapsed(page: Page) {
+  const showUpload = page.getByRole("button", { name: "Show upload panel" });
+  if (!(await showUpload.isVisible().catch(() => false))) {
+    return;
+  }
+  await showUpload.click();
+}
+
 async function uploadInvalidPdf(page: Page, name: string) {
   // Bytes that look like garbage to the PDF converter and reliably drive
   // entry.status into "error" via the in-browser converter path.
@@ -90,6 +121,68 @@ async function uploadInvalidPdf(page: Page, name: string) {
 }
 
 test.describe("hosted mobile and tablet layout", () => {
+  test("mobile emulation: collapsed upload rail stays horizontal with preview", async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(!isMobile, "device-emulation regression for mobile projects");
+
+    await openHostedApp(page);
+    await uploadMarkdownFile(
+      page,
+      "mobile-rail.md",
+      "# Mobile rail\n\nThe collapsed upload control must not become a side strip.",
+    );
+
+    const workspace = page.locator(".workspace");
+    const collapseRail = page.locator(".collapse-rail");
+    const previewPanel = page.locator(".preview-panel");
+    await expect(workspace).toHaveClass(/sidebar-collapsed/);
+    await collapseRail.scrollIntoViewIfNeeded();
+
+    await expectNoHorizontalOverflow(page);
+    await expectHorizontallyInViewport(workspace, page);
+    await expectHorizontallyInViewport(collapseRail, page);
+    await expectHorizontallyInViewport(previewPanel, page);
+    await expectAlignedWidths(collapseRail, previewPanel);
+
+    const railBox = await collapseRail.boundingBox();
+    expect(railBox).not.toBeNull();
+    expect(railBox!.height).toBeLessThanOrEqual(92);
+  });
+
+  test("mobile emulation: keyboard-open editor remains focused and bounded", async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(!isMobile, "device-emulation regression for mobile projects");
+
+    await openHostedApp(page);
+    const startWriting = page.getByRole("button", {
+      name: "Start writing",
+      exact: true,
+    });
+    await startWriting.scrollIntoViewIfNeeded();
+    await startWriting.click();
+
+    const editor = page.getByLabel("Edit markdown");
+    await editor.fill("# Mobile keyboard\n\nBefore keyboard.");
+    await editor.focus();
+    await page.setViewportSize(PHONE_KEYBOARD_OPEN);
+    await page.evaluate(() => {
+      document
+        .querySelector(".preview-panel")
+        ?.scrollIntoView({ block: "start", behavior: "instant" as ScrollBehavior });
+    });
+    await editor.type("\nTyped while focused.");
+
+    await expect(editor).toBeFocused();
+    await expect(editor).toHaveValue(/Typed while focused\./);
+    await expectInViewport(editor, page);
+    await expectInViewport(page.getByRole("button", { name: "Save document" }), page);
+    await expectNoHorizontalOverflow(page);
+  });
+
   test("AC1 at 375px: end-to-end draft, modes, save, primary action visible", async ({
     page,
   }) => {
@@ -148,15 +241,12 @@ test.describe("hosted mobile and tablet layout", () => {
       await page.setViewportSize(viewport);
       await openHostedApp(page);
       await uploadInvalidPdf(page, "broken.pdf");
-      const showUpload = page.getByRole("button", { name: "Show upload panel" });
-      if (await showUpload.isVisible().catch(() => false)) {
-        await showUpload.click();
-      }
+      await expandUploadPanelIfCollapsed(page);
 
       // Wait for the row's status indicator to settle into "error" so the
       // FileList row stops shifting before we interact with it.
       const errorRow = page.getByRole("button", { name: "Open broken.pdf" });
-      await expect(errorRow).toBeVisible();
+      await expect(errorRow).toBeVisible({ timeout: 15_000 });
       const errorStatus = errorRow.locator(".status-error");
       await expect(errorStatus).toBeVisible({ timeout: 15_000 });
 
@@ -299,7 +389,7 @@ test.describe("hosted mobile and tablet layout", () => {
       ).toHaveCount(0);
 
       const previewPanel = page.locator(".preview-panel");
-      await expectInViewport(previewPanel, page);
+      await expectHorizontallyInViewport(previewPanel, page);
       const previewBox = await previewPanel.boundingBox();
       const viewportSize = page.viewportSize();
       expect(previewBox).not.toBeNull();

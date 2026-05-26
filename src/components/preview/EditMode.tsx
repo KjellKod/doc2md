@@ -46,6 +46,7 @@ interface EditModeProps {
   pendingAnchorLineRef: MutableElementRef<number>;
   suppressMatchCenteringForModeSwitchRef: MutableElementRef<boolean>;
   viewportTopFloor: () => number;
+  autoFocusOnMount?: boolean;
   onMarkdownChange?: (markdown: string) => void;
   onLargeMarkdownPaste?: (markdown: string) => void;
 }
@@ -157,6 +158,7 @@ export default function EditMode({
   pendingAnchorLineRef,
   suppressMatchCenteringForModeSwitchRef,
   viewportTopFloor,
+  autoFocusOnMount = false,
   onMarkdownChange,
   onLargeMarkdownPaste,
 }: EditModeProps) {
@@ -571,6 +573,7 @@ export default function EditMode({
         aria-label="Edit markdown"
         aria-busy={isPasteConverting}
         readOnly={isPasteConverting}
+        autoFocus={autoFocusOnMount}
       />
     </div>
   );
