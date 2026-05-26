@@ -1,0 +1,52 @@
+docs/journal/README.md
+  s_f0aa1604c67d90::t_640601cd994efe 9
+docs/diary/2026-05-23.md
+  s_f0aa1604c67d90::t_640601cd994efe 1-25
+src/components/preview/pasteLargeGoogleDoc.repro.test.ts
+  s_f0aa1604c67d90::t_5dbe0d1b85f37f 1-36,54,60,63-68,70,72,111
+  s_f0aa1604c67d90::t_01975be75d488d 55-59,61-62,69,71,73-75
+  s_f0aa1604c67d90::t_fd7863f1ba4b09 91,93-94,98-99,101,103-107,110
+  s_f0aa1604c67d90::t_b3ecfde3e35102 95-97,100,102
+  s_ee6e59122c5c54::t_2777d151979d16 108-109
+  s_f0aa1604c67d90::t_21ae008faa07c9 37-53,76-85,90
+  s_ee6e59122c5c54::t_f4a65ca45f4a3d 86,88-89,92
+  s_f0aa1604c67d90::t_b61b51e37b9927 87
+docs/dexter-journal/048-paste-router-fix.md
+  s_f0aa1604c67d90::t_640601cd994efe 1-16
+docs/journal/046-celebrate-paste-router-fix.md
+  s_f0aa1604c67d90::t_640601cd994efe 1-84
+src/components/preview/pasteToMarkdown.test.ts
+  s_ee6e59122c5c54::t_89da6d5aacb383 552-555,563,567-570,577-578,610,824-825,832
+  s_ee6e59122c5c54::t_41aef0a1095b05 766-769,788,797,802-803
+src/components/preview/pasteToMarkdown.ts
+  s_ee6e59122c5c54::t_07ba4c1a68ca85 61-95,105-131,135-140,147-157,272
+  s_ee6e59122c5c54::t_53405579f83670 223-224
+  s_ee6e59122c5c54::t_a06b1a663b7113 15-16,36,41-42,53-60,96-104,132-134,141-146,158-177,194-197,201-208,218,273-276,323-337
+  s_ee6e59122c5c54::t_1c7f72536582db 310
+docs/dexter-journal/README.md
+  s_f0aa1604c67d90::t_640601cd994efe 9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "deadc20c8613533277d1e9bf06b8b3e5921cac21",
+  "prompts": {},
+  "sessions": {
+    "s_ee6e59122c5c54": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e5582-36d9-71f0-bee5-7e0faea51825",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_f0aa1604c67d90": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e4da6-88fb-7cf3-b0a0-059bf0016d90",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
