@@ -438,8 +438,11 @@ test.describe("hosted mobile and tablet layout", () => {
     });
 
     const saveButton = page.getByRole("button", { name: "Save document" });
+    await expect(editor).toBeFocused();
+    await editor.type("\nStill usable after keyboard resize.");
+    await expect(editor).toHaveValue(/Still usable after keyboard resize\./);
     await expectInViewport(saveButton, page);
-    await expectInViewport(editor, page);
+    await expectHorizontallyInViewport(editor, page);
     await expectNoHorizontalOverflow(page);
   });
 });
