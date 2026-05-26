@@ -1818,6 +1818,41 @@ body.is-height-resizing * {
   flex-shrink: 0;
 }
 
+.shortcut-reference-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid rgba(23, 56, 76, 0.1);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  transition:
+    border-color 160ms ease,
+    color 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.shortcut-reference-button:hover,
+.shortcut-reference-button:focus-visible {
+  border-color: rgba(23, 56, 76, 0.18);
+  background: rgba(23, 56, 76, 0.05);
+  color: var(--text-primary);
+}
+
+.shortcut-reference-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.shortcut-reference-button:active {
+  transform: translateY(1px);
+}
+
 .shortcut-reference-popover {
   position: absolute;
   top: calc(100% + 8px);
@@ -1926,6 +1961,7 @@ body.is-height-resizing * {
 }
 
 .find-entry-icon,
+.shortcut-reference-icon,
 .find-replace-icon-button svg,
 .find-replace-option svg,
 .find-replace-field-icon {
@@ -3088,6 +3124,12 @@ body.is-height-resizing * {
   background: rgba(23, 27, 33, 0.68);
 }
 
+:root[data-theme="dark"] .shortcut-reference-button {
+  border-color: rgba(204, 214, 223, 0.1);
+  background: transparent;
+  color: var(--text-muted);
+}
+
 :root[data-theme="dark"] .shortcut-reference-popover {
   border-color: rgba(204, 214, 223, 0.14);
   background: rgba(26, 31, 37, 0.98);
@@ -3101,6 +3143,8 @@ body.is-height-resizing * {
 
 :root[data-theme="dark"] .find-entry-button:hover,
 :root[data-theme="dark"] .find-entry-button:focus-visible,
+:root[data-theme="dark"] .shortcut-reference-button:hover,
+:root[data-theme="dark"] .shortcut-reference-button:focus-visible,
 :root[data-theme="dark"] .find-replace-icon-button:hover:not(:disabled),
 :root[data-theme="dark"] .find-replace-icon-button:focus-visible,
 :root[data-theme="dark"] .find-replace-option:hover,
@@ -3633,10 +3677,6 @@ body.is-height-resizing * {
   .shortcut-reference-button {
     width: 44px;
     padding: 0;
-  }
-
-  .shortcut-reference-button .find-entry-label {
-    display: none;
   }
 
   .find-replace-bar {

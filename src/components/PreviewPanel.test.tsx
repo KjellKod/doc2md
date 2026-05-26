@@ -178,7 +178,14 @@ describe("PreviewPanel", () => {
   it("shows only verified editor shortcuts in the compact reference", () => {
     render(<PreviewPanel entry={createEntry()} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Keyboard shortcuts" }));
+    const shortcutsButton = screen.getByRole("button", {
+      name: "Keyboard shortcuts",
+    });
+    expect(shortcutsButton).toHaveClass("shortcut-reference-button");
+    expect(shortcutsButton).toHaveAttribute("title", "Keyboard shortcuts");
+    expect(shortcutsButton).toHaveTextContent("");
+
+    fireEvent.click(shortcutsButton);
 
     const dialog = screen.getByRole("dialog", { name: "Keyboard shortcuts" });
     expect(dialog).toHaveTextContent("Find");
@@ -209,6 +216,15 @@ describe("PreviewPanel", () => {
         saveKeyShortcuts="Meta+S"
       />,
     );
+
+    const saveButton = screen.getByRole("button", { name: "Save document" });
+    const shortcutsButton = screen.getByRole("button", {
+      name: "Keyboard shortcuts",
+    });
+    expect(
+      saveButton.compareDocumentPosition(shortcutsButton) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Keyboard shortcuts" }));
 

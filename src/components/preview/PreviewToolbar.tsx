@@ -187,47 +187,6 @@ export default function PreviewToolbar({
             <span className="find-entry-label">Find</span>
           </button>
         ) : null}
-        {showToggle ? (
-          <div className="shortcut-reference-wrap">
-            <button
-              ref={shortcutsButtonRef}
-              type="button"
-              className="find-entry-button shortcut-reference-button"
-              onClick={() => setIsShortcutsOpen((isOpen) => !isOpen)}
-              aria-label="Keyboard shortcuts"
-              aria-expanded={isShortcutsOpen}
-              aria-controls={shortcutsPanelId}
-            >
-              <Keyboard className="find-entry-icon" aria-hidden="true" />
-              <span className="find-entry-label">Shortcuts</span>
-            </button>
-            {isShortcutsOpen ? (
-              <div
-                ref={shortcutsRef}
-                id={shortcutsPanelId}
-                className="shortcut-reference-popover"
-                role="dialog"
-                aria-label="Keyboard shortcuts"
-                onKeyDown={(event) => {
-                  if (event.key === "Escape") {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    closeShortcuts();
-                  }
-                }}
-              >
-                <dl className="shortcut-reference-list">
-                  {rows.map((row) => (
-                    <div className="shortcut-reference-row" key={row.label}>
-                      <dt>{row.label}</dt>
-                      <dd>{row.keys}</dd>
-                    </div>
-                  ))}
-                </dl>
-              </div>
-            ) : null}
-          </div>
-        ) : null}
         {onSave ? (
           <div className="save-control-group">
             <SaveButton
@@ -268,6 +227,47 @@ export default function PreviewToolbar({
             >
               {copyState === "copied" ? "Copied" : "Copy"}
             </span>
+          </div>
+        ) : null}
+        {showToggle ? (
+          <div className="shortcut-reference-wrap">
+            <button
+              ref={shortcutsButtonRef}
+              type="button"
+              className="shortcut-reference-button"
+              onClick={() => setIsShortcutsOpen((isOpen) => !isOpen)}
+              aria-label="Keyboard shortcuts"
+              aria-expanded={isShortcutsOpen}
+              aria-controls={shortcutsPanelId}
+              title="Keyboard shortcuts"
+            >
+              <Keyboard className="shortcut-reference-icon" aria-hidden="true" />
+            </button>
+            {isShortcutsOpen ? (
+              <div
+                ref={shortcutsRef}
+                id={shortcutsPanelId}
+                className="shortcut-reference-popover"
+                role="dialog"
+                aria-label="Keyboard shortcuts"
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    closeShortcuts();
+                  }
+                }}
+              >
+                <dl className="shortcut-reference-list">
+                  {rows.map((row) => (
+                    <div className="shortcut-reference-row" key={row.label}>
+                      <dt>{row.label}</dt>
+                      <dd>{row.keys}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            ) : null}
           </div>
         ) : null}
       </div>
