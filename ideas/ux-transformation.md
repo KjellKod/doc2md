@@ -634,6 +634,12 @@ Already settled before execution:
   sequence.
 - Step 4, onboarding/empty/error-state copy, is complete in PR #144. Do not
   schedule it again unless a regression or new copy surface reopens the need.
+- Step 3, hosted mobile and tablet layout, is complete in PR #151. The shipped
+  coverage adds named mobile Playwright projects for Pixel 7 Chrome and iPhone
+  14 WebKit, runs the hosted mobile layout spec in CI, and scopes editor
+  autofocus to explicit editor-focus requests. Do not schedule it again unless
+  a new mobile/tablet regression opens the need. The public-site phone check
+  remains a post-deploy cache-busted validation step, not active roadmap work.
 - Step 4 validation surfaced two pre-existing Fast Refresh lint warnings in
   `src/shell/desktopAdapter.tsx` for `DesktopMenuBridge` and
   `DesktopMenuEventBridge` living in the adapter module. They are non-blocking
@@ -649,7 +655,7 @@ Already settled before execution:
 | 0 | Open the multi-PR objective and confirm current idea status | `/goal` | First | Must run first | Confirm the roadmap order still matches priority. |
 | 1 | Workspace real-estate and working-area density | `quest:workflow` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | Sequential backbone | Do not run other layout/theme/mobile UI PRs in parallel. | Compare 1280x800 and 1440x900 working-mode screenshots; editor/preview content should visibly own more of the viewport without hiding primary controls. |
 | 2 | Theme parity audit plus custom tooltip cleanup | `quest:solo` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After step 1 | Do not overlap with mobile layout unless write scopes are explicitly split. | Inspect light/dark editor, preview, errors, disabled states, and tooltip hints. |
-| 3 | Mobile and tablet layout pass | `quest:workflow` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After step 1; preferably after step 2 | Do not overlap with step 1. | Inspect hosted app at 375px and 768px; controls should fit, touch targets should be usable, no text overlap. |
+| 3 | Mobile and tablet layout pass | Complete in PR #151 | Done | Do not rerun unless reopened by regression or a new mobile/tablet surface. | Post-deploy cache-busted physical-phone check remains useful for public-site verification. |
 | 4 | Onboarding, empty-state, and error-state copy pass | Complete in PR #144 | Done | Do not rerun unless reopened by regression or a new copy surface. | Read first-run, empty, and failure states; each should name the next useful action without adding architecture lectures. |
 | 5 | Keyboard shortcut discoverability | `quest:solo` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After step 1 | Avoid parallel edits to the same toolbar/menu files as step 2. | Use the shortcut reference and a keyboard smoke walkthrough; shortcut claims should match real controls. |
 | 6 | Performance perception pass | Obsolete/deferred | Only after concrete stuck/wait-state evidence | Do not run in the default roadmap sequence. If revived, keep it to the single triggered path. | Validate against the observed issue, not a generic progress-polish checklist. |
@@ -697,20 +703,10 @@ Scope: audit and fix light/dark parity across editor, preview, highlights, error
 Validation required before PR: run relevant tests, inspect light and dark states for the touched surfaces, and include a PR validation checkbox asking Kjell to inspect theme parity and tooltip timing. Then run pr-assist for a draft PR and pr-shepherd until CI and review comments are clean.
 ```
 
-#### Step 3 prompt
+#### Step 3
 
-```text
-quest:workflow
-Implement doc2md UX transformation step 3: hosted mobile and tablet layout pass.
-
-Read ideas/ux-transformation.md sections "Mobile and tablet layout pass", "Execution roadmap", and "Validation expectations for future implementation quests". Start from current main on a fresh branch named like ux/mobile-tablet-layout-<branch-suffix>.
-
-Trust mode: do not ask Kjell to approve a plan. Ask Kjell only to validate the ready PR result.
-
-Scope: improve hosted app behavior at 375px and 768px without changing Core, Mac-native shell behavior, or desktop workspace priorities from step 1. Controls must fit, touch targets should be usable, text must not overlap, and the first useful action should stay visible.
-
-Validation required before PR: run relevant unit/component tests plus Playwright or browser screenshots at 375px and 768px in light/dark where touched. Use pr-assist to create a draft PR with a Kjell validation checkbox for phone/tablet screenshots, then run pr-shepherd until clean and ready.
-```
+Completed in PR #151. Do not rerun this prompt as active roadmap work unless a
+new mobile/tablet regression or new mobile surface reopens the need.
 
 #### Step 4
 
