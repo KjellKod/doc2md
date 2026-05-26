@@ -50,8 +50,8 @@ Every item must explicitly mark Hosted, Mac, and Core as `yes`, `if needed`, `no
 | Empty-state copy pass | yes | yes | yes | `shipped` | Completed in PR #144; empty states now name the action that fills them. |
 | Error-state copy pass | yes | yes | yes | `shipped` | Completed in PR #144; errors now say what happened, why if known, and what the user can do next. |
 | Copy-paste UX loop | yes | yes | if needed | `need` Hosted/Mac, `if-needed` Core | Paste-to-Markdown has shipped; now the product should make paste, copy Markdown, and copy LinkedIn feel intentional and discoverable. Core remains if-needed until a concrete CLI/script paste workflow exists. |
-| Keyboard discoverability | yes | yes | n/a | `need` | Enough real shortcuts now exist to justify a compact reference. No command palette. |
-| Lightweight a11y audit | yes | yes | docs only | `need` | Phase 6f can be revived now as a focused audit against the existing accessibility contract. |
+| Keyboard discoverability | yes | yes | n/a | `need` | Enough real shortcuts now exist to justify a compact reference. No command palette, remapping UI, or aspirational shortcut list. |
+| Lightweight a11y audit | if needed | if needed | no | `if-needed` | Not part of the Step 5 keyboard-discoverability slice. Keep `docs/accessibility-notes.md` as the baseline contract, and revive broader audit work only with a concrete accessibility trigger. |
 | Custom tooltip cleanup | yes | yes | n/a | `need` | Native `title` tooltips are too slow and inconsistent. Existing `title=` uses should be replaced where they are user-facing hints. |
 | Block move and select next occurrence | yes | yes | n/a | `if-needed` | Useful editor muscle memory, but only worth shipping if the textarea implementation stays simple or the editor engine changes for other reasons. |
 | Folder view as local workspace | if needed | if needed | n/a | `if-needed` | Real workspace value, but still a larger positioning move toward "local markdown workspace". |
@@ -61,7 +61,7 @@ Every item must explicitly mark Hosted, Mac, and Core as `yes`, `if needed`, `no
 | System theme follow | if needed | if needed | n/a | `if-needed` | Useful after parity is proven. Do parity first; automatic system sync can wait. |
 | sketch2md cross-product discovery | if needed | if needed | n/a | `if-needed` | Wait until sketch2md is launched. Crosslinks may help users understand the product suite later, but they should not add chrome to active document workspaces before that launch. |
 | Command palette / shortcut remapping | no | no | n/a | `yagni` | Too much product surface for today's app. A compact reference solves discoverability without building an IDE. |
-| Formal WCAG certification matrix | no | no | n/a | `yagni` | A lightweight audit is enough. Certification-level work is not proportional today. |
+| Formal WCAG certification matrix | no | no | n/a | `yagni` | Certification-level work, Lighthouse targets, and screen-reader audit matrices are not proportional today. |
 | Source-tree file operations | no | no | n/a | `yagni` | Rename, move, delete, and two-way folder sync would turn doc2md into a file manager. |
 
 ## Need items
@@ -325,7 +325,6 @@ Include only real, supported shortcuts:
 
 - Save
 - Find
-- Find with Replace expanded
 - Bold / Italic / Link
 - Ordered / unordered / task list toggles
 - mode switch behavior only if a shortcut exists
@@ -338,6 +337,7 @@ Do not build:
 - searchable help center
 - onboarding tour
 - a list of aspirational shortcuts
+- WCAG audit, certification matrix, Lighthouse target, screen-reader audit, or broad focus-ring redesign
 
 Acceptance:
 
@@ -349,34 +349,29 @@ Acceptance:
 
 Surfaces: Hosted, Mac, Core docs.
 
-Gut: `need`.
+Gut: `if-needed`.
 
-This revives Phase 6f with the same YAGNI boundary: a lightweight audit of existing primary controls, not a certification project.
+This is explicitly outside the Step 5 keyboard-discoverability slice. Keep
+`docs/accessibility-notes.md` as the baseline contract for existing editor,
+find/replace, recent-menu, resize-handle, save, and before-unload behavior.
+Revive audit work only as a separate proposal with a concrete trigger.
 
-Audit:
+Do not bundle into Step 5:
 
-- upload/open
-- start writing/new
-- edit textarea
-- mode switcher
-- save/download
-- find/replace
-- copy
-- recent menu
-- sidebar show/hide and resize controls
-- close/dismiss controls
-- conversion, save, and error status announcements
-- before-unload unsaved-change guard behavior
+- WCAG audit, matrix, or certification
+- Lighthouse accessibility scoring or targets
+- screen-reader testing or compliance claims
+- broad focus-ring redesign
+- Core docs accessibility audit
+- command palette, shortcut remapping, or new editor engine
 
-Core has no UI surface, but its docs and CLI output still need accessible plain-language structure: headings, copy-pasteable commands, and status wording that works in screen readers and terminal logs.
+If a later audit is revived, start from real controls and the current
+accessibility notes rather than from a compliance checklist.
 
 Acceptance:
 
-- Keyboard-only users can complete the primary hosted and Mac workflows.
-- Icon-only buttons have accessible names.
-- Status changes are announced where they matter and quiet where they would be noise.
-- No regressions against the `docs/accessibility-notes.md` baseline items: save status semantics, find bar semantics, editor keyboard contract, recent menu behavior, and before-unload guard.
-- Lighthouse accessibility does not materially regress for the hosted app.
+- Step 5 preserves the `docs/accessibility-notes.md` baseline items while adding shortcut discoverability.
+- Any future audit has its own scoped prompt, validation, and PR.
 
 ### Custom tooltip cleanup
 
@@ -579,7 +574,7 @@ Examples that would require this block:
 3. Mobile/tablet layout pass for the hosted app. Related to workspace density, but focused on touch and narrow responsive behavior.
 4. Error and empty-state copy pass across Hosted, Mac, and Core. Cheap, high clarity.
 5. Performance perception pass. Keep it honest and bounded.
-6. Keyboard discoverability and lightweight a11y audit. The shortcut list and a11y pass should reference the same real controls.
+6. Keyboard discoverability. The shortcut list should reference only real, already-supported editor/workspace shortcuts.
 7. Copy-paste UX loop polish. Keep it near the mode switcher if it earns the pixels.
 8. Reconsider `if-needed` items only after a concrete trigger lands.
 
@@ -636,7 +631,7 @@ Already settled before execution:
 | 2 | Theme parity audit plus custom tooltip cleanup | `quest:solo` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After step 1 | Do not overlap with mobile layout unless write scopes are explicitly split. | Inspect light/dark editor, preview, errors, disabled states, and tooltip hints. |
 | 3 | Mobile and tablet layout pass | `quest:workflow` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After step 1; preferably after step 2 | Do not overlap with step 1. | Inspect hosted app at 375px and 768px; controls should fit, touch targets should be usable, no text overlap. |
 | 4 | Onboarding, empty-state, and error-state copy pass | Complete in PR #144 | Done | Do not rerun unless reopened by regression or a new copy surface. | Read first-run, empty, and failure states; each should name the next useful action without adding architecture lectures. |
-| 5 | Keyboard discoverability plus lightweight a11y audit | `quest:solo` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After step 1 | Avoid parallel edits to the same toolbar/menu files as step 2. | Use keyboard-only navigation and the shortcut reference; focus, labels, and shortcut claims should match real controls. |
+| 5 | Keyboard shortcut discoverability | `quest:solo` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After step 1 | Avoid parallel edits to the same toolbar/menu files as step 2. | Use the shortcut reference and a keyboard smoke walkthrough; shortcut claims should match real controls. |
 | 6 | Performance perception pass | `quest:workflow` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After PR #144 copy language | Sequential with copy-paste polish if both touch status messaging. | Convert, search, paste, and batch output should show honest progress or bounded wait states. |
 | 7 | Copy-paste UX loop polish | `quest:solo` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After step 1 and PR #144 | Can run after performance pass or in parallel only if write scopes avoid status/progress components. | Paste Markdown/HTML, copy Markdown, and copy LinkedIn output; actions should be discoverable and not add excess chrome. |
 | 8 | Revisit `if-needed` items: folder view, browser crash recovery, scratch-buffer preservation, Mac file watchers, system theme follow, sketch2md cross-product discovery | `quest:workflow` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | Only after a trigger lands | Not part of the default parallel pool. Treat each as its own proposal. | Validate against the trigger that revived the item, not against speculative acceptance. |
@@ -706,15 +701,17 @@ regression or new copy surface reopens the need.
 
 ```text
 quest:solo
-Implement doc2md UX transformation step 5: keyboard discoverability plus lightweight a11y audit.
+Implement doc2md UX transformation step 5: keyboard shortcut discoverability.
 
-Read ideas/ux-transformation.md sections "Keyboard discoverability", "Lightweight a11y audit", "Execution roadmap", and docs/accessibility-notes.md. Start from current main on a fresh branch named like ux/keyboard-a11y-<branch-suffix>.
+Read ideas/ux-transformation.md sections "Keyboard discoverability", "Lightweight accessibility audit", "Execution roadmap", and docs/accessibility-notes.md. Start from current main on a fresh branch named like ux/keyboard-shortcuts-<branch-suffix>.
 
 Trust mode: do not ask Kjell to approve a plan. Ask Kjell only to validate the resulting PR behavior.
 
-Scope: add or refine a compact shortcut reference for shortcuts that already exist, and fix lightweight accessibility gaps discovered while validating real controls. No command palette, shortcut remapping, formal WCAG matrix, or new editor engine.
+Scope: add or refine a compact shortcut reference for real, already-supported editor/workspace shortcuts. Include only typical editor shortcuts that actually exist, such as Save, Find, Bold, Italic, Link, ordered/unordered/task list toggles, Escape close/dismiss, and mode-switch behavior only if a real shortcut exists. Preserve existing keyboard contracts documented in docs/accessibility-notes.md, especially editor shortcuts, find/replace behavior, recent menu keyboard behavior, resize handle keyboard behavior, and before-unload behavior.
 
-Validation required before PR: verify keyboard-only navigation, focus visibility, labels, and shortcut claims against actual controls. Use pr-assist to create a draft PR with a Kjell validation checkbox for keyboard walkthrough, then run pr-shepherd until clean and ready.
+Hard out of scope: WCAG audit, WCAG matrix, certification, Lighthouse accessibility target, screen-reader audit, command palette, shortcut remapping/settings, new editor engine, broad focus-ring redesign, Core API/CLI behavior changes, and performance/status messaging changes.
+
+Validation required before PR: run relevant unit/component tests, verify each displayed shortcut against the actual code path, and do a keyboard smoke walkthrough for the listed shortcuts and existing dismiss/menu behavior. Use pr-assist to create a draft PR with a Kjell validation checkbox for shortcut reference accuracy and keyboard walkthrough, then run pr-shepherd until clean and ready.
 ```
 
 #### Step 6 prompt

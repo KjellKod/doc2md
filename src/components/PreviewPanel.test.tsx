@@ -175,6 +175,79 @@ describe("PreviewPanel", () => {
     );
   });
 
+  it("shows only verified editor shortcuts in the compact reference", () => {
+    render(<PreviewPanel entry={createEntry()} />);
+
+    const shortcutsButton = screen.getByRole("button", {
+      name: "Keyboard shortcuts",
+    });
+    expect(shortcutsButton).toHaveClass("shortcut-reference-button");
+    expect(shortcutsButton).toHaveAttribute("title", "Keyboard shortcuts");
+    expect(shortcutsButton).toHaveTextContent("");
+
+    fireEvent.click(shortcutsButton);
+
+    const dialog = screen.getByRole("dialog", { name: "Keyboard shortcuts" });
+    expect(dialog).toHaveTextContent("Find");
+    expect(dialog).toHaveTextContent("Cmd/Ctrl+F");
+    expect(dialog).toHaveTextContent("Bold");
+    expect(dialog).toHaveTextContent("Cmd/Ctrl+B");
+    expect(dialog).toHaveTextContent("Italic");
+    expect(dialog).toHaveTextContent("Cmd/Ctrl+I");
+    expect(dialog).toHaveTextContent("Link");
+    expect(dialog).toHaveTextContent("Cmd/Ctrl+K");
+    expect(dialog).toHaveTextContent("Ordered list");
+    expect(dialog).toHaveTextContent("Cmd/Ctrl+Shift+7");
+    expect(dialog).toHaveTextContent("Bulleted list");
+    expect(dialog).toHaveTextContent("Cmd/Ctrl+Shift+8");
+    expect(dialog).toHaveTextContent("Task list");
+    expect(dialog).toHaveTextContent("Cmd/Ctrl+Shift+9");
+    expect(dialog).toHaveTextContent("Close find or menu");
+    expect(dialog).toHaveTextContent("Escape");
+    expect(dialog).not.toHaveTextContent("Save document");
+    expect(dialog).not.toHaveTextContent("Mode switch");
+  });
+
+  it("adds Save to the shortcut reference only when the shell exposes a save shortcut", () => {
+    render(
+      <PreviewPanel
+        entry={createEntry()}
+        onSave={() => undefined}
+        saveKeyShortcuts="Meta+S"
+      />,
+    );
+
+    const saveButton = screen.getByRole("button", { name: "Save document" });
+    const shortcutsButton = screen.getByRole("button", {
+      name: "Keyboard shortcuts",
+    });
+    expect(
+      saveButton.compareDocumentPosition(shortcutsButton) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Keyboard shortcuts" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Keyboard shortcuts" });
+    expect(dialog).toHaveTextContent("Save document");
+    expect(dialog).toHaveTextContent("Cmd+S");
+  });
+
+  it("closes the shortcut reference on Escape and returns focus", async () => {
+    render(<PreviewPanel entry={createEntry()} />);
+
+    const button = screen.getByRole("button", { name: "Keyboard shortcuts" });
+    fireEvent.click(button);
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("dialog", { name: "Keyboard shortcuts" }),
+      ).not.toBeInTheDocument();
+      expect(button).toHaveFocus();
+    });
+  });
+
   it("renders toggle buttons when entry is warning with markdown", () => {
     render(
       <PreviewPanel
@@ -1348,25 +1421,24 @@ describe("PreviewPanel", () => {
     },
   );
 
-  it("opens replace controls with Cmd+Option+F", async () => {
+  it("does not intercept Cmd+Option+F", () => {
     render(<PreviewPanel entry={createEntry({ markdown: "Alpha" })} />);
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
 
-    window.dispatchEvent(
-      new KeyboardEvent("keydown", {
-        key: "f",
-        metaKey: true,
-        altKey: true,
-        bubbles: true,
-        cancelable: true,
-      }),
-    );
-
-    await waitFor(() => {
-      expect(
-        screen.getByRole("textbox", { name: "Replacement text" }),
-      ).toBeInTheDocument();
+    const event = new KeyboardEvent("keydown", {
+      key: "f",
+      metaKey: true,
+      altKey: true,
+      bubbles: true,
+      cancelable: true,
     });
+
+    window.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(
+      screen.queryByRole("textbox", { name: "Replacement text" }),
+    ).not.toBeInTheDocument();
   });
 
   it("refocuses an already-open find UI from keyboard shortcuts", async () => {
@@ -1391,24 +1463,20 @@ describe("PreviewPanel", () => {
 
     await waitFor(() => expect(document.activeElement).toBe(findInput));
 
-    // Replace is now expanded by default in edit mode; the toggle reads
-    // "Hide replace controls" and the input is already present.
-    const replaceInput = screen.getByRole("textbox", {
-      name: "Replacement text",
+    editor.focus();
+    const event = new KeyboardEvent("keydown", {
+      key: "f",
+      metaKey: true,
+      bubbles: true,
+      cancelable: true,
     });
 
-    editor.focus();
-    window.dispatchEvent(
-      new KeyboardEvent("keydown", {
-        key: "f",
-        metaKey: true,
-        altKey: true,
-        bubbles: true,
-        cancelable: true,
-      }),
-    );
+    window.dispatchEvent(event);
 
-    await waitFor(() => expect(document.activeElement).toBe(replaceInput));
+    await waitFor(() => expect(document.activeElement).toBe(findInput));
+    expect(
+      screen.getByRole("textbox", { name: "Replacement text" }),
+    ).toBeInTheDocument();
   });
 
   it("does not intercept Ctrl+H outside the find bar", () => {
@@ -1437,7 +1505,6 @@ describe("PreviewPanel", () => {
       new KeyboardEvent("keydown", {
         key: "f",
         metaKey: true,
-        altKey: true,
         bubbles: true,
         cancelable: true,
       }),
@@ -1446,10 +1513,9 @@ describe("PreviewPanel", () => {
     const editor = await screen.findByRole("textbox", {
       name: "Edit markdown",
     });
-    const replaceInput = screen.getByRole("textbox", {
-      name: "Replacement text",
-    });
-    expect(document.activeElement).toBe(replaceInput);
+    expect(document.activeElement).toBe(
+      screen.getByRole("textbox", { name: "Find markdown text" }),
+    );
 
     editor.focus();
     window.dispatchEvent(

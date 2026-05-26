@@ -185,19 +185,35 @@ test("Match Case is enabled by default on Cmd-F", async ({ page }) => {
   await expect(page.locator(".find-replace-count")).toHaveText(/of 3\b/);
 });
 
-// Cmd-Alt-F should still place focus on Replace (that's the intent of
-// the replace-shortcut).
-test("Cmd-Alt-F in edit mode focuses the Replace input", async ({ page }) => {
+test("Cmd-Alt-F is not intercepted by doc2md", async ({ page }) => {
   await openScratchEditor(page);
   const editor = page.getByLabel("Edit markdown");
   await editor.fill("hello hello");
 
-  const isMac = process.platform === "darwin";
-  await page.keyboard.press(isMac ? "Meta+Alt+f" : "Control+Alt+f");
+  const result = await page.evaluate((isMac) => {
+    const event = new KeyboardEvent("keydown", {
+      key: "f",
+      metaKey: isMac,
+      ctrlKey: !isMac,
+      altKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
 
-  await expect(
-    page.getByRole("textbox", { name: "Replacement text" }),
-  ).toBeFocused();
+    window.dispatchEvent(event);
+
+    return {
+      prevented: event.defaultPrevented,
+      replacementVisible: Boolean(
+        document.querySelector('input[aria-label="Replacement text"]'),
+      ),
+    };
+  }, process.platform === "darwin");
+
+  expect(result).toEqual({
+    prevented: false,
+    replacementVisible: false,
+  });
 });
 
 // BUG 6 — Find input must not autocorrect / capitalize on the user.

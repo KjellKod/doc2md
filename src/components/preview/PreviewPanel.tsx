@@ -136,13 +136,11 @@ export default function PreviewPanel({
       const key = event.key.toLowerCase();
       const isFindShortcut =
         key === "f" &&
-        ((event.metaKey && !event.ctrlKey) || (event.ctrlKey && !event.metaKey));
-      const isReplaceShortcut =
-        key === "f" &&
-        event.altKey &&
+        !event.altKey &&
+        !event.shiftKey &&
         ((event.metaKey && !event.ctrlKey) || (event.ctrlKey && !event.metaKey));
 
-      if (!isFindShortcut && !isReplaceShortcut) {
+      if (!isFindShortcut) {
         return;
       }
 
@@ -163,14 +161,14 @@ export default function PreviewPanel({
 
       event.preventDefault();
       setIsFindOpen(true);
-      if (mode === "edit" || isReplaceShortcut) {
+      if (mode === "edit") {
         setShowReplace(true);
       } else if (!isFindOpen) {
         setShowReplace(false);
       }
       setFindFocusRequest(({ id }) => ({
         id: id + 1,
-        target: isReplaceShortcut && mode === "edit" ? "replace" : "find",
+        target: "find",
       }));
     }
 
