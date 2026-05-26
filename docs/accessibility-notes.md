@@ -41,8 +41,8 @@ find/replace bar, save controls, or the upload/working-mode chrome.
 - The editor reacts to:
   - `Cmd/Ctrl + B`, `Cmd/Ctrl + I`, `Cmd/Ctrl + K` — wrap selection.
   - `Cmd-Shift-7/8/9` — toggle ordered, unordered, task list.
-  - `Cmd/Ctrl + F` — open find bar.
-  - `Cmd-Alt-F` — open find bar with replace expanded.
+  - `Cmd/Ctrl + F` — open find bar. In edit mode, replace controls are visible
+    but focus remains on the find input.
   - Smart-wrap on `*`, `_`, `` ` ``, `[`, `(`, `"` only when a selection
     is active (caret-only typing inserts the character as-is).
 - IME composition is guarded by `event.isComposing` AND an

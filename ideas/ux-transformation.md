@@ -325,7 +325,6 @@ Include only real, supported shortcuts:
 
 - Save
 - Find
-- Find with Replace expanded
 - Bold / Italic / Link
 - Ordered / unordered / task list toggles
 - mode switch behavior only if a shortcut exists
@@ -708,7 +707,7 @@ Read ideas/ux-transformation.md sections "Keyboard discoverability", "Lightweigh
 
 Trust mode: do not ask Kjell to approve a plan. Ask Kjell only to validate the resulting PR behavior.
 
-Scope: add or refine a compact shortcut reference for real, already-supported editor/workspace shortcuts. Include only typical editor shortcuts that actually exist, such as Save, Find, Find with Replace expanded, Bold, Italic, Link, ordered/unordered/task list toggles, Escape close/dismiss, and mode-switch behavior only if a real shortcut exists. Preserve existing keyboard contracts documented in docs/accessibility-notes.md, especially editor shortcuts, find/replace behavior, recent menu keyboard behavior, resize handle keyboard behavior, and before-unload behavior.
+Scope: add or refine a compact shortcut reference for real, already-supported editor/workspace shortcuts. Include only typical editor shortcuts that actually exist, such as Save, Find, Bold, Italic, Link, ordered/unordered/task list toggles, Escape close/dismiss, and mode-switch behavior only if a real shortcut exists. Preserve existing keyboard contracts documented in docs/accessibility-notes.md, especially editor shortcuts, find/replace behavior, recent menu keyboard behavior, resize handle keyboard behavior, and before-unload behavior.
 
 Hard out of scope: WCAG audit, WCAG matrix, certification, Lighthouse accessibility target, screen-reader audit, command palette, shortcut remapping/settings, new editor engine, broad focus-ring redesign, Core API/CLI behavior changes, and performance/status messaging changes.
 

@@ -183,8 +183,6 @@ describe("PreviewPanel", () => {
     const dialog = screen.getByRole("dialog", { name: "Keyboard shortcuts" });
     expect(dialog).toHaveTextContent("Find");
     expect(dialog).toHaveTextContent("Cmd/Ctrl+F");
-    expect(dialog).toHaveTextContent("Find with replace focus");
-    expect(dialog).toHaveTextContent("Cmd/Ctrl+Alt/Option+F");
     expect(dialog).toHaveTextContent("Bold");
     expect(dialog).toHaveTextContent("Cmd/Ctrl+B");
     expect(dialog).toHaveTextContent("Italic");
@@ -1407,25 +1405,24 @@ describe("PreviewPanel", () => {
     },
   );
 
-  it("opens replace controls with Cmd+Option+F", async () => {
+  it("does not intercept Cmd+Option+F", () => {
     render(<PreviewPanel entry={createEntry({ markdown: "Alpha" })} />);
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
 
-    window.dispatchEvent(
-      new KeyboardEvent("keydown", {
-        key: "f",
-        metaKey: true,
-        altKey: true,
-        bubbles: true,
-        cancelable: true,
-      }),
-    );
-
-    await waitFor(() => {
-      expect(
-        screen.getByRole("textbox", { name: "Replacement text" }),
-      ).toBeInTheDocument();
+    const event = new KeyboardEvent("keydown", {
+      key: "f",
+      metaKey: true,
+      altKey: true,
+      bubbles: true,
+      cancelable: true,
     });
+
+    window.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(
+      screen.queryByRole("textbox", { name: "Replacement text" }),
+    ).not.toBeInTheDocument();
   });
 
   it("refocuses an already-open find UI from keyboard shortcuts", async () => {
@@ -1450,24 +1447,20 @@ describe("PreviewPanel", () => {
 
     await waitFor(() => expect(document.activeElement).toBe(findInput));
 
-    // Replace is now expanded by default in edit mode; the toggle reads
-    // "Hide replace controls" and the input is already present.
-    const replaceInput = screen.getByRole("textbox", {
-      name: "Replacement text",
+    editor.focus();
+    const event = new KeyboardEvent("keydown", {
+      key: "f",
+      metaKey: true,
+      bubbles: true,
+      cancelable: true,
     });
 
-    editor.focus();
-    window.dispatchEvent(
-      new KeyboardEvent("keydown", {
-        key: "f",
-        metaKey: true,
-        altKey: true,
-        bubbles: true,
-        cancelable: true,
-      }),
-    );
+    window.dispatchEvent(event);
 
-    await waitFor(() => expect(document.activeElement).toBe(replaceInput));
+    await waitFor(() => expect(document.activeElement).toBe(findInput));
+    expect(
+      screen.getByRole("textbox", { name: "Replacement text" }),
+    ).toBeInTheDocument();
   });
 
   it("does not intercept Ctrl+H outside the find bar", () => {
@@ -1496,7 +1489,6 @@ describe("PreviewPanel", () => {
       new KeyboardEvent("keydown", {
         key: "f",
         metaKey: true,
-        altKey: true,
         bubbles: true,
         cancelable: true,
       }),
@@ -1505,10 +1497,9 @@ describe("PreviewPanel", () => {
     const editor = await screen.findByRole("textbox", {
       name: "Edit markdown",
     });
-    const replaceInput = screen.getByRole("textbox", {
-      name: "Replacement text",
-    });
-    expect(document.activeElement).toBe(replaceInput);
+    expect(document.activeElement).toBe(
+      screen.getByRole("textbox", { name: "Find markdown text" }),
+    );
 
     editor.focus();
     window.dispatchEvent(

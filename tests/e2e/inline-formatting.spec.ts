@@ -66,8 +66,6 @@ test("shortcut reference is reachable and dismisses with Escape", async ({ page 
   await expect(dialog).toBeVisible();
   await expect(dialog).toContainText("Find");
   await expect(dialog).toContainText("Cmd/Ctrl+F");
-  await expect(dialog).toContainText("Find with replace focus");
-  await expect(dialog).toContainText("Cmd/Ctrl+Alt/Option+F");
   await expect(dialog).toContainText("Bold");
   await expect(dialog).toContainText("Cmd/Ctrl+B");
   await expect(dialog).toContainText("Italic");

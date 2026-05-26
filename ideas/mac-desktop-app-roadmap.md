@@ -405,7 +405,7 @@ Clean up the editor/viewer UX across the hosted browser app and the Mac shell. T
 ### 6d. Find / Replace In Editor
 
 - Status: done in PR #89 (`mac-find-replace_2026-04-28__0032`).
-- Add keyboard shortcut (Cmd+F / Cmd+Option+F) and a visible entry point.
+- Add keyboard shortcut (Cmd+F) and a visible entry point.
 - Case sensitivity and regex options. Highlight all matches; step through with Enter / Shift+Enter.
 - Acceptance: round-trip search-and-replace on a 100 KB document is responsive (no janky UI freeze).
 

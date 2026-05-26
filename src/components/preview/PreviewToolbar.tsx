@@ -34,7 +34,6 @@ function shortcutRows(saveKeyShortcuts?: string): ShortcutRow[] {
   const shift = "Shift";
   const rows: ShortcutRow[] = [
     { label: "Find", keys: `${mod}+F` },
-    { label: "Find with replace focus", keys: `${mod}+Alt/Option+F` },
     { label: "Bold", keys: `${mod}+B` },
     { label: "Italic", keys: `${mod}+I` },
     { label: "Link", keys: `${mod}+K` },
