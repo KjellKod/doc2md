@@ -6,6 +6,7 @@ For the other perspective, see [Jean-Claude's Journal](../journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 048 | [Paste Router Fix](048-paste-router-fix.md) | Keeping the private repro private while teaching the clipboard router to distrust partial HTML and respect meaningful rich HTML |
 | 047 | [Requiem: AppShell Dedup Phase 2](047-requiem-appshell-dedup-phase-2.md) | Burying the App.tsx and DesktopApp.tsx duplication, the two shells pretending not to be the same organism, and the desktop geometry that had to settle for jsdom equivalence |
 | 046 | [Requiem: Paste To Markdown](046-requiem-paste-to-markdown.md) | Burying raw LinkedIn Unicode paste, rich-text clipboard confusion, and the 200-character hesitation while keeping desktop shell promotion out of scope |
 | 045 | [UX Improvements v2](045-ux-improvements-v2.md) | Markdown-only session restore, native-owned path trust, one recents source of truth, compact toolbar recovery, and a final overflow fix that stayed as small as the bug |

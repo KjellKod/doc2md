@@ -549,10 +549,10 @@ describe("convertClipboardPasteToMarkdown", () => {
     expect(result.markdown).toMatch(/1\.\s+First/);
   });
 
-  it("passes unicode dashes through verbatim when html is just a wrapper", () => {
-    // The HTML adds no formatting beyond wrapping the dashes in a <p>,
-    // so the trivial-wrapper heuristic routes to the plain-text path
-    // and the user gets the exact characters they copied.
+  it("keeps html routing for non-markdown plain wrappers with unicode dashes", () => {
+    // The wrapper heuristic now requires markdown-looking plain text.
+    // A plain paragraph wrapper still keeps the same visible text, but
+    // it should stay on the HTML path when markdown signals are absent.
     expect(
       convertClipboardPasteToMarkdown({
         html: "<p>— and –</p>",
@@ -560,24 +560,22 @@ describe("convertClipboardPasteToMarkdown", () => {
       }),
     ).toEqual({
       markdown: "— and –",
-      source: "plainText",
+      source: "html",
     });
   });
 
-  it("passes literal ascii horizontal-rule markers through verbatim when html is just a wrapper", () => {
-    // The HTML adds no formatting. The user copied literal `---` and
-    // we respect that — markdown will interpret it as an HR if rendered.
-    // The escape-to-`\\---` behavior only applies when Google Docs has
-    // auto-substituted dashes (html and plain text disagree); see the
-    // next test.
+  it("keeps html routing for plain wrappers with a single markdown signal", () => {
+    // A lone `---` line is not enough to satisfy the strong markdown
+    // signal threshold (two or more patterns), so this remains on the
+    // HTML path.
     expect(
       convertClipboardPasteToMarkdown({
         html: "<p>---</p>",
         plainText: "---",
       }),
     ).toEqual({
-      markdown: "---",
-      source: "plainText",
+      markdown: "\\---",
+      source: "html",
     });
   });
 
@@ -609,7 +607,7 @@ describe("convertClipboardPasteToMarkdown", () => {
       }),
     ).toEqual({
       markdown: "—",
-      source: "plainText",
+      source: "html",
     });
   });
 
@@ -765,14 +763,10 @@ describe("convertClipboardPasteToMarkdown", () => {
     expect(result.source).toBe("html");
   });
 
-  it("ignores an extraneous Gmail signature image and styled name when plain text already looks like markdown", () => {
-    // Real user report: pasting markdown from Gmail without first
-    // removing the signature flips the heuristic back to the HTML
-    // path because the signature contains an <img> and a bold/colored
-    // name. The signature's visible text still matches plain text, so
-    // when plain text already has multiple markdown markers (headings,
-    // fences, lists, etc.) we trust it over Turndown's escape-everything
-    // pass.
+  it("keeps html routing when signature html includes meaningful inline styling", () => {
+    // The plain-text payload looks markdown-like, but the HTML includes
+    // meaningful formatting (`<b style=\"color:...\">`). The trivial-wrapper
+    // path must stay off so we preserve the rule that rich HTML markers win.
     const markdownBody = [
       "# Battery Alert for macOS",
       "",
@@ -791,7 +785,7 @@ describe("convertClipboardPasteToMarkdown", () => {
       "---",
     ].join("\n");
 
-    const plainText = `${markdownBody}\n\nKjell Hedstrom`;
+    const plainText = `${markdownBody}\n\nExample User`;
 
     const html = [
       ...markdownBody
@@ -800,15 +794,13 @@ describe("convertClipboardPasteToMarkdown", () => {
           line.length === 0 ? "<div><br></div>" : `<div>${line}</div>`,
         ),
       "<div><br></div>",
-      '<div><img src="https://example.com/avatar.png" alt="" height="64" style="vertical-align:middle"><b style="color:#1a73e8">Kjell Hedstrom</b></div>',
+      '<div><img src="https://example.com/avatar.png" alt="" height="64" style="vertical-align:middle"><b style="color:#1a73e8">Example User</b></div>',
     ].join("");
 
     const result = convertClipboardPasteToMarkdown({ html, plainText });
 
-    expect(result.source).toBe("plainText");
-    expect(result.markdown).toBe(plainText);
-    expect(result.markdown).not.toMatch(/\\#/);
-    expect(result.markdown).not.toMatch(/\\\*\\\*/);
+    expect(result.source).toBe("html");
+    expect(result.markdown).toContain("Example User");
   });
 
   it("keeps the html path for a real rich-text paste even when plain text has a single markdown-looking line", () => {
@@ -829,15 +821,15 @@ describe("convertClipboardPasteToMarkdown", () => {
 
   it("treats span-wrapped plain markdown without formatting as a trivial wrapper", () => {
     // Some apps wrap each line in styled <span> elements that only
-    // encode font-family or color (not bold/italic). These should not
-    // count as meaningful formatting.
+    // encode font-family. These should not count as meaningful
+    // formatting.
     const plainText = "# Heading\n\nSome **bold** text and `code`.";
     const html = plainText
       .split("\n")
       .map((line) =>
         line.length === 0
           ? "<div><br></div>"
-          : `<div><span style="font-family: monospace; color: #333">${line}</span></div>`,
+          : `<div><span style="font-family: monospace">${line}</span></div>`,
       )
       .join("");
 
