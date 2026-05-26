@@ -1,0 +1,29 @@
+src/components/preview/PreviewPanel.tsx
+  s_f7e222be26f8ce::t_37e9faee323b90 139-140,143,164,171
+docs/accessibility-notes.md
+  s_f7e222be26f8ce::t_37e9faee323b90 44-45
+ideas/mac-desktop-app-roadmap.md
+  s_f7e222be26f8ce::t_37e9faee323b90 408
+ideas/ux-transformation.md
+  s_f7e222be26f8ce::t_37e9faee323b90 710
+tests/e2e/editor-integration.spec.ts
+  s_f7e222be26f8ce::t_37e9faee323b90 188,193-216
+src/components/PreviewPanel.test.tsx
+  s_f7e222be26f8ce::t_37e9faee323b90 1408,1412-1417,1419-1425,1450-1455,1458,1460-1463,1500-1502
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "2d360103837f74f306a0f1eff82489baa0a451b4",
+  "prompts": {},
+  "sessions": {
+    "s_f7e222be26f8ce": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e51f3-470c-7f90-ab00-5ac9fcf26c32",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
