@@ -1,0 +1,38 @@
+src/components/preview/EditMode.tsx
+  s_50b009b02e230a::t_80a5f363232ea8 49,161,576
+docs/quest-journal/mobile-real-device-fix_2026-05-26.md
+  s_50b009b02e230a::t_80a5f363232ea8 1-136
+docs/quest-journal/README.md
+  s_50b009b02e230a::t_80a5f363232ea8 5
+.github/workflows/ci.yml
+  s_50b009b02e230a::t_80a5f363232ea8 91-92,98-101
+src/components/preview/PreviewPanel.tsx
+  s_50b009b02e230a::t_80a5f363232ea8 209-213,333
+tests/e2e/hosted-mobile-tablet-layout.spec.ts
+  s_50b009b02e230a::t_80a5f363232ea8 39-61,98-101,103,124-185,244,249,392
+  s_50b009b02e230a::t_a3086eb0107317 102,104-105
+playwright.config.ts
+  s_50b009b02e230a::t_80a5f363232ea8 32-39
+docs/dexter-journal/048-requiem-mobile-real-device-fix.md
+  s_50b009b02e230a::t_80a5f363232ea8 1-145
+docs/dexter-journal/README.md
+  s_50b009b02e230a::t_80a5f363232ea8 9
+docs/diary/2026-05-26.md
+  s_50b009b02e230a::t_80a5f363232ea8 1-43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "639e0a8d09fc7348f923090e4a406650550edff5",
+  "prompts": {},
+  "sessions": {
+    "s_50b009b02e230a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e52b6-58f4-7152-9dc0-2c175dbdb7b2",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
