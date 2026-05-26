@@ -45,7 +45,7 @@ Every item must explicitly mark Hosted, Mac, and Core as `yes`, `if needed`, `no
 | Workspace real-estate and working-area density | yes | yes | n/a | `need` | Editing and previewing are the core working tasks, but the shared shell can still make document content feel cramped through vertical chrome, default split choices, and repeated manual resizing. |
 | Theme parity audit | yes | yes | n/a | `need` | Theme support exists, but the product needs a deliberate light/dark pass across editor, preview, highlights, errors, empty states, menus, and disabled states. |
 | Mobile and tablet layout pass | yes | n/a | n/a | `need` | Hosted web is a browser product. Phone and tablet layouts should not be incidental desktop collapse behavior. |
-| Performance perception pass | yes | yes | yes | `need` | Conversion, search, paste, batch output, and remote fetch all need visible, honest progress or bounded waiting. |
+| Performance perception pass | if needed | if needed | if needed | `deferred` | No concrete stuck/hung user evidence is known today. Do not schedule this until a real conversion, search, paste, batch, remote-fetch, or CLI wait-state issue is observed. |
 | Onboarding clarity | yes | yes | yes | `shipped` | Completed in PR #144; first-run copy now makes the user's next action obvious without restating the architecture. |
 | Empty-state copy pass | yes | yes | yes | `shipped` | Completed in PR #144; empty states now name the action that fills them. |
 | Error-state copy pass | yes | yes | yes | `shipped` | Completed in PR #144; errors now say what happened, why if known, and what the user can do next. |
@@ -180,9 +180,25 @@ Acceptance:
 
 Surfaces: Hosted, Mac, Core.
 
-Gut: `need`.
+Gut: `deferred`.
 
-Performance is already partly handled: find caps highlights at 5000 matches, conversion has timeouts, and save states are visible. The next pass is about perception and honesty, not raw speed.
+Performance is already partly handled: find caps highlights at 5000 matches,
+conversion has timeouts, and save states are visible. This is no longer an
+active roadmap step. It sounded plausible at roadmap level, but without a
+specific observed "the app looks stuck here" failure mode, the broad pass is
+YAGNI.
+
+Do not schedule or implement this pass until a concrete issue lands, such as:
+
+- a large local conversion with no visible indication that work is happening
+- a remote URL fetch that waits or fails without a bounded next action
+- a batch conversion state where success, skipped, and failed files are unclear
+- a large paste/search path that looks frozen or invites duplicate user action
+- CLI output that hides which inputs succeeded, skipped, or failed
+
+When one of those triggers lands, revive only the narrow affected path. Do not
+create fake progress, broad telemetry, new background infrastructure, or a
+general animation/loading-state pass.
 
 Hosted and Mac:
 
@@ -200,9 +216,11 @@ Core:
 
 Acceptance:
 
-- A large local conversion tells the user that conversion is happening locally and does not imply network upload.
-- A timeout or unsupported file explains the next action.
-- CLI users can tell which inputs succeeded, skipped, or failed without opening every output file.
+- Deferred until triggered by a concrete issue.
+- Any revived work names the exact stuck/wait-state path and validates only that
+  path.
+- Existing conversion, save, error, and copy text remains unchanged unless the
+  trigger proves it is misleading.
 
 ### Onboarding clarity
 
@@ -573,10 +591,9 @@ Examples that would require this block:
 2. Theme parity audit plus custom tooltip cleanup. Same visual QA pass, small code surface when implemented.
 3. Mobile/tablet layout pass for the hosted app. Related to workspace density, but focused on touch and narrow responsive behavior.
 4. Error and empty-state copy pass across Hosted, Mac, and Core. Cheap, high clarity.
-5. Performance perception pass. Keep it honest and bounded.
-6. Keyboard discoverability. The shortcut list should reference only real, already-supported editor/workspace shortcuts.
-7. Copy-paste UX loop polish. Keep it near the mode switcher if it earns the pixels.
-8. Reconsider `if-needed` items only after a concrete trigger lands.
+5. Keyboard discoverability. The shortcut list should reference only real, already-supported editor/workspace shortcuts.
+6. Copy-paste UX loop polish. Keep it near the mode switcher if it earns the pixels.
+7. Reconsider `if-needed` items only after a concrete trigger lands, including the deferred performance perception pass.
 
 ## Execution roadmap
 
@@ -623,6 +640,9 @@ Already settled before execution:
   for production behavior and should be handled as a small desktop-shell cleanup
   by moving those bridge components into a component-only module when the
   desktop shell is next touched.
+- Step 6, performance perception, is obsolete as an active roadmap item until
+  a concrete stuck/wait-state issue is observed. Do not schedule it speculatively
+  before copy-paste polish.
 
 | Step | Scope | Tool path | Order | Parallel rule | Kjell validation |
 |---:|---|---|---|---|---|
@@ -632,8 +652,8 @@ Already settled before execution:
 | 3 | Mobile and tablet layout pass | `quest:workflow` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After step 1; preferably after step 2 | Do not overlap with step 1. | Inspect hosted app at 375px and 768px; controls should fit, touch targets should be usable, no text overlap. |
 | 4 | Onboarding, empty-state, and error-state copy pass | Complete in PR #144 | Done | Do not rerun unless reopened by regression or a new copy surface. | Read first-run, empty, and failure states; each should name the next useful action without adding architecture lectures. |
 | 5 | Keyboard shortcut discoverability | `quest:solo` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After step 1 | Avoid parallel edits to the same toolbar/menu files as step 2. | Use the shortcut reference and a keyboard smoke walkthrough; shortcut claims should match real controls. |
-| 6 | Performance perception pass | `quest:workflow` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After PR #144 copy language | Sequential with copy-paste polish if both touch status messaging. | Convert, search, paste, and batch output should show honest progress or bounded wait states. |
-| 7 | Copy-paste UX loop polish | `quest:solo` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After step 1 and PR #144 | Can run after performance pass or in parallel only if write scopes avoid status/progress components. | Paste Markdown/HTML, copy Markdown, and copy LinkedIn output; actions should be discoverable and not add excess chrome. |
+| 6 | Performance perception pass | Obsolete/deferred | Only after concrete stuck/wait-state evidence | Do not run in the default roadmap sequence. If revived, keep it to the single triggered path. | Validate against the observed issue, not a generic progress-polish checklist. |
+| 7 | Copy-paste UX loop polish | `quest:solo` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After step 1 and PR #144; can run now that step 6 is deferred | Avoid status/progress rewrites unless directly required by paste/copy feedback. | Paste Markdown/HTML, copy Markdown, and copy LinkedIn output; actions should be discoverable and not add excess chrome. |
 | 8 | Revisit `if-needed` items: folder view, browser crash recovery, scratch-buffer preservation, Mac file watchers, system theme follow, sketch2md cross-product discovery | `quest:workflow` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | Only after a trigger lands | Not part of the default parallel pool. Treat each as its own proposal. | Validate against the trigger that revived the item, not against speculative acceptance. |
 
 ### Prompt pack
@@ -717,16 +737,12 @@ Validation required before PR: run relevant unit/component tests, verify each di
 #### Step 6 prompt
 
 ```text
-quest:workflow
-Implement doc2md UX transformation step 6: performance perception pass.
+No active prompt. Step 6 is obsolete/deferred until a concrete stuck/wait-state
+issue is observed.
 
-Read ideas/ux-transformation.md sections "Performance perception pass", "Execution roadmap", and "Validation expectations for future implementation quests". Start from current main on a fresh branch named like ux/performance-perception-<branch-suffix>.
-
-Trust mode: do not ask Kjell to approve a plan. Ask Kjell only to validate the resulting PR behavior.
-
-Scope: make conversion, search, paste, batch output, and remote fetch feel honest and bounded through existing status surfaces. Add progress or waiting feedback only where work can actually take long enough to matter. Do not add fake precision, new background infrastructure, or broad telemetry.
-
-Validation required before PR: run relevant tests and manually exercise conversion, search, paste, batch output, and remote fetch paths where available. Use pr-assist to create a draft PR with a Kjell validation checkbox for perceived progress and wait-state honesty, then run pr-shepherd until clean and ready.
+If a trigger lands later, write a new narrow prompt for that one path. The
+prompt must name the observed issue and must not revive a broad performance
+perception pass, fake progress, telemetry, or background infrastructure.
 ```
 
 #### Step 7 prompt

@@ -2,6 +2,7 @@
 
 | Date | Quest | Outcome |
 |------|-------|---------|
+| 2026-05-23 | [paste-router-fix](paste-router-fix_2026-05-23.md) | Implement a narrow paste-router fix, not a converter rewrite. The upload path already works because it sends the full... |
 | 2026-05-15 | [paste-to-markdown](paste-to-markdown_2026-05-15.md) | Implement ideas/paste-to-markdown-in-editor.md. Keep scope tight: intercept paste in the edit textarea, convert Linke... |
 | 2026-05-15 | [ux-improvements-v2](ux-improvements-v2_2026-05-15.md) | Mac session restore, native-owned recents, compact working-mode controls, preview/mobile layout polish, and final clipped-menu regression fix. |
 | 2026-05-15 | [paste-to-markdown](paste-to-markdown_2026-05-15.md) | Implement ideas/paste-to-markdown-in-editor.md. Keep scope tight: intercept paste in the edit textarea, convert Linke... |

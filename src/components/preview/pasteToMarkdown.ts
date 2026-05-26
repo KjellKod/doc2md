@@ -12,6 +12,8 @@ import {
 type PasteSource = "html" | "plainText" | "empty";
 
 const BOLD_FONT_WEIGHT_THRESHOLD = 600;
+const INCOMPLETE_HTML_FALLBACK_MIN_LENGTH_DELTA = 80;
+const INCOMPLETE_HTML_FALLBACK_MAX_RATIO = 0.8;
 
 // Tags whose presence means the HTML carries structural or semantic
 // meaning that Turndown should preserve. If a paste's HTML contains
@@ -29,29 +31,18 @@ const MEANINGFUL_HTML_TAGS = [
   "b",
   "em",
   "i",
-  "u",
-  "s",
-  "strike",
   "code",
-  "pre",
   "blockquote",
+  "hr",
   "ul",
   "ol",
   "li",
   "table",
+  "thead",
+  "tbody",
   "tr",
   "td",
   "th",
-  "img",
-  "hr",
-  "sub",
-  "sup",
-  "mark",
-  "del",
-  "ins",
-  "kbd",
-  "samp",
-  "var",
 ] as const;
 
 const MEANINGFUL_HTML_SELECTOR = [
@@ -59,7 +50,131 @@ const MEANINGFUL_HTML_SELECTOR = [
   "a[href]",
 ].join(",");
 
-function inlineStyleEncodesEmphasis(element: Element): boolean {
+const MEANINGFUL_INLINE_STYLE_KEYS = new Set([
+  "font-weight",
+  "font-style",
+  "text-decoration",
+  "color",
+  "background",
+  "font-size",
+]);
+const VISIBLE_TEXT_BLOCK_TAGS = new Set([
+  "address",
+  "article",
+  "aside",
+  "blockquote",
+  "div",
+  "dl",
+  "fieldset",
+  "figcaption",
+  "figure",
+  "footer",
+  "form",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "header",
+  "hr",
+  "li",
+  "main",
+  "nav",
+  "ol",
+  "p",
+  "pre",
+  "section",
+  "table",
+  "tbody",
+  "td",
+  "th",
+  "thead",
+  "tr",
+  "ul",
+]);
+
+function normalizeTextForPasteRouting(text: string): string {
+  return text
+    .normalize("NFKC")
+    .replace(/\r\n?/g, "\n")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function extractVisibleTextFromHtmlNode(node: Node, parts: string[]): void {
+  if (node.nodeType === node.TEXT_NODE) {
+    parts.push(node.textContent ?? "");
+    return;
+  }
+
+  if (node.nodeType !== node.ELEMENT_NODE) return;
+
+  const element = node as HTMLElement;
+  const tagName = element.tagName.toLowerCase();
+  const isBlock = VISIBLE_TEXT_BLOCK_TAGS.has(tagName);
+
+  if (tagName === "br") {
+    parts.push("\n");
+    return;
+  }
+
+  if (isBlock && parts.length > 0) {
+    parts.push("\n");
+  }
+
+  for (const child of Array.from(element.childNodes)) {
+    extractVisibleTextFromHtmlNode(child, parts);
+  }
+
+  if (isBlock) {
+    parts.push("\n");
+  }
+}
+
+function extractNormalizedHtmlVisibleTextFromBody(body: HTMLElement): string {
+  const parts: string[] = [];
+  extractVisibleTextFromHtmlNode(body, parts);
+  return normalizeTextForPasteRouting(parts.join(""));
+}
+
+function htmlIsClearlyIncompleteComparedToPlainText(
+  html: string,
+  plainText: string,
+): boolean {
+  const normalizedPlainText = normalizeTextForPasteRouting(plainText);
+  if (normalizedPlainText.length === 0) return false;
+
+  let normalizedHtmlText: string;
+  try {
+    const DOMParserCtor = getDomParser();
+    const parser = new DOMParserCtor();
+    const body = parser.parseFromString(html, "text/html").body;
+    if (!body) return false;
+    normalizedHtmlText = extractNormalizedHtmlVisibleTextFromBody(body);
+  } catch {
+    return false;
+  }
+
+  if (normalizedHtmlText.length === 0) return true;
+
+  if (
+    normalizedPlainText.includes(normalizedHtmlText) &&
+    normalizedPlainText !== normalizedHtmlText
+  ) {
+    return true;
+  }
+
+  const lengthDelta = normalizedPlainText.length - normalizedHtmlText.length;
+  if (lengthDelta < INCOMPLETE_HTML_FALLBACK_MIN_LENGTH_DELTA) return false;
+
+  return (
+    normalizedHtmlText.length / normalizedPlainText.length <=
+    INCOMPLETE_HTML_FALLBACK_MAX_RATIO
+  );
+}
+
+function inlineStyleHasMeaningfulFormatting(element: Element): boolean {
   const style = element.getAttribute("style");
   if (!style) return false;
 
@@ -76,9 +191,21 @@ function inlineStyleEncodesEmphasis(element: Element): boolean {
       if (Number.isFinite(numeric) && numeric >= BOLD_FONT_WEIGHT_THRESHOLD) {
         return true;
       }
+      if (MEANINGFUL_INLINE_STYLE_KEYS.has(property) && value !== "normal") {
+        return true;
+      }
+      continue;
     }
 
     if (property === "font-style" && value === "italic") return true;
+
+    if (
+      MEANINGFUL_INLINE_STYLE_KEYS.has(property) &&
+      value !== "normal" &&
+      value !== "none"
+    ) {
+      return true;
+    }
   }
 
   return false;
@@ -88,14 +215,13 @@ function htmlBodyHasMeaningfulFormatting(body: HTMLElement): boolean {
   if (body.querySelector(MEANINGFUL_HTML_SELECTOR)) return true;
 
   const styled = Array.from(body.querySelectorAll<HTMLElement>("[style]"));
-  return styled.some(inlineStyleEncodesEmphasis);
+  return styled.some(inlineStyleHasMeaningfulFormatting);
 }
 
 // Regexes that each match a distinct markdown construct. Two or more
 // hits across different patterns indicates the plain-text payload is
-// already markdown, which means any extraneous HTML formatting (Gmail
-// signature `<img>` and styled name, mail-tracking pixel, copy footer)
-// should NOT pull us into Turndown's escape-everything path.
+// already markdown and can win only when the HTML is a true trivial
+// wrapper with no meaningful rich markers.
 const MARKDOWN_SIGNAL_PATTERNS: readonly RegExp[] = [
   /^#{1,6}\s+\S/m, // ATX heading
   /^```/m, // fenced code block opener
@@ -117,21 +243,6 @@ function plainTextHasStrongMarkdownSignals(plainText: string): boolean {
     }
   }
   return false;
-}
-
-function reduceForWrapperComparison(text: string): string {
-  // textContent across browsers does not insert whitespace at block
-  // boundaries (e.g. `<div>a</div><div>b</div>` yields `"ab"`), while
-  // the plain-text clipboard payload puts a newline between them.
-  // Comparing whitespace-collapsed character bags decouples structural
-  // shape from visible content: if every non-whitespace character
-  // matches, the HTML is carrying the same content as plain text and
-  // the linebreak shape difference is just transport.
-  //
-  // \s already covers nbsp (U+00A0); zero-width space (U+200B) and
-  // zero-width no-break space / BOM (U+FEFF) do not, so strip them
-  // explicitly.
-  return text.replace(/[\s\u200B\uFEFF]+/g, "");
 }
 
 // Returns true when `html` carries no structural meaning beyond
@@ -158,20 +269,11 @@ export function htmlIsTrivialPasteWrapper(
 
   if (!body) return false;
 
-  const htmlReduced = reduceForWrapperComparison(body.textContent ?? "");
-  const plainReduced = reduceForWrapperComparison(plainText);
-  if (plainReduced.length === 0) return false;
-  if (htmlReduced !== plainReduced) return false;
-
-  if (!htmlBodyHasMeaningfulFormatting(body)) return true;
-
-  // The HTML has some formatting but its visible text matches plain
-  // text exactly. If plain text itself already contains multiple
-  // markdown markers, the user copied markdown that picked up
-  // extraneous HTML along the way (most commonly a Gmail signature
-  // with a profile image and styled name). Honor the plain-text
-  // version instead of escaping every markdown character through
-  // Turndown.
+  const normalizedHtmlText = extractNormalizedHtmlVisibleTextFromBody(body);
+  const normalizedPlainText = normalizeTextForPasteRouting(plainText);
+  if (normalizedPlainText.length === 0) return false;
+  if (normalizedHtmlText !== normalizedPlainText) return false;
+  if (htmlBodyHasMeaningfulFormatting(body)) return false;
   return plainTextHasStrongMarkdownSignals(plainText);
 }
 
@@ -205,10 +307,7 @@ function restorePlainTextHorizontalRuleMarkers(
       const plainLine = plainLines[plainLineIndex];
       plainLineIndex += 1;
 
-      if (
-        (plainLine === "---" || plainLine === "—") &&
-        (line.trim() === "—" || line.trim() === "\\—")
-      ) {
+      if (plainLine === "---" && (line.trim() === "—" || line.trim() === "\\—")) {
         return `${line.match(/^\s*/)?.[0] ?? ""}\\---`;
       }
 
@@ -221,10 +320,21 @@ export function convertClipboardPasteToMarkdown({
   html,
   plainText,
 }: ClipboardPasteInput): ClipboardPasteConversion {
-  if (
-    html.trim().length > 0 &&
-    !htmlIsTrivialPasteWrapper(html, plainText)
-  ) {
+  if (html.trim().length > 0) {
+    if (htmlIsClearlyIncompleteComparedToPlainText(html, plainText)) {
+      return {
+        markdown: convertLinkedInUnicodeToMarkdown(plainText),
+        source: "plainText",
+      };
+    }
+
+    if (htmlIsTrivialPasteWrapper(html, plainText)) {
+      return {
+        markdown: convertLinkedInUnicodeToMarkdown(plainText),
+        source: "plainText",
+      };
+    }
+
     const htmlMarkdown = restorePlainTextHorizontalRuleMarkers(
       restorePasteMarkdownPlaceholders(
         convertHtmlFragmentToMarkdown(normalizePasteHtmlForMarkdown(html), {
