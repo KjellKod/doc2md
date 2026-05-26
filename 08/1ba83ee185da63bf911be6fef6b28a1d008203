@@ -1,0 +1,19 @@
+tests/e2e/hosted-mobile-tablet-layout.spec.ts
+  s_50b009b02e230a::t_96b3df53d22e18 441-443,445
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "081ba83ee185da63bf911be6fef6b28a1d008203",
+  "prompts": {},
+  "sessions": {
+    "s_50b009b02e230a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e52b6-58f4-7152-9dc0-2c175dbdb7b2",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
