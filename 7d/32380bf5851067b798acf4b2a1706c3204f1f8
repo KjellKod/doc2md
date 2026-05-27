@@ -1,0 +1,51 @@
+docs/accessibility-notes.md
+  s_f0aa1604c67d90::t_fe3392bf730bbc 111-118
+ideas/archive/markdown-editing-and-rendering-stack.md
+  s_f0aa1604c67d90::t_850c8606e0fa04 1-221,223-243
+  s_f0aa1604c67d90::t_f37f675d07088e 222
+ideas/archive/ux-transformation.md
+  s_f0aa1604c67d90::t_850c8606e0fa04 1-3,5-49,53-56,59,61-62,64,66-469,475-501,506-635,638-654,657-659,663-670,672,675-683,685-793
+  s_f0aa1604c67d90::t_880f9dff2bcb9b 4,50-52,57-58,60,63,65,470-474,502-505,636-637,655-656,660-662,671,673-674
+  s_f0aa1604c67d90::t_b3b0f75037b28b 684
+docs/ideas-audit-2026-05-14.md
+  s_f0aa1604c67d90::t_93af81067b7ddc 110,114,116,160-161
+  s_f0aa1604c67d90::t_8dde97d96cf17d 5-9,74,144,147
+ideas/archive/bug_report_find_highlight_dom_leaks.md
+  s_f0aa1604c67d90::t_9e280598e0a248 194
+ideas/archive/doc2md-mac-file-watchers.md
+  s_f0aa1604c67d90::t_850c8606e0fa04 1-43
+ideas/archive/doc2md-editor-engine-evaluation.md
+  s_f0aa1604c67d90::t_850c8606e0fa04 1-41
+ideas/archive/doc2md-browser-crash-recovery.md
+  s_f0aa1604c67d90::t_7fbb66c196d591 1-16,22-57
+  s_f0aa1604c67d90::t_558911acf082f9 17-21
+ideas/archive/quest-brief-preview-panel-refactor-phase-2.md
+  s_f0aa1604c67d90::t_f37f675d07088e 1-123
+ideas/archive/doc2md-multibrowser-playwright.md
+  s_f0aa1604c67d90::t_850c8606e0fa04 1-25
+ideas/archive/quest-brief-preview-panel-refactor-phase-1.md
+  s_f0aa1604c67d90::t_f37f675d07088e 1-126
+ideas/archive/resize-handle-rework.md
+  s_f0aa1604c67d90::t_9e280598e0a248 209
+ideas/README.md
+  s_f0aa1604c67d90::t_0d7c4604b223c4 22-27
+  s_f0aa1604c67d90::t_7fbb66c196d591 28
+ideas/archive/preview-panel-refactor.md
+  s_f0aa1604c67d90::t_850c8606e0fa04 1-144
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "7d32380bf5851067b798acf4b2a1706c3204f1f8",
+  "prompts": {},
+  "sessions": {
+    "s_f0aa1604c67d90": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e4da6-88fb-7cf3-b0a0-059bf0016d90",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
