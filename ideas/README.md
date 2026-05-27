@@ -8,7 +8,6 @@ Index of active proposals plus a pointer to the most recent audit. The full per-
 |---|---|---|
 | `if-needed` | `pdf-multi-line-cell-tables` | Multi-line cell table detection. Trigger: customer use case where current PDF table conversion is the blocker. |
 | `if-needed` | `doc2md-folder-view` | Active/Folder rail + browser FS API + Mac `chooseDirectory`. Trigger: pivot toward "doc2md is your local markdown workspace". |
-| `if-needed` | `remove-url-import` | Delete URL import path (still wired in `DropZone.tsx` + `remoteDocument.ts`). Trigger: next user-support thread where it's the cause. |
 | index | `mac-desktop-app-roadmap` | Planning artifact updated 2026-05-14. Phases 1–5c + 6 (MVP scope) + 7a done; **Phase 7b blocked on out-of-repo operational setup** (Cloudflare Worker, Lemon Squeezy, `doc2md.dev` DNS, support email, go-live approval). 6e/6f deferred. |
 | active | `mac-commercial-distribution-and-licensing` | Phase 7b research for `doc2md.dev`, direct-DMG distribution, merchant-of-record licensing, honest-user reminders. Binding: [decision record](../docs/implementation/mac-commercial-distribution-decision-record.md). |
 | `need` | `agentic-ci-scale-and-signal` | Successor to the shipped `ci-trustworthiness`. Partitioned review for large diffs, risk router (skip/light/deep), findings-to-fix verification, durable project-rules injection, Mac Swift tests in CI. See [`agentic-ci-scale-and-signal.md`](agentic-ci-scale-and-signal.md). |
@@ -19,6 +18,7 @@ Pointers below link to the archive copy or to the journal entry that documents w
 
 | Archived | Idea | Shipped via |
 |---|---|---|
+| 2026-05-27 | ~~`remove-url-import`~~ | Hosted and Mac React surfaces no longer expose browser URL import; `@doc2md/core` and the CLI still accept direct remote document URLs. See [archive](archive/remove-url-import.md). |
 | 2026-05-26 | ~~`ux-transformation`~~ | Roadmap completed or deliberately deferred: workspace density #141, theme/tooltips #143, onboarding/error/empty copy #144, keyboard shortcuts #146, paste routing #150, mobile layout #151/#152. Remaining speculative items stay gated by concrete triggers. See [archive](archive/ux-transformation.md). |
 | 2026-05-26 | ~~`preview-panel-refactor`~~ | Phase 1 shipped in PR #127 and Phase 2 AppShell dedup shipped in PR #135. Quest briefs archived with the proposal. See [archive](archive/preview-panel-refactor.md). |
 | 2026-05-26 | ~~`markdown-editing-and-rendering-stack`~~ | Archived as absorbed/obsolete. The real editor and preview stack now lives in `src/components/preview/`, `react-markdown` + `remark-gfm`, focused paste/copy tests, and the bounded shortcut reference from PR #146. See [archive](archive/markdown-editing-and-rendering-stack.md). |

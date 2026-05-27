@@ -72,6 +72,7 @@ Scoring scale: **1–5**. Value is impact on users or maintainer velocity if shi
 |---|---|---|
 | `ci-trustworthiness` | Moved from active `if-needed` to archived/shipped. | Quest `ci-trustworthiness_2026-04-05__2258` and `docs/quest-journal/ci-trustworthiness_2026-04-06.md`; current workflows split CI into named jobs, keep Codex review visible, add an advisory intent-review lane, and document required versus advisory checks. |
 | `doc2md-browser-crash-recovery` | Kept active `if-needed`, with narrower wording. Superseded 2026-05-26: archived as not-now/YAGNI. | Hosted app has in-session protection and a `beforeunload` guard, and Mac session restore is separately shipped. No hosted reload-surviving draft index, stable scratch identity, IndexedDB fallback, or boot-time Restore / Discard UI exists yet. |
+| `remove-url-import` | Superseded 2026-05-27: moved from active `if-needed` to archived/shipped. | Hosted and Mac React surfaces no longer expose browser URL import; `@doc2md/core` and the CLI still accept direct remote document URLs. |
 
 ## What changed in `ideas/README.md`
 

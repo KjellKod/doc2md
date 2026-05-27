@@ -63,7 +63,6 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
   const {
     entries,
     addFiles,
-    addUrl,
     addScratchEntry,
     clearEntriesById,
     selectEntry,
@@ -126,7 +125,7 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     );
   };
   const heroSummary = buildSummary(
-    "Start writing, open files, or import a direct document URL",
+    "Start writing or open files from your device",
     " open",
   );
   const fileSummary = buildSummary(
@@ -219,10 +218,6 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     }
     resize.triggerFirstOpenAutoCollapse(Boolean(selectedEntry?.isScratch));
   }, [resize, selectedEntry?.isScratch, selectedEntryId]);
-
-  async function handleUrlAdded(url: string) {
-    await addUrl(url);
-  }
 
   const toggleCheckedEntry = useCallback((entryId: string, checked: boolean) => {
     setCheckedEntryIds((current) => {
@@ -421,7 +416,6 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
 
   const dropZoneProps: DropZoneProps = {
     onFilesAdded: addFiles,
-    onUrlAdded: handleUrlAdded,
     onBrowseRequest: handleBrowserOpenRequest,
   };
 

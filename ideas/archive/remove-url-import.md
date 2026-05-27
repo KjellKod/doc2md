@@ -1,5 +1,12 @@
 # Remove URL Import Functionality
 
+Status: complete.
+
+Archived: 2026-05-27.
+
+Outcome: the hosted and Mac React surfaces no longer expose browser URL import.
+`@doc2md/core` and the CLI still accept direct remote document URLs.
+
 ## Context
 
 The DropZone exposes a "URL import" input that fetches a document from a
@@ -44,4 +51,4 @@ Keep the file-drop and file-picker paths intact.
 
 ## Status
 
-Idea. Not yet picked up. Track here so the decision is recorded.
+Complete. Archived after the React-hosted and Mac UI URL import path was removed.

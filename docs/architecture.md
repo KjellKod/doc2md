@@ -151,11 +151,10 @@ interface ConversionResult {
 
 **Data flow:**
 
-1. User drops one or more local files into the React UI, or supplies a direct document URL
-2. For remote URLs, the browser fetches the document directly after user confirmation and wraps the document in a `File`
-3. The browser selects the matching converter via `convertFile()` in `/src/converters/index.ts`
-4. The converter returns a `ConversionResult` with Markdown, warnings, and status
-5. The user reviews the result locally and downloads `.md` files
+1. User drops one or more local files into the React UI or chooses files from the browser picker
+2. The browser selects the matching converter via `convertFile()` in `/src/converters/index.ts`
+3. The converter returns a `ConversionResult` with Markdown, warnings, and status
+4. The user reviews the result locally and downloads `.md` files
 
 **Hosted/shared code:** React components in `/src/components/`, `src/App.tsx`, shared hooks, and UI state management. This surface must not import `src/desktop/`, `src/types/doc2mdShell.d.ts`, or desktop-only persistence/save/reveal/native-menu behavior.
 
@@ -280,20 +279,16 @@ The web UI uses these client-side libraries for in-browser document processing:
 
 ## Privacy and Local Processing
 
-- **Privacy-forward by default:** local files are processed in-browser, and remote URLs are fetched directly by the browser instead of being uploaded to a doc2md service.
+- **Privacy-forward by default:** local files are processed in-browser instead of being uploaded to a doc2md service.
 - **Simple trust model:** no server-side storage, queue, or backend worker pipeline.
 - **Honest scope:** the web surface is a static frontend utility, not a document-processing platform.
-- **Browser URL limits:** direct browser URL fetches use a 30-second download timeout and the existing 50 MiB in-browser size cap before conversion continues.
-- **Shared browser URL contract:** remote URL imports use a browser-only fetch path after explicit user confirmation, so the same CORS, timeout, size, and privacy boundaries apply.
-
 The Mac desktop app and npm package follow the same principle at their runtime layer: conversion runs locally, no document data is sent to a doc2md service.
 
 ## Limits and Boundaries
 
 - PDF support is best-effort and text-first; scanned or image-based PDFs are out of scope.
 - PPTX support is experimental and intentionally conservative.
-- Remote URL imports depend on direct browser access. Private endpoints, auth-gated downloads, or origins without suitable cross-origin access may fail before conversion starts.
-- Remote URLs are fetched exactly as provided. doc2md does not rewrite provider-specific page URLs into direct-download URLs.
+- The hosted web UI does not import remote document URLs.
 - `@doc2md/core` and the CLI also fetch remote URLs directly, from the local Node process, with a 30-second default timeout and no extra byte-size cap.
 - The web UI has no backend API, server-side worker, queue, Redis, auth, telemetry, or server deployment path.
 - A browser-side PDF.js worker is used for PDF parsing, but it runs locally in the user's browser and is not a separate service boundary.

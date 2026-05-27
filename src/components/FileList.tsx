@@ -52,7 +52,7 @@ export default function FileList({
       <div className="empty-state">
         <p className="empty-state-title">No files or drafts yet.</p>
         <p className="empty-state-copy">
-          Drop a file, import a direct URL, or start writing in the preview.
+          Drop a file, browse from your device, or start writing in the preview.
         </p>
       </div>
     );

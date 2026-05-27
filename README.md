@@ -10,7 +10,7 @@
 
 ---
 
-A browser-based tool that converts documents to Markdown. Drop in a file or import a document URL, convert it in the browser, review the result, download `.md`. The Node package and CLI also accept direct remote document URLs.
+A browser-based tool that converts documents to Markdown. Drop in a file, convert it in the browser, review the result, download `.md`. The Node package and CLI also accept direct remote document URLs.
 
 (_[Quest](https://github.com/KjellKod/quest/blob/main/README.md)_) Built for people entering AI-assisted workflows who need a frictionless way to turn existing documents into Markdown for tools like Claude Code, Codex, coding agents, or text-first editing.
 
@@ -124,13 +124,13 @@ Agent instructions using skills:
 
 ## Principles
 
-* **Client-side first** — local files are processed in the browser, and remote URLs are fetched directly by it
+* **Client-side first** — local files are processed in the browser
 * **Honest over magical** — PDFs degrade gracefully with clear warnings
 * **Simple over clever** — common cases handled well, no fake completeness
 
 ## Architecture
 
-doc2md is a browser-first tool: conversion runs in the browser, output stays local, and there is no backend, server-side worker, or server path in the current product. Local files never leave the browser; remote document URLs are downloaded directly by it and still avoid any doc2md-owned upload path. The PDF converter does use a browser-side PDF.js worker as an implementation detail. See [docs/architecture.md](docs/architecture.md) for the bounded design and format limits.
+doc2md is a browser-first tool: conversion runs in the browser, output stays local, and there is no backend, server-side worker, or server path in the current product. Local files never leave the browser. The PDF converter does use a browser-side PDF.js worker as an implementation detail. See [docs/architecture.md](docs/architecture.md) for the bounded design and format limits.
 
 ## Documentation
 

@@ -14,12 +14,7 @@ describe("DropZone", () => {
       .spyOn(HTMLInputElement.prototype, "click")
       .mockImplementation(() => undefined);
 
-    render(
-      <DropZone
-        onFilesAdded={() => undefined}
-        onUrlAdded={async () => undefined}
-      />,
-    );
+    render(<DropZone onFilesAdded={() => undefined} />);
 
     fireEvent.click(
       screen.getAllByRole("button", { name: /browse from your device/i })[1],
@@ -30,12 +25,7 @@ describe("DropZone", () => {
 
   it("passes selected files through the existing onFilesAdded path", () => {
     const onFilesAdded = vi.fn();
-    const { container } = render(
-      <DropZone
-        onFilesAdded={onFilesAdded}
-        onUrlAdded={async () => undefined}
-      />,
-    );
+    const { container } = render(<DropZone onFilesAdded={onFilesAdded} />);
     const input = container.querySelector('input[type="file"]');
     const files = [new File(["content"], "sample.txt", { type: "text/plain" })];
 
@@ -53,7 +43,6 @@ describe("DropZone", () => {
     render(
       <DropZone
         onFilesAdded={() => undefined}
-        onUrlAdded={async () => undefined}
         onBrowseRequest={onBrowseRequest}
       />,
     );
