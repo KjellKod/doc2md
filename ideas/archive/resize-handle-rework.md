@@ -206,7 +206,7 @@ branch should implement, not re-litigate.
 - **Re-themeable handle colors**. Use existing accent var and
   neutral border vars only.
 - **The PreviewPanel split refactor** described in
-  `ideas/preview-panel-refactor.md` is a separate, larger piece of
+  `ideas/archive/preview-panel-refactor.md` is a separate, larger piece of
   work. This rework should not block on it; it's local to the
   outer shell.
 

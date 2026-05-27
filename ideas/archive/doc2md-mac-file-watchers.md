@@ -1,5 +1,11 @@
 # Mac file watchers via NSFilePresenter
 
+Status: archived as not-now/YAGNI on 2026-05-26.
+
+Current decision: do not add live file watchers until there is a real
+synced-folder conflict or silent-overwrite report. Existing save-time and
+reload-time mtime checks cover the current product need.
+
 Promoted out of `doc2md-ux-hardening-proposal.md` Phase 1 because OS-level
 file coordination with iCloud / Dropbox / OneDrive needs its own focused
 integration testing.

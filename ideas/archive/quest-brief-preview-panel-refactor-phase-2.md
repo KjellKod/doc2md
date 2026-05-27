@@ -9,7 +9,7 @@ Quest brief: PreviewPanel Refactor Phase 2 (AppShell Dedup)
 
 Context
 
-- Source proposal: ideas/preview-panel-refactor.md. Phase 1 (mode split) is DONE; this quest is Phase 2 (App.tsx + DesktopApp.tsx dedup into a shared AppShell).
+- Source proposal: ideas/archive/preview-panel-refactor.md. Phase 1 (mode split) is DONE; this quest is Phase 2 (App.tsx + DesktopApp.tsx dedup into a shared AppShell).
 - Phase 1 quest journal: docs/journal/041-celebrate-preview-panel-refactor-phase-1.md. Read it to understand the test-first discipline and the size-ceiling enforcement pattern used there; the same shape applies here.
 - Companion bug (open, do NOT fix in this quest): ideas/bug_report_find_preview_table_cells.md. PreviewPanel internals are off-limits; this quest only touches App-level chrome.
 - Current sizes: src/App.tsx ~1306 lines, src/desktop/DesktopApp.tsx ~2911 lines. The proposal cited 756 and 2239 respectively; both grew by roughly 40 to 50 percent during the year, so the dup is getting worse, not better.
@@ -111,13 +111,13 @@ fixing the open table-cell bug; the bug is intentionally out of scope.
 
 ## Where this came from
 
-Extracted from `ideas/preview-panel-refactor.md` Section "Phase 2
+Extracted from `ideas/archive/preview-panel-refactor.md` Section "Phase 2
 (next)". The original proposal listed both phases together; Phase 1
 landed first under quest
 `preview-panel-refactor-phase-1_2026-05-13__2241`. The same test-first
 discipline, line-ownership accounting, and YAGNI guardrails apply here.
 
 Companion documents:
-- `ideas/preview-panel-refactor.md` source proposal, updated with Phase 1 status.
+- `ideas/archive/preview-panel-refactor.md` source proposal, updated with Phase 1 status.
 - `docs/journal/041-celebrate-preview-panel-refactor-phase-1.md` what Phase 1 looked like in practice.
-- `ideas/quest-briefs/preview-panel-refactor-phase-1.md` the Phase 1 brief, for reference shape.
+- `ideas/archive/quest-brief-preview-panel-refactor-phase-1.md` the Phase 1 brief, for reference shape.

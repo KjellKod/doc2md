@@ -1,12 +1,17 @@
 # PreviewPanel Refactor: Split Modes + Dedup App Shells
 
+Status: archived as complete on 2026-05-26.
+
+Phase 1 shipped in PR #127. Phase 2 AppShell dedup shipped in PR #135. The
+quest briefs were archived with this proposal.
+
 ## Status
 
 - **Phase 1: DONE.** Landed in PR #127 via quest
   `preview-panel-refactor-phase-1_2026-05-13__2241`. Journal:
   `docs/journal/041-celebrate-preview-panel-refactor-phase-1.md`.
-- **Phase 2: NOT STARTED.** Quest brief at
-  `ideas/quest-briefs/preview-panel-refactor-phase-2.md`. Run when ready.
+- **Phase 2: DONE.** Landed in PR #135. Archived quest brief:
+  `ideas/archive/quest-brief-preview-panel-refactor-phase-2.md`.
 
 ## Why
 
@@ -69,7 +74,7 @@ src/desktop/DesktopApp.tsx` empty. Import path preserved via the 2-line
 compat shim at `src/components/PreviewPanel.tsx`. Characterization tests
 landed in commit 1 and passed against pre-refactor `main`.
 
-## Phase 2 (next)
+## Phase 2 (done)
 
 Collapse `App.tsx` and `DesktopApp.tsx` into a shared `AppShell` with two
 thin platform adapters:
@@ -113,8 +118,8 @@ proposal that turned out to be exactly right. Phase 2 risk profile:
 
 ## When
 
-Run after Phase 1 lands and stabilizes. The Phase 2 quest brief at
-`ideas/quest-briefs/preview-panel-refactor-phase-2.md` is the entry point.
+Complete. Do not schedule this proposal again unless a new structural
+regression opens a fresh, narrower follow-up.
 
 ## Adjacent gaps the find subsystem extraction should fix
 

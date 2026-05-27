@@ -108,10 +108,11 @@ find/replace bar, save controls, or the upload/working-mode chrome.
   screen-reader audits, broad focus-ring redesigns, command palettes, shortcut
   remapping/settings, and aspirational shortcut lists are outside the Step 5
   keyboard-discoverability contract.
-- Cross-browser Playwright coverage (only Chromium ships today). See
-  `ideas/doc2md-multibrowser-playwright.md`.
-- True browser crash recovery (reload-surviving drafts). See
-  `ideas/doc2md-browser-crash-recovery.md`.
-- Mac file watchers and session restore via NSDocumentController. See
-  `ideas/doc2md-mac-file-watchers.md` and
-  `ideas/doc2md-mac-session-restore.md`.
+- Cross-browser Playwright expansion beyond current named projects is archived
+  as YAGNI until a real non-Chromium bug escapes. See
+  `ideas/archive/doc2md-multibrowser-playwright.md`.
+- True browser crash recovery (reload-surviving hosted drafts) is archived as
+  not-now/YAGNI. See `ideas/archive/doc2md-browser-crash-recovery.md`.
+- Live Mac file watchers are archived as not-now/YAGNI; save-time and
+  reload-time mtime checks remain the current conflict protection. See
+  `ideas/archive/doc2md-mac-file-watchers.md`.

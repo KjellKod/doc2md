@@ -1,5 +1,12 @@
 # Markdown Editing And Rendering Stack
 
+Status: archived as absorbed/obsolete on 2026-05-26.
+
+Current decision: do not keep this as an active roadmap doc. The implemented
+editor/preview stack, paste/copy behavior, and bounded shortcut reference now
+cover the useful parts. Any future Markdown divergence should start from the
+actual failing behavior, not from this broad stack proposal.
+
 ## Summary
 
 `docs2md` should have one coherent markdown pipeline for authoring, previewing, storing, and rendering docs. The same markdown input should behave the same way in edit mode, preview mode, and read mode.
@@ -212,7 +219,7 @@ Manual verification:
 
 ## Editor keybinding gaps absorbed from the archived UX hardening proposal
 
-From the `doc2md-ux-hardening-proposal` archive validation (see `docs/ideas-audit-2026-05-14.md` appendix), these editor-surface gaps remain unimplemented. None individually justify a quest; bundle them whenever the editor surface is touched (especially during `[[doc2md-editor-engine-evaluation]]` execution).
+From the `doc2md-ux-hardening-proposal` archive validation (see `docs/ideas-audit-2026-05-14.md` appendix), these editor-surface gaps remain unimplemented. None individually justify a quest; bundle them only if concrete editor friction reopens the work.
 
 - **Tab and Shift-Tab indent or outdent** for the current item or selection. Currently the textarea passes Tab through to the browser focus chain.
 - **Alt-Up / Alt-Down** block move for the current line or selected block.

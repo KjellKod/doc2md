@@ -191,7 +191,7 @@ gets one cohesive fix-pass.
 
 ## Related architectural note
 
-This bug is the headline example in `ideas/preview-panel-refactor.md`
+This bug is the headline example in `ideas/archive/preview-panel-refactor.md`
 for why `PreviewPanel.tsx` is overloaded: a fix here naturally
 becomes the new `useFindHighlight` module described in that roadmap.
 Doing this bug fix is the first step of the refactor.

@@ -6,16 +6,9 @@ Index of active proposals plus a pointer to the most recent audit. The full per-
 
 | Gut | Idea | Notes |
 |---|---|---|
-| `need` | `preview-panel-refactor` | Phase 1 shipped in PR #127 (shell + 3 modes + 2 hooks + 3 flat extractions + shared rendered-surface effects module). Phase 2 (AppShell dedup of App.tsx 1306 + DesktopApp.tsx 2911) still open; brief at `ideas/quest-briefs/preview-panel-refactor-phase-2.md`. |
-| `if-needed` | `doc2md-browser-crash-recovery` | Hosted-tab crash recovery via persisted drafts + stable identity. Trigger: first real-world data-loss report. |
-| `if-needed` | `doc2md-mac-file-watchers` | `NSFilePresenter` live watcher. Trigger: silent overwrite from iCloud/Dropbox racing with Save. |
 | `if-needed` | `pdf-multi-line-cell-tables` | Multi-line cell table detection. Trigger: customer use case where current PDF table conversion is the blocker. |
 | `if-needed` | `doc2md-folder-view` | Active/Folder rail + browser FS API + Mac `chooseDirectory`. Trigger: pivot toward "doc2md is your local markdown workspace". |
-| `if-needed` | `markdown-editing-and-rendering-stack` | Pipeline unification across edit/preview/read. Trigger: next time edit and preview render the same input differently. |
 | `if-needed` | `remove-url-import` | Delete URL import path (still wired in `DropZone.tsx` + `remoteDocument.ts`). Trigger: next user-support thread where it's the cause. |
-| `if-needed` | `doc2md-editor-engine-evaluation` | Decision doc for textarea vs CodeMirror 6 vs ProseMirror. Read before the next big editor feature. |
-| `yagni` | `doc2md-multibrowser-playwright` | Firefox + WebKit in CI. Single-engine Chromium has caught everything that mattered; CI runtime would triple. |
-| active | `ux-transformation` | Successor to the archived UX hardening proposal. Scores cross-surface UX work across hosted web, Mac desktop, and `@doc2md/core` with `need` / `if-needed` / `yagni`. |
 | index | `mac-desktop-app-roadmap` | Planning artifact updated 2026-05-14. Phases 1–5c + 6 (MVP scope) + 7a done; **Phase 7b blocked on out-of-repo operational setup** (Cloudflare Worker, Lemon Squeezy, `doc2md.dev` DNS, support email, go-live approval). 6e/6f deferred. |
 | active | `mac-commercial-distribution-and-licensing` | Phase 7b research for `doc2md.dev`, direct-DMG distribution, merchant-of-record licensing, honest-user reminders. Binding: [decision record](../docs/implementation/mac-commercial-distribution-decision-record.md). |
 | `need` | `agentic-ci-scale-and-signal` | Successor to the shipped `ci-trustworthiness`. Partitioned review for large diffs, risk router (skip/light/deep), findings-to-fix verification, durable project-rules injection, Mac Swift tests in CI. See [`agentic-ci-scale-and-signal.md`](agentic-ci-scale-and-signal.md). |
@@ -26,6 +19,13 @@ Pointers below link to the archive copy or to the journal entry that documents w
 
 | Archived | Idea | Shipped via |
 |---|---|---|
+| 2026-05-26 | ~~`ux-transformation`~~ | Roadmap completed or deliberately deferred: workspace density #141, theme/tooltips #143, onboarding/error/empty copy #144, keyboard shortcuts #146, paste routing #150, mobile layout #151/#152. Remaining speculative items stay gated by concrete triggers. See [archive](archive/ux-transformation.md). |
+| 2026-05-26 | ~~`preview-panel-refactor`~~ | Phase 1 shipped in PR #127 and Phase 2 AppShell dedup shipped in PR #135. Quest briefs archived with the proposal. See [archive](archive/preview-panel-refactor.md). |
+| 2026-05-26 | ~~`markdown-editing-and-rendering-stack`~~ | Archived as absorbed/obsolete. The real editor and preview stack now lives in `src/components/preview/`, `react-markdown` + `remark-gfm`, focused paste/copy tests, and the bounded shortcut reference from PR #146. See [archive](archive/markdown-editing-and-rendering-stack.md). |
+| 2026-05-26 | ~~`doc2md-editor-engine-evaluation`~~ | Archived as YAGNI. The textarea remains the right editor until concrete heavier editor features justify an engine switch. See [archive](archive/doc2md-editor-engine-evaluation.md). |
+| 2026-05-26 | ~~`doc2md-mac-file-watchers`~~ | Archived as not-now/YAGNI. Save-time and reload-time mtime conflict handling are enough until a real synced-folder overwrite report appears. See [archive](archive/doc2md-mac-file-watchers.md). |
+| 2026-05-26 | ~~`doc2md-multibrowser-playwright`~~ | Archived as YAGNI. Current named Playwright coverage is sufficient for now; revive only after a real non-Chromium bug escapes. See [archive](archive/doc2md-multibrowser-playwright.md). |
+| 2026-05-26 | ~~`doc2md-browser-crash-recovery`~~ | Archived as not-now/YAGNI. Hosted browser has dirty-navigation protection via `beforeunload`; persisted unsaved draft recovery is intentionally out of scope until real data-loss evidence justifies it. See [archive](archive/doc2md-browser-crash-recovery.md). |
 | 2026-05-21 | ~~`ci-trustworthiness`~~ | Quest `ci-trustworthiness_2026-04-05__2258` — CI is split into named jobs, Codex review always posts visible results, review processing lives in helper scripts, and intent-review is advisory. See [archive](archive/ci-trustworthiness.md) and [quest journal](../docs/quest-journal/ci-trustworthiness_2026-04-06.md). |
 | 2026-05-15 | ~~`paste-to-markdown-in-editor`~~ | Quest `paste-to-markdown_2026-05-14__2155` — editor paste now converts LinkedIn-style Unicode/basic HTML to Markdown and large hosted scratch paste enters Working Mode. See [quest journal](../docs/quest-journal/paste-to-markdown_2026-05-15.md). |
 | 2026-05-15 | ~~`doc2md-mac-session-restore`~~ | Quest `ux-improvements-v2` — native recents via `NSDocumentController`, Markdown-only `session.json` restore, and native trust filtering. See [quest journal](../docs/quest-journal/ux-improvements-v2_2026-05-15.md). |

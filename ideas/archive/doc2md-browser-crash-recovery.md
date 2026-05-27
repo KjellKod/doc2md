@@ -1,16 +1,24 @@
 # Browser draft crash recovery (reload-surviving)
 
+Status: archived as not now.
+
+Archived: 2026-05-26.
+
+Decision: do not add hosted-browser persisted draft recovery until real user
+evidence justifies it. The hosted app already warns on dirty navigation with
+`beforeunload`; if users ignore that and do not save/download their draft, this
+is not current product scope.
+
 Promoted out of `doc2md-ux-hardening-proposal.md` Phase 1. Phase 1 ships
 **in-session protection only** (React state preserves drafts across entry
 switches and tab toggles). True reload-surviving recovery needs a stable
 identity layer that the current architecture doesn't provide.
 
-Status checked after PR #140 merged: still open for hosted reload-surviving
-draft recovery. The app now has in-session state protection and a
-`beforeunload` guard for dirty work, and the Mac app has separate session
-restore. Those are useful shipped protections, but they are not this idea.
-This idea remains specifically about recovering unsaved hosted-browser drafts
-after reload, tab crash, or browser restart.
+Status checked after PR #140 merged: the feature was not implemented for hosted
+reload-surviving draft recovery. On 2026-05-26 we chose not to pursue it until
+real user data-loss evidence appears. The app now has in-session state
+protection and a `beforeunload` guard for dirty work, and the Mac app has
+separate session restore. Those are enough for current scope.
 
 ## The blocker
 

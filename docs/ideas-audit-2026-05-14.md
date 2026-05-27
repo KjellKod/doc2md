@@ -2,6 +2,11 @@
 
 Branch: `cleanup/ideas-audit-2026-05-14`
 
+Status note, 2026-05-26: this is a historical audit. Current routing lives in
+[`ideas/README.md`](../ideas/README.md). Several ideas that were active or
+if-needed on 2026-05-14 have since shipped, been absorbed, or been archived as
+not-now/YAGNI.
+
 A code-evidence audit of every non-archived `ideas/` file. Each idea is either:
 - **Implemented** (archived in this branch) — code already does what the idea proposes
 - **Not implemented** — scored on value, risk, and a one-word gut-feeling (`need`, `if-needed`, `yagni`)
@@ -66,7 +71,7 @@ Scoring scale: **1–5**. Value is impact on users or maintainer velocity if shi
 | Idea | Correction | Evidence |
 |---|---|---|
 | `ci-trustworthiness` | Moved from active `if-needed` to archived/shipped. | Quest `ci-trustworthiness_2026-04-05__2258` and `docs/quest-journal/ci-trustworthiness_2026-04-06.md`; current workflows split CI into named jobs, keep Codex review visible, add an advisory intent-review lane, and document required versus advisory checks. |
-| `doc2md-browser-crash-recovery` | Kept active `if-needed`, with narrower wording. | Hosted app has in-session protection and a `beforeunload` guard, and Mac session restore is separately shipped. No hosted reload-surviving draft index, stable scratch identity, IndexedDB fallback, or boot-time Restore / Discard UI exists yet. |
+| `doc2md-browser-crash-recovery` | Kept active `if-needed`, with narrower wording. Superseded 2026-05-26: archived as not-now/YAGNI. | Hosted app has in-session protection and a `beforeunload` guard, and Mac session restore is separately shipped. No hosted reload-surviving draft index, stable scratch identity, IndexedDB fallback, or boot-time Restore / Discard UI exists yet. |
 
 ## What changed in `ideas/README.md`
 
@@ -102,13 +107,13 @@ The parent proposal was archived above on the strength of WorkingModeBar, Find/R
 | Claim | Status | Evidence | Tracker for gap |
 |---|---|---|---|
 | Auto-continue lists on Enter | DONE | `src/components/markdownAutoContinue.ts:24-31,56-149` (bullets, ordered, tasks, blockquotes, IME guard via `compositionstart`/`compositionend`) | n/a |
-| Ordered auto-renumber on insert/remove | PARTIAL | Continuation emits `n+1` only; no renumber of trailing items on insert/remove. Tracker: [`markdown-editing-and-rendering-stack`](../ideas/markdown-editing-and-rendering-stack.md) (pipeline-level rewrite touches this) |
+| Ordered auto-renumber on insert/remove | PARTIAL | Continuation emits `n+1` only; no renumber of trailing items on insert/remove. Superseded 2026-05-26: broad tracker archived; revive only from concrete editor friction. |
 | Tab / Shift-Tab indent or outdent | NOT DONE | No keydown handler intercepts Tab in the editor textarea | new note in `markdown-editing-and-rendering-stack` |
 | Empty-bullet Enter exits list | DONE | `markdownAutoContinue.ts` returns plain newline on empty marker | n/a |
 | Find with Replace, Match Case, Regex, Whole Word, counter | DONE | `src/components/FindReplaceBar.tsx`, `src/components/useFindReplace.ts` | n/a |
-| Replace All as single undo step | NEEDS VERIFY | History-coalescing behavior not confirmed in this pass. Flag for review the next time `useFindReplace` is touched | sidebar note in [`preview-panel-refactor`](../ideas/preview-panel-refactor.md) |
+| Replace All as single undo step | NEEDS VERIFY | History-coalescing behavior not confirmed in this pass. Flag for review the next time `useFindReplace` is touched | Historical note in archived [`preview-panel-refactor`](../ideas/archive/preview-panel-refactor.md) |
 | Live-highlight cap | DONE | `useFindReplace.ts:3` `MAX_MATCHES = 5_000` enforced at lines 79, 103 with `capped: true` | n/a |
-| Tokenize once, search incrementally, cancellable on input change | PARTIAL | Cap enforced. `useMemo` recomputes whole-document matches on every change; no AbortController, no incremental tokenization | [`preview-panel-refactor`](../ideas/preview-panel-refactor.md) (find subsystem extraction) |
+| Tokenize once, search incrementally, cancellable on input change | PARTIAL | Cap enforced. `useMemo` recomputes whole-document matches on every change; no AbortController, no incremental tokenization | Historical note in archived [`preview-panel-refactor`](../ideas/archive/preview-panel-refactor.md) |
 | Cmd/Ctrl-B, I, K wrap selection | DONE | `src/components/markdownFormatting.ts:18-110` |
 | Selection-wrap on `*` `_` backtick `[` `(` `"` | DONE | `markdownFormatting.ts` smart-wrap branches | n/a |
 | Cmd-Shift-7 / 8 / 9 list toggles | DONE | `markdownFormatting.ts` list-toggle helpers | n/a |
@@ -136,10 +141,10 @@ All folder-view gaps are tracked in [`doc2md-folder-view`](../ideas/doc2md-folde
 |---|---|---|---|
 | Visible "Saved · 2s ago" + "Unsaved" pill | DONE | `src/components/SaveStatePill.tsx` | n/a |
 | `beforeunload` guard while dirty | DONE | `src/App.tsx:967-989` | n/a |
-| localStorage debounced snapshot on keystroke | NOT DONE | No `localStorage.setItem` in keystroke path | [`doc2md-browser-crash-recovery`](../ideas/doc2md-browser-crash-recovery.md) |
+| localStorage debounced snapshot on keystroke | NOT DONE | No `localStorage.setItem` in keystroke path | Archived not-now/YAGNI: [`doc2md-browser-crash-recovery`](../ideas/archive/doc2md-browser-crash-recovery.md) |
 | IndexedDB fallback over ~500KB | NOT DONE | No IndexedDB usage in `src/` | same |
 | Crash-recovery prompt on reopen | NOT DONE | No reopen-time compare path | same |
-| Mac per-file write lock | PARTIAL | Atomic write + mtime-at-save in shell; no `NSFileCoordinator` | [`doc2md-mac-file-watchers`](../ideas/doc2md-mac-file-watchers.md) |
+| Mac per-file write lock | PARTIAL | Atomic write + mtime-at-save in shell; no `NSFileCoordinator` | Archived not-now/YAGNI: [`doc2md-mac-file-watchers`](../ideas/archive/doc2md-mac-file-watchers.md) |
 | Mac "file changed on disk, reload?" live detection | PARTIAL | mtime checked only at save/reload, not while document is open | same |
 | `NSDocumentController.noteNewRecentDocumentURL` + Open Recent submenu | NOT DONE | Zero `NSDocumentController` references in `apps/macos/doc2md/`; no Open Recent menu wiring | [`doc2md-mac-session-restore`](../ideas/doc2md-mac-session-restore.md) |
 | `session.json` reopen | NOT DONE | No `session.json` write/read; recent-files data is in `settings.json` only | same |
@@ -152,8 +157,8 @@ All folder-view gaps are tracked in [`doc2md-folder-view`](../ideas/doc2md-folde
 Three claims from this proposal were not tracked anywhere else and are folded into existing trackers by this audit:
 
 1. **200-character paste auto-fence into working mode** → notional sub-claim added to [`paste-to-markdown-in-editor`](../ideas/paste-to-markdown-in-editor.md).
-2. **Find/Replace incremental + cancellable search** (cap is shipped, streaming is not) → folded into [`preview-panel-refactor`](../ideas/preview-panel-refactor.md) since the find subsystem is being extracted there.
-3. **Editor keybinding gaps** (Tab indent, Alt-Up/Down, Cmd-D, Replace-pane binding via Cmd-Alt-F on Mac or Ctrl-H on Windows/Linux, ordered renumber on edits) → folded into [`markdown-editing-and-rendering-stack`](../ideas/markdown-editing-and-rendering-stack.md). None of these are individually load-bearing, and the proposal itself flagged them as "nice if free." They earn a `need` only if a user-visible regression lands.
+2. **Find/Replace incremental + cancellable search** (cap is shipped, streaming is not) → historical note in archived [`preview-panel-refactor`](../ideas/archive/preview-panel-refactor.md).
+3. **Editor keybinding gaps** (Tab indent, Alt-Up/Down, Cmd-D, Replace-pane binding via Cmd-Alt-F on Mac or Ctrl-H on Windows/Linux, ordered renumber on edits) → the broad [`markdown-editing-and-rendering-stack`](../ideas/archive/markdown-editing-and-rendering-stack.md) tracker was archived on 2026-05-26. None of these are individually load-bearing, and the proposal itself flagged them as "nice if free." They earn a `need` only if a user-visible regression lands.
 
 ### Net effect
 
