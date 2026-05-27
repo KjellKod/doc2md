@@ -1,5 +1,11 @@
 # Editor engine evaluation: textarea vs CodeMirror 6 vs ProseMirror
 
+Status: archived as YAGNI on 2026-05-26.
+
+Current decision: keep the textarea. Revisit only when a concrete heavier
+editor feature, such as block move, multi-cursor, richer syntax behavior, or
+vim-style commands, justifies the cost of CodeMirror or ProseMirror.
+
 A decision quest. Not an implementation.
 
 ## Why this exists

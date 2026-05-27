@@ -7,7 +7,7 @@ Quest brief: PreviewPanel Refactor — Phase 1
 
 Context
 
-- Source proposal: ideas/preview-panel-refactor.md. Read it first.
+- Source proposal: ideas/archive/preview-panel-refactor.md. Read it first.
 - Companion bug (open, do NOT fix in this quest): ideas/bug_report_find_preview_table_cells.md.
 - Companion bugs (closed, reference only): ideas/archive/bug_report_find_highlight_dom_leaks.md, ideas/archive/bug_report_find_match_scrolls_to_wrong_line.md.
 - Current file sizes (worth quoting back if anyone challenges the scope): src/components/PreviewPanel.tsx ~1285 lines, src/App.tsx ~1306, src/desktop/DesktopApp.tsx ~2911. The proposal cited 1038 / 756 / 2239 — every file got bigger, not smaller. This is the load-bearing reason recent find / anchor / mode-switch bugs keep landing in the same component.
@@ -118,7 +118,7 @@ Run this quest after the current find / anchor bug cluster has stabilized on mai
 
 ## Where this came from
 
-Extracted from `ideas/preview-panel-refactor.md` (the source proposal). The proposal lists two phases; this brief covers Phase 1 only. Phase 2 (AppShell dedup) gets its own brief once Phase 1 lands.
+Extracted from `ideas/archive/preview-panel-refactor.md` (the source proposal). The proposal lists two phases; this brief covers Phase 1 only. Phase 2 (AppShell dedup) gets its own brief once Phase 1 lands.
 
 Companion bug references (cited inside the brief):
 - `ideas/bug_report_find_preview_table_cells.md` — open

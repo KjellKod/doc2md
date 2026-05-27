@@ -1,7 +1,12 @@
 # doc2md UX transformation
 
-Status: active idea
-Successor to: [`archive/doc2md-ux-hardening-proposal.md`](archive/doc2md-ux-hardening-proposal.md)
+Status: archived as complete/deferred on 2026-05-26.
+Successor to: [`doc2md-ux-hardening-proposal.md`](doc2md-ux-hardening-proposal.md)
+
+The active roadmap steps have shipped or been deliberately deferred:
+workspace density #141, theme/tooltips #143, onboarding/error/empty copy #144,
+keyboard shortcuts #146, paste routing #150, mobile layout #151/#152. Remaining
+speculative ideas should be revived only from a concrete trigger.
 
 doc2md already does the hard part: private, local document-to-Markdown conversion across the hosted app, the Mac desktop app, and `@doc2md/core`. The next UX step is not a rewrite. It is a restrained transformation toward a workspace that feels appealing, clear, and intuitive without turning every idea into product surface.
 
@@ -42,22 +47,22 @@ Every item must explicitly mark Hosted, Mac, and Core as `yes`, `if needed`, `no
 
 | Item | Hosted | Mac | Core | Gut | Why |
 |---|---:|---:|---:|---|---|
-| Workspace real-estate and working-area density | yes | yes | n/a | `need` | Editing and previewing are the core working tasks, but the shared shell can still make document content feel cramped through vertical chrome, default split choices, and repeated manual resizing. |
-| Theme parity audit | yes | yes | n/a | `need` | Theme support exists, but the product needs a deliberate light/dark pass across editor, preview, highlights, errors, empty states, menus, and disabled states. |
-| Mobile and tablet layout pass | yes | n/a | n/a | `need` | Hosted web is a browser product. Phone and tablet layouts should not be incidental desktop collapse behavior. |
+| Workspace real-estate and working-area density | yes | yes | n/a | `shipped` | Completed in PR #141. |
+| Theme parity audit | yes | yes | n/a | `shipped` | Completed with custom tooltip cleanup in PR #143. |
+| Mobile and tablet layout pass | yes | n/a | n/a | `shipped` | Completed in PR #151 and roadmap closeout PR #152. |
 | Performance perception pass | if needed | if needed | if needed | `deferred` | No concrete stuck/hung user evidence is known today. Do not schedule this until a real conversion, search, paste, batch, remote-fetch, or CLI wait-state issue is observed. |
 | Onboarding clarity | yes | yes | yes | `shipped` | Completed in PR #144; first-run copy now makes the user's next action obvious without restating the architecture. |
 | Empty-state copy pass | yes | yes | yes | `shipped` | Completed in PR #144; empty states now name the action that fills them. |
 | Error-state copy pass | yes | yes | yes | `shipped` | Completed in PR #144; errors now say what happened, why if known, and what the user can do next. |
-| Copy-paste UX loop | yes | yes | if needed | `need` Hosted/Mac, `if-needed` Core | Paste-to-Markdown has shipped; now the product should make paste, copy Markdown, and copy LinkedIn feel intentional and discoverable. Core remains if-needed until a concrete CLI/script paste workflow exists. |
-| Keyboard discoverability | yes | yes | n/a | `need` | Enough real shortcuts now exist to justify a compact reference. No command palette, remapping UI, or aspirational shortcut list. |
+| Copy-paste UX loop | yes | yes | if needed | `shipped` | Paste-to-Markdown shipped in PR #130, Markdown-wrapper paste routing in PR #136, and incomplete-HTML routing in PR #150. |
+| Keyboard discoverability | yes | yes | n/a | `shipped` | Completed in PR #146 with a bounded reference to real shortcuts. |
 | Lightweight a11y audit | if needed | if needed | no | `if-needed` | Not part of the Step 5 keyboard-discoverability slice. Keep `docs/accessibility-notes.md` as the baseline contract, and revive broader audit work only with a concrete accessibility trigger. |
-| Custom tooltip cleanup | yes | yes | n/a | `need` | Native `title` tooltips are too slow and inconsistent. Existing `title=` uses should be replaced where they are user-facing hints. |
+| Custom tooltip cleanup | yes | yes | n/a | `shipped` | Completed in PR #143 with instant custom tooltips using `role="tooltip"` and `aria-describedby`. |
 | Block move and select next occurrence | yes | yes | n/a | `if-needed` | Useful editor muscle memory, but only worth shipping if the textarea implementation stays simple or the editor engine changes for other reasons. |
 | Folder view as local workspace | if needed | if needed | n/a | `if-needed` | Real workspace value, but still a larger positioning move toward "local markdown workspace". |
-| Browser crash recovery | if needed | n/a | n/a | `if-needed` | Valuable only after a real data-loss trigger or a broader hosted-workspace push. |
+| Browser crash recovery | if needed | n/a | n/a | `archived` | Archived as not-now/YAGNI until real data-loss evidence appears. |
 | Hosted scratch-buffer preservation | if needed | n/a | n/a | `if-needed` | Parked Phase 6g item: session-local scratch buffer so refresh or accidental navigation does not erase unsaved hosted-browser work. |
-| Mac file watchers | n/a | if needed | n/a | `if-needed` | Save-time mtime checks already catch the common case. Live watchers wait for a real iCloud/Dropbox conflict report. |
+| Mac file watchers | n/a | if needed | n/a | `archived` | Save-time and reload-time mtime checks are enough until a real iCloud/Dropbox conflict report appears. |
 | System theme follow | if needed | if needed | n/a | `if-needed` | Useful after parity is proven. Do parity first; automatic system sync can wait. |
 | sketch2md cross-product discovery | if needed | if needed | n/a | `if-needed` | Wait until sketch2md is launched. Crosslinks may help users understand the product suite later, but they should not add chrome to active document workspaces before that launch. |
 | Command palette / shortcut remapping | no | no | n/a | `yagni` | Too much product surface for today's app. A compact reference solves discoverability without building an IDE. |
@@ -462,12 +467,11 @@ Surfaces: Hosted.
 
 Gut: `if-needed`.
 
-`ideas/doc2md-browser-crash-recovery.md` remains the right tracker. It is not
-shipped for hosted-browser reload survival. The hosted app already has
-in-session protection and a before-unload guard, and the Mac app has separate
-session restore; those shipped protections are easy to confuse with this idea.
-Reload-surviving hosted drafts still need stable identity, an index,
-localStorage/IndexedDB behavior, and recovery UI.
+The detailed tracker was archived at
+`ideas/archive/doc2md-browser-crash-recovery.md`. It is intentionally not
+active now. The hosted app already has in-session protection and a
+before-unload guard, and the Mac app has separate session restore. Persisted
+hosted drafts should wait for real data-loss evidence.
 
 Trigger:
 
@@ -495,7 +499,10 @@ Surfaces: Mac.
 
 Gut: `if-needed`.
 
-`ideas/doc2md-mac-file-watchers.md` remains the right tracker. Save-time and reload-time mtime checks catch the common conflict. Live `NSFilePresenter` / `NSFileCoordinator` work waits for a real iCloud, Dropbox, or OneDrive conflict report.
+The detailed tracker was archived at `ideas/archive/doc2md-mac-file-watchers.md`.
+Save-time and reload-time mtime checks catch the common conflict. Live
+`NSFilePresenter` / `NSFileCoordinator` work waits for a real iCloud, Dropbox,
+or OneDrive conflict report.
 
 Trigger:
 
@@ -626,9 +633,8 @@ Already settled before execution:
 
 - `ci-trustworthiness` is shipped and archived. Do not run it as an active UX
   roadmap item.
-- `doc2md-browser-crash-recovery` is still open only for hosted
-  reload-surviving drafts. Do not count Mac session restore or the hosted
-  `beforeunload` guard as completion.
+- `doc2md-browser-crash-recovery` is archived as not-now/YAGNI. Do not schedule
+  persisted hosted drafts without real data-loss evidence.
 - sketch2md cross-product discovery is deferred until sketch2md has launched.
   Do not add links, analytics, CSS, or React UI for it in the current execution
   sequence.
@@ -646,9 +652,14 @@ Already settled before execution:
   for production behavior and should be handled as a small desktop-shell cleanup
   by moving those bridge components into a component-only module when the
   desktop shell is next touched.
+- Step 5, keyboard shortcut discoverability, is complete in PR #146. Do not
+  schedule it again unless the actual shortcut surface changes.
 - Step 6, performance perception, is obsolete as an active roadmap item until
   a concrete stuck/wait-state issue is observed. Do not schedule it speculatively
   before copy-paste polish.
+- Step 7, copy-paste UX loop polish, is complete through PR #130, PR #136, and
+  PR #150. Do not schedule it again unless a new paste/copy workflow regression
+  appears.
 
 | Step | Scope | Tool path | Order | Parallel rule | Kjell validation |
 |---:|---|---|---|---|---|
@@ -657,10 +668,10 @@ Already settled before execution:
 | 2 | Theme parity audit plus custom tooltip cleanup | `quest:solo` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After step 1 | Do not overlap with mobile layout unless write scopes are explicitly split. | Inspect light/dark editor, preview, errors, disabled states, and tooltip hints. |
 | 3 | Mobile and tablet layout pass | Complete in PR #151 | Done | Do not rerun unless reopened by regression or a new mobile/tablet surface. | Post-deploy cache-busted physical-phone check remains useful for public-site verification. |
 | 4 | Onboarding, empty-state, and error-state copy pass | Complete in PR #144 | Done | Do not rerun unless reopened by regression or a new copy surface. | Read first-run, empty, and failure states; each should name the next useful action without adding architecture lectures. |
-| 5 | Keyboard shortcut discoverability | `quest:solo` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After step 1 | Avoid parallel edits to the same toolbar/menu files as step 2. | Use the shortcut reference and a keyboard smoke walkthrough; shortcut claims should match real controls. |
+| 5 | Keyboard shortcut discoverability | Complete in PR #146 | Done | Do not rerun unless shortcut surfaces change. | Use the shortcut reference and a keyboard smoke walkthrough; shortcut claims should match real controls. |
 | 6 | Performance perception pass | Obsolete/deferred | Only after concrete stuck/wait-state evidence | Do not run in the default roadmap sequence. If revived, keep it to the single triggered path. | Validate against the observed issue, not a generic progress-polish checklist. |
-| 7 | Copy-paste UX loop polish | `quest:solo` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | After step 1 and PR #144; can run now that step 6 is deferred | Avoid status/progress rewrites unless directly required by paste/copy feedback. | Paste Markdown/HTML, copy Markdown, and copy LinkedIn output; actions should be discoverable and not add excess chrome. |
-| 8 | Revisit `if-needed` items: folder view, browser crash recovery, scratch-buffer preservation, Mac file watchers, system theme follow, sketch2md cross-product discovery | `quest:workflow` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | Only after a trigger lands | Not part of the default parallel pool. Treat each as its own proposal. | Validate against the trigger that revived the item, not against speculative acceptance. |
+| 7 | Copy-paste UX loop polish | Complete through PR #130, PR #136, and PR #150 | Done | Do not rerun unless reopened by regression or a new workflow. | Paste Markdown/HTML, copy Markdown, and copy LinkedIn output; actions should be discoverable and not add excess chrome. |
+| 8 | Revisit `if-needed` items: folder view, scratch-buffer preservation, system theme follow, sketch2md cross-product discovery | `quest:workflow` -> `pr-assist`/`pr-assistant` -> `pr-shepherd` | Only after a trigger lands | Not part of the default parallel pool. Treat each as its own proposal. | Validate against the trigger that revived the item, not against speculative acceptance. |
 
 ### Prompt pack
 
@@ -670,7 +681,7 @@ executor needs a branch name.
 #### Step 0 prompt
 
 ```text
-/goal "Execute the doc2md UX transformation roadmap with high trust. Work from current main, keep each PR focused, do not ask Kjell to approve plans, and ask Kjell to validate the result of each ready PR. Treat ci-trustworthiness as shipped/archived and doc2md-browser-crash-recovery as still open only for hosted reload-surviving drafts."
+/goal "Execute the doc2md UX transformation roadmap with high trust. Work from current main, keep each PR focused, do not ask Kjell to approve plans, and ask Kjell to validate the result of each ready PR. Treat ci-trustworthiness as shipped/archived and doc2md-browser-crash-recovery as archived/not-now unless real data-loss evidence reopens it."
 ```
 
 #### Step 1 prompt

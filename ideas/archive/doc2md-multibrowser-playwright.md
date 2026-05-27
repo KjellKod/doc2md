@@ -1,5 +1,11 @@
 # Multi-browser Playwright projects
 
+Status: archived as YAGNI on 2026-05-26.
+
+Current decision: do not add Firefox + full desktop WebKit CI until a real
+cross-browser bug escapes the current Playwright coverage. Mobile WebKit
+coverage exists where the hosted mobile layout needs it.
+
 The current `playwright.config.ts` ships only a Chromium project. As long
 as that's true, any acceptance criterion that depends on browser-specific
 behavior (e.g. `execCommand('insertText')` single-undo semantics) can only
