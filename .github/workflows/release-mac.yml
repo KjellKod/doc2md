@@ -124,8 +124,17 @@ jobs:
             exit 1
           fi
 
-          if [[ "$BUNDLE_VERSION" == "1" && "$SHORT_VERSION" != "0.1.0" ]]; then
-            echo "::error::CFBundleVersion 1 is reserved for the initial 0.1.0 release"
+          if [[ ! "$SHORT_VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "::error::CFBundleShortVersionString must be canonical x.y.z: $SHORT_VERSION"
+            exit 1
+          fi
+          if ((10#${BASH_REMATCH[2]} > 99 || 10#${BASH_REMATCH[3]} > 99)); then
+            echo "::error::minor and patch must each stay below 100 for a monotonic CFBundleVersion: $SHORT_VERSION"
+            exit 1
+          fi
+          EXPECTED_BUNDLE=$((10#${BASH_REMATCH[1]} * 10000 + 10#${BASH_REMATCH[2]} * 100 + 10#${BASH_REMATCH[3]}))
+          if ((10#$BUNDLE_VERSION != EXPECTED_BUNDLE)); then
+            echo "::error::CFBundleVersion $BUNDLE_VERSION does not match the version-derived value $EXPECTED_BUNDLE for $SHORT_VERSION"
             exit 1
           fi
 
@@ -142,10 +151,7 @@ jobs:
               exit 1
             fi
           elif [[ "$HTTP_STATUS" == "404" ]]; then
-            if [[ "$BUNDLE_VERSION" != "1" ]]; then
-              echo "::error::Initial release without prior appcast must use CFBundleVersion 1, got $BUNDLE_VERSION"
-              exit 1
-            fi
+            echo "::notice::No prior appcast found (HTTP 404); treating this as the first published appcast with CFBundleVersion $BUNDLE_VERSION"
           else
             echo "::warning::Could not fetch latest appcast for monotonicity check (HTTP $HTTP_STATUS); continuing with sentinel checks only"
           fi

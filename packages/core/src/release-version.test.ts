@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   assertReleaseTagsAvailable,
   bumpPatch,
+  deriveBundleVersion,
   deriveDisplayVersionFromState,
   deriveReleaseVersionFromRefs
 } from "../scripts/release-version.mjs";
@@ -81,5 +82,40 @@ describe("release version derivation", () => {
     expect(
       deriveDisplayVersionFromState("0.0.0", "", "def456", false)
     ).toBe("0.0.0-dev");
+  });
+});
+
+describe("CFBundleVersion derivation", () => {
+  it("derives a monotonic integer from a canonical x.y.z version", () => {
+    expect(deriveBundleVersion("2.6.3")).toBe(20603);
+  });
+
+  it("keeps ordering strictly increasing across semver-ordered releases", () => {
+    const a = deriveBundleVersion("2.6.3");
+    const b = deriveBundleVersion("2.6.4");
+    const c = deriveBundleVersion("2.7.0");
+    const d = deriveBundleVersion("3.0.0");
+    expect(a).toBeLessThan(b);
+    expect(b).toBeLessThan(c);
+    expect(c).toBeLessThan(d);
+  });
+
+  it("derives 100 for 0.1.0 and 1 for 0.0.1", () => {
+    expect(deriveBundleVersion("0.1.0")).toBe(100);
+    expect(deriveBundleVersion("0.0.1")).toBe(1);
+  });
+
+  it("rejects a leading v so x.y.z stays canonical", () => {
+    expect(() => deriveBundleVersion("v2.6.3")).toThrow("non-canonical");
+  });
+
+  it("rejects non-semver versions", () => {
+    expect(() => deriveBundleVersion("2.6")).toThrow("non-canonical");
+    expect(() => deriveBundleVersion("2.6.3-dev")).toThrow("non-canonical");
+  });
+
+  it("refuses minor or patch components that would break monotonicity at 100", () => {
+    expect(() => deriveBundleVersion("2.100.0")).toThrow("below 100");
+    expect(() => deriveBundleVersion("2.6.100")).toThrow("below 100");
   });
 });
