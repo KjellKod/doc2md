@@ -112,7 +112,7 @@ The current app build can include these direct runtime dependencies from the roo
 | `longest-streak` | 3.1.0 | MIT | wooorm/longest-streak |
 | `lop` | 0.4.2 | BSD-2-Clause | https://github.com/mwilliamson/lop.git |
 | `lru-cache` | 11.3.6 | BlueOak-1.0.0 | git+ssh://git@github.com/isaacs/node-lru-cache.git |
-| `lucide-react` | 1.14.0 | ISC | https://github.com/lucide-icons/lucide.git |
+| `lucide-react` | 1.16.0 | ISC | https://github.com/lucide-icons/lucide.git |
 | `mammoth` | 1.12.0 | BSD-2-Clause | https://github.com/mwilliamson/mammoth.js.git |
 | `markdown-table` | 3.0.4 | MIT | wooorm/markdown-table |
 | `mdast-util-find-and-replace` | 3.0.2 | MIT | syntax-tree/mdast-util-find-and-replace |
@@ -166,7 +166,7 @@ The current app build can include these direct runtime dependencies from the roo
 | `parse-entities` | 4.0.2 | MIT | wooorm/parse-entities |
 | `parse5` | 8.0.1 | MIT | git://github.com/inikulin/parse5.git |
 | `path-is-absolute` | 1.0.1 | MIT | sindresorhus/path-is-absolute |
-| `pdfjs-dist` | 4.10.38 | Apache-2.0 | git+https://github.com/mozilla/pdf.js.git |
+| `pdfjs-dist` | 5.7.284 | Apache-2.0 | git+https://github.com/mozilla/pdf.js.git |
 | `process-nextick-args` | 2.0.1 | MIT | https://github.com/calvinmetcalf/process-nextick-args.git |
 | `property-information` | 7.1.0 | MIT | wooorm/property-information |
 | `punycode` | 2.3.1 | MIT | https://github.com/mathiasbynens/punycode.js.git |
