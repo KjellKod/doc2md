@@ -1,5 +1,14 @@
 # Remove URL Import Functionality
 
+Status: archived as complete.
+
+Archived: 2026-05-28.
+
+Decision: the hosted and desktop upload surfaces no longer expose direct URL
+import. Browser fetch/CORS behavior made this feature unreliable enough to
+remove. `@doc2md/core` and the CLI still support remote URLs from the local
+Node process.
+
 ## Context
 
 The DropZone exposes a "URL import" input that fetches a document from a

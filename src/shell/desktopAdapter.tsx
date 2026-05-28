@@ -278,7 +278,6 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
   const {
     entries,
     addFiles,
-    addUrl,
     addScratchEntry,
     addMarkdownEntry,
     addImportedFileEntry,
@@ -386,7 +385,7 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     );
   };
   const heroSummary = buildSummary(
-    "Start writing, open files, or import a direct document URL",
+    "Start writing or open files",
     " open",
   );
   const fileSummary = buildSummary(
@@ -813,10 +812,6 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     event.preventDefault();
     setIsDesktopSettingsOpen(false);
   };
-
-  async function handleUrlAdded(url: string) {
-    await addUrl(url);
-  }
 
   const toggleCheckedEntry = useCallback((entryId: string, checked: boolean) => {
     setCheckedEntryIds((current) => {
@@ -2426,7 +2421,6 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
 
   const dropZoneProps: DropZoneProps = {
     onFilesAdded: addFiles,
-    onUrlAdded: handleUrlAdded,
     onBrowseRequest: shell ? handleOpenFile : undefined,
   };
 

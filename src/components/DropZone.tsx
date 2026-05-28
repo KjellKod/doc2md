@@ -6,7 +6,6 @@ export const BROWSER_FILE_ACCEPT =
 
 export interface DropZoneProps {
   onFilesAdded: (files: FileList | File[]) => void;
-  onUrlAdded: (url: string) => Promise<void>;
   // When provided, the browse-file affordance routes through this callback
   // instead of the HTML file input. The desktop shell wires this to a native
   // openFile IPC so the selected file's disk path is captured for later
@@ -17,15 +16,11 @@ export interface DropZoneProps {
 
 export default function DropZone({
   onFilesAdded,
-  onUrlAdded,
   onBrowseRequest,
 }: DropZoneProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const dragDepthRef = useRef(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [urlValue, setUrlValue] = useState("");
-  const [urlError, setUrlError] = useState<string | null>(null);
-  const [isImportingUrl, setIsImportingUrl] = useState(false);
   const maxSizeInMb = Math.round(MAX_BROWSER_FILE_SIZE_BYTES / (1024 * 1024));
 
   function handleFiles(files: FileList | null) {
@@ -44,29 +39,6 @@ export default function DropZone({
     inputRef.current?.click();
   }
 
-  async function handleUrlImport() {
-    if (!urlValue.trim()) {
-      setUrlError("Enter a document URL to import.");
-      return;
-    }
-
-    setIsImportingUrl(true);
-    setUrlError(null);
-
-    try {
-      await onUrlAdded(urlValue.trim());
-      setUrlValue("");
-    } catch (error) {
-      setUrlError(
-        error instanceof Error
-          ? error.message
-          : "We couldn't import that document URL.",
-      );
-    } finally {
-      setIsImportingUrl(false);
-    }
-  }
-
   return (
     <div
       className={`drop-zone${isDragging ? " is-dragging" : ""}`}
@@ -75,8 +47,8 @@ export default function DropZone({
       onClick={(event) => {
         // Open the file picker for any click in the drop area, except
         // when the user clicked an interactive child element that owns
-        // its own click behavior (the inline "browse" button, the URL
-        // form's input/button). Those elements either handle the click
+        // its own click behavior (the inline "browse" button). Those elements
+        // either handle the click
         // themselves or stop propagation, so this `.closest()` check
         // covers anything that bubbles through to us.
         const target = event.target as Element | null;
@@ -151,49 +123,9 @@ export default function DropZone({
         .
       </p>
       <p className="drop-zone-note">
-        Mix supported file types in one drop. For web links, use a direct file
-        URL. Files can be up to {maxSizeInMb} MB each.
+        Mix supported file types in one drop. Files can be up to {maxSizeInMb}{" "}
+        MB each.
       </p>
-      <form
-        className="drop-zone-url-form"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void handleUrlImport();
-        }}
-        onClick={(event) => event.stopPropagation()}
-        onKeyDown={(event) => event.stopPropagation()}
-      >
-        <label className="visually-hidden" htmlFor="remote-document-url">
-          Document URL
-        </label>
-        <input
-          id="remote-document-url"
-          className="drop-zone-url-input"
-          type="url"
-          inputMode="url"
-          placeholder="https://example.com/report.pdf"
-          value={urlValue}
-          onChange={(event) => {
-            setUrlValue(event.target.value);
-            if (urlError) {
-              setUrlError(null);
-            }
-          }}
-          disabled={isImportingUrl}
-        />
-        <button
-          type="submit"
-          className="secondary-button drop-zone-url-button"
-          disabled={isImportingUrl}
-        >
-          {isImportingUrl ? "Importing..." : "Import URL"}
-        </button>
-      </form>
-      {urlError ? (
-        <p className="drop-zone-error" role="alert">
-          {urlError}
-        </p>
-      ) : null}
     </div>
   );
 }

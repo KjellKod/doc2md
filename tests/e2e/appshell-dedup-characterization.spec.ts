@@ -232,7 +232,7 @@ test("view switcher tabs reflect aria-selected and view-switcher-meta text match
   // Landing meta string is the empty-state buildSummary text. Asserted
   // byte-identical here, matching the buildSummary call at App.tsx:270.
   await expect(page.locator(".view-switcher-meta")).toHaveText(
-    "Start writing, open files, or import a direct document URL",
+    "Start writing or open files",
   );
 
   await installTab.click();

@@ -8,10 +8,6 @@ import {
   OVERSIZED_FILE_MESSAGE,
   TIMEOUT_MESSAGE,
 } from "../converters/messages";
-import {
-  REMOTE_DOCUMENT_BROWSER_ACCESS_MESSAGE,
-  REMOTE_DOCUMENT_TIMEOUT_MESSAGE,
-} from "../utils/remoteDocument";
 import { useFileConversion } from "./useFileConversion";
 
 const { convertFileMock } = vi.hoisted(() => ({
@@ -536,71 +532,5 @@ describe("useFileConversion", () => {
     expect(result.current.entries[1]?.status).toBe("error");
     expect(result.current.entries[2]?.status).toBe("error");
     expect(result.current.entries[3]?.status).toBe("success");
-  });
-
-  it("downloads a remote URL and converts it like an uploaded file", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      headers: new Headers({
-        "content-disposition": 'attachment; filename="remote-notes.txt"',
-      }),
-      blob: vi.fn().mockResolvedValue(new Blob(["remote"], { type: "text/plain" })),
-    });
-    vi.stubGlobal("fetch", fetchMock);
-    convertFileMock.mockResolvedValue(createSuccessResult("# Remote"));
-
-    const { result } = renderHook(() => useFileConversion());
-
-    await act(async () => {
-      await result.current.addUrl("https://example.com/download?id=7");
-    });
-
-    await waitFor(() => {
-      expect(result.current.entries[0]?.status).toBe("success");
-      expect(result.current.entries[0]?.name).toBe("remote-notes.txt");
-      expect(result.current.entries[0]?.markdown).toBe("# Remote");
-    });
-
-    expect(fetchMock).toHaveBeenCalledWith(
-      "https://example.com/download?id=7",
-      expect.objectContaining({
-        signal: expect.any(AbortSignal),
-      }),
-    );
-    expect(convertFileMock).toHaveBeenCalledWith(
-      expect.objectContaining({ name: "remote-notes.txt" }),
-    );
-  });
-
-  it("surfaces remote download failures to the caller", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockRejectedValue(new TypeError("Failed to fetch")),
-    );
-
-    const { result } = renderHook(() => useFileConversion());
-
-    await expect(
-      result.current.addUrl("https://example.com/private.docx"),
-    ).rejects.toThrow(REMOTE_DOCUMENT_BROWSER_ACCESS_MESSAGE);
-  });
-
-  it("surfaces remote download timeouts to the caller", async () => {
-    vi.useFakeTimers();
-    vi.stubGlobal("fetch", vi.fn((_input, init?: RequestInit) => {
-      return new Promise((_, reject) => {
-        init?.signal?.addEventListener("abort", () => {
-          reject(new DOMException("Aborted", "AbortError"));
-        });
-      });
-    }));
-
-    const { result } = renderHook(() => useFileConversion());
-    const pending = result.current.addUrl("https://example.com/slow.docx");
-    const expectation = expect(pending).rejects.toThrow(REMOTE_DOCUMENT_TIMEOUT_MESSAGE);
-
-    await vi.advanceTimersByTimeAsync(30_000);
-
-    await expectation;
   });
 });
