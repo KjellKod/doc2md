@@ -35,7 +35,7 @@ Commercial boundary:
 | 5a. Mac PR CI Check | done | PR #83 | Add a no-secrets GitHub Actions workflow that runs `npm run build:desktop` + unsigned `xcodebuild build` + `swiftc -parse` + forbidden-API grep on every PR so Mac-only regressions cannot land silently. | Phase 5b |
 | 5b. Sparkle Plumbing | done | PR #84 | Add Sparkle 2 to the Xcode project, wire `SUFeedURL` / `SUPublicEDKey` in Info.plist, define the appcast XML schema, and verify offline + test-appcast update detection. No signing, no release automation. | Phase 5c |
 | 5c. Release CI, Signing, Notarization, DMG, Appcast Publish | done | PR #85 (`mac-release-ci_2026-04-25__0010`) | Tag-triggered macOS release workflow with a protected `mac-release` Environment: Developer ID signing, notarization, stapling, DMG, Sparkle ZIP + `sign_update`, appcast publish. The only phase that touches Apple or Sparkle secrets. | MVP ship |
-| 6. Editor and UI Refresh (cross-surface) | done (MVP scope) | Phase 6a PR #86; Phase 6b PR #88; Phase 6c PR #87; Phase 6d PR #89 | App icon, persistent mode switcher, explicit save control, find/replace all shipped. Phase 6e (shortcut cheatsheet) and 6f (accessibility audit) remain deferred until after paid-launch decisions per their YAGNI notes; not gating for MVP. | MVP polish |
+| 6. Editor and UI Refresh (cross-surface) | done (MVP scope) | Phase 6a PR #86; Phase 6b PR #88; Phase 6c PR #87; Phase 6d PR #89; shortcut reference PR #146 | App icon, persistent mode switcher, explicit save control, find/replace, and bounded shortcut discoverability all shipped. Broader accessibility work is closed beyond the current accessibility notes contract. | MVP polish |
 | 7a. Desktop License Boundary | done | PR #103 (`dual-licensing-boundary_2026-05-01__2036`, `desktop-license-boundary_2026-05-03__0954`); license storage/cadence fixes in PR #105; license/notice surfacing in PR #106; verifier in PR #110 | Keep `@doc2md/core`, hosted web, shared converters, and MIT-marked files MIT while making the Mac app and desktop-specific UI/bridge code source-visible shareware under `LicenseRef-doc2md-Desktop`. | Phase 7b |
 | 7b. Mac Commercial Distribution And License UX | **blocked: operational setup** | Decision record PR #108; private issuer spec PR #109; Mac verifier PR #110; [decision record](../docs/implementation/mac-commercial-distribution-decision-record.md); [issuer spec](../docs/implementation/mac-private-license-issuer-spec.md) | In-repo deliverables (decision record, private issuer spec, in-app verifier, license boundary) all shipped. Remaining work is **outside this repo**: human operational setup of Cloudflare Worker issuer, Lemon Squeezy merchant account, `doc2md.dev` DNS + support email, and explicit go-live approval. No further in-repo changes can land productive purchase/registration UX until that setup completes. | Paid app launch |
 
@@ -371,7 +371,7 @@ Validation:
 
 Goal:
 
-Clean up the editor/viewer UX across the hosted browser app and the Mac shell. These items are surface-level and do not touch the shell contract, so they can run in parallel with Phase 5b/5c without blocking release work. Each item should be its own quest or a tightly-scoped quest group — not one giant PR.
+Clean up the editor/viewer UX across the hosted browser app and the Mac shell. MVP scope is complete; the roadmap should not keep speculative Phase 6 follow-ups active before Phase 7b.
 
 ### 6a. Mac App Icon
 
@@ -405,34 +405,10 @@ Clean up the editor/viewer UX across the hosted browser app and the Mac shell. T
 - Case sensitivity and regex options. Highlight all matches; step through with Enter / Shift+Enter.
 - Acceptance: round-trip search-and-replace on a 100 KB document is responsive (no janky UI freeze).
 
-### 6e. Keyboard Shortcut Cheatsheet
+Phase 6 follow-up notes:
 
-- Status: deferred until after the signed/notarized DMG installer is working and the Mac app licensing/payment structure is decided.
-- YAGNI-reduced scope: add only a compact shortcut reference if the app has enough real shortcuts to justify discoverability work after 6d.
-- If implemented, prefer a small `?` / Help entry that lists only shortcuts the app actually supports.
-- Keep it cross-surface only if the same shortcuts exist in both hosted web and Mac. Desktop-only menu wiring can wait.
-- Do not build a command palette, onboarding tutorial, configurable shortcut system, searchable help center, or shortcut-remapping UI in this phase.
-- Acceptance if revived: users can discover the real supported shortcuts without visual clutter, and no entry claims a shortcut that does not exist.
-
-### 6f. Accessibility Audit
-
-- Status: deferred until after the signed/notarized DMG installer is working and the Mac app licensing/payment structure is decided.
-- YAGNI-reduced scope: do a lightweight accessibility pass only, focused on obvious usability bugs and invisible screen-reader affordances.
-- Preserve the current visual design where possible. Prefer invisible-but-helpful improvements such as `aria-label`, `aria-labelledby`, `aria-live`, accurate roles, and visible focus behavior.
-- Check keyboard-only reachability for primary controls that already exist: upload/open, edit, mode switcher, save, find/replace, copy, and close/dismiss controls.
-- Check that icon-only buttons have meaningful accessible names without adding visible labels unless the UI is also unclear to sighted users.
-- Check status/error announcements for save state, find/replace errors, and conversion errors where those states already exist.
-- Do not pursue formal WCAG certification, exhaustive assistive-technology matrix testing, a custom accessibility test harness, or a broad visual redesign in this phase.
-- Acceptance if revived: obvious keyboard/screen-reader dead ends are fixed, primary controls have accessible names, status changes are understandable, and the hosted app does not regress materially in Lighthouse accessibility checks.
-
-### 6g. Open Slot: "??? — User Backlog"
-
-Reserved for items the maintainer adds on the fly. Candidates surfaced during scoping of this phase:
-
-- Optional: dark-mode / system-theme follow.
-- Optional: "Copy rendered Markdown" and "Copy LinkedIn text" buttons next to the mode switcher.
-- Optional: session-local scratch buffer so refresh / accidental navigation does not erase unsaved work in the hosted browser.
-- Optional: PWA install hint for mobile users of the hosted app.
+- Keyboard shortcut discoverability shipped in PR #146. Do not expand this into a command palette, shortcut remapping, or a help-center project without a concrete user signal.
+- Accessibility work is limited to the current implemented contract in `docs/accessibility-notes.md`; no broader audit is scheduled.
 
 ## Phase 7a: Desktop License Boundary
 
@@ -581,7 +557,6 @@ MVP is ready when:
 - Recent files.
 - Security-scoped bookmark persistence.
 - Autosave.
-- Dirty-buffer crash recovery.
 - Multiple windows.
 - Three-way merge.
 - OCR or converter quality upgrades.

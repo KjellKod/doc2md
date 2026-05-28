@@ -102,7 +102,7 @@ find/replace bar, save controls, or the upload/working-mode chrome.
 - The listener is removed on cleanup so navigating away from the App
   component (e.g., HMR, route change) does not leak a global handler.
 
-## Out-of-scope (tracked in follow-up quests)
+## Out-of-scope / archived
 
 - WCAG audit/certification matrices, Lighthouse accessibility targets,
   screen-reader audits, broad focus-ring redesigns, command palettes, shortcut

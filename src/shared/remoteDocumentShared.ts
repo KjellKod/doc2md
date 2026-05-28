@@ -1,5 +1,5 @@
 export const INVALID_REMOTE_DOCUMENT_URL_MESSAGE =
-  "Enter a valid http:// or https:// document URL, or download the file and open it locally.";
+  "Enter a valid http:// or https:// remote URL, or download the file and open it locally.";
 
 const MIME_TYPE_EXTENSION_MAP: Record<string, string> = {
   "application/json": "json",

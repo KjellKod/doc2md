@@ -354,7 +354,7 @@ export default function AppShell(props: AppShellProps) {
             </h1>
             <p className="hero-copy">
               Privacy first. Start with a blank draft, edit existing Markdown,
-              open a direct document URL, or convert{" "}
+              open files, or convert{" "}
               <strong>.md</strong>, <strong>.txt</strong>,{" "}
               <strong>.json</strong>, <strong>.csv</strong>,{" "}
               <strong>.tsv</strong>, <strong>.html</strong>,{" "}
@@ -468,7 +468,7 @@ export default function AppShell(props: AppShellProps) {
                     <div>
                       <h2 id="upload-title">Upload</h2>
                       <p className="panel-copy">
-                        Drop files, open a direct document URL, or start writing
+                        Drop files, open files, or start writing
                         from scratch.
                       </p>
                     </div>
