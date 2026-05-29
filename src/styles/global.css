@@ -1416,53 +1416,20 @@ body.is-height-resizing * {
   gap: 8px;
 }
 
+/* Every supported input type reads as "ready to convert" (green). The round
+ * status icon — not the type chip — carries whether a given conversion
+ * succeeded, so the chip must never borrow the error palette (PDF used to be
+ * red, which users read as a failure). Only a genuinely unrecognized type
+ * falls through to the neutral grey below. */
 .format-badge {
   flex-shrink: 0;
-  background: #edf1f4;
-  color: var(--text-secondary);
-}
-
-.format-badge-md {
-  background: #e8edf4;
-  color: #3b5278;
-}
-
-.format-badge-txt {
-  background: #edf2f6;
-  color: #4f6575;
-}
-
-.format-badge-json {
-  background: #f5eedf;
-  color: #8a6420;
-}
-
-.format-badge-csv,
-.format-badge-tsv {
   background: #e8f4eb;
   color: #286347;
 }
 
-.format-badge-html {
-  background: #f7ece6;
-  color: #9a5222;
-}
-
-.format-badge-docx,
-.format-badge-pptx {
-  background: #e9eef9;
-  color: #355a96;
-}
-
-.format-badge-xlsx,
-.format-badge-pdf {
-  background: #f6e8e8;
-  color: #9a4040;
-}
-
 .format-badge-unknown {
-  background: #f4ece9;
-  color: #8c3b34;
+  background: #edf1f4;
+  color: var(--text-secondary);
 }
 
 .status-indicator {
@@ -2991,50 +2958,13 @@ body.is-height-resizing * {
 }
 
 :root[data-theme="dark"] .format-badge {
-  background: #2b3440;
-}
-
-:root[data-theme="dark"] .format-badge-md {
-  background: #233448;
-  color: #a6cef0;
-}
-
-:root[data-theme="dark"] .format-badge-txt {
-  background: #293740;
-  color: #b5d0de;
-}
-
-:root[data-theme="dark"] .format-badge-json {
-  background: #443723;
-  color: #f4d08d;
-}
-
-:root[data-theme="dark"] .format-badge-csv,
-:root[data-theme="dark"] .format-badge-tsv {
   background: #21392b;
   color: #97e0b4;
 }
 
-:root[data-theme="dark"] .format-badge-html {
-  background: #493123;
-  color: #f6bc8f;
-}
-
-:root[data-theme="dark"] .format-badge-docx,
-:root[data-theme="dark"] .format-badge-pptx {
-  background: #27344d;
-  color: #9ec1ff;
-}
-
-:root[data-theme="dark"] .format-badge-xlsx,
-:root[data-theme="dark"] .format-badge-pdf {
-  background: #4a2a2a;
-  color: #ffb4b4;
-}
-
 :root[data-theme="dark"] .format-badge-unknown {
-  background: #412d28;
-  color: #efb6aa;
+  background: #2b3440;
+  color: #9fb0bf;
 }
 
 :root[data-theme="dark"] .status-pending {
