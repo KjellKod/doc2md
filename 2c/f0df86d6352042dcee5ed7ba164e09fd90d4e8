@@ -1,0 +1,24 @@
+src/converters/pdf.test.ts
+  s_3d8eb3c367af79::t_0aea22c269b960 1136-1138,1141,1150,1154-1187
+  s_3d8eb3c367af79::t_6f16a3ef5d7792 1139-1140,1142-1149,1151-1153
+src/converters/pdf.ts
+  s_3d8eb3c367af79::t_d4ad315dfcdaaa 67-79,83-118,124
+  s_3d8eb3c367af79::t_a2c21e2781058f 80-82
+  s_3d8eb3c367af79::t_9c515048659060 1465-1469
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "2cf0df86d6352042dcee5ed7ba164e09fd90d4e8",
+  "prompts": {},
+  "sessions": {
+    "s_3d8eb3c367af79": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c686566d-ddc8-4630-a082-8ff1593186d4",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
