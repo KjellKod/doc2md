@@ -25,26 +25,27 @@ decode_base64_secret() {
   local value="$1"
   local output_path="$2"
 
-  # GitHub stores the secret with the line wrapping that `base64` emits by
-  # default (a newline every 76 columns). BSD `base64` on the macOS runners
-  # mishandles that embedded whitespace: it returns exit 0 while writing a
-  # truncated/garbled file, so the error only surfaces three steps later as
-  # the cryptic "security: SecKeychainItemImport: Unknown format in import."
-  # Strip CR/LF/spaces first, matching the proven decode in candid_talent_edge.
-  if ! printf '%s' "$value" | tr -d '\n\r ' | base64 --decode >"$output_path" 2>/dev/null; then
+  # Strip characters a base64 secret can carry but that are never valid base64:
+  # CR/LF/space line wrapping plus stray single/double quotes from a quoted
+  # paste. \047 is octal for a single quote. None can corrupt a well-formed
+  # secret; removing them rescues a wrapped/quoted one.
+  if ! printf '%s' "$value" | tr -d '\r\n "\047' | base64 --decode >"$output_path" 2>/dev/null; then
     fail "failed to base64-decode Apple Developer ID P12 secret"
   fi
 
   # Fail loud, and here, if the decode produced anything other than a
   # DER-encoded PKCS#12 container. Every .p12 begins with an ASN.1 SEQUENCE
   # tag (0x30 == 48 decimal); an empty or non-p12 secret is caught now with an
-  # actionable message instead of a downstream "Unknown format" from `security`.
+  # actionable message. The byte count is a cheap, non-sensitive breadcrumb if
+  # a future secret is truncated.
+  local size first
+  size="$(wc -c <"$output_path" | tr -d '[:space:]')"
+  first="$(head -c 1 "$output_path" | od -An -tu1 | tr -d '[:space:]')"
+  printf 'Decoded Developer ID P12: %s bytes, first byte %s\n' "$size" "${first:-none}" >&2
   [[ -s "$output_path" ]] \
     || fail "decoded Apple Developer ID P12 is empty; check the MACOS_CERTIFICATE secret"
-  local magic
-  magic="$(head -c 1 "$output_path" | od -An -tu1 | tr -d '[:space:]')"
-  [[ "$magic" == "48" ]] \
-    || fail "decoded Apple Developer ID P12 is not a PKCS#12 container (first byte ${magic:-none}, expected 48). Re-export with 'base64 -i cert.p12 | pbcopy' and reset the MACOS_CERTIFICATE secret"
+  [[ "$first" == "48" ]] \
+    || fail "decoded Apple Developer ID P12 is not a PKCS#12 container (first byte ${first:-none}, expected 48). Re-export with 'base64 -i cert.p12 | pbcopy' and reset the MACOS_CERTIFICATE secret"
 }
 
 create_keychain() {
@@ -58,7 +59,13 @@ create_keychain() {
   security create-keychain -p "$KEYCHAIN_PASSWORD" "$keychain_path"
   security set-keychain-settings -lut 21600 "$keychain_path"
   security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$keychain_path"
-  security import "$p12_path" -k "$keychain_path" -P "$APPLE_DEVELOPER_ID_APPLICATION_P12_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+  # -f pkcs12 is REQUIRED: $p12_path is a mktemp file with no .p12 extension,
+  # and `security import` otherwise infers the format from the filename. With no
+  # recognized extension it fails inference and reports the misleading
+  # "SecKeychainItemImport: Unknown format in import" — before it ever reads the
+  # password. Stating the format explicitly removes the guess. (Verified: an
+  # extensionless valid p12 imports only with -f pkcs12.)
+  security import "$p12_path" -k "$keychain_path" -P "$APPLE_DEVELOPER_ID_APPLICATION_P12_PASSWORD" -f pkcs12 -T /usr/bin/codesign -T /usr/bin/security
   security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$keychain_path" >/dev/null
 
   APPLE_RELEASE_KEYCHAIN_PATH="$keychain_path"
