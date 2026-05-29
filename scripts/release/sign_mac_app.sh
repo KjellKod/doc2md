@@ -58,22 +58,48 @@ create_keychain() {
 
   security create-keychain -p "$KEYCHAIN_PASSWORD" "$keychain_path"
   security set-keychain-settings -lut 21600 "$keychain_path"
+  # Make the fresh keychain the default and add it to the user search list, so
+  # `set-key-partition-list`, `find-identity`, and `codesign` actually look in
+  # it. Without this the runner keeps searching its pre-existing login keychain
+  # and reports "The specified item could not be found in the keychain" even
+  # though the import succeeded. (candid_talent_edge does both; doc2md did not.)
+  security default-keychain -s "$keychain_path"
+  # Intentional word-splitting: each existing keychain must be a separate arg.
+  # shellcheck disable=SC2046
+  security list-keychains -d user -s "$keychain_path" \
+    $(security list-keychains -d user | tr -d '"')
   security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$keychain_path"
+
   # -f pkcs12 is REQUIRED: $p12_path is a mktemp file with no .p12 extension,
   # and `security import` otherwise infers the format from the filename. With no
   # recognized extension it fails inference and reports the misleading
   # "SecKeychainItemImport: Unknown format in import" — before it ever reads the
   # password. Stating the format explicitly removes the guess. (Verified: an
   # extensionless valid p12 imports only with -f pkcs12.)
-  security import "$p12_path" -k "$keychain_path" -P "$APPLE_DEVELOPER_ID_APPLICATION_P12_PASSWORD" -f pkcs12 -T /usr/bin/codesign -T /usr/bin/security
-  security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$keychain_path" >/dev/null
+  local import_out
+  if ! import_out="$(security import "$p12_path" -k "$keychain_path" -P "$APPLE_DEVELOPER_ID_APPLICATION_P12_PASSWORD" -f pkcs12 -T /usr/bin/codesign -T /usr/bin/security 2>&1)"; then
+    printf '%s\n' "$import_out" >&2
+    fail "security import failed"
+  fi
+  printf '%s\n' "$import_out" >&2
+
+  # Surface set-key-partition-list errors instead of hiding them behind >/dev/null.
+  local part_out
+  if ! part_out="$(security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$keychain_path" 2>&1)"; then
+    printf '%s\n' "$part_out" >&2
+    fail "security set-key-partition-list failed"
+  fi
 
   APPLE_RELEASE_KEYCHAIN_PATH="$keychain_path"
   export APPLE_RELEASE_KEYCHAIN_PATH
 
-  local identity
-  identity="$(security find-identity -v -p codesigning "$keychain_path" | awk -F '"' '/Developer ID Application/ { print $2; exit }')"
-  [[ -n "$identity" ]] || fail "no Developer ID Application identity found in imported P12"
+  local identity all_identities
+  all_identities="$(security find-identity -v -p codesigning "$keychain_path" 2>&1)"
+  identity="$(printf '%s\n' "$all_identities" | awk -F '"' '/Developer ID Application/ { print $2; exit }')"
+  if [[ -z "$identity" ]]; then
+    printf 'find-identity output:\n%s\n' "$all_identities" >&2
+    fail "no Developer ID Application identity found in imported P12"
+  fi
   CODESIGN_IDENTITY="$identity"
   export CODESIGN_IDENTITY
 
