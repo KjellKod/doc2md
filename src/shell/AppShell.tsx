@@ -71,6 +71,8 @@ export type AppShellPreviewPanelSaveProps = {
   saveKeyShortcuts?: string;
   lastSavedAt: number | null;
   onSave: () => void;
+  onDownloadMarkdown: () => void;
+  downloadMarkdownDisabled: boolean;
   onExportHtml: () => void;
   exportHtmlBusy: boolean;
   exportHtmlDisabled: boolean;
@@ -567,6 +569,10 @@ export default function AppShell(props: AppShellProps) {
                   saveKeyShortcuts={previewPanelSaveProps.saveKeyShortcuts}
                   saveState={previewPanelSaveProps.saveState}
                   lastSavedAt={previewPanelSaveProps.lastSavedAt}
+                  onDownloadMarkdown={previewPanelSaveProps.onDownloadMarkdown}
+                  downloadMarkdownDisabled={
+                    previewPanelSaveProps.downloadMarkdownDisabled
+                  }
                   onExportHtml={previewPanelSaveProps.onExportHtml}
                   exportHtmlBusy={previewPanelSaveProps.exportHtmlBusy}
                   exportHtmlDisabled={previewPanelSaveProps.exportHtmlDisabled}

@@ -123,7 +123,7 @@ describe("App hosted save control", () => {
       target: { value: "# Exported\n\nFrom the browser." },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Export HTML" }));
+    fireEvent.click(screen.getByRole("button", { name: "Download HTML" }));
 
     await waitFor(() => expect(createObjectURL).toHaveBeenCalledTimes(1));
 

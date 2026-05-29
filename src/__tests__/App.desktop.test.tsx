@@ -490,7 +490,7 @@ describe("App desktop bridge", () => {
       ),
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Export HTML" }));
+    fireEvent.click(screen.getByRole("button", { name: "Download HTML" }));
 
     await waitFor(() => expect(saveFileAs).toHaveBeenCalledTimes(1));
     const exportArgs = vi.mocked(saveFileAs).mock.calls[0][0];

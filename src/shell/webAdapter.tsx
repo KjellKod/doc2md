@@ -422,6 +422,13 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     saveState.markSaved();
   }, [saveState, selectedEntry, setEntrySaveState]);
 
+  const handleDownloadMarkdown = useCallback(() => {
+    if (!isDownloadableEntry(selectedEntry)) {
+      return;
+    }
+    downloadEntry(selectedEntry);
+  }, [selectedEntry]);
+
   const handleExportHtml = useCallback(() => {
     if (!isDownloadableEntry(selectedEntry) || exportHtmlBusy) {
       return;
@@ -488,6 +495,8 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
       ? (entryLastSavedAt[selectedEntry.id] ?? null)
       : null,
     onSave: handleSave,
+    onDownloadMarkdown: handleDownloadMarkdown,
+    downloadMarkdownDisabled: !isDownloadableEntry(selectedEntry),
     onExportHtml: handleExportHtml,
     exportHtmlBusy,
     exportHtmlDisabled,

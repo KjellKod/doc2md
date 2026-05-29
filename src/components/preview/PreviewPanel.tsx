@@ -34,6 +34,8 @@ export interface PreviewPanelProps {
   onEditorViewStateChange?: (id: string, state: EditorViewState) => void;
   onMarkdownChange?: (markdown: string) => void;
   onSave?: () => void | Promise<void>;
+  onDownloadMarkdown?: () => void | Promise<void>;
+  downloadMarkdownDisabled?: boolean;
   saveBusy?: boolean;
   saveDisabled?: boolean;
   saveKeyShortcuts?: string;
@@ -54,6 +56,8 @@ export default function PreviewPanel({
   onEditorViewStateChange,
   onMarkdownChange,
   onSave,
+  onDownloadMarkdown,
+  downloadMarkdownDisabled = false,
   saveBusy = false,
   saveDisabled = false,
   saveKeyShortcuts,
@@ -357,6 +361,8 @@ export default function PreviewPanel({
         showToggle={showToggle}
         showCopyButton={showCopyButton}
         onSave={onSave}
+        onDownloadMarkdown={onDownloadMarkdown}
+        downloadMarkdownDisabled={downloadMarkdownDisabled}
         saveBusy={saveBusy}
         saveDisabled={saveDisabled}
         saveKeyShortcuts={saveKeyShortcuts}

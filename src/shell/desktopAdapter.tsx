@@ -928,6 +928,13 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     setCheckedEntryIds(new Set());
   }, [checkedTargets, selectedEntry]);
 
+  const handleDownloadMarkdown = useCallback(() => {
+    if (!isDownloadableEntry(selectedEntry)) {
+      return;
+    }
+    downloadEntry(selectedEntry);
+  }, [selectedEntry]);
+
   const handleClear = useCallback(() => {
     const targets =
       checkedTargets.length > 0
@@ -2498,6 +2505,8 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
       ? (entryLastSavedAt[selectedEntry.id] ?? null)
       : null,
     onSave: effectiveSave,
+    onDownloadMarkdown: handleDownloadMarkdown,
+    downloadMarkdownDisabled: !isDownloadableEntry(selectedEntry),
     onExportHtml: handleExportHtml,
     exportHtmlBusy,
     exportHtmlDisabled,
