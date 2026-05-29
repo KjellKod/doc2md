@@ -1,0 +1,20 @@
+scripts/release/sign_mac_app.sh
+  s_dcac04e1c855f5::t_a70459a3beba08 67-68
+  s_dcac04e1c855f5::t_9dddc2338041a4 61-66,69-70,72,79-91,96-102
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "a9150f514658af63a1c98a9eb92ed776849527e0",
+  "prompts": {},
+  "sessions": {
+    "s_dcac04e1c855f5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5b56db6b-6099-4b74-87e5-1e510870b04b",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
