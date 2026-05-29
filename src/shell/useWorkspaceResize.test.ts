@@ -1,5 +1,5 @@
 import { act, renderHook } from "@testing-library/react";
-import type { KeyboardEvent } from "react";
+import type { KeyboardEvent, MouseEvent } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useWorkspaceResize } from "./useWorkspaceResize";
 
@@ -75,5 +75,40 @@ describe("useWorkspaceResize per-document height memory", () => {
     });
     expect(result.current.previewPanelStyle.height).toBeUndefined();
     expect(store.get("doc-a")).toBeNull();
+  });
+
+  it("persists the final dragged height, not a one-move-stale value", () => {
+    vi.stubGlobal("innerHeight", 1000);
+    const store = new Map<string, number | null>();
+    const { result } = renderHook(() =>
+      useWorkspaceResize({
+        documentKey: "doc-a",
+        resolveInitialEditShellHeight: (key) =>
+          store.has(key) ? store.get(key)! : null,
+        onEditShellHeightChange: (key, height) => store.set(key, height),
+      }),
+    );
+
+    act(() => {
+      result.current.handleHeightResizeStart({
+        detail: 1,
+        clientY: 100,
+        preventDefault() {},
+      } as unknown as MouseEvent<HTMLButtonElement>);
+    });
+
+    // Final mousemove and mouseup dispatched in the SAME act, so the passive
+    // ref-sync effect cannot run between them — the exact race the reviewer
+    // flagged. The drag-end persist must still record the final position.
+    act(() => {
+      window.dispatchEvent(new MouseEvent("mousemove", { clientY: 150 }));
+      window.dispatchEvent(new MouseEvent("mousemove", { clientY: 200 }));
+      window.dispatchEvent(new MouseEvent("mouseup", { clientY: 200 }));
+    });
+
+    // Start height defaults to MIN (240, no panel in jsdom); drag delta is
+    // +100 → 340, within the ~720 ceiling.
+    expect(store.get("doc-a")).toBe(340);
+    expect(result.current.previewPanelStyle.height).toBe("340px");
   });
 });

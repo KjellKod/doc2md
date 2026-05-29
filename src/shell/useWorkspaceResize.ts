@@ -408,12 +408,16 @@ export function useWorkspaceResize(
         if (Math.abs(event.clientY - dragStartYRef.current) > 2) {
           heightDragMovedRef.current = true;
         }
-        setEditShellHeight(
-          clampEditShellHeight(
-            baseHeight + (event.clientY - dragStartYRef.current),
-            editShellHeightCeilingRef.current,
-          ),
+        const nextHeight = clampEditShellHeight(
+          baseHeight + (event.clientY - dragStartYRef.current),
+          editShellHeightCeilingRef.current,
         );
+        // Sync the ref imperatively here, not only via the passive effect:
+        // mouseup persists editShellHeightRef.current and can fire before the
+        // final mousemove's effect flushes, which would otherwise store a
+        // one-move-stale height.
+        editShellHeightRef.current = nextHeight;
+        setEditShellHeight(nextHeight);
       }
     };
     const handleMouseUp = (event: globalThis.MouseEvent) => {
