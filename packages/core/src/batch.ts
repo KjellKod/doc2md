@@ -16,6 +16,20 @@ function deriveTitle(fileName: string) {
   return base.trim() || fileName;
 }
 
+function normalizeOutputFormat(format: unknown): OutputFormat {
+  if (format === undefined) {
+    return "md";
+  }
+
+  if (format === "md" || format === "html" || format === "both") {
+    return format;
+  }
+
+  throw new Error(
+    `Invalid value for format: expected one of md, html, both, got "${String(format)}".`
+  );
+}
+
 function toDocumentResult(
   inputPath: string,
   outputPath: string | null,
@@ -68,6 +82,7 @@ export async function convertOneDocument(
   const remoteInput = isRemoteUrl(inputPath);
 
   try {
+    const format = normalizeOutputFormat(options.format);
     let file: File;
 
     if (remoteInput) {
@@ -108,7 +123,6 @@ export async function convertOneDocument(
       return toDocumentResult(inputPath, null, undefined, result, now() - startedAt);
     }
 
-    const format: OutputFormat = options.format ?? "md";
     const html =
       format === "md"
         ? undefined

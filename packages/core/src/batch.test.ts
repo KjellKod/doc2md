@@ -156,4 +156,21 @@ describe("convertDocuments", () => {
     );
     expect(new Set(stems).size).toBe(2);
   });
+
+  it("returns a clear error for invalid runtime output formats", async () => {
+    const outputDir = await createTempDir("doc2md-core-batch-format-");
+    const result = await convertDocuments([fixturePath("sample.txt")], {
+      outputDir,
+      format: "pdf"
+    } as Parameters<typeof convertDocuments>[1]);
+
+    expect(result.results).toHaveLength(1);
+    expect(result.results[0].status).toBe("error");
+    expect(result.results[0].outputPath).toBeNull();
+    expect(result.results[0].error).toBe(
+      'Invalid value for format: expected one of md, html, both, got "pdf".'
+    );
+    expect(await pathExists(`${outputDir}/sample.md`)).toBe(false);
+    expect(await pathExists(`${outputDir}/sample.html`)).toBe(false);
+  });
 });

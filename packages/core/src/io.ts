@@ -140,6 +140,12 @@ export async function writeConversionOutput(
   args: WriteOutputArgs
 ): Promise<WriteOutputResult> {
   const { outputDir, inputName, format, markdown, html } = args;
+  if (format !== "md" && format !== "html" && format !== "both") {
+    throw new Error(
+      `Invalid value for format: expected one of md, html, both, got "${String(format)}".`
+    );
+  }
+
   await ensureOutputDirectory(outputDir);
   const base = basenameWithoutExtension(inputName);
 

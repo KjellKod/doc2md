@@ -133,4 +133,19 @@ describe("core io", () => {
       "resume.md"
     ]);
   });
+
+  it("rejects invalid runtime output formats instead of falling through", async () => {
+    const outputDir = await createTempDir("doc2md-core-io-format-");
+
+    await expect(
+      writeConversionOutput({
+        outputDir,
+        inputName: "/tmp/a/resume.pdf",
+        format: "pdf",
+        markdown: "# Resume"
+      } as Parameters<typeof writeConversionOutput>[0])
+    ).rejects.toThrow(
+      'Invalid value for format: expected one of md, html, both, got "pdf".'
+    );
+  });
 });
