@@ -1,0 +1,31 @@
+scripts/release/notarize_mac_app.sh
+  s_f118e9cf960483::t_fefa5bec7bd7b4 19-22
+src/converters/pdf.ts
+  s_f118e9cf960483::t_fefa5bec7bd7b4 67-118,124-125,1465-1469
+src/styles/global.css
+  s_f118e9cf960483::t_fefa5bec7bd7b4 1419-1423,1431-1432,2979-2980
+src/converters/pdf.test.ts
+  s_f118e9cf960483::t_fefa5bec7bd7b4 1136-1187
+tests/release/test_p12_decode.sh
+  s_f118e9cf960483::t_fefa5bec7bd7b4 94-107,125
+.gitignore
+  s_f118e9cf960483::t_fefa5bec7bd7b4 6-7
+scripts/release/sign_mac_app.sh
+  s_f118e9cf960483::t_fefa5bec7bd7b4 28-32,39-44,47-48,62-68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "3d3319614b1c7105b80f92c1eca7deef6ce0bbca",
+  "prompts": {},
+  "sessions": {
+    "s_f118e9cf960483": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e760b-82f1-76d2-af68-d7abfa971f9e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
