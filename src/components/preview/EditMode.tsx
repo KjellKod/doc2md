@@ -14,6 +14,7 @@ import {
   type ClipboardPasteConversion,
 } from "./pasteToMarkdown";
 import { useViewportAnchor } from "./useViewportAnchor";
+import type { EditorViewState } from "./PreviewPanel";
 
 const LARGE_PASTE_MARKDOWN_LENGTH = 200;
 
@@ -47,6 +48,8 @@ interface EditModeProps {
   suppressMatchCenteringForModeSwitchRef: MutableElementRef<boolean>;
   viewportTopFloor: () => number;
   autoFocusOnMount?: boolean;
+  pendingEditorRestoreRef?: MutableElementRef<EditorViewState>;
+  onReportView?: () => void;
   onMarkdownChange?: (markdown: string) => void;
   onLargeMarkdownPaste?: (markdown: string) => void;
 }
@@ -159,6 +162,8 @@ export default function EditMode({
   suppressMatchCenteringForModeSwitchRef,
   viewportTopFloor,
   autoFocusOnMount = false,
+  pendingEditorRestoreRef,
+  onReportView,
   onMarkdownChange,
   onLargeMarkdownPaste,
 }: EditModeProps) {
@@ -237,8 +242,35 @@ export default function EditMode({
     viewportTopFloor,
   ]);
 
+  // Restore the remembered caret + scroll for this document. Seeded by
+  // PreviewPanel on document change and consumed once; keyed on
+  // effectiveMarkdown so it fires both on mount (entering edit mode) and when
+  // a new document's content swaps in while edit mode is already open. On a
+  // same-document mode switch the ref is null, so this is inert and the
+  // pending-anchor handoff above owns the viewport.
+  useLayoutEffect(() => {
+    const restore = pendingEditorRestoreRef?.current;
+    if (!restore) {
+      return;
+    }
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      return;
+    }
+    pendingEditorRestoreRef.current = null;
+    const max = textarea.value.length;
+    const start = Math.min(Math.max(restore.selectionStart ?? 0, 0), max);
+    const end = Math.min(Math.max(restore.selectionEnd ?? start, 0), max);
+    textarea.setSelectionRange(start, end);
+    if (restore.scrollTop != null) {
+      textarea.scrollTop = restore.scrollTop;
+    }
+    syncFindHighlightScroll();
+  }, [effectiveMarkdown, pendingEditorRestoreRef, textareaRef, syncFindHighlightScroll]);
+
   function handleEditorScroll() {
     syncFindHighlightScroll();
+    onReportView?.();
   }
 
   const clearPasteConversionTimers = useCallback(() => {
@@ -563,6 +595,7 @@ export default function EditMode({
         onChange={handleTextareaChange}
         onPaste={handleTextareaPaste}
         onScroll={handleEditorScroll}
+        onSelect={() => onReportView?.()}
         onKeyDown={handleTextareaKeyDown}
         onCompositionStart={() => {
           isComposingRef.current = true;

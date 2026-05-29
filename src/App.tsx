@@ -39,6 +39,8 @@ function AppContent() {
       onActivePageChange={adapter.setActivePage}
       selectedEntry={adapter.selectedEntry}
       editorFocusRequest={adapter.editorFocusRequest}
+      getSavedEditorViewState={adapter.getSavedEditorViewState}
+      onEditorViewStateChange={adapter.onEditorViewStateChange}
       previewPanelSaveProps={adapter.previewPanelSaveProps}
       callbacks={adapter.callbacks}
       workingModeBarProps={adapter.workingModeBarProps}

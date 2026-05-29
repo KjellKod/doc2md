@@ -26,6 +26,7 @@ import type {
   PageView,
 } from "./AppShell";
 import { useWorkspaceResize } from "./useWorkspaceResize";
+import type { EditorViewState } from "../components/PreviewPanel";
 import type { FileEntry } from "../types";
 import type { SaveState } from "../types/saveState";
 import { downloadEntry, isDownloadableEntry } from "../utils/download";
@@ -33,6 +34,13 @@ import { downloadEntry, isDownloadableEntry } from "../utils/download";
 function pluralize(count: number, singular: string, plural = `${singular}s`) {
   return count === 1 ? singular : plural;
 }
+
+// Combined per-document UI memory: dragged panel height (null = auto) plus the
+// edit-textarea caret/scroll. Both are remembered per entry id across switches.
+type DocumentViewMemory = {
+  editShellHeight?: number | null;
+  editor?: EditorViewState;
+};
 
 export type WebAppShellAdapter = {
   resize: ReturnType<typeof useWorkspaceResize>;
@@ -44,6 +52,8 @@ export type WebAppShellAdapter = {
   fileSummary: string;
   selectedEntry: FileEntry | null;
   editorFocusRequest: { id: number; target: "editor" };
+  getSavedEditorViewState: (id: string) => EditorViewState | undefined;
+  onEditorViewStateChange: (id: string, state: EditorViewState) => void;
   callbacks: AppShellCallbacks;
   previewPanelSaveProps: AppShellPreviewPanelSaveProps;
   fileListProps: AppShellFileListProps;
@@ -70,7 +80,40 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     updateMarkdown,
   } = useFileConversion();
   const saveState = useSaveState();
-  const resize = useWorkspaceResize({ autoCollapseResponsiveWidths: true });
+  // Per-document view memory (panel height + edit caret/scroll), kept in an
+  // in-memory map keyed by entry id — same lifetime model as entrySaveStates.
+  // Survives document switches within a session; not persisted across reloads
+  // (the hosted browser drops the loaded files on reload anyway).
+  const docViewStateRef = useRef<Map<string, DocumentViewMemory>>(new Map());
+  const resolveInitialEditShellHeight = useCallback(
+    (key: string) => docViewStateRef.current.get(key)?.editShellHeight ?? null,
+    [],
+  );
+  const persistEditShellHeight = useCallback(
+    (key: string, height: number | null) => {
+      const existing = docViewStateRef.current.get(key) ?? {};
+      docViewStateRef.current.set(key, { ...existing, editShellHeight: height });
+    },
+    [],
+  );
+  const persistEditorViewState = useCallback(
+    (id: string, state: EditorViewState) => {
+      const existing = docViewStateRef.current.get(id) ?? {};
+      docViewStateRef.current.set(id, { ...existing, editor: state });
+    },
+    [],
+  );
+  const getSavedEditorViewState = useCallback(
+    (id: string) => docViewStateRef.current.get(id)?.editor,
+    [],
+  );
+  const selectedEntryIdForResize = selectedEntry?.id ?? null;
+  const resize = useWorkspaceResize({
+    autoCollapseResponsiveWidths: true,
+    documentKey: selectedEntryIdForResize,
+    resolveInitialEditShellHeight,
+    onEditShellHeightChange: persistEditShellHeight,
+  });
   const activeEntryIdRef = useRef<string | null>(null);
   const saveStateRef = useRef<SaveState>(saveState.state);
   const entriesRef = useRef<FileEntry[]>([]);
@@ -96,6 +139,32 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     selectedEntry !== null &&
     (!selectedEntry.isScratch || pastePromotedEntryIds.has(selectedEntry.id));
   const isWorkingMode = hasWorkingEntry && !showLandingChrome;
+
+  // Re-measure the editor height ceiling after the working-mode collapse (and
+  // on document switch). Entering working mode hides the hero and slides the
+  // preview panel up, but none of the ResizeObserver-watched boxes necessarily
+  // change size, so the observer can leave the ceiling frozen at the small
+  // value measured while the hero was still tall — the cramped-editor bug in
+  // WebKit. Double rAF waits for the post-collapse layout to settle before
+  // measuring rather than reading the in-flight frame.
+  const recomputeEditShellHeightCeiling = resize.recomputeEditShellHeightCeiling;
+  useEffect(() => {
+    if (!isWorkingMode) {
+      return;
+    }
+    let secondFrame: number | null = null;
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        recomputeEditShellHeightCeiling();
+      });
+    });
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      if (secondFrame !== null) {
+        window.cancelAnimationFrame(secondFrame);
+      }
+    };
+  }, [isWorkingMode, selectedEntryId, recomputeEditShellHeightCeiling]);
 
   let convertedCount = 0;
   let draftCount = 0;
@@ -440,6 +509,8 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     fileSummary,
     selectedEntry,
     editorFocusRequest,
+    getSavedEditorViewState,
+    onEditorViewStateChange: persistEditorViewState,
     callbacks,
     previewPanelSaveProps,
     fileListProps,

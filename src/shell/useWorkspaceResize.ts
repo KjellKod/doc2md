@@ -137,10 +137,34 @@ export type WorkspaceResizeResult = {
    * preference internally.
    */
   triggerFirstOpenAutoCollapse: (selectedEntryIsScratch: boolean) => void;
+  /**
+   * Recomputes the edit-shell height ceiling against the current layout.
+   * Exposed so adapters can re-trigger measurement after the working-mode
+   * collapse — a reflow the internal ResizeObserver can miss because none of
+   * the observed boxes change size when the panel only shifts position.
+   */
+  recomputeEditShellHeightCeiling: () => void;
 };
 
 export type WorkspaceResizeOptions = {
   autoCollapseResponsiveWidths?: boolean;
+  /**
+   * Identifier of the currently selected document. When it changes, the hook
+   * restores that document's remembered edit-shell height (or falls back to
+   * the auto ceiling-driven height when nothing is stored).
+   */
+  documentKey?: string | null;
+  /**
+   * Returns the stored edit-shell height for a document id, or null/undefined
+   * to use the auto height. Persistence lives in the adapter; the hook only
+   * reads through this resolver on document change.
+   */
+  resolveInitialEditShellHeight?: (key: string) => number | null | undefined;
+  /**
+   * Persists a user-committed edit-shell height (drag, keyboard, or reset)
+   * for the active document. `null` means the document was reset to auto.
+   */
+  onEditShellHeightChange?: (key: string, height: number | null) => void;
 };
 
 export function useWorkspaceResize(
@@ -148,6 +172,7 @@ export function useWorkspaceResize(
 ): WorkspaceResizeResult {
   const autoCollapseResponsiveWidths =
     options.autoCollapseResponsiveWidths ?? false;
+  const { documentKey = null } = options;
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeResizeAxis, setActiveResizeAxis] = useState<ResizeAxis | null>(
     null,
@@ -175,6 +200,35 @@ export function useWorkspaceResize(
   const heightDragMovedRef = useRef(false);
   const userTouchedSidebarRef = useRef(false);
   const firstAutoCollapseFiredRef = useRef(false);
+  // Per-document height memory. These refs keep the latest values readable
+  // from event handlers and effects without re-binding on every render, so
+  // persistence reads the correct (key, height) pair at commit time.
+  const editShellHeightRef = useRef(editShellHeight);
+  const documentKeyRef = useRef(documentKey);
+  const resolveInitialEditShellHeightRef = useRef(
+    options.resolveInitialEditShellHeight,
+  );
+  const onEditShellHeightChangeRef = useRef(options.onEditShellHeightChange);
+
+  // Keep the latest values readable from event handlers/effects. Synced in an
+  // effect (not during render) so ref access stays out of the render path.
+  useEffect(() => {
+    editShellHeightRef.current = editShellHeight;
+    documentKeyRef.current = documentKey;
+    resolveInitialEditShellHeightRef.current =
+      options.resolveInitialEditShellHeight;
+    onEditShellHeightChangeRef.current = options.onEditShellHeightChange;
+  });
+
+  // Persist a user-committed height for the active document. Called from the
+  // drag-end, keyboard, and reset paths — never from the doc-change restore —
+  // so a height is always stored under the key it was produced for.
+  const persistEditShellHeight = useCallback((height: number | null) => {
+    const key = documentKeyRef.current;
+    if (key != null) {
+      onEditShellHeightChangeRef.current?.(key, height);
+    }
+  }, []);
 
   function measureEditShellHeight(): number | null {
     if (typeof document === "undefined") {
@@ -312,6 +366,21 @@ export function useWorkspaceResize(
     };
   }, [recomputeEditShellHeightCeiling]);
 
+  // Restore the active document's remembered height (or fall back to auto)
+  // whenever the selection changes. Runs only on documentKey change so it
+  // never clobbers the value the persist path just wrote for another doc.
+  useEffect(() => {
+    if (documentKey == null) {
+      return;
+    }
+    const stored = resolveInitialEditShellHeightRef.current?.(documentKey);
+    setEditShellHeight(
+      stored == null
+        ? null
+        : clampEditShellHeight(stored, editShellHeightCeilingRef.current),
+    );
+  }, [documentKey]);
+
   useEffect(() => {
     if (activeResizeAxis === null) {
       return;
@@ -339,12 +408,16 @@ export function useWorkspaceResize(
         if (Math.abs(event.clientY - dragStartYRef.current) > 2) {
           heightDragMovedRef.current = true;
         }
-        setEditShellHeight(
-          clampEditShellHeight(
-            baseHeight + (event.clientY - dragStartYRef.current),
-            editShellHeightCeilingRef.current,
-          ),
+        const nextHeight = clampEditShellHeight(
+          baseHeight + (event.clientY - dragStartYRef.current),
+          editShellHeightCeilingRef.current,
         );
+        // Sync the ref imperatively here, not only via the passive effect:
+        // mouseup persists editShellHeightRef.current and can fire before the
+        // final mousemove's effect flushes, which would otherwise store a
+        // one-move-stale height.
+        editShellHeightRef.current = nextHeight;
+        setEditShellHeight(nextHeight);
       }
     };
     const handleMouseUp = (event: globalThis.MouseEvent) => {
@@ -369,6 +442,9 @@ export function useWorkspaceResize(
         lastHeightClickAtRef.current = heightDragMovedRef.current
           ? -Infinity
           : event.timeStamp;
+        if (heightDragMovedRef.current) {
+          persistEditShellHeight(editShellHeightRef.current);
+        }
       }
       setActiveResizeAxis(null);
     };
@@ -380,7 +456,7 @@ export function useWorkspaceResize(
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [activeResizeAxis]);
+  }, [activeResizeAxis, persistEditShellHeight]);
 
   useEffect(() => {
     document.body.classList.toggle(
@@ -506,7 +582,8 @@ export function useWorkspaceResize(
   const handleHeightResizeReset = useCallback(() => {
     lastHeightClickAtRef.current = -Infinity;
     setEditShellHeight(null);
-  }, []);
+    persistEditShellHeight(null);
+  }, [persistEditShellHeight]);
 
   const handleHeightResizeStart = useCallback(
     (event: MouseEvent<HTMLButtonElement>) => {
@@ -529,27 +606,22 @@ export function useWorkspaceResize(
 
   const handleHeightResizeKeyDown = useCallback(
     (event: KeyboardEvent<HTMLButtonElement>) => {
-      if (event.key === "ArrowDown") {
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
         event.preventDefault();
-        setEditShellHeight((current) =>
-          clampEditShellHeight(
-            (current ?? measureEditShellHeight() ?? MIN_EDIT_SHELL_HEIGHT) +
-              EDIT_SHELL_HEIGHT_STEP,
-            editShellHeightCeilingRef.current,
-          ),
+        const base =
+          editShellHeightRef.current ??
+          measureEditShellHeight() ??
+          MIN_EDIT_SHELL_HEIGHT;
+        const delta =
+          event.key === "ArrowDown"
+            ? EDIT_SHELL_HEIGHT_STEP
+            : -EDIT_SHELL_HEIGHT_STEP;
+        const next = clampEditShellHeight(
+          base + delta,
+          editShellHeightCeilingRef.current,
         );
-        return;
-      }
-
-      if (event.key === "ArrowUp") {
-        event.preventDefault();
-        setEditShellHeight((current) =>
-          clampEditShellHeight(
-            (current ?? measureEditShellHeight() ?? MIN_EDIT_SHELL_HEIGHT) -
-              EDIT_SHELL_HEIGHT_STEP,
-            editShellHeightCeilingRef.current,
-          ),
-        );
+        setEditShellHeight(next);
+        persistEditShellHeight(next);
         return;
       }
 
@@ -558,7 +630,7 @@ export function useWorkspaceResize(
         handleHeightResizeReset();
       }
     },
-    [handleHeightResizeReset],
+    [handleHeightResizeReset, persistEditShellHeight],
   );
 
   const handleHeightResizeClickReset = useCallback(
@@ -657,5 +729,6 @@ export function useWorkspaceResize(
     handleHeightResizeMouseUp,
     handleHeightResizeReset,
     triggerFirstOpenAutoCollapse,
+    recomputeEditShellHeightCeiling,
   };
 }
