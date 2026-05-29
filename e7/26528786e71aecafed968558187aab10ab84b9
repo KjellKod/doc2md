@@ -1,0 +1,35 @@
+packages/core/package.json
+  s_2174a94a906d67::t_6eb03fa99f547d 56
+docs/diary/2026-05-28.md
+  ai_agent 3-36,73-74,84-85,88,91
+apps/macos/THIRD_PARTY_NOTICES.md
+  s_2174a94a906d67::t_6eb03fa99f547d 115,169
+packages/core/src/release-version.test.ts
+  s_2174a94a906d67::t_6eb03fa99f547d 5,87-119
+.github/workflows/release-mac.yml
+  s_2174a94a906d67::t_6eb03fa99f547d 127-137,154
+package-lock.json
+  ai_agent 16,18,3566-3568,4707-4709,4712,4715,6025
+packages/core/scripts/release-version.mjs
+  s_2174a94a906d67::t_6eb03fa99f547d 29-50,123
+package.json
+  s_2174a94a906d67::t_6eb03fa99f547d 33,35
+scripts/build-mac-app.sh
+  s_2174a94a906d67::t_6eb03fa99f547d 129-132,233,282
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "e726528786e71aecafed968558187aab10ab84b9",
+  "prompts": {},
+  "sessions": {
+    "s_2174a94a906d67": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e378c17a-588c-44ad-8a64-104a90773593",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
