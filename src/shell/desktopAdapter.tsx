@@ -28,6 +28,7 @@ import type { WorkingModeBarProps } from "../components/WorkingModeBar";
 import { useFileConversion } from "../hooks/useFileConversion";
 import { useTheme } from "../hooks/useTheme";
 import { useWorkspaceResize } from "./useWorkspaceResize";
+import type { EditorViewState } from "../components/PreviewPanel";
 import type { FileEntry } from "../types";
 import type {
   DesktopPersistenceSettings,
@@ -246,6 +247,13 @@ function DesktopMenuEventBridge({
   return <span data-testid="desktop-menu-bridge" hidden />;
 }
 
+// Combined per-document UI memory: dragged panel height (null = auto) plus the
+// edit-textarea caret/scroll, remembered per entry id across switches.
+type DocumentViewMemory = {
+  editShellHeight?: number | null;
+  editor?: EditorViewState;
+};
+
 export type DesktopAppShellAdapter = {
   resize: ReturnType<typeof useWorkspaceResize>;
   activePage: PageView;
@@ -256,6 +264,8 @@ export type DesktopAppShellAdapter = {
   fileSummary: string;
   selectedEntry: FileEntry | null;
   editorFocusRequest: { id: number; target: "editor" };
+  getSavedEditorViewState: (id: string) => EditorViewState | undefined;
+  onEditorViewStateChange: (id: string, state: EditorViewState) => void;
   callbacks: AppShellCallbacks;
   previewPanelSaveProps: AppShellPreviewPanelSaveProps;
   fileListProps: AppShellFileListProps;
@@ -272,7 +282,6 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
   const [activePage, setActivePage] = useState<PageView>("convert");
   const [showLandingChrome, setShowLandingChrome] = useState(false);
   const previousSelectedEntryIdRef = useRef<string | null>(null);
-  const resize = useWorkspaceResize();
   // AppShell owns the convert/install tab refs and the tab keyboard
   // navigation. The adapter does not render them.
   const {
@@ -289,6 +298,36 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     updateMarkdown,
     discardEditedMarkdown,
   } = useFileConversion();
+  // Per-document view memory (panel height + edit caret/scroll), keyed by
+  // entry id; same in-memory, session-only model as the web adapter.
+  const docViewStateRef = useRef<Map<string, DocumentViewMemory>>(new Map());
+  const resolveInitialEditShellHeight = useCallback(
+    (key: string) => docViewStateRef.current.get(key)?.editShellHeight ?? null,
+    [],
+  );
+  const persistEditShellHeight = useCallback(
+    (key: string, height: number | null) => {
+      const existing = docViewStateRef.current.get(key) ?? {};
+      docViewStateRef.current.set(key, { ...existing, editShellHeight: height });
+    },
+    [],
+  );
+  const persistEditorViewState = useCallback(
+    (id: string, state: EditorViewState) => {
+      const existing = docViewStateRef.current.get(id) ?? {};
+      docViewStateRef.current.set(id, { ...existing, editor: state });
+    },
+    [],
+  );
+  const getSavedEditorViewState = useCallback(
+    (id: string) => docViewStateRef.current.get(id)?.editor,
+    [],
+  );
+  const resize = useWorkspaceResize({
+    documentKey: selectedEntry?.id ?? null,
+    resolveInitialEditShellHeight,
+    onEditShellHeightChange: persistEditShellHeight,
+  });
   const { isDesktop, shell } = useDesktopCapability();
   const saveState = useDesktopSaveState(isDesktop);
   const { theme, setTheme } = useTheme();
@@ -358,6 +397,30 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     selectedEntry !== null &&
     (!selectedEntry.isScratch || pastePromotedEntryIds.has(selectedEntry.id));
   const isWorkingMode = hasWorkingEntry && !showLandingChrome;
+
+  // Re-measure the editor height ceiling once the working-mode collapse has
+  // settled (see the matching note in webAdapter): the ResizeObserver can miss
+  // this reflow because the panel only shifts position. Double rAF defers to
+  // the post-collapse layout.
+  const recomputeEditShellHeightCeiling = resize.recomputeEditShellHeightCeiling;
+  useEffect(() => {
+    if (!isWorkingMode) {
+      return;
+    }
+    let secondFrame: number | null = null;
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        recomputeEditShellHeightCeiling();
+      });
+    });
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      if (secondFrame !== null) {
+        window.cancelAnimationFrame(secondFrame);
+      }
+    };
+  }, [isWorkingMode, selectedEntryId, recomputeEditShellHeightCeiling]);
+
   let convertedCount = 0;
   let draftCount = 0;
   let activeCount = 0;
@@ -2560,6 +2623,8 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     fileSummary,
     selectedEntry,
     editorFocusRequest,
+    getSavedEditorViewState,
+    onEditorViewStateChange: persistEditorViewState,
     callbacks,
     previewPanelSaveProps,
     fileListProps,

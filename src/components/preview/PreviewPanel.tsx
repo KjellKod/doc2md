@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FileEntry } from "../../types";
 import type { SaveState } from "../../types/saveState";
 import FindReplaceBar from "../FindReplaceBar";
@@ -11,8 +11,22 @@ import PreviewEmptyStates from "./PreviewEmptyStates";
 import PreviewMode from "./PreviewMode";
 import PreviewToolbar from "./PreviewToolbar";
 import { performPreviewCopy } from "./previewCopy";
+/**
+ * Per-document edit-textarea position remembered across document switches so
+ * returning to a large doc restores the caret and scroll instead of jumping
+ * to the top. Owned/persisted by the adapter; PreviewPanel captures it on
+ * leave and reapplies it on return.
+ */
+export interface EditorViewState {
+  selectionStart: number;
+  selectionEnd: number;
+  scrollTop: number;
+}
+
 export interface PreviewPanelProps {
   entry: FileEntry | null;
+  getSavedEditorViewState?: (id: string) => EditorViewState | undefined;
+  onEditorViewStateChange?: (id: string, state: EditorViewState) => void;
   onMarkdownChange?: (markdown: string) => void;
   onSave?: () => void | Promise<void>;
   saveBusy?: boolean;
@@ -28,6 +42,8 @@ export interface PreviewPanelProps {
 
 export default function PreviewPanel({
   entry,
+  getSavedEditorViewState,
+  onEditorViewStateChange,
   onMarkdownChange,
   onSave,
   saveBusy = false,
@@ -60,6 +76,21 @@ export default function PreviewPanel({
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const pendingAnchorLineRef = useRef<number | null>(null);
   const suppressMatchCenteringForModeSwitchRef = useRef(false);
+  // Cross-document caret/scroll restore. Seeded in the entry-reset effect when
+  // the selected entry changes and consumed + cleared once by EditMode when it
+  // next mounts (entering edit mode). Non-scratch docs reset to preview mode on
+  // open, so EditMode is unmounted when the seed lands and reads it fresh on
+  // the later edit-mode mount.
+  const pendingEditorRestoreRef = useRef<EditorViewState | null>(null);
+  const entryId = entry?.id ?? null;
+  const reportEditorViewState = useCallback(
+    (state: EditorViewState) => {
+      if (entryId !== null) {
+        onEditorViewStateChange?.(entryId, state);
+      }
+    },
+    [entryId, onEditorViewStateChange],
+  );
   const findCapable =
     entry !== null &&
     (entry.status === "success" || entry.status === "warning") &&
@@ -77,7 +108,10 @@ export default function PreviewPanel({
     setRenderedViewText("");
     pendingAnchorLineRef.current = null;
     suppressMatchCenteringForModeSwitchRef.current = false;
-  }, [entry?.id, entry?.isScratch]);
+    pendingEditorRestoreRef.current = entry?.id
+      ? (getSavedEditorViewState?.(entry.id) ?? null)
+      : null;
+  }, [entry?.id, entry?.isScratch, getSavedEditorViewState]);
 
   // Close find when the active source loses find-capability (e.g. the
   // entry transitions to an error status). The render path cannot derive
@@ -331,6 +365,8 @@ export default function PreviewPanel({
           textareaRef={textareaRef}
           findHighlightRef={findHighlightRef}
           autoFocusOnMount={autoFocusEditorOnMount}
+          pendingEditorRestoreRef={pendingEditorRestoreRef}
+          onReportViewState={reportEditorViewState}
           onMarkdownChange={onMarkdownChange}
           onLargeMarkdownPaste={onLargeMarkdownPaste}
         />
