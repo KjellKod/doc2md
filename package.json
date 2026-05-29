@@ -30,9 +30,9 @@
   },
   "dependencies": {
     "jszip": "^3.10.1",
-    "lucide-react": "^1.14.0",
+    "lucide-react": "^1.16.0",
     "mammoth": "^1.12.0",
-    "pdfjs-dist": "^4.10.38",
+    "pdfjs-dist": "^5.7.284",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-markdown": "^10.1.0",
