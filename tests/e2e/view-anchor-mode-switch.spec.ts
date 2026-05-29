@@ -540,4 +540,38 @@ test.describe("cross-document view anchor", () => {
     const editorTopLine = await topSourceLineFromEditor(page);
     expect(Math.abs(editorTopLine - captured)).toBeLessThanOrEqual(3);
   });
+
+  test("restores preview position when the previous document was in edit mode", async ({
+    page,
+  }) => {
+    await openTwoDocs(page);
+
+    // Give document A a remembered preview position.
+    await selectDoc(page, DOC_A);
+    await page.getByRole("button", { name: "Preview", exact: true }).click();
+    await (await previewSurface(page)).waitFor();
+    await page.evaluate(() => {
+      const surface = document.querySelector(
+        ".markdown-surface",
+      ) as HTMLElement | null;
+      if (surface) {
+        surface.scrollTop = 1200;
+      }
+    });
+    const captured = await topRenderedSourceLine(page, ".markdown-surface");
+    expect(captured).toBeGreaterThan(1);
+
+    // Leave document B in EDIT mode, THEN return to A. The transient edit
+    // commit for A must not swallow A's restore before preview mounts.
+    await selectDoc(page, DOC_B);
+    await page.getByRole("button", { name: "Edit", exact: true }).click();
+    await editorTextarea(page).then((textarea) => textarea.waitFor());
+    await selectDoc(page, DOC_A);
+    await (await previewSurface(page)).waitFor();
+
+    const restoredTop = await topRenderedSourceLine(page, ".markdown-surface");
+    expect(restoredTop).toBeGreaterThan(1);
+    const delta = await topElementYDelta(page, ".markdown-surface", captured);
+    expect(Math.abs(delta)).toBeLessThanOrEqual(EPSILON_PX);
+  });
 });

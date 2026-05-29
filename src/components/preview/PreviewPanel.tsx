@@ -110,9 +110,13 @@ export default function PreviewPanel({
       entry.isScratch ||
       entry.editedMarkdown !== undefined);
 
-  // Reset shell state when the loaded entry changes. The pending anchor +
-  // editor-restore refs are seeded during render (see the derived-ref handoff
-  // above); this effect owns only the React state resets.
+  // Reset shell state when the loaded entry changes, and RE-SEED the pending
+  // restore refs. The render-time handoff above can be consumed by the wrong
+  // mode: when the previous document was open in edit, switching to a
+  // non-scratch document renders one transient edit commit (before this effect
+  // flips the mode to preview) in which EditMode mounts and clears the seeded
+  // refs. Re-seeding here — after setMode lands — ensures the value is present
+  // when the correct mode (preview) actually mounts on the next commit.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- entry-reset (see comment above)
     setMode(entry?.isScratch ? "edit" : "preview");
@@ -120,7 +124,11 @@ export default function PreviewPanel({
     setActiveFindMatch(null);
     setRenderedViewText("");
     suppressMatchCenteringForModeSwitchRef.current = false;
-  }, [entry?.id, entry?.isScratch]);
+    const saved = entry?.id ? getSavedEditorViewState?.(entry.id) : undefined;
+    pendingAnchorLineRef.current = saved?.anchorLine ?? null;
+    pendingEditorRestoreRef.current =
+      saved && saved.selectionStart != null ? saved : null;
+  }, [entry?.id, entry?.isScratch, getSavedEditorViewState]);
 
   // Close find when the active source loses find-capability (e.g. the
   // entry transitions to an error status). The render path cannot derive
