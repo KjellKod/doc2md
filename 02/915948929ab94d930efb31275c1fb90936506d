@@ -1,0 +1,44 @@
+src/render/markdownLinks.ts
+  s_1970badfc1764a::t_837dee05030473 1-51
+src/render/markdownToHtml.parity.test.tsx
+  s_1970badfc1764a::t_3d15a427c82ef7 1-79,105-148,150-198,200-201,210,212-213
+  s_1970badfc1764a::t_f1e73624446e3b 80-91,103-104
+  s_1970badfc1764a::t_523d7444c6711c 92-102
+  s_1970badfc1764a::t_a441710810be12 149
+  s_1970badfc1764a::t_93ebe438a2ead4 199,202-209,211
+src/render/htmlExportStyles.ts
+  s_1970badfc1764a::t_9bf8b49f2f7eb7 1-255
+package.json
+  s_1970badfc1764a::t_17ad3b3edc95f9 35,42,44-46
+  s_1970badfc1764a::t_3313746995fd53 47-48
+src/render/markdownToHtml.test.ts
+  s_1970badfc1764a::t_83b5da36c67a2d 1-170
+package-lock.json
+  ai_agent 18,25,27-31,2875-2897,2990-2999,5043-5057,6079,6082-6089
+src/render/markdownToHtml.ts
+  s_1970badfc1764a::t_7735ea3f7c54de 1-199
+packages/core/package.json
+  s_1970badfc1764a::t_ac7df009d30580 56,59-64
+  s_1970badfc1764a::t_66ad7dc93f1d41 65-66
+src/components/preview/PreviewMode.tsx
+  s_1970badfc1764a::t_192b7bc3588079 13
+  s_1970badfc1764a::t_baca25c89dbf02 22-26
+src/render/previewMarkdown.ts
+  s_1970badfc1764a::t_58af0d922e049c 1-10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "02915948929ab94d930efb31275c1fb90936506d",
+  "prompts": {},
+  "sessions": {
+    "s_1970badfc1764a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0df09b68-9ac9-4553-885c-2a3423000e1f",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
