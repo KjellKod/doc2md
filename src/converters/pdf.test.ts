@@ -1133,3 +1133,55 @@ describe("classifyPdfQuality with imageCount", () => {
     expect(result.signals.imageCount).toBeUndefined();
   });
 });
+
+describe("ensureReadableStreamAsyncIterator", () => {
+  const proto = ReadableStream.prototype as unknown as Record<PropertyKey, unknown>;
+  const originalAsyncIterator = Object.getOwnPropertyDescriptor(proto, Symbol.asyncIterator);
+  const originalValues = Object.getOwnPropertyDescriptor(proto, "values");
+
+  function restore(key: PropertyKey, descriptor: PropertyDescriptor | undefined) {
+    if (descriptor) {
+      Object.defineProperty(proto, key, descriptor);
+    } else {
+      delete proto[key];
+    }
+  }
+
+  afterEach(() => {
+    // Restore the engine's original state so other suites are unaffected.
+    restore(Symbol.asyncIterator, originalAsyncIterator);
+    restore("values", originalValues);
+  });
+
+  it("installs a working async iterator when the engine lacks one (Safari)", async () => {
+    const { ensureReadableStreamAsyncIterator } = await importPdfModule();
+    // Simulate WebKit/Safari, which does not implement ReadableStream async iteration.
+    delete proto.values;
+    delete proto[Symbol.asyncIterator];
+    expect(typeof proto[Symbol.asyncIterator]).toBe("undefined");
+
+    ensureReadableStreamAsyncIterator();
+    expect(typeof proto[Symbol.asyncIterator]).toBe("function");
+
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue({ items: ["a"] });
+        controller.enqueue({ items: ["b"] });
+        controller.close();
+      }
+    });
+    const collected: string[] = [];
+    for await (const value of stream as AsyncIterable<{ items: string[] }>) {
+      collected.push(...value.items);
+    }
+    expect(collected).toEqual(["a", "b"]);
+  });
+
+  it("is idempotent and does not clobber an existing async iterator", async () => {
+    const { ensureReadableStreamAsyncIterator } = await importPdfModule();
+    ensureReadableStreamAsyncIterator();
+    const installed = proto[Symbol.asyncIterator];
+    ensureReadableStreamAsyncIterator();
+    expect(proto[Symbol.asyncIterator]).toBe(installed);
+  });
+});

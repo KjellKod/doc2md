@@ -64,10 +64,64 @@ const IS_NODE_LIKE =
 
 let browserWorkerConfigured = false;
 
+// WebKit/Safari does not implement ReadableStream async iteration
+// (`ReadableStream.prototype[Symbol.asyncIterator]`), unlike Chromium, Firefox,
+// and Node. pdfjs 5's `page.getTextContent()` consumes its text stream with
+// `for await (const value of readableStream)`, so on Safari that line throws
+// "undefined is not a function (near '...value of readableStream...')" and every
+// PDF reads as unconvertible. Install the spec-shaped async iterator when it is
+// missing; this is a no-op on engines that already support it. See
+// https://bugs.webkit.org/show_bug.cgi?id=194379.
+export function ensureReadableStreamAsyncIterator() {
+  if (typeof ReadableStream === "undefined") {
+    return;
+  }
+
+  // Patch through a loosely typed view: lib.dom's ReadableStreamAsyncIterator
+  // type is stricter than the runtime shape we need to supply here.
+  const proto = ReadableStream.prototype as unknown as Record<PropertyKey, unknown>;
+
+  if (typeof proto[Symbol.asyncIterator] === "function") {
+    return;
+  }
+
+  const asyncIterator = function (
+    this: ReadableStream,
+    { preventCancel = false }: { preventCancel?: boolean } = {}
+  ) {
+    const reader = this.getReader();
+    return {
+      next() {
+        return reader.read();
+      },
+      async return(value?: unknown) {
+        if (preventCancel) {
+          reader.releaseLock();
+        } else {
+          const cancelPromise = reader.cancel(value);
+          reader.releaseLock();
+          await cancelPromise;
+        }
+        return { done: true, value };
+      },
+      [Symbol.asyncIterator]() {
+        return this;
+      }
+    };
+  };
+
+  proto[Symbol.asyncIterator] = asyncIterator;
+  if (typeof proto.values !== "function") {
+    proto.values = asyncIterator;
+  }
+}
+
 async function ensureBrowserWorkerConfigured() {
   if (IS_NODE_LIKE || browserWorkerConfigured) {
     return;
   }
+
+  ensureReadableStreamAsyncIterator();
 
   const pdfWorker = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
   GlobalWorkerOptions.workerSrc = pdfWorker.default;
@@ -1408,7 +1462,11 @@ export const convertPdf: Converter = async (file) => {
       status: quality.status,
       quality: quality.quality
     };
-  } catch {
+  } catch (error) {
+    // The user-facing message stays friendly, but the real cause (e.g. a pdfjs
+    // worker/API version mismatch) must not be swallowed silently — it makes
+    // every failure look like a corrupt file. Surface it for diagnosis.
+    console.error("[doc2md] PDF conversion failed:", error);
     return {
       markdown: "",
       warnings: [CORRUPT_FILE_MESSAGE],
