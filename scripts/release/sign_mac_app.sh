@@ -2,7 +2,6 @@
 set -euo pipefail
 
 APP_PATH="${APP_PATH:-.build/mac/Build/Products/Release/doc2md.app}"
-KEYCHAIN_PASSWORD="${KEYCHAIN_PASSWORD:-$(uuidgen)}"
 
 fail() {
   printf 'Error: %s\n' "$*" >&2
@@ -26,13 +25,33 @@ decode_base64_secret() {
   local value="$1"
   local output_path="$2"
 
-  if ! printf '%s' "$value" | base64 --decode >"$output_path" 2>/dev/null; then
+  # GitHub stores the secret with the line wrapping that `base64` emits by
+  # default (a newline every 76 columns). BSD `base64` on the macOS runners
+  # mishandles that embedded whitespace: it returns exit 0 while writing a
+  # truncated/garbled file, so the error only surfaces three steps later as
+  # the cryptic "security: SecKeychainItemImport: Unknown format in import."
+  # Strip CR/LF/spaces first, matching the proven decode in candid_talent_edge.
+  if ! printf '%s' "$value" | tr -d '\n\r ' | base64 --decode >"$output_path" 2>/dev/null; then
     fail "failed to base64-decode Apple Developer ID P12 secret"
   fi
+
+  # Fail loud, and here, if the decode produced anything other than a
+  # DER-encoded PKCS#12 container. Every .p12 begins with an ASN.1 SEQUENCE
+  # tag (0x30 == 48 decimal); an empty or non-p12 secret is caught now with an
+  # actionable message instead of a downstream "Unknown format" from `security`.
+  [[ -s "$output_path" ]] \
+    || fail "decoded Apple Developer ID P12 is empty; check the MACOS_CERTIFICATE secret"
+  local magic
+  magic="$(head -c 1 "$output_path" | od -An -tu1 | tr -d '[:space:]')"
+  [[ "$magic" == "48" ]] \
+    || fail "decoded Apple Developer ID P12 is not a PKCS#12 container (first byte ${magic:-none}, expected 48). Re-export with 'base64 -i cert.p12 | pbcopy' and reset the MACOS_CERTIFICATE secret"
 }
 
 create_keychain() {
   local p12_path="$1"
+  # Default the ephemeral keychain password here rather than at top level so
+  # sourcing this file (for tests) has no side effects such as spawning uuidgen.
+  local KEYCHAIN_PASSWORD="${KEYCHAIN_PASSWORD:-$(uuidgen)}"
   local keychain_path
   keychain_path="${RUNNER_TEMP:-/tmp}/doc2md-release-$$.keychain-db"
 
@@ -71,6 +90,15 @@ cleanup_keychain() {
     security delete-keychain "$APPLE_RELEASE_KEYCHAIN_PATH" >/dev/null 2>&1 || true
   fi
 }
+
+# Allow tests to source this file for its functions without executing the
+# signing flow (no keychain creation, no codesign). When sourced, BASH_SOURCE
+# differs from $0, so we return before the imperative section below.
+if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+  # Reachable only when sourced (e.g. tests/release/test_p12_decode.sh).
+  # shellcheck disable=SC2317
+  return 0 2>/dev/null || true
+fi
 
 require_app
 
