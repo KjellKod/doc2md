@@ -7,7 +7,8 @@
 //   1. formatPreviewMarkdown(markdown)  — same transform Preview applies
 //   2. remark-parse                     — Markdown -> mdast
 //   3. remark-gfm                       — tables, task lists, strikethrough
-//   4. remark-rehype                    — mdast -> hast (NO allowDangerousHtml)
+//   4. remark-rehype                    — mdast -> hast (raw HTML -> escaped
+//                                         text, matching Preview; NO live markup)
 //   5. rehype-slug                      — heading ids for in-document anchors
 //   6. export link policy               — shared classifier; disabled links
 //                                         become inert anchors (no tooltip
@@ -16,7 +17,9 @@
 //   8. rehype-stringify                 — hast -> HTML string
 //
 // Raw HTML passthrough is intentionally absent (no rehype-raw, no
-// allowDangerousHtml), so untrusted Markdown cannot inject live markup.
+// allowDangerousHtml), so untrusted Markdown cannot inject live markup. Raw
+// HTML in the source is rendered as escaped text (see the remark-rehype html
+// handler), matching Preview and avoiding silent content loss.
 
 import rehypeSlug from "rehype-slug";
 import rehypeStringify from "rehype-stringify";
@@ -143,7 +146,20 @@ function renderFragment(normalizedMarkdown: string): string {
   const file = unified()
     .use(remarkParse)
     .use(remarkGfm)
-    .use(remarkRehype) // no allowDangerousHtml: raw HTML is escaped/dropped
+    .use(remarkRehype, {
+      // Match Preview (react-markdown default): raw HTML is rendered as
+      // escaped TEXT, never live markup. With no handler, remark-rehype DROPS
+      // html nodes entirely — silently losing block-level raw HTML such as
+      // <div>x</div> and diverging from Preview, which shows the literal tags.
+      // Converting html nodes to text nodes makes rehype-stringify escape
+      // them: same visible output as Preview, still injection-safe (no live
+      // markup, so no allowDangerousHtml/rehype-raw).
+      handlers: {
+        html(_state, node: { value?: string }) {
+          return { type: "text", value: node.value ?? "" };
+        },
+      },
+    })
     .use(rehypeSlug)
     .use(exportLinkPolicy)
     .use(stripImages)

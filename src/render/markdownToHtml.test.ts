@@ -160,6 +160,27 @@ describe("markdownToHtml safety guards", () => {
     expect(fragment).not.toContain("<script");
   });
 
+  it("renders raw HTML as escaped text without losing content, matching Preview", () => {
+    // Parity guard for raw HTML (codex-review #161). Preview (react-markdown,
+    // no rehype-raw) shows raw HTML as literal escaped text. The export must do
+    // the same: escape the tags AND keep the content. Previously remark-rehype
+    // dropped html nodes, silently losing block-level raw HTML like the <div>.
+    const fragment = markdownToHtml(
+      'Before <span data-x="1">INNERTEXT</span> after.\n\n<div class="block">BLOCKTEXT</div>',
+      { standalone: false },
+    );
+    // No live markup leaks through.
+    expect(fragment).not.toContain("<span");
+    expect(fragment).not.toContain("<div");
+    // Inner + block content is preserved (no silent loss).
+    expect(fragment).toContain("INNERTEXT");
+    expect(fragment).toContain("BLOCKTEXT");
+    // The tags survive as escaped text (the "<" is encoded), so the rendered
+    // page shows the literal tag exactly like Preview does.
+    expect(fragment).toMatch(/&#x3c;span|&lt;span/i);
+    expect(fragment).toMatch(/&#x3c;\/div|&lt;\/div/i);
+  });
+
   it("strips residual images instead of inlining or fetching them", () => {
     const fragment = markdownToHtml("![alt](https://example.com/cat.png)", {
       standalone: false,

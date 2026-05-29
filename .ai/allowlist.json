@@ -14,7 +14,7 @@
     "plan_creation": true,
     "plan_review": true,
     "plan_refinement": true,
-    "implementation": true,
+    "implementation": false,
     "code_review": true,
     "fix_loop": true
   },
@@ -238,9 +238,9 @@
     "max_fix_iterations": 2
   },
   "gates": {
-    "require_approval_before_commit": false,
-    "require_approval_before_push": false,
-    "require_approval_before_delete": false,
+    "require_approval_before_commit": true,
+    "require_approval_before_push": true,
+    "require_approval_before_delete": true,
     "max_plan_iterations": 4,
     "max_fix_iterations": 3
   }
