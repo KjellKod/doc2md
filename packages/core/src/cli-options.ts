@@ -1,13 +1,34 @@
+export type OutputFormat = "md" | "html" | "both";
+
+const OUTPUT_FORMATS: readonly OutputFormat[] = ["md", "html", "both"];
+
 export interface CliOptions {
   outputDir: string;
   maxDocuments?: number;
   concurrency?: number;
   remoteTimeoutMs?: number;
+  format: OutputFormat;
   inputs: string[];
 }
 
 export interface HelpRequest {
   help: true;
+}
+
+function parseOutputFormat(rawValue: string | undefined): OutputFormat {
+  if (rawValue === undefined) {
+    throw new Error(
+      "Invalid value for --format: expected one of md, html, both."
+    );
+  }
+
+  if ((OUTPUT_FORMATS as readonly string[]).includes(rawValue)) {
+    return rawValue as OutputFormat;
+  }
+
+  throw new Error(
+    `Invalid value for --format: expected one of md, html, both, got "${rawValue}".`
+  );
 }
 
 function parsePositiveInteger(flag: string, rawValue: string | undefined) {
@@ -30,12 +51,19 @@ export function parseArgs(argv: string[]): CliOptions | HelpRequest {
   let maxDocuments: number | undefined;
   let concurrency: number | undefined;
   let remoteTimeoutMs: number | undefined;
+  let format: OutputFormat = "md";
 
   for (let index = 0; index < argv.length; index += 1) {
     const value = argv[index];
 
     if (value === "-o" || value === "--output") {
       outputDir = argv[index + 1] ?? "";
+      index += 1;
+      continue;
+    }
+
+    if (value === "--format") {
+      format = parseOutputFormat(argv[index + 1]);
       index += 1;
       continue;
     }
@@ -82,6 +110,7 @@ export function parseArgs(argv: string[]): CliOptions | HelpRequest {
     maxDocuments,
     concurrency,
     remoteTimeoutMs,
+    format,
     inputs
   };
 }

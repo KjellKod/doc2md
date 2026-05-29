@@ -1,4 +1,4 @@
-import { FilePlus, Keyboard, Search } from "lucide-react";
+import { FileDown, FilePlus, Keyboard, Search } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import type { SaveState } from "../../types/saveState";
 import SaveButton from "../SaveButton";
@@ -18,6 +18,9 @@ interface PreviewToolbarProps {
   saveKeyShortcuts?: string;
   saveState: SaveState;
   lastSavedAt: number | null;
+  onExportHtml?: () => void | Promise<void>;
+  exportHtmlBusy?: boolean;
+  exportHtmlDisabled?: boolean;
   onNewDocument?: () => void;
   onModeChange: (mode: PreviewModeName) => void;
   onOpenFind: () => void;
@@ -62,6 +65,9 @@ export default function PreviewToolbar({
   saveKeyShortcuts,
   saveState,
   lastSavedAt,
+  onExportHtml,
+  exportHtmlBusy = false,
+  exportHtmlDisabled = false,
   onNewDocument,
   onModeChange,
   onOpenFind,
@@ -103,7 +109,7 @@ export default function PreviewToolbar({
     };
   }, [isShortcutsOpen]);
 
-  if (!showToggle && !showCopyButton && !onSave) {
+  if (!showToggle && !showCopyButton && !onSave && !onExportHtml) {
     return null;
   }
 
@@ -197,6 +203,20 @@ export default function PreviewToolbar({
             />
             <SaveStatePill state={saveState} lastSavedAt={lastSavedAt} />
           </div>
+        ) : null}
+        {onExportHtml ? (
+          <button
+            type="button"
+            className="ghost-button export-html-button"
+            onClick={() => void onExportHtml()}
+            disabled={exportHtmlDisabled || exportHtmlBusy}
+            aria-disabled={exportHtmlDisabled || exportHtmlBusy}
+            aria-busy={exportHtmlBusy}
+            aria-label="Export HTML"
+          >
+            <FileDown className="export-html-icon" aria-hidden="true" />
+            <span className="export-html-label">Export HTML</span>
+          </button>
         ) : null}
         {showCopyButton ? (
           <div className="preview-actions">

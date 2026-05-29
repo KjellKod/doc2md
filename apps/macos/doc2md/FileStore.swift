@@ -60,6 +60,7 @@ enum FileStoreError: Error, Equatable {
 
 final class FileStore {
     static let markdownSaveExtension = "md"
+    static let htmlSaveExtension = "html"
 
     private let fileManager: FileManager
 
@@ -112,9 +113,14 @@ final class FileStore {
         }
     }
 
-    func saveAs(url: URL, content: String, lineEnding: ShellLineEnding) throws -> ShellSaveOk {
+    func saveAs(
+        url: URL,
+        content: String,
+        lineEnding: ShellLineEnding,
+        validate: (URL) throws -> Void = FileStore.validateMarkdownSaveTarget
+    ) throws -> ShellSaveOk {
         do {
-            try Self.validateMarkdownSaveTarget(url: url)
+            try validate(url)
             try writeAtomically(content: content, lineEnding: lineEnding, to: url)
 
             return ShellSaveOk(
@@ -248,6 +254,13 @@ final class FileStore {
         let normalizedURL = url.standardizedFileURL
         guard normalizedURL.pathExtension.lowercased() == markdownSaveExtension else {
             throw FileStoreError.error(message: "Save target must use the .md extension.")
+        }
+    }
+
+    static func validateHtmlSaveTarget(url: URL) throws {
+        let normalizedURL = url.standardizedFileURL
+        guard normalizedURL.pathExtension.lowercased() == htmlSaveExtension else {
+            throw FileStoreError.error(message: "HTML export target must use the .html extension.")
         }
     }
 

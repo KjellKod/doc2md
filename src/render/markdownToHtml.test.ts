@@ -167,4 +167,19 @@ describe("markdownToHtml safety guards", () => {
     expect(fragment).not.toContain("<img");
     expect(fragment).not.toContain("example.com/cat.png");
   });
+
+  it("keeps a remote https:// image out of the standalone document so it stays self-contained", () => {
+    // Remote-image guard (BL-5): a self-contained export must carry no remote
+    // references. The renderer drops the image entirely rather than emitting
+    // an <img src="https://..."> that would fetch over the network.
+    const html = markdownToHtml(
+      "# Title\n\nBefore ![remote](https://cdn.example.com/photo.jpg) after.",
+    );
+    expect(html).not.toContain("<img");
+    expect(html).not.toContain("cdn.example.com/photo.jpg");
+    expect(html).not.toMatch(/src="https?:\/\//);
+    // Surrounding prose survives.
+    expect(html).toContain("Before");
+    expect(html).toContain("after.");
+  });
 });

@@ -1,7 +1,11 @@
+export type OutputFormat = "md" | "html" | "both";
+
 export interface ConvertOptions {
   outputDir: string;
   maxDocuments?: number;
   concurrency?: number;
+  remoteTimeoutMs?: number;
+  format?: OutputFormat;
 }
 
 export interface DocumentResultQuality {
@@ -9,9 +13,15 @@ export interface DocumentResultQuality {
   summary: string;
 }
 
+export interface DocumentOutputPaths {
+  md?: string;
+  html?: string;
+}
+
 export interface DocumentResult {
   inputPath: string;
   outputPath: string | null;
+  outputPaths?: DocumentOutputPaths;
   status: "success" | "warning" | "skipped" | "error";
   warnings: string[];
   quality?: DocumentResultQuality;

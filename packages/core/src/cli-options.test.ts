@@ -10,7 +10,8 @@ describe("parseArgs", () => {
       outputDir: "out",
       maxDocuments: 5,
       concurrency: 2,
-      remoteTimeoutMs: undefined
+      remoteTimeoutMs: undefined,
+      format: "md"
     });
   });
 
@@ -32,8 +33,39 @@ describe("parseArgs", () => {
       outputDir: "out",
       maxDocuments: undefined,
       concurrency: undefined,
-      remoteTimeoutMs: 45000
+      remoteTimeoutMs: 45000,
+      format: "md"
     });
+  });
+
+  it("defaults format to md", () => {
+    const result = parseArgs(["sample.txt", "-o", "out"]);
+    expect("help" in result).toBe(false);
+    if (!("help" in result)) {
+      expect(result.format).toBe("md");
+    }
+  });
+
+  it("parses --format md|html|both", () => {
+    for (const format of ["md", "html", "both"] as const) {
+      const result = parseArgs(["sample.txt", "-o", "out", "--format", format]);
+      expect("help" in result).toBe(false);
+      if (!("help" in result)) {
+        expect(result.format).toBe(format);
+      }
+    }
+  });
+
+  it("rejects an unknown --format value", () => {
+    expect(() =>
+      parseArgs(["sample.txt", "-o", "out", "--format", "pdf"])
+    ).toThrow("Invalid value for --format");
+  });
+
+  it("rejects a missing --format value", () => {
+    expect(() => parseArgs(["sample.txt", "-o", "out", "--format"])).toThrow(
+      "Invalid value for --format"
+    );
   });
 
   it("rejects invalid --max values", () => {

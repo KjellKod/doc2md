@@ -464,6 +464,56 @@ describe("App desktop bridge", () => {
     cleanupShell();
   });
 
+  it("exports HTML via native save-as without mutating the Markdown document", async () => {
+    const saveFileAs: Doc2mdShell["saveFileAs"] = vi.fn(async () => ({
+      ok: true as const,
+      path: "/Users/me/Exported.html",
+      mtimeMs: 500,
+    }));
+    const saveFile = vi.fn(async () => ({
+      ok: true as const,
+      path: "/Users/me/Doc.md",
+      mtimeMs: 1,
+    }));
+    const cleanupShell = installMockShell({ saveFile, saveFileAs });
+
+    render(<DesktopApp />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
+    await awaitOpenButton(/untitled\.md/i);
+    fireEvent.change(screen.getByLabelText("Edit markdown"), {
+      target: { value: "# Export me\n\nBody text." },
+    });
+
+    await waitFor(() =>
+      expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
+        "Unsaved",
+      ),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Export HTML" }));
+
+    await waitFor(() => expect(saveFileAs).toHaveBeenCalledTimes(1));
+    const exportArgs = vi.mocked(saveFileAs).mock.calls[0][0];
+    expect(exportArgs.format).toBe("html");
+    expect(exportArgs.lineEnding).toBe("lf");
+    expect(exportArgs.suggestedName.endsWith(".html")).toBe(true);
+    expect(exportArgs.content).toContain("<!DOCTYPE html>");
+    expect(exportArgs.content).toContain("Export me");
+
+    // BL-5: HTML export must NOT mutate the active Markdown document.
+    // The Markdown save path is never written, the entry keeps its .md name,
+    // and the save-state pill stays "Unsaved" (export does not mark saved).
+    expect(saveFile).not.toHaveBeenCalled();
+    expect(
+      screen.queryByRole("button", { name: "Open Exported.html" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
+      "Unsaved",
+    );
+
+    cleanupShell();
+  });
+
   it("statFile refresh does not reload file content", async () => {
     const openFile = vi
       .fn()

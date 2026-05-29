@@ -208,6 +208,64 @@ final class FileStoreTests: XCTestCase {
         }
     }
 
+    func testValidateHtmlSaveTargetAllowsHtmlExtension() throws {
+        XCTAssertNoThrow(
+            try FileStore.validateHtmlSaveTarget(url: URL(fileURLWithPath: "/tmp/export.html"))
+        )
+    }
+
+    func testValidateHtmlSaveTargetRejectsNonHtmlExtension() {
+        XCTAssertThrowsError(
+            try FileStore.validateHtmlSaveTarget(url: URL(fileURLWithPath: "/tmp/export.md"))
+        ) { error in
+            XCTAssertEqual(
+                error as? FileStoreError,
+                .error(message: "HTML export target must use the .html extension.")
+            )
+        }
+    }
+
+    func testSaveAsWritesHtmlWithHtmlValidator() throws {
+        let directory = try makeDirectory()
+        let fileURL = directory.appendingPathComponent("export.html")
+        let store = FileStore()
+
+        let saved = try store.saveAs(
+            url: fileURL,
+            content: "<!DOCTYPE html><html></html>",
+            lineEnding: .lf,
+            validate: FileStore.validateHtmlSaveTarget
+        )
+
+        XCTAssertEqual(saved.ok, true)
+        XCTAssertEqual(saved.path, fileURL.standardizedFileURL.path)
+        XCTAssertEqual(
+            try Data(contentsOf: fileURL),
+            Data("<!DOCTYPE html><html></html>".utf8)
+        )
+    }
+
+    func testSaveAsWithHtmlValidatorRejectsMarkdownTarget() throws {
+        let directory = try makeDirectory()
+        let fileURL = directory.appendingPathComponent("export.md")
+        let store = FileStore()
+
+        XCTAssertThrowsError(
+            try store.saveAs(
+                url: fileURL,
+                content: "<html></html>",
+                lineEnding: .lf,
+                validate: FileStore.validateHtmlSaveTarget
+            )
+        ) { error in
+            XCTAssertEqual(
+                error as? FileStoreError,
+                .error(message: "HTML export target must use the .html extension.")
+            )
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: fileURL.path))
+    }
+
     private func makeFile(name: String, data: Data) throws -> URL {
         let directory = try makeDirectory()
         let fileURL = directory.appendingPathComponent(name)

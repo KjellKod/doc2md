@@ -1785,3 +1785,64 @@ describe("PreviewPanel", () => {
     expect(restored.selectionEnd).toBe(7);
   });
 });
+
+describe("PreviewPanel Export HTML button", () => {
+  it("renders the Export HTML button beside Save when an export handler is provided", () => {
+    render(
+      <PreviewPanel
+        entry={createEntry()}
+        onSave={vi.fn()}
+        onExportHtml={vi.fn()}
+      />,
+    );
+
+    const saveButton = screen.getByRole("button", { name: "Save document" });
+    const exportButton = screen.getByRole("button", { name: "Export HTML" });
+    expect(exportButton).toBeInTheDocument();
+    // Placement: Save comes before Export HTML in DOM order.
+    expect(
+      saveButton.compareDocumentPosition(exportButton) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("does not render the Export HTML button when no handler is provided", () => {
+    render(<PreviewPanel entry={createEntry()} onSave={vi.fn()} />);
+    expect(
+      screen.queryByRole("button", { name: "Export HTML" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("invokes the export handler on click", () => {
+    const onExportHtml = vi.fn();
+    render(
+      <PreviewPanel entry={createEntry()} onExportHtml={onExportHtml} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Export HTML" }));
+    expect(onExportHtml).toHaveBeenCalledTimes(1);
+  });
+
+  it("disables the Export HTML button when exportHtmlDisabled is set", () => {
+    render(
+      <PreviewPanel
+        entry={createEntry()}
+        onExportHtml={vi.fn()}
+        exportHtmlDisabled
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Export HTML" })).toBeDisabled();
+  });
+
+  it("disables and marks busy while exporting", () => {
+    render(
+      <PreviewPanel
+        entry={createEntry()}
+        onExportHtml={vi.fn()}
+        exportHtmlBusy
+      />,
+    );
+    const button = screen.getByRole("button", { name: "Export HTML" });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-busy", "true");
+  });
+});

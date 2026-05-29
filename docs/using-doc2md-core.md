@@ -94,13 +94,24 @@ const result = await convertDocuments(
     outputDir: "/absolute/path/out",
     maxDocuments: 25,
     concurrency: 4,
-    remoteTimeoutMs: 30000
+    remoteTimeoutMs: 30000,
+    format: "both" // "md" (default), "html", or "both"
   }
 );
 
 console.log(result.summary);
 console.log(result.results);
 ```
+
+`format` controls the output files written into `outputDir`:
+
+- `"md"` (default): writes `name.md`
+- `"html"`: writes a single self-contained, light-themed `name.html`
+- `"both"`: writes `name.md` and `name.html`
+
+Each result row also carries `outputPaths` with the per-format paths that were
+written (`{ md }`, `{ html }`, or `{ md, html }`). HTML output is image-free by
+design and contains one embedded stylesheet with no external references.
 
 ### Single-document conversion
 
@@ -141,8 +152,12 @@ void main();
 If `@doc2md/core` is installed in your project from a local tarball, run the CLI with `npx` or `npm exec`:
 
 ```bash
-npx doc2md /absolute/path/resume.pdf https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md -o /absolute/path/out --max 10 --concurrency 4 --remote-timeout-ms 30000
+npx doc2md /absolute/path/resume.pdf https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md -o /absolute/path/out --format both --max 10 --concurrency 4 --remote-timeout-ms 30000
 ```
+
+`-o` is always an output **directory**, not a file path. `--format` accepts
+`md` (default), `html`, or `both`, and only changes which files are written
+into that directory (`name.md` and/or `name.html`).
 
 Equivalent `npm exec` form:
 
@@ -164,7 +179,8 @@ You can also convert multiple documents in one call:
 npx doc2md /absolute/path/a.pdf /absolute/path/b.docx -o /absolute/path/out
 ```
 
-The CLI writes JSON to stdout and markdown files to the output directory.
+The CLI writes JSON to stdout and output files (`.md` and/or `.html`, per
+`--format`) to the output directory.
 
 ## What The Package Returns
 
@@ -173,7 +189,8 @@ The package writes markdown files to disk and returns metadata, not inline markd
 Each result row includes:
 
 - `inputPath`
-- `outputPath`
+- `outputPath` (primary path: the `.md` path for `md`/`both`, the `.html` path for `html`)
+- `outputPaths` (per-format paths written, e.g. `{ md, html }` for `both`)
 - `status`: `success`, `warning`, `skipped`, or `error`
 - `warnings`
 - optional `quality`
@@ -189,6 +206,7 @@ Batch output also includes a `summary` with totals for succeeded, warned, skippe
 - Remote URL download failures, blocked access, auth-gated responses, and timeout failures return `status: "error"` for that document
 - Exceeding `maxDocuments` throws `BatchLimitExceededError`
 - Duplicate basenames are written with numeric suffixes like `resume.md`, `resume-1.md`, `resume-2.md`
+- For `--format both`, the `.md` and `.html` for one document always share the same suffix (`resume.md` + `resume.html`, then `resume-1.md` + `resume-1.html`), even under concurrent workers
 
 ## Remote URL Contract
 

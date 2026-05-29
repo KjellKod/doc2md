@@ -39,6 +39,9 @@ export interface PreviewPanelProps {
   saveKeyShortcuts?: string;
   saveState?: SaveState;
   lastSavedAt?: number | null;
+  onExportHtml?: () => void | Promise<void>;
+  exportHtmlBusy?: boolean;
+  exportHtmlDisabled?: boolean;
   onStartWriting?: () => void;
   onNewDocument?: () => void;
   editorFocusRequest?: { id: number; target: "editor" };
@@ -56,6 +59,9 @@ export default function PreviewPanel({
   saveKeyShortcuts,
   saveState = "saved",
   lastSavedAt = null,
+  onExportHtml,
+  exportHtmlBusy = false,
+  exportHtmlDisabled = false,
   onStartWriting,
   onNewDocument,
   editorFocusRequest,
@@ -356,6 +362,9 @@ export default function PreviewPanel({
         saveKeyShortcuts={saveKeyShortcuts}
         saveState={saveState}
         lastSavedAt={lastSavedAt}
+        onExportHtml={onExportHtml}
+        exportHtmlBusy={exportHtmlBusy}
+        exportHtmlDisabled={exportHtmlDisabled}
         onNewDocument={onNewDocument}
         onModeChange={switchMode}
         onOpenFind={() => {

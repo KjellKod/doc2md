@@ -43,9 +43,12 @@ import type {
 } from "../types/doc2mdShell";
 import type { Theme } from "../types/theme";
 import {
+  createHtmlFileName,
   downloadEntry,
+  downloadHtmlFile,
   isDownloadableEntry,
 } from "../utils/download";
+import { renderEntryHtml } from "../utils/exportHtml";
 import type { DesktopSaveState } from "../desktop/saveState";
 import { useDesktopCapability } from "../desktop/useDesktopCapability";
 import { useDesktopSaveState } from "../desktop/useDesktopSaveState";
@@ -392,6 +395,11 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     id: number;
     target: "editor";
   }>({ id: 0, target: "editor" });
+  // HTML export busy flag is intentionally separate from the Markdown save
+  // state machine (BL-5): exporting HTML must never drive saveState into
+  // "saving"/"saved" or otherwise touch the active Markdown document.
+  const [exportHtmlBusy, setExportHtmlBusy] = useState(false);
+  const exportHtmlInFlightRef = useRef(false);
   const selectedEntryId = selectedEntry?.id ?? null;
   const hasWorkingEntry =
     selectedEntry !== null &&
@@ -1762,6 +1770,53 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     renameEntry,
   ]);
 
+  const handleExportHtml = useCallback(() => {
+    if (
+      !isDownloadableEntry(selectedEntry) ||
+      exportHtmlInFlightRef.current
+    ) {
+      return;
+    }
+    const entry = selectedEntry;
+    exportHtmlInFlightRef.current = true;
+    setExportHtmlBusy(true);
+
+    // Render lazily from stored Markdown. HTML export never mutates the
+    // active Markdown document's save state, path, name, recents, or
+    // desktopFiles map (BL-5). On desktop we route through the native
+    // save-as bridge with format:"html"; without a shell (hosted dev) we
+    // fall back to a blob download.
+    void renderEntryHtml(entry)
+      .then(async (html) => {
+        if (!shell) {
+          downloadHtmlFile(entry.name, html);
+          return;
+        }
+        try {
+          await shell.saveFileAs({
+            suggestedName: createHtmlFileName(entry.name),
+            content: html,
+            lineEnding: "lf",
+            format: "html",
+          });
+        } catch (error) {
+          setDocumentNotice(entry.id, {
+            kind: "error",
+            message:
+              "HTML export failed before the app received a native result. Try Export HTML again.",
+          });
+          console.error("doc2md desktop HTML export transport failure", error);
+        }
+      })
+      .catch((error) => {
+        console.error("doc2md HTML export render failure", error);
+      })
+      .finally(() => {
+        exportHtmlInFlightRef.current = false;
+        setExportHtmlBusy(false);
+      });
+  }, [selectedEntry, setDocumentNotice, shell]);
+
   const handleSave = useCallback(() => {
     if (!selectedEntry) {
       setDesktopNotice({
@@ -1821,6 +1876,7 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     : isDownloadableEntry(selectedEntry);
   const saveButtonBusy = activeSaveState === "saving";
   const saveButtonDisabled = !canSaveSelectedEntry || saveButtonBusy;
+  const exportHtmlDisabled = !isDownloadableEntry(selectedEntry);
 
   const handleRevealInFinder = useCallback(async () => {
     if (!shell || !selectedPath) {
@@ -2442,6 +2498,9 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
       ? (entryLastSavedAt[selectedEntry.id] ?? null)
       : null,
     onSave: effectiveSave,
+    onExportHtml: handleExportHtml,
+    exportHtmlBusy,
+    exportHtmlDisabled,
   };
 
   const fileListProps: AppShellFileListProps = {

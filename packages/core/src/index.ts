@@ -4,7 +4,9 @@ import { convertBatch, convertOneDocument } from "./batch";
 export type {
   BatchResult,
   ConvertOptions,
-  DocumentResult
+  DocumentOutputPaths,
+  DocumentResult,
+  OutputFormat
 } from "./types";
 export { BatchLimitExceededError } from "./types";
 

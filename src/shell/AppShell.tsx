@@ -71,6 +71,9 @@ export type AppShellPreviewPanelSaveProps = {
   saveKeyShortcuts?: string;
   lastSavedAt: number | null;
   onSave: () => void;
+  onExportHtml: () => void;
+  exportHtmlBusy: boolean;
+  exportHtmlDisabled: boolean;
 };
 
 // All callbacks the AppShell forwards from the adapter to its rendered
@@ -564,6 +567,9 @@ export default function AppShell(props: AppShellProps) {
                   saveKeyShortcuts={previewPanelSaveProps.saveKeyShortcuts}
                   saveState={previewPanelSaveProps.saveState}
                   lastSavedAt={previewPanelSaveProps.lastSavedAt}
+                  onExportHtml={previewPanelSaveProps.onExportHtml}
+                  exportHtmlBusy={previewPanelSaveProps.exportHtmlBusy}
+                  exportHtmlDisabled={previewPanelSaveProps.exportHtmlDisabled}
                   onMarkdownChange={callbacks.onMarkdownChange}
                   onLargeMarkdownPaste={callbacks.onLargeMarkdownPaste}
                 />

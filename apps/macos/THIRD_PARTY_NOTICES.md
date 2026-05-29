@@ -90,11 +90,13 @@ The current app build can include these direct runtime dependencies from the roo
 | `github-slugger` | 2.0.0 | ISC | https://github.com/Flet/github-slugger.git |
 | `graceful-fs` | 4.2.11 | ISC | https://github.com/isaacs/node-graceful-fs |
 | `hast-util-heading-rank` | 3.0.0 | MIT | syntax-tree/hast-util-heading-rank |
+| `hast-util-to-html` | 9.0.5 | MIT | syntax-tree/hast-util-to-html |
 | `hast-util-to-jsx-runtime` | 2.3.6 | MIT | syntax-tree/hast-util-to-jsx-runtime |
 | `hast-util-to-string` | 3.0.1 | MIT | https://github.com/rehypejs/rehype-minify/tree/main/packages/hast-util-to-string |
 | `hast-util-whitespace` | 3.0.0 | MIT | syntax-tree/hast-util-whitespace |
 | `html-encoding-sniffer` | 6.0.0 | MIT | git+https://github.com/jsdom/html-encoding-sniffer.git |
 | `html-url-attributes` | 3.0.1 | MIT | https://github.com/rehypejs/rehype-minify/tree/main/packages/html-url-attributes |
+| `html-void-elements` | 3.0.0 | MIT | wooorm/html-void-elements |
 | `immediate` | 3.0.6 | MIT | git://github.com/calvinmetcalf/immediate.git |
 | `inherits` | 2.0.4 | ISC | git://github.com/isaacs/inherits |
 | `inline-style-parser` | 0.2.7 | MIT | git+https://github.com/remarkablemark/inline-style-parser.git |
@@ -176,6 +178,7 @@ The current app build can include these direct runtime dependencies from the roo
 | `read-excel-file` | 9.0.9 | MIT | https://gitlab.com/catamphetamine/read-excel-file |
 | `readable-stream` | 2.3.8 | MIT | git://github.com/nodejs/readable-stream |
 | `rehype-slug` | 6.0.0 | MIT | rehypejs/rehype-slug |
+| `rehype-stringify` | 10.0.1 | MIT | https://github.com/rehypejs/rehype/tree/main/packages/rehype-stringify |
 | `remark-gfm` | 4.0.1 | MIT | remarkjs/remark-gfm |
 | `remark-parse` | 11.0.0 | MIT | https://github.com/remarkjs/remark/tree/main/packages/remark-parse |
 | `remark-rehype` | 11.1.2 | MIT | remarkjs/remark-rehype |

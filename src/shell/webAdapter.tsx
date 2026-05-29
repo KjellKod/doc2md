@@ -29,7 +29,12 @@ import { useWorkspaceResize } from "./useWorkspaceResize";
 import type { EditorViewState } from "../components/PreviewPanel";
 import type { FileEntry } from "../types";
 import type { SaveState } from "../types/saveState";
-import { downloadEntry, isDownloadableEntry } from "../utils/download";
+import {
+  downloadEntry,
+  downloadHtmlFile,
+  isDownloadableEntry,
+} from "../utils/download";
+import { renderEntryHtml } from "../utils/exportHtml";
 
 function pluralize(count: number, singular: string, plural = `${singular}s`) {
   return count === 1 ? singular : plural;
@@ -133,6 +138,7 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     id: number;
     target: "editor";
   }>({ id: 0, target: "editor" });
+  const [exportHtmlBusy, setExportHtmlBusy] = useState(false);
 
   const selectedEntryId = selectedEntry?.id ?? null;
   const hasWorkingEntry =
@@ -416,6 +422,26 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     saveState.markSaved();
   }, [saveState, selectedEntry, setEntrySaveState]);
 
+  const handleExportHtml = useCallback(() => {
+    if (!isDownloadableEntry(selectedEntry) || exportHtmlBusy) {
+      return;
+    }
+    const entry = selectedEntry;
+    setExportHtmlBusy(true);
+    // Lazy-render from stored Markdown, then blob-download the .html file.
+    // HTML export does NOT touch the Markdown document's save state.
+    void renderEntryHtml(entry)
+      .then((html) => {
+        downloadHtmlFile(entry.name, html);
+      })
+      .catch((error) => {
+        console.error("doc2md HTML export failure", error);
+      })
+      .finally(() => {
+        setExportHtmlBusy(false);
+      });
+  }, [exportHtmlBusy, selectedEntry]);
+
   const handleMarkdownChange = useCallback(
     (text: string) => {
       if (selectedEntry) {
@@ -444,6 +470,7 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
 
   const saveButtonBusy = saveState.state === "saving";
   const saveButtonDisabled = !isDownloadableEntry(selectedEntry) || saveButtonBusy;
+  const exportHtmlDisabled = !isDownloadableEntry(selectedEntry);
 
   const callbacks: AppShellCallbacks = {
     onNewDocument: handleNewDocument,
@@ -461,6 +488,9 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
       ? (entryLastSavedAt[selectedEntry.id] ?? null)
       : null,
     onSave: handleSave,
+    onExportHtml: handleExportHtml,
+    exportHtmlBusy,
+    exportHtmlDisabled,
   };
 
   const fileListProps: AppShellFileListProps = {

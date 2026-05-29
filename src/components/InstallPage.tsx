@@ -298,8 +298,9 @@ export default function InstallPage({ active }: { active: boolean }) {
               <p className="eyebrow">3. Run</p>
               <h3>Convert one file or many</h3>
               <p>
-                Successful runs write Markdown to the output directory you pass
-                with `-o`.
+                Successful runs write output to the directory you pass with
+                `-o`. Add <code>--format md|html|both</code> (default{" "}
+                <code>md</code>) to also emit a single self-contained HTML file.
               </p>
               <pre className="install-code">
                 <code>doc2md /absolute/path/resume.pdf -o ./out</code>
@@ -307,6 +308,7 @@ export default function InstallPage({ active }: { active: boolean }) {
               <pre className="install-code">
                 <code>
                   npx doc2md /absolute/path/a.pdf /absolute/path/b.docx -o ./out
+                  --format both
                 </code>
               </pre>
             </article>
