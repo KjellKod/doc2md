@@ -1,0 +1,41 @@
+docs/journal/049-celebrate-html-export.md
+  s_1970badfc1764a::t_e6f04bbc062bdb 1-21
+docs/diary/2026-05-29.md
+  s_1970badfc1764a::t_c8897a556368b8 131-171
+docs/journal/README.md
+  s_1970badfc1764a::t_21d0d88e6d2e71 9-10
+docs/quest-journal/html-export_2026-05-29.md
+  s_1970badfc1764a::t_4d0f1394aa707d 1-33
+docs/quest-journal/README.md
+  s_1970badfc1764a::t_6e9ccf5e4dfe47 5
+docs/dexter-journal/050-html-export.md
+  s_efde16b62d3662::t_1d2967da98c3bc 1-27
+docs/plans/html-export.md
+  s_1970badfc1764a::t_c404b71e72b62b 3-9
+docs/dexter-journal/README.md
+  s_efde16b62d3662::t_1d2967da98c3bc 9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "b562fa387097fab3431f883ee29bd4eb69a7f0a2",
+  "prompts": {},
+  "sessions": {
+    "s_1970badfc1764a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0df09b68-9ac9-4553-885c-2a3423000e1f",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": null
+    },
+    "s_efde16b62d3662": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e75e8-b6cb-7053-9ad9-674ef50f638a",
+        "model": "gpt-5.5"
+      },
+      "human_author": null
+    }
+  }
+}
