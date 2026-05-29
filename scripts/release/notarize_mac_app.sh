@@ -16,10 +16,10 @@ write_notary_key() {
     return
   fi
 
-  # Strip the line-wrapping whitespace that a base64-encoded secret carries
-  # before decoding; BSD base64 on the macOS runners mishandles embedded
-  # newlines (see scripts/release/sign_mac_app.sh decode_base64_secret).
-  if ! printf '%s' "$APPLE_NOTARY_API_KEY_P8" | tr -d '\n\r ' | base64 --decode >"$output_path" 2>/dev/null; then
+  # Strip whitespace and stray quotes a base64 secret can carry before
+  # decoding; none are valid base64 (see sign_mac_app.sh decode_base64_secret).
+  # \047 is octal for a single quote.
+  if ! printf '%s' "$APPLE_NOTARY_API_KEY_P8" | tr -d '\r\n "\047' | base64 --decode >"$output_path" 2>/dev/null; then
     fail "failed to decode APPLE_NOTARY_API_KEY_P8 as raw PEM or base64 PEM"
   fi
 }

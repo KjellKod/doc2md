@@ -91,6 +91,20 @@ test_noisy_whitespace_roundtrip() {
   cmp -s "$p12" "$out"
 }
 
+# A secret wrapped in stray quotes (a common copy-paste accident) must still
+# round-trip; quotes are not valid base64 and are stripped before decoding.
+test_quoted_secret_roundtrip() {
+  local p12="$WORK_DIR/in3.p12"
+  make_p12 "$p12" || return 1
+
+  local quoted
+  quoted="$(printf '"%s"' "$(base64 < "$p12" | tr -d '\n')")"
+
+  local out="$WORK_DIR/out3.p12"
+  ( decode_base64_secret "$quoted" "$out" 2>/dev/null ) || return 1
+  cmp -s "$p12" "$out"
+}
+
 # An empty secret must fail loud here, not three steps downstream.
 test_empty_secret_rejected() {
   local out="$WORK_DIR/empty.p12"
@@ -108,6 +122,7 @@ test_non_p12_rejected() {
 
 run_test test_wrapped_base64_roundtrip
 run_test test_noisy_whitespace_roundtrip
+run_test test_quoted_secret_roundtrip
 run_test test_empty_secret_rejected
 run_test test_non_p12_rejected
 
