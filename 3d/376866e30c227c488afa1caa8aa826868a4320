@@ -1,0 +1,23 @@
+.quest/html-export_2026-05-29__1522/phase_02_implementation/builder_feedback_discussion.md
+  s_1970badfc1764a::t_54ba37f877bda9 1-116
+.quest/html-export_2026-05-29__1522/phase_02_implementation/pr_description.md
+  s_1970badfc1764a::t_d72618d5e888fb 1-104
+.quest/html-export_2026-05-29__1522/phase_02_implementation/handoff.json
+  s_1970badfc1764a::t_6666f242aa83b7 1-9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "3d376866e30c227c488afa1caa8aa826868a4320",
+  "prompts": {},
+  "sessions": {
+    "s_1970badfc1764a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0df09b68-9ac9-4553-885c-2a3423000e1f",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
