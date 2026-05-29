@@ -1,0 +1,21 @@
+src/styles/global.css
+  s_f118e9cf960483::t_fefa5bec7bd7b4 1419-1423,1431-1432,2987-2988
+  s_f118e9cf960483::t_90fc8bd147b0e4 1859,1862,1864,1869,1921
+  s_f118e9cf960483::t_ecea85c9e7ef7e 1860-1861,1865-1866
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "95a261b3ea97862066834b6bc8f11ecda1bb95d5",
+  "prompts": {},
+  "sessions": {
+    "s_f118e9cf960483": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e760b-82f1-76d2-af68-d7abfa971f9e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
