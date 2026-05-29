@@ -1,0 +1,21 @@
+docs/diary/2026-05-29.md
+  s_dcac04e1c855f5::t_c309fdea914229 1-65
+docs/journal/048-celebrate-mac-ci-p12-decode.md
+  s_dcac04e1c855f5::t_cd7269b8cae226 1-71
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "0d01b19c02bf1f004b0aa5dc805a07e84505a1ad",
+  "prompts": {},
+  "sessions": {
+    "s_dcac04e1c855f5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5b56db6b-6099-4b74-87e5-1e510870b04b",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
