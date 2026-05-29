@@ -26,6 +26,28 @@ export function bumpPatch(version) {
   return `${major}.${minor}.${Number.parseInt(patch, 10) + 1}`;
 }
 
+export function deriveBundleVersion(version) {
+  const match = version.match(/^(\d+)\.(\d+)\.(\d+)$/);
+
+  if (!match) {
+    throw new Error(
+      `Cannot derive CFBundleVersion from non-canonical version: ${version}. Expected x.y.z with no leading "v".`
+    );
+  }
+
+  const major = Number.parseInt(match[1], 10);
+  const minor = Number.parseInt(match[2], 10);
+  const patch = Number.parseInt(match[3], 10);
+
+  if (minor > 99 || patch > 99) {
+    throw new Error(
+      `Cannot derive a monotonic CFBundleVersion from ${version}: minor and patch must each stay below 100.`
+    );
+  }
+
+  return major * 10000 + minor * 100 + patch;
+}
+
 export function deriveReleaseVersionFromRefs(latestTag, tagCommit, headCommit) {
   const normalizedTag = latestTag.replace(/^v/, "");
 
@@ -98,6 +120,7 @@ export function getReleaseVersionInfo() {
 
   return {
     version,
+    bundleVersion: deriveBundleVersion(version),
     latestTag: latestTag.replace(/^v/, ""),
     tagCommit,
     headCommit,

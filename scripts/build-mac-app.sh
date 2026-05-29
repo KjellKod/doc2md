@@ -126,6 +126,10 @@ display_build_version() {
   node --input-type=module -e "import { getDisplayVersionInfo } from './packages/core/scripts/release-version.mjs'; console.log(getDisplayVersionInfo().version);"
 }
 
+bundle_version_for() {
+  node --input-type=module -e "import { deriveBundleVersion } from './packages/core/scripts/release-version.mjs'; console.log(deriveBundleVersion(process.argv[1]));" "$1"
+}
+
 prepare_notice_resource() {
   if [[ "${DOC2MD_RELEASE_REF+x}" != "x" ]]; then
     npm run generate:notices
@@ -226,6 +230,7 @@ cd "$REPO_ROOT"
 
 BUILD_VERSION="$(display_build_version)"
 MARKETING_VERSION_OVERRIDE="${BUILD_VERSION%-dev}"
+BUNDLE_VERSION_OVERRIDE="$(bundle_version_for "$MARKETING_VERSION_OVERRIDE")"
 
 node scripts/generate-release-commit.mjs
 node scripts/generate-supported-formats.mjs --check
@@ -274,6 +279,7 @@ set +e
   -configuration "$CONFIGURATION" \
   -derivedDataPath .build/mac \
   MARKETING_VERSION="$MARKETING_VERSION_OVERRIDE" \
+  CURRENT_PROJECT_VERSION="$BUNDLE_VERSION_OVERRIDE" \
   build 2>&1 | sed "s/^\\*\\* BUILD SUCCEEDED \\*\\*$/** $BUILD_VERSION BUILD SUCCEEDED **/"
 pipeline_status=("${PIPESTATUS[@]}")
 set -e
