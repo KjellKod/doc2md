@@ -1,0 +1,20 @@
+.github/workflows/debug-mac-cert.yml
+  s_dcac04e1c855f5::t_a6076113e61f3a 72,77-84
+  s_dcac04e1c855f5::t_fb079703ca9bba 10-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "ee13d5bd05f3e9015bf357e1416ba9fa11520abc",
+  "prompts": {},
+  "sessions": {
+    "s_dcac04e1c855f5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5b56db6b-6099-4b74-87e5-1e510870b04b",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
