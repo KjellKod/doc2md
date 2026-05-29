@@ -33,6 +33,7 @@ import type { DropZoneProps } from "../components/DropZone";
 import FileList from "../components/FileList";
 import InstallPage from "../components/InstallPage";
 import PreviewPanel from "../components/PreviewPanel";
+import type { EditorViewState } from "../components/PreviewPanel";
 import WorkingModeBar from "../components/WorkingModeBar";
 import type { WorkingModeBarProps } from "../components/WorkingModeBar";
 import type { FileEntry } from "../types";
@@ -116,6 +117,8 @@ export type AppShellProps = {
   // Selected entry and PreviewPanel wiring.
   selectedEntry: FileEntry | null;
   editorFocusRequest: { id: number; target: "editor" };
+  getSavedEditorViewState?: (id: string) => EditorViewState | undefined;
+  onEditorViewStateChange?: (id: string, state: EditorViewState) => void;
   previewPanelSaveProps: AppShellPreviewPanelSaveProps;
   callbacks: AppShellCallbacks;
 
@@ -237,6 +240,8 @@ export default function AppShell(props: AppShellProps) {
     onActivePageChange,
     selectedEntry,
     editorFocusRequest,
+    getSavedEditorViewState,
+    onEditorViewStateChange,
     previewPanelSaveProps,
     callbacks,
     workingModeBarProps,
@@ -551,6 +556,8 @@ export default function AppShell(props: AppShellProps) {
                   onStartWriting={callbacks.onNewDocument}
                   onNewDocument={callbacks.onNewDocument}
                   editorFocusRequest={editorFocusRequest}
+                  getSavedEditorViewState={getSavedEditorViewState}
+                  onEditorViewStateChange={onEditorViewStateChange}
                   onSave={previewPanelSaveProps.onSave}
                   saveBusy={previewPanelSaveProps.saveBusy}
                   saveDisabled={previewPanelSaveProps.saveDisabled}

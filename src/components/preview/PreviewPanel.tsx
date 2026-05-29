@@ -11,8 +11,27 @@ import PreviewEmptyStates from "./PreviewEmptyStates";
 import PreviewMode from "./PreviewMode";
 import PreviewToolbar from "./PreviewToolbar";
 import { performPreviewCopy } from "./previewCopy";
+/**
+ * Per-document viewport position remembered across document switches so
+ * returning to a large doc lands where you left off instead of jumping to the
+ * top. `anchorLine` is the source line at the top of the viewport — the same
+ * mode-agnostic currency the edit/preview switch uses — so it restores
+ * position in BOTH preview and edit. The optional fields capture the exact
+ * edit caret/scroll and are only present when the doc was left in edit mode.
+ * Owned/persisted by the adapter; PreviewPanel captures it as the user scrolls
+ * and reapplies it on return.
+ */
+export interface EditorViewState {
+  anchorLine?: number;
+  selectionStart?: number;
+  selectionEnd?: number;
+  scrollTop?: number;
+}
+
 export interface PreviewPanelProps {
   entry: FileEntry | null;
+  getSavedEditorViewState?: (id: string) => EditorViewState | undefined;
+  onEditorViewStateChange?: (id: string, state: EditorViewState) => void;
   onMarkdownChange?: (markdown: string) => void;
   onSave?: () => void | Promise<void>;
   saveBusy?: boolean;
@@ -28,6 +47,8 @@ export interface PreviewPanelProps {
 
 export default function PreviewPanel({
   entry,
+  getSavedEditorViewState,
+  onEditorViewStateChange,
   onMarkdownChange,
   onSave,
   saveBusy = false,
@@ -60,24 +81,54 @@ export default function PreviewPanel({
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const pendingAnchorLineRef = useRef<number | null>(null);
   const suppressMatchCenteringForModeSwitchRef = useRef(false);
+  // Cross-document edit caret/scroll restore. Seeded (with pendingAnchorLineRef)
+  // when the selected entry changes and consumed + cleared once by EditMode on
+  // its next mount. Only carries selection/scroll when the doc was left in edit.
+  const pendingEditorRestoreRef = useRef<EditorViewState | null>(null);
+  const entryId = entry?.id ?? null;
+
+  // Reset-on-entry-change handled synchronously DURING render (React's
+  // "adjust state when a prop changes" pattern, guarded by previous-entry
+  // refs). Doing the mode reset here rather than in a passive effect means the
+  // correct mode child mounts in the very first commit: a passive effect would
+  // first mount the PREVIOUS mode for one transient commit, and if that was
+  // edit it would consume + clear the cross-document anchor/caret handoff
+  // before preview ever mounts (preview then lands at the top). Seeding the
+  // pending refs in the same block hands the saved viewport line to whichever
+  // mode mounts — exactly how switchMode seeds synchronously before remounting.
+  const previousEntryIdRef = useRef<string | null | undefined>(undefined);
+  const previousIsScratchRef = useRef<boolean | undefined>(undefined);
+  /* eslint-disable react-hooks/refs -- render-phase reset handoff: tracking the
+     previous entry and seeding the pending refs during render is intentional
+     (see note above); this is the documented "adjust state on prop change"
+     pattern, which necessarily reads/writes refs in render. */
+  if (
+    entryId !== previousEntryIdRef.current ||
+    entry?.isScratch !== previousIsScratchRef.current
+  ) {
+    const idChanged = entryId !== previousEntryIdRef.current;
+    previousEntryIdRef.current = entryId;
+    previousIsScratchRef.current = entry?.isScratch;
+    setMode(entry?.isScratch ? "edit" : "preview");
+    setIsFindOpen(false);
+    setActiveFindMatch(null);
+    setRenderedViewText("");
+    suppressMatchCenteringForModeSwitchRef.current = false;
+    if (idChanged) {
+      const saved = entryId ? getSavedEditorViewState?.(entryId) : undefined;
+      pendingAnchorLineRef.current = saved?.anchorLine ?? null;
+      pendingEditorRestoreRef.current =
+        saved && saved.selectionStart != null ? saved : null;
+    }
+  }
+  /* eslint-enable react-hooks/refs */
+
   const findCapable =
     entry !== null &&
     (entry.status === "success" || entry.status === "warning") &&
     (entry.markdown.length > 0 ||
       entry.isScratch ||
       entry.editedMarkdown !== undefined);
-
-  // Reset shell state when the loaded entry changes. The two refs are
-  // anchor-handoff sentinels that must reset in lockstep with React state.
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- entry-reset (see comment above)
-    setMode(entry?.isScratch ? "edit" : "preview");
-    setIsFindOpen(false);
-    setActiveFindMatch(null);
-    setRenderedViewText("");
-    pendingAnchorLineRef.current = null;
-    suppressMatchCenteringForModeSwitchRef.current = false;
-  }, [entry?.id, entry?.isScratch]);
 
   // Close find when the active source loses find-capability (e.g. the
   // entry transitions to an error status). The render path cannot derive
@@ -257,6 +308,32 @@ export default function PreviewPanel({
     setMode(nextMode);
   }
 
+  // Record the current viewport position for the active document as the user
+  // scrolls/moves the caret. The anchor line is captured in whatever mode is
+  // active; the exact edit caret/scroll is added only in edit mode. Preview
+  // navigation reports an anchor-only state, which replaces (and so discards)
+  // any stale edit caret for the document.
+  function reportView() {
+    if (entryId === null || !onEditorViewStateChange) {
+      return;
+    }
+    const anchorLine = captureAnchorLine();
+    const state: EditorViewState = {};
+    if (anchorLine !== null) {
+      state.anchorLine = anchorLine;
+    }
+    if (mode === "edit" && textareaRef.current) {
+      const textarea = textareaRef.current;
+      state.selectionStart = textarea.selectionStart;
+      state.selectionEnd = textarea.selectionEnd;
+      state.scrollTop = textarea.scrollTop;
+    }
+    if (state.anchorLine === undefined && state.selectionStart === undefined) {
+      return;
+    }
+    onEditorViewStateChange(entryId, state);
+  }
+
   const commonModeProps = {
     activeFindMatch,
     isFindOpen,
@@ -331,6 +408,8 @@ export default function PreviewPanel({
           textareaRef={textareaRef}
           findHighlightRef={findHighlightRef}
           autoFocusOnMount={autoFocusEditorOnMount}
+          pendingEditorRestoreRef={pendingEditorRestoreRef}
+          onReportView={reportView}
           onMarkdownChange={onMarkdownChange}
           onLargeMarkdownPaste={onLargeMarkdownPaste}
         />
@@ -340,6 +419,7 @@ export default function PreviewPanel({
           state={linkedinPreviewState}
           renderedViewRef={renderedViewRef}
           renderedViewText={renderedViewText}
+          onReportView={reportView}
           onRenderedViewTextChange={setRenderedViewText}
         />
       ) : (
@@ -349,6 +429,7 @@ export default function PreviewPanel({
           previewRef={previewRef}
           renderedViewRef={renderedViewRef}
           renderedViewText={renderedViewText}
+          onReportView={reportView}
           onRenderedViewTextChange={setRenderedViewText}
         />
       )}

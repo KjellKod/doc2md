@@ -1,10 +1,11 @@
 import "@testing-library/jest-dom/vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ConversionQuality } from "../converters/types";
 import type { FileEntry } from "../types";
 import PreviewPanel from "./PreviewPanel";
+import type { EditorViewState } from "./PreviewPanel";
 import * as viewportAnchor from "./viewportAnchor";
 
 class MockClipboardItem {
@@ -1700,5 +1701,87 @@ describe("PreviewPanel", () => {
     );
     expect(rendered).not.toBeNull();
     expect(rendered?.textContent).toBe("Hello");
+  });
+
+  it("reports editor caret changes to the host keyed by document id", () => {
+    const onEditorViewStateChange = vi.fn();
+    render(
+      <PreviewPanel
+        entry={createEntry({ id: "doc-a", markdown: "# Hello World" })}
+        onEditorViewStateChange={onEditorViewStateChange}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    const textarea = screen.getByRole("textbox", {
+      name: "Edit markdown",
+    }) as HTMLTextAreaElement;
+
+    textarea.setSelectionRange(7, 7);
+    fireEvent.select(textarea);
+
+    expect(onEditorViewStateChange).toHaveBeenCalledWith(
+      "doc-a",
+      expect.objectContaining({ selectionStart: 7, selectionEnd: 7 }),
+    );
+  });
+
+  it("restores the remembered caret when returning to a document", () => {
+    const MARKDOWN_A = "# Hello World";
+
+    function Harness() {
+      const store = useRef(new Map<string, EditorViewState>());
+      const [entry, setEntry] = useState(() =>
+        createEntry({ id: "doc-a", markdown: MARKDOWN_A }),
+      );
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() =>
+              setEntry(createEntry({ id: "doc-b", markdown: "other doc" }))
+            }
+          >
+            go-b
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              setEntry(createEntry({ id: "doc-a", markdown: MARKDOWN_A }))
+            }
+          >
+            go-a
+          </button>
+          <PreviewPanel
+            entry={entry}
+            getSavedEditorViewState={(id) => store.current.get(id)}
+            onEditorViewStateChange={(id, state) =>
+              store.current.set(id, state)
+            }
+          />
+        </>
+      );
+    }
+
+    render(<Harness />);
+
+    // Place the caret mid-document in doc A and let it be reported/stored.
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    const textareaA = screen.getByRole("textbox", {
+      name: "Edit markdown",
+    }) as HTMLTextAreaElement;
+    textareaA.setSelectionRange(7, 7);
+    fireEvent.select(textareaA);
+
+    // Switch away to doc B, then back to doc A.
+    fireEvent.click(screen.getByRole("button", { name: "go-b" }));
+    fireEvent.click(screen.getByRole("button", { name: "go-a" }));
+
+    // Re-entering edit mode on doc A restores the remembered caret.
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    const restored = screen.getByRole("textbox", {
+      name: "Edit markdown",
+    }) as HTMLTextAreaElement;
+    expect(restored.selectionStart).toBe(7);
+    expect(restored.selectionEnd).toBe(7);
   });
 });
