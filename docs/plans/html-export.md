@@ -1,8 +1,12 @@
 # Plan brief: HTML export (single-file) for the app and `@doc2md/core`
 
-Status: design brief, pre-implementation. This is the seed for the Quest planning
-phase, not the final implementation plan. The Quest planner should expand,
-challenge, and correct it against the live code.
+Status: COMPLETED — implemented via Quest `html-export_2026-05-29__1522` on branch
+`quest/html-export` (Platinum; 1 plan iteration, 0 fix passes). This document was
+the seed for the Quest planning phase. See the final implementation plan and
+artifacts in `.quest/archive/html-export_2026-05-29__1522/` and the closeout in
+`docs/quest-journal/html-export_2026-05-29.md`. Two info-level nits were deferred
+(`.quest/backlog/deferred_findings.jsonl`). Original seed text retained below for
+historical reference.
 
 ## Problem
 
