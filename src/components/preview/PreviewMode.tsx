@@ -10,6 +10,7 @@ import remarkGfm from "remark-gfm";
 import type { FindMatch } from "../useFindReplace";
 import { sourceLineRehype } from "../sourceLineRehype";
 import { formatPreviewMarkdownWithLineMap } from "../previewFormatting";
+import { classifyMarkdownHref } from "../../render/markdownLinks";
 import { useFindHighlight } from "./useFindHighlight";
 import { useViewportAnchor } from "./useViewportAnchor";
 import {
@@ -18,53 +19,11 @@ import {
   useRenderedAnchorApply,
 } from "./renderedSurfaceEffects";
 
-// A link in a rendered Markdown document falls into one of three buckets:
-//
-//   external — http(s), mailto, tel, or protocol-relative (//...). Opens in
-//              the user's default browser via target=_blank. The Mac shell
-//              additionally hands off to NSWorkspace.
-//   anchor   — pure hash fragment (#section). Stays in-shell so it can scroll
-//              to a heading. rehype-slug gives every heading a matching id.
-//   disabled — everything else: repo-relative paths (../README.md), absolute
-//              paths (/foo), relative paths with a hash (../guide.md#section),
-//              empty href, and any unknown scheme including data:, blob:,
-//              file:, vscode:, and javascript:. doc2md has no file-system
-//              path resolver, so following these would just navigate the
-//              webview to a 404. Render as a visibly-disabled link with the
-//              original href preserved (so right-click / copy-link still works
-//              against the source repo on a host that can resolve it, like
-//              github.com).
-type MarkdownLinkClassification =
-  | { kind: "external"; href: string }
-  | { kind: "anchor"; href: string }
-  | { kind: "disabled"; href: string | null };
-
-function classifyMarkdownHref(href: unknown): MarkdownLinkClassification {
-  if (typeof href !== "string") {
-    return { kind: "disabled", href: null };
-  }
-  const trimmed = href.trim();
-  if (trimmed === "") {
-    return { kind: "disabled", href: null };
-  }
-  const lower = trimmed.toLowerCase();
-  if (lower.startsWith("//")) {
-    return { kind: "external", href: `https:${trimmed}` };
-  }
-  if (
-    lower.startsWith("http://") ||
-    lower.startsWith("https://") ||
-    lower.startsWith("mailto:") ||
-    lower.startsWith("tel:")
-  ) {
-    return { kind: "external", href: trimmed };
-  }
-  if (trimmed.startsWith("#")) {
-    return { kind: "anchor", href: trimmed };
-  }
-  return { kind: "disabled", href: trimmed };
-}
-
+// Link classification (external / anchor / disabled) is shared with the
+// static HTML export renderer via src/render/markdownLinks.ts so the two
+// outputs cannot drift. Preview mode adds editor-only treatment on top of
+// the classification: disabled links get a tooltip-wrapper span plus click,
+// aux-click, and key guards. Export emits an inert anchor with no wrapper.
 function preventDisabledLinkNavigation(event: MouseEvent<HTMLAnchorElement>) {
   event.preventDefault();
 }
