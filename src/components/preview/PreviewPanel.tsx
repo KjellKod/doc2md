@@ -87,21 +87,41 @@ export default function PreviewPanel({
   const pendingEditorRestoreRef = useRef<EditorViewState | null>(null);
   const entryId = entry?.id ?? null;
 
-  // Derived-ref handoff: seed the pending viewport line the moment the selected
-  // entry changes, DURING render, so the child mode component reads it on the
-  // same commit (parent effects run after child effects — too late for the
-  // common case where preview stays mounted across a document switch). This
-  // mirrors how switchMode seeds the ref synchronously before remounting.
+  // Reset-on-entry-change handled synchronously DURING render (React's
+  // "adjust state when a prop changes" pattern, guarded by previous-entry
+  // refs). Doing the mode reset here rather than in a passive effect means the
+  // correct mode child mounts in the very first commit: a passive effect would
+  // first mount the PREVIOUS mode for one transient commit, and if that was
+  // edit it would consume + clear the cross-document anchor/caret handoff
+  // before preview ever mounts (preview then lands at the top). Seeding the
+  // pending refs in the same block hands the saved viewport line to whichever
+  // mode mounts — exactly how switchMode seeds synchronously before remounting.
   const previousEntryIdRef = useRef<string | null | undefined>(undefined);
-  if (entryId !== previousEntryIdRef.current) {
+  const previousIsScratchRef = useRef<boolean | undefined>(undefined);
+  /* eslint-disable react-hooks/refs -- render-phase reset handoff: tracking the
+     previous entry and seeding the pending refs during render is intentional
+     (see note above); this is the documented "adjust state on prop change"
+     pattern, which necessarily reads/writes refs in render. */
+  if (
+    entryId !== previousEntryIdRef.current ||
+    entry?.isScratch !== previousIsScratchRef.current
+  ) {
+    const idChanged = entryId !== previousEntryIdRef.current;
     previousEntryIdRef.current = entryId;
-    const saved = entryId ? getSavedEditorViewState?.(entryId) : undefined;
-    /* eslint-disable react-hooks/refs -- derived handoff before child mode effects (see note above) */
-    pendingAnchorLineRef.current = saved?.anchorLine ?? null;
-    pendingEditorRestoreRef.current =
-      saved && saved.selectionStart != null ? saved : null;
-    /* eslint-enable react-hooks/refs */
+    previousIsScratchRef.current = entry?.isScratch;
+    setMode(entry?.isScratch ? "edit" : "preview");
+    setIsFindOpen(false);
+    setActiveFindMatch(null);
+    setRenderedViewText("");
+    suppressMatchCenteringForModeSwitchRef.current = false;
+    if (idChanged) {
+      const saved = entryId ? getSavedEditorViewState?.(entryId) : undefined;
+      pendingAnchorLineRef.current = saved?.anchorLine ?? null;
+      pendingEditorRestoreRef.current =
+        saved && saved.selectionStart != null ? saved : null;
+    }
   }
+  /* eslint-enable react-hooks/refs */
 
   const findCapable =
     entry !== null &&
@@ -109,26 +129,6 @@ export default function PreviewPanel({
     (entry.markdown.length > 0 ||
       entry.isScratch ||
       entry.editedMarkdown !== undefined);
-
-  // Reset shell state when the loaded entry changes, and RE-SEED the pending
-  // restore refs. The render-time handoff above can be consumed by the wrong
-  // mode: when the previous document was open in edit, switching to a
-  // non-scratch document renders one transient edit commit (before this effect
-  // flips the mode to preview) in which EditMode mounts and clears the seeded
-  // refs. Re-seeding here — after setMode lands — ensures the value is present
-  // when the correct mode (preview) actually mounts on the next commit.
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- entry-reset (see comment above)
-    setMode(entry?.isScratch ? "edit" : "preview");
-    setIsFindOpen(false);
-    setActiveFindMatch(null);
-    setRenderedViewText("");
-    suppressMatchCenteringForModeSwitchRef.current = false;
-    const saved = entry?.id ? getSavedEditorViewState?.(entry.id) : undefined;
-    pendingAnchorLineRef.current = saved?.anchorLine ?? null;
-    pendingEditorRestoreRef.current =
-      saved && saved.selectionStart != null ? saved : null;
-  }, [entry?.id, entry?.isScratch, getSavedEditorViewState]);
 
   // Close find when the active source loses find-capability (e.g. the
   // entry transitions to an error status). The render path cannot derive
