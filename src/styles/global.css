@@ -1856,8 +1856,17 @@ body.is-height-resizing * {
 
 .find-entry-button,
 .export-html-button {
+  padding: 0;
+}
+
+.find-entry-button {
   gap: 8px;
-  padding: 0 14px;
+  padding-inline: 14px;
+}
+
+.export-html-button {
+  width: 44px;
+  height: 44px;
 }
 
 .find-entry-button:hover,
@@ -1909,8 +1918,7 @@ body.is-height-resizing * {
   flex-shrink: 0;
 }
 
-.find-entry-label,
-.export-html-label {
+.find-entry-label {
   white-space: nowrap;
 }
 

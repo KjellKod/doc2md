@@ -1,4 +1,4 @@
-import { FileDown, FilePlus, Keyboard, Search } from "lucide-react";
+import { FileCode, FilePlus, Keyboard, Search } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import type { SaveState } from "../../types/saveState";
 import SaveButton from "../SaveButton";
@@ -213,9 +213,9 @@ export default function PreviewToolbar({
             aria-disabled={exportHtmlDisabled || exportHtmlBusy}
             aria-busy={exportHtmlBusy}
             aria-label="Export HTML"
+            title="Export HTML"
           >
-            <FileDown className="export-html-icon" aria-hidden="true" />
-            <span className="export-html-label">Export HTML</span>
+            <FileCode className="export-html-icon" aria-hidden="true" />
           </button>
         ) : null}
         {showCopyButton ? (
