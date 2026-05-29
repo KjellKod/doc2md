@@ -429,3 +429,115 @@ test.describe("view anchor mode switch", () => {
     expect(stampedCount).toBeGreaterThan(0);
   });
 });
+
+function buildTaggedDoc(tag: string): string {
+  const sections: string[] = [];
+  for (let s = 0; s < 6; s += 1) {
+    sections.push(`## ${tag} Section ${s + 1}`);
+    sections.push("");
+    for (let p = 0; p < 8; p += 1) {
+      sections.push(
+        `${tag} s${s + 1} p${p + 1}. The quick brown fox jumps over the lazy dog. Filler prose so this document is tall enough for the viewport-anchor algorithm to lock onto.`,
+      );
+      sections.push("");
+    }
+  }
+  return sections.join("\n");
+}
+
+const DOC_A = "doc-a.md";
+const DOC_B = "doc-b.md";
+
+async function openTwoDocs(page: Page) {
+  await page.goto("./");
+  await page.addStyleTag({ content: SURFACE_CONSTRAINT });
+  const fileChooserPromise = page.waitForEvent("filechooser");
+  await page
+    .getByRole("button", { name: "browse from your device", exact: true })
+    .click();
+  const fileChooser = await fileChooserPromise;
+  await fileChooser.setFiles([
+    {
+      name: DOC_A,
+      mimeType: "text/markdown",
+      buffer: Buffer.from(buildTaggedDoc("Alpha")),
+    },
+    {
+      name: DOC_B,
+      mimeType: "text/markdown",
+      buffer: Buffer.from(buildTaggedDoc("Bravo")),
+    },
+  ]);
+  const showUpload = page.getByRole("button", { name: "Show upload panel" });
+  if (await showUpload.isVisible().catch(() => false)) {
+    await showUpload.click();
+  }
+  await expect(
+    page.getByRole("button", { name: `Open ${DOC_A}` }),
+  ).toBeVisible();
+}
+
+async function selectDoc(page: Page, name: string) {
+  await page.getByRole("button", { name: `Open ${name}` }).click();
+}
+
+// The behavior the PR must preserve: switching documents and returning must
+// land you where you left off — in BOTH preview and edit — not at the top.
+test.describe("cross-document view anchor", () => {
+  test("returning to a document restores the preview scroll position", async ({
+    page,
+  }) => {
+    await openTwoDocs(page);
+    await selectDoc(page, DOC_A);
+    await page.getByRole("button", { name: "Preview", exact: true }).click();
+    await (await previewSurface(page)).waitFor();
+
+    await page.evaluate(() => {
+      const surface = document.querySelector(
+        ".markdown-surface",
+      ) as HTMLElement | null;
+      if (surface) {
+        surface.scrollTop = 1200;
+      }
+    });
+    const captured = await topRenderedSourceLine(page, ".markdown-surface");
+    expect(captured).toBeGreaterThan(1);
+
+    // Visit the other document, then come back to the first.
+    await selectDoc(page, DOC_B);
+    await page.getByRole("button", { name: "Preview", exact: true }).click();
+    await selectDoc(page, DOC_A);
+    await (await previewSurface(page)).waitFor();
+
+    // Regression guard: before the fix the preview reset to line 1.
+    const restoredTop = await topRenderedSourceLine(page, ".markdown-surface");
+    expect(restoredTop).toBeGreaterThan(1);
+
+    const delta = await topElementYDelta(page, ".markdown-surface", captured);
+    expect(Math.abs(delta)).toBeLessThanOrEqual(EPSILON_PX);
+  });
+
+  test("returning to a document restores the editor caret position", async ({
+    page,
+  }) => {
+    await openTwoDocs(page);
+    await selectDoc(page, DOC_A);
+    await page.getByRole("button", { name: "Edit", exact: true }).click();
+    const editor = await editorTextarea(page);
+    await editor.evaluate((node) => {
+      const textarea = node as HTMLTextAreaElement;
+      textarea.scrollTop = 800;
+    });
+    const captured = await topSourceLineFromEditor(page);
+    expect(captured).toBeGreaterThan(1);
+
+    // Visit the other document, then come back and re-enter edit.
+    await selectDoc(page, DOC_B);
+    await selectDoc(page, DOC_A);
+    await page.getByRole("button", { name: "Edit", exact: true }).click();
+    await editorTextarea(page).then((textarea) => textarea.waitFor());
+
+    const editorTopLine = await topSourceLineFromEditor(page);
+    expect(Math.abs(editorTopLine - captured)).toBeLessThanOrEqual(3);
+  });
+});

@@ -154,6 +154,7 @@ interface PreviewModeProps {
   suppressMatchCenteringForModeSwitchRef: MutableElementRef<boolean>;
   renderedViewText: string;
   viewportTopFloor: () => number;
+  onReportView?: () => void;
   onRenderedViewTextChange: (nextText: string) => void;
 }
 
@@ -167,6 +168,7 @@ export default function PreviewMode({
   suppressMatchCenteringForModeSwitchRef,
   renderedViewText,
   viewportTopFloor,
+  onReportView,
   onRenderedViewTextChange,
 }: PreviewModeProps) {
   const previewWithLineMap = useMemo(
@@ -231,6 +233,7 @@ export default function PreviewMode({
         previewRef.current = element;
         renderedViewRef.current = element;
       }}
+      onScroll={() => onReportView?.()}
     >
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}

@@ -49,7 +49,7 @@ interface EditModeProps {
   viewportTopFloor: () => number;
   autoFocusOnMount?: boolean;
   pendingEditorRestoreRef?: MutableElementRef<EditorViewState>;
-  onReportViewState?: (state: EditorViewState) => void;
+  onReportView?: () => void;
   onMarkdownChange?: (markdown: string) => void;
   onLargeMarkdownPaste?: (markdown: string) => void;
 }
@@ -163,7 +163,7 @@ export default function EditMode({
   viewportTopFloor,
   autoFocusOnMount = false,
   pendingEditorRestoreRef,
-  onReportViewState,
+  onReportView,
   onMarkdownChange,
   onLargeMarkdownPaste,
 }: EditModeProps) {
@@ -259,28 +259,18 @@ export default function EditMode({
     }
     pendingEditorRestoreRef.current = null;
     const max = textarea.value.length;
-    const start = Math.min(Math.max(restore.selectionStart, 0), max);
-    const end = Math.min(Math.max(restore.selectionEnd, 0), max);
+    const start = Math.min(Math.max(restore.selectionStart ?? 0, 0), max);
+    const end = Math.min(Math.max(restore.selectionEnd ?? start, 0), max);
     textarea.setSelectionRange(start, end);
-    textarea.scrollTop = restore.scrollTop;
+    if (restore.scrollTop != null) {
+      textarea.scrollTop = restore.scrollTop;
+    }
     syncFindHighlightScroll();
   }, [effectiveMarkdown, pendingEditorRestoreRef, textareaRef, syncFindHighlightScroll]);
 
-  const reportViewState = useCallback(() => {
-    const textarea = textareaRef.current;
-    if (!textarea || !onReportViewState) {
-      return;
-    }
-    onReportViewState({
-      selectionStart: textarea.selectionStart,
-      selectionEnd: textarea.selectionEnd,
-      scrollTop: textarea.scrollTop,
-    });
-  }, [onReportViewState, textareaRef]);
-
   function handleEditorScroll() {
     syncFindHighlightScroll();
-    reportViewState();
+    onReportView?.();
   }
 
   const clearPasteConversionTimers = useCallback(() => {
@@ -605,7 +595,7 @@ export default function EditMode({
         onChange={handleTextareaChange}
         onPaste={handleTextareaPaste}
         onScroll={handleEditorScroll}
-        onSelect={reportViewState}
+        onSelect={() => onReportView?.()}
         onKeyDown={handleTextareaKeyDown}
         onCompositionStart={() => {
           isComposingRef.current = true;

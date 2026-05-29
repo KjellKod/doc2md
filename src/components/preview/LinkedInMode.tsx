@@ -42,6 +42,7 @@ interface LinkedInModeProps {
   suppressMatchCenteringForModeSwitchRef: MutableElementRef<boolean>;
   renderedViewText: string;
   viewportTopFloor: () => number;
+  onReportView?: () => void;
   onRenderedViewTextChange: (nextText: string) => void;
 }
 
@@ -168,6 +169,7 @@ export default function LinkedInMode({
   suppressMatchCenteringForModeSwitchRef,
   renderedViewText,
   viewportTopFloor,
+  onReportView,
   onRenderedViewTextChange,
 }: LinkedInModeProps) {
   const renderedFindHighlightMatch =
@@ -218,6 +220,7 @@ export default function LinkedInMode({
       }}
       className="linkedin-surface"
       aria-label="LinkedIn preview"
+      onScroll={() => onReportView?.()}
     >
       {(() => {
         const lines = (state.text ?? "").split("\n");
