@@ -1,0 +1,47 @@
+tests/e2e/view-anchor-mode-switch.spec.ts
+  s_1970badfc1764a::t_ae60e85cd1d0e8 432-577
+src/components/preview/PreviewPanel.tsx
+  s_1970badfc1764a::t_ae60e85cd1d0e8 14-30,33-34,53-54,90-94,96-117,123-137,317-342,420-421,431,441
+src/components/PreviewPanel.test.tsx
+  s_1970badfc1764a::t_ae60e85cd1d0e8 3,8,1705-1785
+src/components/preview/EditMode.tsx
+  s_1970badfc1764a::t_ae60e85cd1d0e8 17,51-52,165-166,245-270,273,598
+src/components/PreviewPanel.tsx
+  s_1970badfc1764a::t_ae60e85cd1d0e8 2-5
+src/components/preview/PreviewMode.tsx
+  s_1970badfc1764a::t_ae60e85cd1d0e8 116,130,195
+src/components/preview/LinkedInMode.tsx
+  s_1970badfc1764a::t_ae60e85cd1d0e8 45,172,223
+src/App.tsx
+  s_1970badfc1764a::t_ae60e85cd1d0e8 42-43
+src/shell/useWorkspaceResize.ts
+  s_1970badfc1764a::t_ae60e85cd1d0e8 140-146,151-167,175,203-231,369-383,411-413,415-420,445-447,459,585-586,609,611-621,623-624,633,732
+src/shell/desktopAdapter.tsx
+  s_1970badfc1764a::t_ae60e85cd1d0e8 31,253-259,270-271,304-333,408-431,2685-2686
+src/shell/webAdapter.tsx
+  s_1970badfc1764a::t_ae60e85cd1d0e8 29,43-49,60-61,88-121,149-174,542-543
+src/shell/AppShell.tsx
+  s_1970badfc1764a::t_ae60e85cd1d0e8 36,123-124,246-247,562-563
+docs/diary/2026-05-28.md
+  s_1970badfc1764a::t_ae60e85cd1d0e8 1,36-95
+src/shell/useWorkspaceResize.test.ts
+  s_1970badfc1764a::t_ae60e85cd1d0e8 1-114
+src/desktop/DesktopApp.tsx
+  s_1970badfc1764a::t_ae60e85cd1d0e8 45-46
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "40ea49b7d88470dd5edc54bf2bfad5a61d1f392d",
+  "prompts": {},
+  "sessions": {
+    "s_1970badfc1764a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0df09b68-9ac9-4553-885c-2a3423000e1f",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
