@@ -1,0 +1,39 @@
+src/components/preview/PreviewToolbar.tsx
+  s_f118e9cf960483::t_8eafe87a093296 214-217,230-233
+  s_f118e9cf960483::t_7cbe5f76ab75a6 259-262
+  s_f118e9cf960483::t_d5f48be479e426 1,16-17,65-66,81-82,213,219-229,234-258,263-276
+src/shell/AppShell.tsx
+  s_f118e9cf960483::t_53e39c1d188050 74-75,572-575
+src/shell/desktopAdapter.tsx
+  s_f118e9cf960483::t_83d8a19b1e32a6 931-937,2508-2509
+src/__tests__/App.hosted.test.tsx
+  s_f118e9cf960483::t_931de244752f9e 126
+src/components/PreviewPanel.test.tsx
+  s_f118e9cf960483::t_371f29a942fb62 186
+  s_f118e9cf960483::t_56435308776eb6 1789-1790,1795,1801-1818,1820,1825,1828-1831,1835-1836,1839-1843,1845-1847,1851,1859-1872,1883
+src/shell/webAdapter.tsx
+  s_f118e9cf960483::t_01ac9d7729d4f3 425-431,498-499
+src/__tests__/App.desktop.test.tsx
+  s_f118e9cf960483::t_931de244752f9e 493
+src/components/preview/PreviewPanel.tsx
+  s_f118e9cf960483::t_45092c1c81ec58 37-38,59-60,364-365
+src/styles/global.css
+  s_f118e9cf960483::t_ecea85c9e7ef7e 1835,1858,1867-1876,1878,1883-1884,1897,1906,1912,1920,1930-1944
+  s_f118e9cf960483::t_14de8a722994e3 3045,3073-3074,3088-3091
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "0d8df753074f5b4df85058c1d1b10fec4ae8ad25",
+  "prompts": {},
+  "sessions": {
+    "s_f118e9cf960483": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e760b-82f1-76d2-af68-d7abfa971f9e",
+        "model": "gpt-5.5"
+      },
+      "human_author": null
+    }
+  }
+}
