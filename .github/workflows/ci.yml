@@ -51,6 +51,9 @@ jobs:
       - name: Run tests
         run: npm test -- --run
 
+      - name: Run release script tests
+        run: bash tests/release/test_p12_decode.sh
+
   build:
     name: build
     runs-on: ubuntu-latest
