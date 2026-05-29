@@ -1,0 +1,49 @@
+docs/diary/2026-05-29.md
+  ai_agent 1,150-215
+src/shell/desktopAdapter.tsx
+  s_3d8eb3c367af79::t_571e739a3307c6 31,250-256,267-268,301-330,400-423,2626-2627
+src/components/PreviewPanel.test.tsx
+  s_3d8eb3c367af79::t_571e739a3307c6 3,8,1705-1785
+src/components/preview/PreviewPanel.tsx
+  s_3d8eb3c367af79::t_571e739a3307c6 14-30,33-34,50-51,84-88,90-111,117-131,311-336,411-412,422,432
+src/shell/useWorkspaceResize.test.ts
+  s_3d8eb3c367af79::t_571e739a3307c6 1-114
+docs/diary/2026-05-28.md
+  s_3d8eb3c367af79::t_571e739a3307c6 1,36-95
+src/components/preview/EditMode.tsx
+  s_3d8eb3c367af79::t_571e739a3307c6 17,51-52,165-166,245-270,273,598
+src/desktop/DesktopApp.tsx
+  s_3d8eb3c367af79::t_571e739a3307c6 45-46
+src/components/PreviewPanel.tsx
+  s_3d8eb3c367af79::t_571e739a3307c6 2-5
+src/shell/webAdapter.tsx
+  s_3d8eb3c367af79::t_571e739a3307c6 29,38-44,55-56,83-116,143-168,512-513
+tests/e2e/view-anchor-mode-switch.spec.ts
+  s_3d8eb3c367af79::t_571e739a3307c6 432-577
+src/shell/useWorkspaceResize.ts
+  s_3d8eb3c367af79::t_571e739a3307c6 140-146,151-167,175,203-231,369-383,411-413,415-420,445-447,459,585-586,609,611-621,623-624,633,732
+src/components/preview/LinkedInMode.tsx
+  s_3d8eb3c367af79::t_571e739a3307c6 45,172,223
+src/shell/AppShell.tsx
+  s_3d8eb3c367af79::t_571e739a3307c6 36,120-121,243-244,559-560
+src/App.tsx
+  s_3d8eb3c367af79::t_571e739a3307c6 42-43
+src/components/preview/PreviewMode.tsx
+  s_3d8eb3c367af79::t_571e739a3307c6 157,171,236
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "4def1ff83424bfede7d92b82550c440704b12c4d",
+  "prompts": {},
+  "sessions": {
+    "s_3d8eb3c367af79": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c686566d-ddc8-4630-a082-8ff1593186d4",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
