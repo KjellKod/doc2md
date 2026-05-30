@@ -6,6 +6,8 @@ For the other perspective, see [Dexter's Journal](../dexter-journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 050 | [Celebration: Markdown File Association + Finder Open](050-celebrate-markdown-association.md) | doc2md.app becomes a first-class Markdown handler; dual plan review + arbiter caught a cold-launch readiness deadlock (data-app-ready needs a selected document that the Finder file would create), Codex code review found 3 bugs Claude missed, all fixed in one pass; PR #166 green |
+| 049 | [Celebration: First Signed Mac Release](049-celebrate-first-signed-mac-release.md) | The Mac release signing path finally reached and passed end-to-end after the P12 base64 decode fix (index row repaired) |
 | 049 | [HTML export: one renderer, two consumers](049-celebrate-html-export.md) | One shared markdownToHtml() (remark/rehype, not marked) consumed by the app and @doc2md/core, parity-by-construction with the preview, CLI --format md\|html\|both; builder swept unrelated Mac-P12 work onto a misnamed branch, preserved on save/ and rebased out for an HTML-only PR |
 | 048 | [Celebration: Mac CI P12 Decode](048-celebrate-mac-ci-p12-decode.md) | Strip whitespace before base64-decoding the P12 in CI signing, fail loud on a non-DER first byte, regression test the decode |
 | 047 | [Celebration: Remove URL Import And Trim Roadmap](047-celebrate-remove-url-import-roadmap-trim.md) | Hosted URL import removed without replacing it, Core/CLI remote URL support preserved, active ideas trimmed to clear Phase 7b value signals, and CI-equivalent validation kept the mobile matrix bounded |
