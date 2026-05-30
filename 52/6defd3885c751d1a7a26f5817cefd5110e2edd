@@ -1,0 +1,40 @@
+apps/macos/doc2md/Doc2mdAppDelegate.swift
+  s_1038bade0e0cb5::t_6d482f48975a56 29-30
+  s_1038bade0e0cb5::t_2b7afa64dfa98a 25-28
+  s_1038bade0e0cb5::t_2edf93500f9f34 1-24,31-55
+apps/macos/doc2md/doc2mdApp.swift
+  s_1038bade0e0cb5::t_0a817276f0907a 34-39
+  s_1038bade0e0cb5::t_31480eeaaf1d3f 5
+  s_1038bade0e0cb5::t_194108e31d28db 92-97
+apps/macos/doc2md/WebShellView.swift
+  s_1038bade0e0cb5::t_8013c93dd4033c 35-38
+  s_1038bade0e0cb5::t_e074ebd97c916e 117-120
+  s_1038bade0e0cb5::t_acfc453bc13669 241-258
+  s_1038bade0e0cb5::t_6f3e64de3c5b9e 170,173-176
+  s_1038bade0e0cb5::t_34d43d45bef895 18
+  s_1038bade0e0cb5::t_fa65a1f171627c 41-47
+apps/macos/doc2mdTests/Doc2mdAppDelegateTests.swift
+  s_1038bade0e0cb5::t_02ebdc00772a6f 1-78
+apps/macos/doc2mdTests/ExternalOpenRouterTests.swift
+  s_1038bade0e0cb5::t_ef062ed7961672 1-91,93-103
+  s_1038bade0e0cb5::t_740f2f355cfce1 92
+apps/macos/doc2md/ExternalOpenRouter.swift
+  s_1038bade0e0cb5::t_53e3aff6ad6e1e 1-13,20-23,36-66,68-70,76-89,91-103
+  s_1038bade0e0cb5::t_fc6770613a64dc 14-19,24-35,67,71-75,90
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "526defd3885c751d1a7a26f5817cefd5110e2edd",
+  "prompts": {},
+  "sessions": {
+    "s_1038bade0e0cb5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bb751e78-3147-4b90-83c0-0df1b9bb9551",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
