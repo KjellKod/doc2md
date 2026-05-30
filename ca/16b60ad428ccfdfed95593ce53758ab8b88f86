@@ -1,0 +1,23 @@
+src/shell/desktopAdapter.tsx
+  s_1038bade0e0cb5::t_a21fada686d983 1539-1547
+apps/macos/doc2mdTests/MarkdownDefaultAppHintPreferencesTests.swift
+  s_1038bade0e0cb5::t_94586cf1af0105 1
+src/__tests__/App.desktop.test.tsx
+  s_1038bade0e0cb5::t_a268b327b5da27 3410-3470
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "ca16b60ad428ccfdfed95593ce53758ab8b88f86",
+  "prompts": {},
+  "sessions": {
+    "s_1038bade0e0cb5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bb751e78-3147-4b90-83c0-0df1b9bb9551",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
