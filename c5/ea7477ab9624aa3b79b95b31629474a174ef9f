@@ -1,0 +1,23 @@
+apps/macos/dmg/README.md
+  s_1038bade0e0cb5::t_0e98fe008eb0f6 22-33
+apps/macos/README.md
+  s_1038bade0e0cb5::t_c2af2f5a9fb5bd 23-40
+INSTALL.md
+  s_1038bade0e0cb5::t_3332aaf339833a 197-208
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "c5ea7477ab9624aa3b79b95b31629474a174ef9f",
+  "prompts": {},
+  "sessions": {
+    "s_1038bade0e0cb5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bb751e78-3147-4b90-83c0-0df1b9bb9551",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}

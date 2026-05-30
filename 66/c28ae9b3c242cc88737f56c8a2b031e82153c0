@@ -1,0 +1,24 @@
+apps/macos/doc2md/ShellBridge.swift
+  s_1038bade0e0cb5::t_ebb51c40b92982 210
+  s_1038bade0e0cb5::t_e9cd3db36c91b6 240-273
+  s_1038bade0e0cb5::t_5b757a6c0854c4 618-619,639-647
+  s_1038bade0e0cb5::t_d2bc081e381795 789
+apps/macos/doc2mdTests/ShellBridgeExternalOpenTests.swift
+  s_1038bade0e0cb5::t_39dd16c280436e 1-81,83-120
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "66c28ae9b3c242cc88737f56c8a2b031e82153c0",
+  "prompts": {},
+  "sessions": {
+    "s_1038bade0e0cb5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bb751e78-3147-4b90-83c0-0df1b9bb9551",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}

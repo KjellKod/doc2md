@@ -1,0 +1,21 @@
+apps/macos/doc2md/Info.plist
+  s_1038bade0e0cb5::t_79b1bd55fd85f5 23-67
+apps/macos/doc2mdTests/InfoPlistDocumentTypeTests.swift
+  s_1038bade0e0cb5::t_164702518cc44a 1-74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "53ef60073fb8557f04a3d3306ac43ee3e13f711b",
+  "prompts": {},
+  "sessions": {
+    "s_1038bade0e0cb5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bb751e78-3147-4b90-83c0-0df1b9bb9551",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,34 @@
+apps/macos/doc2mdTests/MarkdownDefaultAppHintPreferencesTests.swift
+  s_1038bade0e0cb5::t_e430003e7a7d83 1-13,15-33,53
+  s_5f1b68be74c748::t_2859a8e198a273 14,35-40,42-43,45-52
+  s_5f1b68be74c748::t_f879ea19bc61b2 41,44
+apps/macos/doc2md/MarkdownDefaultAppHelp.swift
+  s_1038bade0e0cb5::t_abe991eae48efd 1-62,64-93,95-115,131,133-135,139-143,146-147,149-151
+  s_1038bade0e0cb5::t_1f99ce51e78b3d 63
+  s_5f1b68be74c748::t_f879ea19bc61b2 94,144
+  s_5f1b68be74c748::t_851dbe4c104e9a 116-130,136-138,145,148
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "4be94fda57759c3705e42293d3273b717df0a5c4",
+  "prompts": {},
+  "sessions": {
+    "s_1038bade0e0cb5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bb751e78-3147-4b90-83c0-0df1b9bb9551",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_5f1b68be74c748": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e767b-9a41-7412-8ef1-b6bfc86e249b",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}

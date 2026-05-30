@@ -1,0 +1,24 @@
+apps/macos/doc2md.xcodeproj/project.pbxproj
+  s_1038bade0e0cb5::t_95626ec757e5f6 72-82
+  s_1038bade0e0cb5::t_cd119fab9718e4 141-148
+  s_1038bade0e0cb5::t_c3c8804c3f05a7 183,186-187
+  s_1038bade0e0cb5::t_d0a5cbd6d2f137 255-259
+  s_1038bade0e0cb5::t_cf9f1d8c0e3c7c 419-421
+  s_1038bade0e0cb5::t_2af40d46b5e282 467-474
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "85e636d4891c75f357eb5153ed5d89df87403e4f",
+  "prompts": {},
+  "sessions": {
+    "s_1038bade0e0cb5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bb751e78-3147-4b90-83c0-0df1b9bb9551",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,40 @@
+src/__tests__/App.desktop.test.tsx
+  s_1038bade0e0cb5::t_b11fd282b352f2 15
+  s_5f1b68be74c748::t_2859a8e198a273 1890-1899,1900-1902,1904,1907,1909-1910,1912,1919-1920,1922-1926,1933-1934,1936-1938,1940-1941,1944-1946,1949-1951
+  s_1038bade0e0cb5::t_37ecb4e85694a4 3264-3307,3309-3409,1903,1905-1906,1908,1911,1913-1918,1921,1927-1932,1935,1939,1942-1943,1947-1948,1952-1956
+  s_1038bade0e0cb5::t_0fd0d681db983e 3308
+src/shell/desktopAdapter.tsx
+  s_1038bade0e0cb5::t_38399c6f688159 250-259
+  s_1038bade0e0cb5::t_a7537fdd9c4a32 370-373,375
+  s_1038bade0e0cb5::t_5ccdd229d01521 374
+  s_1038bade0e0cb5::t_9609d5a8ce1365 1353-1358,1365-1369,1373-1380,1595
+  s_1038bade0e0cb5::t_bafb9e9900bf16 1359
+  s_1038bade0e0cb5::t_f63aaa84b26654 1360-1364,1370-1372
+  s_1038bade0e0cb5::t_26ef48f0fc460b 1535-1544
+  s_1038bade0e0cb5::t_096f662b6ebabc 2399-2401
+  s_5f1b68be74c748::t_6404a9eb008c07 369,715,725,1491,1500,1549,1560-1562,1564,1591-1592
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "055e7b3fe7d7fa2bf22fe9c86a1209ad109f7a85",
+  "prompts": {},
+  "sessions": {
+    "s_1038bade0e0cb5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bb751e78-3147-4b90-83c0-0df1b9bb9551",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_5f1b68be74c748": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e767b-9a41-7412-8ef1-b6bfc86e249b",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
