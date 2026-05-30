@@ -1,0 +1,22 @@
+apps/macos/doc2mdTests/MarkdownDefaultAppHintPreferencesTests.swift
+  s_1038bade0e0cb5::t_bc146dccacb652 36-48
+apps/macos/doc2md/MarkdownDefaultAppHelp.swift
+  s_1038bade0e0cb5::t_572e6705064deb 95-100
+  s_1038bade0e0cb5::t_aa2bd20e1378b8 109-113,118
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "7f5f2acf09e20d4dc1afa89ffe52441addb1ea2a",
+  "prompts": {},
+  "sessions": {
+    "s_1038bade0e0cb5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bb751e78-3147-4b90-83c0-0df1b9bb9551",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
