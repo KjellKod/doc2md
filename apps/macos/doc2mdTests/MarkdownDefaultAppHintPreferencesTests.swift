@@ -1,3 +1,4 @@
+import AppKit
 import XCTest
 
 final class MarkdownDefaultAppHintPreferencesTests: XCTestCase {

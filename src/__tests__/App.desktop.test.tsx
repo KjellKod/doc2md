@@ -3407,4 +3407,65 @@ describe("App desktop bridge", () => {
 
     cleanupShell();
   });
+
+  it("does not strand selection when an external open fails during restore", async () => {
+    const pendingSessionState = createDeferred<{
+      ok: true;
+      openPaths: string[];
+      selectedPath?: string;
+      recentFiles: never[];
+    }>();
+    const openFile = vi.fn(async ({ path }: { path?: string } = {}) => ({
+      ok: true as const,
+      kind: "markdown" as const,
+      path: path ?? "/Users/me/Restored.md",
+      content: "# Restored",
+      mtimeMs: 10,
+      lineEnding: "lf" as const,
+    }));
+    const cleanupShell = installMockShell({
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: true,
+        recentFiles: [],
+      })),
+      getSessionState: vi.fn(() => pendingSessionState.promise),
+      openFile,
+    });
+
+    render(<DesktopApp />);
+    await screen.findByTestId("desktop-menu-bridge");
+
+    // An external open arrives while restore is pending, but it FAILS (no entry
+    // is produced). It must not suppress restored-entry selection.
+    const failed: ShellResult<ShellFile> = {
+      ok: false,
+      code: "error",
+      message: "doc2md can only open Markdown files (.md, .markdown).",
+    };
+    window.dispatchEvent(
+      new CustomEvent(NATIVE_MENU_EVENTS.externalOpen, { detail: failed }),
+    );
+    await screen.findByText(
+      /doc2md can only open Markdown files \(\.md, \.markdown\)\./,
+    );
+
+    await act(async () => {
+      pendingSessionState.resolve({
+        ok: true,
+        openPaths: ["/Users/me/Restored.md"],
+        selectedPath: "/Users/me/Restored.md",
+        recentFiles: [],
+      });
+      await pendingSessionState.promise;
+    });
+
+    // The restored document is selected; the failed external open did not leave
+    // the app with nothing selected.
+    expect(
+      await screen.findByRole("heading", { name: "Restored" }),
+    ).toBeInTheDocument();
+
+    cleanupShell();
+  });
 });

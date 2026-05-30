@@ -1536,11 +1536,15 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
         // selection. Restore still added its entries above, but addMarkdownEntry
         // deselects all, so re-select the external entry rather than a restored
         // one. Otherwise, select the restored entry as usual.
-        if (externalOpenDuringRestoreRef.current) {
-          const externalEntryId = externalOpenSelectedEntryIdRef.current;
-          if (externalEntryId) {
-            selectEntryRef.current(externalEntryId);
-          }
+        // Only let the external open win selection when it actually produced an
+        // entry. An external open that arrived during restore but failed
+        // (unsupported/unreadable) sets the in-flight flag with no entry id, and
+        // must not strand selection: fall through to the restored entry instead.
+        if (
+          externalOpenDuringRestoreRef.current &&
+          externalOpenSelectedEntryIdRef.current
+        ) {
+          selectEntryRef.current(externalOpenSelectedEntryIdRef.current);
         } else if (entryToSelect) {
           selectEntryRef.current(entryToSelect.entryId);
         }
