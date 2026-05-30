@@ -91,6 +91,7 @@ struct MarkdownDefaultAppHelpView: View {
 final class MarkdownDefaultAppHelpController {
     private var preferences: MarkdownDefaultAppHintPreferences
     private var windowController: NSWindowController?
+    private(set) var currentPresentationShowsDontShowAgain = false
 
     init(preferences: MarkdownDefaultAppHintPreferences = MarkdownDefaultAppHintPreferences()) {
         self.preferences = preferences
@@ -112,38 +113,39 @@ final class MarkdownDefaultAppHelpController {
     }
 
     private func present(showsDontShowAgain: Bool) {
-        if let windowController {
-            windowController.showWindow(nil)
-            windowController.window?.makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
-            return
+        let controller: NSWindowController
+        if let existingController = windowController {
+            controller = existingController
+        } else {
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 460, height: 360),
+                styleMask: [.titled, .closable],
+                backing: .buffered,
+                defer: false
+            )
+            window.title = "Default Markdown App"
+            window.center()
+            window.isReleasedWhenClosed = false
+            controller = NSWindowController(window: window)
+            windowController = controller
         }
 
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 460, height: 360),
-            styleMask: [.titled, .closable],
-            backing: .buffered,
-            defer: false
-        )
-        window.title = "Default Markdown App"
-        window.center()
-        window.isReleasedWhenClosed = false
-
-        let controller = NSWindowController(window: window)
         let view = MarkdownDefaultAppHelpView(
             showsDontShowAgain: showsDontShowAgain,
             onDontShowAgainChange: { [weak self] dismissed in
-                self?.preferences.hasDismissedHint = dismissed
+                if showsDontShowAgain {
+                    self?.preferences.hasDismissedHint = dismissed
+                }
             },
             onClose: { [weak controller] in
                 controller?.close()
             }
         )
-        window.contentView = NSHostingView(rootView: view)
-        windowController = controller
+        currentPresentationShowsDontShowAgain = showsDontShowAgain
+        controller.window?.contentView = NSHostingView(rootView: view)
 
         controller.showWindow(nil)
-        window.makeKeyAndOrderFront(nil)
+        controller.window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
 }

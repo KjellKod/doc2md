@@ -11,6 +11,7 @@ final class MarkdownDefaultAppHintPreferencesTests: XCTestCase {
     }
 
     override func tearDownWithError() throws {
+        closeHelpWindows()
         defaults.removePersistentDomain(forName: suiteName)
         defaults = nil
         try super.tearDownWithError()
@@ -30,5 +31,23 @@ final class MarkdownDefaultAppHintPreferencesTests: XCTestCase {
         XCTAssertTrue(
             defaults.bool(forKey: MarkdownDefaultAppHintPreferences.dismissedKey)
         )
+    }
+
+    func testHelpPresentationDoesNotReuseFirstRunCheckbox() throws {
+        let preferences = MarkdownDefaultAppHintPreferences(defaults: defaults)
+        let controller = MarkdownDefaultAppHelpController(preferences: preferences)
+
+        controller.presentFirstRunHintIfNeeded()
+        XCTAssertTrue(controller.currentPresentationShowsDontShowAgain)
+
+        controller.presentHelp()
+        XCTAssertFalse(controller.currentPresentationShowsDontShowAgain)
+        XCTAssertFalse(preferences.hasDismissedHint)
+    }
+
+    private func closeHelpWindows() {
+        for window in NSApp.windows where window.title == "Default Markdown App" {
+            window.close()
+        }
     }
 }
