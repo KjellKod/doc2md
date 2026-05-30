@@ -1897,6 +1897,63 @@ describe("App desktop bridge", () => {
     cleanupShell();
   });
 
+  it("resumes native session sync after a restore failure and later user open", async () => {
+    const getSessionState = vi.fn(async () => {
+      throw new Error("native bridge unavailable");
+    });
+    const setSessionState = vi.fn(async (args: {
+      openPaths: string[];
+      selectedPath?: string;
+    }) => ({
+      ok: true as const,
+      ...args,
+      recentFiles: [],
+    }));
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const cleanupShell = installMockShell({
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: true,
+        recentFiles: [],
+      })),
+      getSessionState,
+      openFile: vi.fn(async () => ({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/PostFailure.md",
+        content: "# PostFailure\n",
+        mtimeMs: 10,
+        lineEnding: "lf" as const,
+      })),
+      setSessionState,
+    });
+
+    render(<DesktopApp />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Session restore failed before the app received a native result. Open a file or start a new draft.",
+    );
+    await waitFor(() => expect(getSessionState).toHaveBeenCalledTimes(1));
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    expect(setSessionState).not.toHaveBeenCalled();
+
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await screen.findByRole("heading", { name: "PostFailure" });
+
+    await waitFor(() =>
+      expect(setSessionState).toHaveBeenCalledWith({
+        openPaths: ["/Users/me/PostFailure.md"],
+        selectedPath: "/Users/me/PostFailure.md",
+      }),
+    );
+    expect(consoleError).toHaveBeenCalledWith(
+      "doc2md desktop session restore failure",
+      expect.any(Error),
+    );
+
+    cleanupShell();
+  });
+
   it("syncs only disk-backed Markdown paths to native session state", async () => {
     const setSessionState = vi.fn(async (args: {
       openPaths: string[];

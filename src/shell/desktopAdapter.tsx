@@ -366,6 +366,7 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
   const sessionRestoreStartedRef = useRef(false);
   const sessionRestoreInFlightRef = useRef(false);
   const sessionRestoreCompletedRef = useRef(false);
+  const skipNextSessionSyncAfterRestoreFailureRef = useRef(false);
   // Set when an external Finder open arrives before restore finishes. Restore
   // still adds its entries and completes its bookkeeping, but the external
   // entry id below stays the selected document so the explicit external open
@@ -711,6 +712,7 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
       sessionRestoreStartedRef.current = false;
       sessionRestoreInFlightRef.current = false;
       sessionRestoreCompletedRef.current = false;
+      skipNextSessionSyncAfterRestoreFailureRef.current = false;
       resetPersistenceLifecycleRefs(currentThemeRef.current);
       return;
     }
@@ -720,6 +722,7 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     sessionRestoreStartedRef.current = false;
     sessionRestoreInFlightRef.current = false;
     sessionRestoreCompletedRef.current = false;
+    skipNextSessionSyncAfterRestoreFailureRef.current = false;
     setInitialPersistenceLoaded(false);
 
     async function loadPersistenceSettings() {
@@ -1485,7 +1488,7 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
 
     async function restoreSession() {
       const restoredEntries: Array<{ path: string; entryId: string }> = [];
-      let restoreCompleted = false;
+      let skipInitialSessionSync = false;
       try {
         const sessionResult = await desktopShell.getSessionState();
         if (cancelled) {
@@ -1494,6 +1497,7 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
 
         if (!isSessionState(sessionResult)) {
           setDesktopNotice(noticeFromPersistenceIssue(sessionResult));
+          skipInitialSessionSync = true;
           return;
         }
 
@@ -1540,9 +1544,9 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
         } else if (entryToSelect) {
           selectEntryRef.current(entryToSelect.entryId);
         }
-        restoreCompleted = true;
       } catch (error) {
         if (!cancelled) {
+          skipInitialSessionSync = true;
           setDesktopNotice({
             kind: "error",
             message:
@@ -1553,10 +1557,11 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
       } finally {
         if (!cancelled) {
           sessionRestoreInFlightRef.current = false;
-          if (restoreCompleted) {
-            sessionRestoreCompletedRef.current = true;
-            setSessionRestoreRevision((revision) => revision + 1);
+          sessionRestoreCompletedRef.current = true;
+          if (skipInitialSessionSync) {
+            skipNextSessionSyncAfterRestoreFailureRef.current = true;
           }
+          setSessionRestoreRevision((revision) => revision + 1);
         }
       }
     }
@@ -1580,6 +1585,11 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
       !sessionRestoreCompletedRef.current ||
       sessionRestoreInFlightRef.current
     ) {
+      return;
+    }
+
+    if (skipNextSessionSyncAfterRestoreFailureRef.current) {
+      skipNextSessionSyncAfterRestoreFailureRef.current = false;
       return;
     }
 
