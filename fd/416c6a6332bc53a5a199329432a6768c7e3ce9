@@ -1,0 +1,19 @@
+apps/macos/doc2md/Doc2mdAppDelegate.swift
+  s_1038bade0e0cb5::t_0de877c5d7fcc2 50-67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "fd416c6a6332bc53a5a199329432a6768c7e3ce9",
+  "prompts": {},
+  "sessions": {
+    "s_1038bade0e0cb5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bb751e78-3147-4b90-83c0-0df1b9bb9551",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
