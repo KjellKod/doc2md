@@ -19,3 +19,15 @@ After a Release app build, assert the artwork was not bundled into the app:
 ```bash
 test ! -e .build/mac/Build/Products/Release/doc2md.app/Contents/Resources/doc2md-dmg-background.png
 ```
+
+## After Installing From the DMG
+
+doc2md registers as a Markdown handler for `.md` and `.markdown` files once you drag it to `/Applications` and launch it. macOS does not make it the default automatically. To open Markdown files in doc2md by double-clicking:
+
+1. Select a `.md` file in Finder.
+2. Choose `File` then `Get Info`, or press `Command I`.
+3. Under `Open With`, choose doc2md.
+4. Click `Change All...`.
+5. Repeat for a `.markdown` file if you use that extension; macOS tracks the two extensions separately.
+
+doc2md is a Markdown handler only and does not register as the Finder-open app for any binary or import-source format.

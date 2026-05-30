@@ -20,6 +20,24 @@ Out of scope for this phase: persisted security-scoped bookmarks, autosave, and 
 - Standard Edit actions remain on the AppKit and `WKWebView` responder chain.
 - Embedded images and other source-document assets are dropped, matching the hosted web product.
 
+## Markdown File Association
+
+`doc2md.app` declares itself as a Markdown document handler for `.md` and `.markdown` files only. After the app is registered with Launch Services (which happens automatically once you move it to `/Applications` and launch it once, or manually with `lsregister`), macOS stops warning that it does not know whether doc2md can open Markdown, and doc2md appears in the Finder `Open With` menu for those files.
+
+Double-click, right-click `Open With` then doc2md, and drag-onto-icon all open the file and load its content into the editor. This works on a cold launch (when doc2md is not already running) and when doc2md is already open; an already-running app brings its existing window forward instead of opening a second window. Multiple files dragged at once open in order, and the last successfully opened Markdown file becomes the active document. doc2md is declared for Markdown only and is not a Finder-open handler for any binary or import-source format.
+
+### Make doc2md the Default Markdown App
+
+macOS does not switch the default app for you. To open Markdown files in doc2md by double-clicking:
+
+1. Select a `.md` file in Finder.
+2. Choose `File` then `Get Info`, or press `Command I`.
+3. Under `Open With`, choose doc2md.
+4. Click `Change All...` so every `.md` file opens in doc2md.
+5. Repeat the same steps for a `.markdown` file if you use that extension; macOS tracks the two extensions separately.
+
+doc2md never changes the system default for you. On first launch it shows a one-time hint with these steps and a `Don't show again` checkbox. The same instructions are always available under `Help` then `How to Make doc2md the Default Markdown App`.
+
 ## Desktop Persistence
 
 The settings popover is rendered only when the version-2 Mac bridge is available. Hosted web builds do not show the control and do not read or write browser storage for this feature.
