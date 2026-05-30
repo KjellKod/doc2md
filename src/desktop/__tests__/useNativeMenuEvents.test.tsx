@@ -4,9 +4,11 @@ import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   NATIVE_MENU_EVENTS,
+  WEB_SHELL_READY_EVENT,
   useNativeMenuEvents,
   type NativeMenuHandlers,
 } from "../useNativeMenuEvents";
+import type { ShellFile, ShellResult } from "../../types/doc2mdShell";
 
 function NativeMenuProbe({ handlers }: { handlers: NativeMenuHandlers }) {
   useNativeMenuEvents(handlers);
@@ -98,5 +100,93 @@ describe("useNativeMenuEvents", () => {
     unmount();
 
     expect(countNativeRemoves()).toBe(nativeEventNames.size);
+  });
+
+  it("dispatches a web-shell-ready event after native listeners are registered", () => {
+    const readyListener = vi.fn();
+    window.addEventListener(WEB_SHELL_READY_EVENT, readyListener);
+
+    try {
+      render(<NativeMenuProbe handlers={{}} />);
+      expect(readyListener).toHaveBeenCalledTimes(1);
+    } finally {
+      window.removeEventListener(WEB_SHELL_READY_EVENT, readyListener);
+    }
+  });
+
+  it("posts shell readiness to the native message handler when present", () => {
+    const postMessage = vi.fn();
+    (
+      window as unknown as {
+        webkit?: {
+          messageHandlers?: { doc2mdShellReady?: { postMessage: typeof postMessage } };
+        };
+      }
+    ).webkit = { messageHandlers: { doc2mdShellReady: { postMessage } } };
+
+    try {
+      render(<NativeMenuProbe handlers={{}} />);
+      expect(postMessage).toHaveBeenCalledTimes(1);
+      expect(postMessage).toHaveBeenCalledWith({
+        event: WEB_SHELL_READY_EVENT,
+        version: 1,
+      });
+    } finally {
+      delete (window as unknown as { webkit?: unknown }).webkit;
+    }
+  });
+
+  it("passes external-open event detail to the handler", () => {
+    const onExternalOpen = vi.fn();
+    const handlers: NativeMenuHandlers = { onExternalOpen };
+    render(<NativeMenuProbe handlers={handlers} />);
+
+    const result: ShellResult<ShellFile> = {
+      ok: true,
+      kind: "markdown",
+      path: "/Users/me/External.md",
+      content: "# External",
+      mtimeMs: 5,
+      lineEnding: "lf",
+    };
+    window.dispatchEvent(
+      new CustomEvent(NATIVE_MENU_EVENTS.externalOpen, { detail: result }),
+    );
+
+    expect(onExternalOpen).toHaveBeenCalledTimes(1);
+    expect(onExternalOpen).toHaveBeenCalledWith(result);
+  });
+
+  it("delivers an external open immediately after readiness emits on first mount", () => {
+    const onExternalOpen = vi.fn();
+    let dispatchedDuringReady: ShellResult<ShellFile> | null = null;
+    const result: ShellResult<ShellFile> = {
+      ok: true,
+      kind: "markdown",
+      path: "/Users/me/AfterReady.md",
+      content: "# After ready",
+      mtimeMs: 6,
+      lineEnding: "lf",
+    };
+
+    // Simulate the native side reacting to readiness by immediately dispatching
+    // an external open, exercising the handler-ref freshness path on first mount.
+    const readyListener = () => {
+      dispatchedDuringReady = result;
+      window.dispatchEvent(
+        new CustomEvent(NATIVE_MENU_EVENTS.externalOpen, { detail: result }),
+      );
+    };
+    window.addEventListener(WEB_SHELL_READY_EVENT, readyListener);
+
+    try {
+      render(<NativeMenuProbe handlers={{ onExternalOpen }} />);
+    } finally {
+      window.removeEventListener(WEB_SHELL_READY_EVENT, readyListener);
+    }
+
+    expect(dispatchedDuringReady).toBe(result);
+    expect(onExternalOpen).toHaveBeenCalledTimes(1);
+    expect(onExternalOpen).toHaveBeenCalledWith(result);
   });
 });

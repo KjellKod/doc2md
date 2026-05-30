@@ -247,7 +247,16 @@ function DesktopMenuEventBridge({
 }) {
   useNativeMenuEvents(handlers);
 
-  return <span data-testid="desktop-menu-bridge" hidden />;
+  // Always-mounted readiness marker. Unlike the desktop status bar, this is
+  // independent of any selected document, so an empty cold launch still
+  // signals that the desktop bridge (and its native listeners) are live.
+  return (
+    <span
+      data-testid="desktop-menu-bridge"
+      data-doc2md-shell-ready="true"
+      hidden
+    />
+  );
 }
 
 // Combined per-document UI memory: dragged panel height (null = auto) plus the
@@ -357,6 +366,12 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
   const sessionRestoreStartedRef = useRef(false);
   const sessionRestoreInFlightRef = useRef(false);
   const sessionRestoreCompletedRef = useRef(false);
+  // Set when an external Finder open arrives before restore finishes. Restore
+  // still adds its entries and completes its bookkeeping, but the external
+  // entry id below stays the selected document so the explicit external open
+  // wins regardless of arrival timing relative to the restore loop.
+  const externalOpenDuringRestoreRef = useRef(false);
+  const externalOpenSelectedEntryIdRef = useRef<string | null>(null);
   const sessionSyncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
@@ -1332,6 +1347,34 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     selectEntryRef.current = selectEntry;
   }, [handleOpenFileResult, selectEntry]);
 
+  // Finder / Open With / drag-onto-icon results, delivered by the native
+  // ExternalOpenRouter as a doc2md:native-external-open event. Unlike File >
+  // Open, this explicitly selects the opened entry so the externally opened
+  // file becomes the active document.
+  const handleExternalOpen = useCallback(
+    async (result: ShellResult<ShellFile>) => {
+      // If restore has not finished yet (it may not have started, or be
+      // in flight), flag that the external open wins selection. Restore adds
+      // its entries via addMarkdownEntry (which deselects all), so the restore
+      // loop re-selects this external entry instead of any restored one.
+      const winsOverRestore = !sessionRestoreCompletedRef.current;
+      if (winsOverRestore) {
+        externalOpenDuringRestoreRef.current = true;
+      }
+
+      const entryId = await handleOpenFileResult(result);
+      if (entryId) {
+        if (winsOverRestore) {
+          externalOpenSelectedEntryIdRef.current = entryId;
+        }
+        selectEntry(entryId);
+        setActivePage("convert");
+        setShowLandingChrome(false);
+      }
+    },
+    [handleOpenFileResult, selectEntry],
+  );
+
   const handleOpenFile = useCallback(async () => {
     if (!shell) {
       return;
@@ -1485,7 +1528,16 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
           );
         const fallbackRestoredEntry = restoredEntries[0];
         const entryToSelect = selectedRestoredEntry ?? fallbackRestoredEntry;
-        if (entryToSelect) {
+        // An external Finder open that arrived before restore finished wins the
+        // selection. Restore still added its entries above, but addMarkdownEntry
+        // deselects all, so re-select the external entry rather than a restored
+        // one. Otherwise, select the restored entry as usual.
+        if (externalOpenDuringRestoreRef.current) {
+          const externalEntryId = externalOpenSelectedEntryIdRef.current;
+          if (externalEntryId) {
+            selectEntryRef.current(externalEntryId);
+          }
+        } else if (entryToSelect) {
           selectEntryRef.current(entryToSelect.entryId);
         }
         restoreCompleted = true;
@@ -2333,6 +2385,9 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
       } else {
         saveState.reset();
       }
+    },
+    onExternalOpen: (result: ShellResult<ShellFile>) => {
+      void handleExternalOpen(result);
     },
   };
   const workingModeRecentFiles =
