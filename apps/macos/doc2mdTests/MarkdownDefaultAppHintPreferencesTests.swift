@@ -71,6 +71,32 @@ final class MarkdownDefaultAppHintPreferencesTests: XCTestCase {
         XCTAssertFalse(preferences.hasDismissedHint)
     }
 
+    func testHelpOffersReEnableWhenPreviouslyDismissed() {
+        let preferences = MarkdownDefaultAppHintPreferences(defaults: defaults)
+        preferences.hasDismissedHint = true
+        let controller = MarkdownDefaultAppHelpController(preferences: preferences)
+
+        controller.presentHelp()
+        XCTAssertTrue(controller.currentPresentationOffersReEnable)
+        XCTAssertFalse(controller.currentPresentationShowsDontShowAgain)
+
+        // Turning the reminder back on clears the dismissed flag, so it is not a
+        // one-way door.
+        controller.setStartupHintEnabled(true)
+        XCTAssertFalse(
+            MarkdownDefaultAppHintPreferences(defaults: defaults).hasDismissedHint
+        )
+    }
+
+    func testHelpDoesNotOfferReEnableWhenNotDismissed() {
+        let preferences = MarkdownDefaultAppHintPreferences(defaults: defaults)
+        let controller = MarkdownDefaultAppHelpController(preferences: preferences)
+
+        controller.presentHelp()
+        XCTAssertFalse(controller.currentPresentationOffersReEnable)
+        XCTAssertFalse(controller.currentPresentationShowsDontShowAgain)
+    }
+
     private func closeHelpWindows() {
         for window in NSApp.windows where window.title == "Default Markdown App" {
             window.close()

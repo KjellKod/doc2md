@@ -22,23 +22,27 @@ struct MarkdownDefaultAppHintPreferences {
 }
 
 // The instructions are identical whether shown as the first-run hint or via the
-// always-available Help menu item. Only the first-run presentation offers the
-// "Don't show again" control.
+// always-available Help menu item. An optional checkbox sits beneath them: the
+// first-run hint uses it as "Don't show this again"; the Help menu uses it as
+// "Show this reminder at startup" only when the hint was previously dismissed,
+// giving users a way to turn the reminder back on. Nil means no checkbox (Help
+// when the reminder is still enabled, which is purely informational).
 struct MarkdownDefaultAppHelpView: View {
-    let showsDontShowAgain: Bool
+    struct CheckboxConfig {
+        let title: String
+        let initialOn: Bool
+        let onChange: (Bool) -> Void
+    }
+
+    let checkbox: CheckboxConfig?
     let onClose: () -> Void
 
-    @State private var dontShowAgain = false
-    private let onDontShowAgainChange: (Bool) -> Void
+    @State private var isChecked: Bool
 
-    init(
-        showsDontShowAgain: Bool,
-        onDontShowAgainChange: @escaping (Bool) -> Void = { _ in },
-        onClose: @escaping () -> Void
-    ) {
-        self.showsDontShowAgain = showsDontShowAgain
-        self.onDontShowAgainChange = onDontShowAgainChange
+    init(checkbox: CheckboxConfig?, onClose: @escaping () -> Void) {
+        self.checkbox = checkbox
         self.onClose = onClose
+        _isChecked = State(initialValue: checkbox?.initialOn ?? false)
     }
 
     var body: some View {
@@ -58,10 +62,10 @@ struct MarkdownDefaultAppHelpView: View {
                 instruction(5, "Repeat for .markdown files if you use that extension.")
             }
 
-            if showsDontShowAgain {
-                Toggle("Don't show this again", isOn: $dontShowAgain)
-                    .onChange(of: dontShowAgain) { newValue in
-                        onDontShowAgainChange(newValue)
+            if let checkbox {
+                Toggle(checkbox.title, isOn: $isChecked)
+                    .onChange(of: isChecked) { newValue in
+                        checkbox.onChange(newValue)
                     }
             }
 
@@ -92,6 +96,10 @@ final class MarkdownDefaultAppHelpController {
     private var preferences: MarkdownDefaultAppHintPreferences
     private var windowController: NSWindowController?
     private(set) var currentPresentationShowsDontShowAgain = false
+    // True only for the Help presentation when the reminder was previously
+    // dismissed, i.e. when the dialog offers the "Show this reminder at startup"
+    // escape hatch back to the enabled state.
+    private(set) var currentPresentationOffersReEnable = false
     // The first-run hint is evaluated at most once per launch. Opening another
     // file in an already-running app fires the main window's onAppear again;
     // that must not re-show a hint the user has already seen this session. The
@@ -116,15 +124,43 @@ final class MarkdownDefaultAppHelpController {
         }
 
         firstRunHintPresentationCount += 1
-        present(showsDontShowAgain: true)
+        currentPresentationShowsDontShowAgain = true
+        currentPresentationOffersReEnable = false
+        present(checkbox: .init(
+            title: "Don't show this again",
+            initialOn: false,
+            onChange: { [weak self] dismissed in
+                self?.preferences.hasDismissedHint = dismissed
+            }
+        ))
     }
 
-    // Help menu: always shown, no preference side effects.
+    // Help menu: always available. If the reminder was previously dismissed it
+    // offers a way to turn it back on (otherwise the first-run checkbox is a
+    // one-way door); if still enabled it is purely informational.
     func presentHelp() {
-        present(showsDontShowAgain: false)
+        currentPresentationShowsDontShowAgain = false
+        if preferences.hasDismissedHint {
+            currentPresentationOffersReEnable = true
+            present(checkbox: .init(
+                title: "Show this reminder at startup",
+                initialOn: !preferences.hasDismissedHint,
+                onChange: { [weak self] showAtStartup in
+                    self?.setStartupHintEnabled(showAtStartup)
+                }
+            ))
+        } else {
+            currentPresentationOffersReEnable = false
+            present(checkbox: nil)
+        }
     }
 
-    private func present(showsDontShowAgain: Bool) {
+    // Called by the Help dialog's "Show this reminder at startup" toggle.
+    func setStartupHintEnabled(_ enabled: Bool) {
+        preferences.hasDismissedHint = !enabled
+    }
+
+    private func present(checkbox: MarkdownDefaultAppHelpView.CheckboxConfig?) {
         let controller: NSWindowController
         if let existingController = windowController {
             controller = existingController
@@ -149,17 +185,11 @@ final class MarkdownDefaultAppHelpController {
         }
 
         let view = MarkdownDefaultAppHelpView(
-            showsDontShowAgain: showsDontShowAgain,
-            onDontShowAgainChange: { [weak self] dismissed in
-                if showsDontShowAgain {
-                    self?.preferences.hasDismissedHint = dismissed
-                }
-            },
+            checkbox: checkbox,
             onClose: { [weak controller] in
                 controller?.close()
             }
         )
-        currentPresentationShowsDontShowAgain = showsDontShowAgain
         controller.window?.contentView = NSHostingView(rootView: view)
 
         controller.showWindow(nil)
