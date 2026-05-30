@@ -47,9 +47,23 @@ final class Doc2mdAppDelegate: NSObject, NSApplicationDelegate {
     // About/License/Help windows have different titles, so this lookup targets
     // only the main shell.
     private func forwardToExistingMainWindow() {
-        NSApp.activate(ignoringOtherApps: true)
-        NSApp.windows
-            .first { $0.title == Self.mainWindowTitle && $0.canBecomeKey }?
-            .makeKeyAndOrderFront(nil)
+        let mainWindow = NSApp.windows
+            .first { $0.title == Self.mainWindowTitle && $0.canBecomeKey }
+
+        // Cooperative activation. The deprecated `activate(ignoringOtherApps:)`
+        // aggressively re-activated the app on every Finder open, which made the
+        // already-visible window blink out and back for about half a second.
+        if #available(macOS 14.0, *) {
+            NSApp.activate()
+        } else {
+            NSApp.activate(ignoringOtherApps: true)
+        }
+
+        // Only re-order the window when it is not already key. Calling
+        // makeKeyAndOrderFront on the frontmost window every open is what we were
+        // doing, and it is unnecessary churn; an already-key window is left be.
+        if let mainWindow, !mainWindow.isKeyWindow {
+            mainWindow.makeKeyAndOrderFront(nil)
+        }
     }
 }
