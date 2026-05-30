@@ -1832,6 +1832,7 @@ body.is-height-resizing * {
 }
 
 .find-entry-button,
+.format-download-button,
 .find-replace-icon-button,
 .find-replace-option,
 .find-replace-action-button {
@@ -1853,13 +1854,34 @@ body.is-height-resizing * {
     transform 160ms ease;
 }
 
+.find-entry-button,
+.format-download-button {
+  padding: 0;
+}
+
 .find-entry-button {
   gap: 8px;
-  padding: 0 14px;
+  padding-inline: 14px;
+}
+
+.format-download-actions {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 6px;
+}
+
+.format-download-button {
+  position: relative;
+  width: 48px;
+  height: 44px;
+  color: var(--text-secondary);
 }
 
 .find-entry-button:hover,
 .find-entry-button:focus-visible,
+.format-download-button:hover:not(:disabled),
+.format-download-button:focus-visible,
 .find-replace-icon-button:hover:not(:disabled),
 .find-replace-icon-button:focus-visible,
 .find-replace-option:hover,
@@ -1872,6 +1894,7 @@ body.is-height-resizing * {
 }
 
 .find-entry-button:focus-visible,
+.format-download-button:focus-visible,
 .find-replace-icon-button:focus-visible,
 .find-replace-option:focus-visible,
 .find-replace-action-button:focus-visible,
@@ -1880,7 +1903,13 @@ body.is-height-resizing * {
   outline-offset: 2px;
 }
 
+.format-download-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .find-entry-button:active,
+.format-download-button:active:not(:disabled),
 .find-replace-icon-button:active:not(:disabled),
 .find-replace-option:active,
 .find-replace-action-button:active:not(:disabled) {
@@ -1888,6 +1917,7 @@ body.is-height-resizing * {
 }
 
 .find-entry-icon,
+.format-download-icon,
 .shortcut-reference-icon,
 .find-replace-icon-button svg,
 .find-replace-option svg,
@@ -1895,6 +1925,23 @@ body.is-height-resizing * {
   width: 1rem;
   height: 1rem;
   flex-shrink: 0;
+}
+
+.format-download-badge {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  min-width: 1.35rem;
+  padding: 1px 3px;
+  border: 1px solid rgba(23, 56, 76, 0.14);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--accent);
+  font-size: 0.5rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1;
+  text-align: center;
 }
 
 .find-entry-label {
@@ -2995,6 +3042,7 @@ body.is-height-resizing * {
 }
 
 :root[data-theme="dark"] .find-entry-button,
+:root[data-theme="dark"] .format-download-button,
 :root[data-theme="dark"] .find-replace-icon-button,
 :root[data-theme="dark"] .find-replace-option,
 :root[data-theme="dark"] .find-replace-action-button,
@@ -3022,6 +3070,8 @@ body.is-height-resizing * {
 
 :root[data-theme="dark"] .find-entry-button:hover,
 :root[data-theme="dark"] .find-entry-button:focus-visible,
+:root[data-theme="dark"] .format-download-button:hover:not(:disabled),
+:root[data-theme="dark"] .format-download-button:focus-visible,
 :root[data-theme="dark"] .shortcut-reference-button:hover,
 :root[data-theme="dark"] .shortcut-reference-button:focus-visible,
 :root[data-theme="dark"] .find-replace-icon-button:hover:not(:disabled),
@@ -3033,6 +3083,12 @@ body.is-height-resizing * {
   border-color: rgba(137, 199, 229, 0.3);
   background: rgba(29, 34, 41, 0.96);
   color: #edf3f8;
+}
+
+:root[data-theme="dark"] .format-download-badge {
+  border-color: rgba(204, 214, 223, 0.18);
+  background: rgba(12, 15, 19, 0.94);
+  color: var(--accent);
 }
 
 :root[data-theme="dark"] .find-replace-option.is-active {

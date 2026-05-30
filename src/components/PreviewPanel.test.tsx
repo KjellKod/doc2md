@@ -183,7 +183,7 @@ describe("PreviewPanel", () => {
       name: "Keyboard shortcuts",
     });
     expect(shortcutsButton).toHaveClass("shortcut-reference-button");
-    expect(shortcutsButton).toHaveAttribute("title", "Keyboard shortcuts");
+    expect(shortcutsButton).not.toHaveAttribute("title");
     expect(shortcutsButton).toHaveTextContent("");
 
     fireEvent.click(shortcutsButton);
@@ -1783,5 +1783,105 @@ describe("PreviewPanel", () => {
     }) as HTMLTextAreaElement;
     expect(restored.selectionStart).toBe(7);
     expect(restored.selectionEnd).toBe(7);
+  });
+});
+
+describe("PreviewPanel format download buttons", () => {
+  it("renders Markdown and HTML download buttons beside Save", () => {
+    render(
+      <PreviewPanel
+        entry={createEntry()}
+        onSave={vi.fn()}
+        onDownloadMarkdown={vi.fn()}
+        onExportHtml={vi.fn()}
+      />,
+    );
+
+    const saveButton = screen.getByRole("button", { name: "Save document" });
+    const markdownButton = screen.getByRole("button", {
+      name: "Download Markdown",
+    });
+    const htmlButton = screen.getByRole("button", { name: "Download HTML" });
+    expect(markdownButton).toBeInTheDocument();
+    expect(htmlButton).toBeInTheDocument();
+    expect(screen.getByText("MD")).toBeInTheDocument();
+    expect(screen.getByText("HTML")).toBeInTheDocument();
+    expect(screen.getByText("Download Markdown")).toHaveAttribute(
+      "role",
+      "tooltip",
+    );
+    expect(screen.getByText("Download HTML")).toHaveAttribute(
+      "role",
+      "tooltip",
+    );
+    expect(htmlButton).not.toHaveAttribute("title");
+    // Placement: Save comes before the format downloads in DOM order.
+    expect(
+      saveButton.compareDocumentPosition(markdownButton) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("does not render format download buttons when no handlers are provided", () => {
+    render(<PreviewPanel entry={createEntry()} onSave={vi.fn()} />);
+    expect(
+      screen.queryByRole("button", { name: "Download Markdown" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Download HTML" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("invokes the format download handlers on click", () => {
+    const onDownloadMarkdown = vi.fn();
+    const onExportHtml = vi.fn();
+    render(
+      <PreviewPanel
+        entry={createEntry()}
+        onDownloadMarkdown={onDownloadMarkdown}
+        onExportHtml={onExportHtml}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Download Markdown" }));
+    fireEvent.click(screen.getByRole("button", { name: "Download HTML" }));
+    expect(onDownloadMarkdown).toHaveBeenCalledTimes(1);
+    expect(onExportHtml).toHaveBeenCalledTimes(1);
+  });
+
+  it("disables the HTML download button when exportHtmlDisabled is set", () => {
+    render(
+      <PreviewPanel
+        entry={createEntry()}
+        onExportHtml={vi.fn()}
+        exportHtmlDisabled
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Download HTML" })).toBeDisabled();
+  });
+
+  it("disables the Markdown download button when downloadMarkdownDisabled is set", () => {
+    render(
+      <PreviewPanel
+        entry={createEntry()}
+        onDownloadMarkdown={vi.fn()}
+        downloadMarkdownDisabled
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: "Download Markdown" }),
+    ).toBeDisabled();
+  });
+
+  it("disables and marks busy while exporting", () => {
+    render(
+      <PreviewPanel
+        entry={createEntry()}
+        onExportHtml={vi.fn()}
+        exportHtmlBusy
+      />,
+    );
+    const button = screen.getByRole("button", { name: "Download HTML" });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-busy", "true");
   });
 });

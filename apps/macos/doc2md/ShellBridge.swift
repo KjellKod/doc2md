@@ -41,10 +41,18 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
         let path: String?
     }
 
+    private enum SaveFormat: String, Codable {
+        case markdown
+        case html
+    }
+
     private struct SaveFileAsArgs: Codable {
         let suggestedName: String
         let content: String
         let lineEnding: ShellLineEnding
+        // Optional, additive. Absent decodes to Markdown so existing Save As
+        // behavior is unchanged.
+        let format: SaveFormat?
     }
 
     private struct RevealInFinderArgs: Codable {
@@ -265,6 +273,12 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
     private func handleSaveFileAs(_ message: BridgeMessage) {
         do {
             let args = try Self.decode(SaveFileAsArgs.self, from: message.args)
+
+            if args.format == .html {
+                try handleSaveFileAsHtml(message: message, args: args)
+                return
+            }
+
             let panel = NSSavePanel()
             panel.nameFieldStringValue = args.suggestedName
             panel.directoryURL = lastDirectoryURL
@@ -293,6 +307,40 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
         } catch {
             resolve(id: message.id, result: Self.response(for: error))
         }
+    }
+
+    // HTML export save-as. Deliberately skips every Markdown-only side effect
+    // so exporting HTML cannot corrupt the active Markdown document's state:
+    //   - no validateMarkdownSaveTarget (uses the HTML validator instead)
+    //   - no remember(url:)        — the .html file is not an editable doc
+    //   - no recordRecentDocumentIfEnabled — HTML is not a recent Markdown doc
+    //   - no licenseReminderController.recordSuccessfulSave — not a Markdown save
+    private func handleSaveFileAsHtml(message: BridgeMessage, args: SaveFileAsArgs) throws {
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = args.suggestedName
+        panel.directoryURL = lastDirectoryURL
+        panel.allowedContentTypes = Self.htmlSaveContentTypes
+        panel.canCreateDirectories = true
+
+        guard panel.runModal() == .OK else {
+            throw FileStoreError.cancelled
+        }
+
+        let url = try FileStore.selectedURL(from: panel.url)
+        try FileStore.validateHtmlSaveTarget(url: url)
+        let result = try withSecurityScope(for: url) {
+            try fileStore.saveAs(
+                url: url,
+                content: args.content,
+                lineEnding: args.lineEnding,
+                validate: FileStore.validateHtmlSaveTarget
+            )
+        }
+
+        // Only update the last-used directory; do NOT remember the path as an
+        // editable Markdown target or record it in recents.
+        rememberLastDirectory(from: url)
+        resolve(id: message.id, result: ShellCallResult.save(result))
     }
 
     private func handleRevealInFinder(_ message: BridgeMessage) {
@@ -627,6 +675,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
     private static let allSupportedOpenExtensions = Set(SupportedFormats.allSupportedExtensions)
     private static let openContentTypes = contentTypes(forExtensions: SupportedFormats.allSupportedExtensions)
     private static let saveContentTypes = contentTypes(forExtensions: [FileStore.markdownSaveExtension])
+    private static let htmlSaveContentTypes = contentTypes(forExtensions: [FileStore.htmlSaveExtension])
 
     private static func contentTypes(forExtensions extensions: [String]) -> [UTType] {
         var seenIdentifiers = Set<String>()

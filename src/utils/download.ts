@@ -10,6 +10,33 @@ export function createMarkdownFileName(fileName: string) {
   return `${fileName.slice(0, dotIndex)}.md`;
 }
 
+export function createHtmlFileName(fileName: string) {
+  const dotIndex = fileName.lastIndexOf(".");
+
+  if (dotIndex <= 0) {
+    return `${fileName}.html`;
+  }
+
+  return `${fileName.slice(0, dotIndex)}.html`;
+}
+
+export function downloadHtmlFile(fileName: string, html: string) {
+  const htmlBlob = new globalThis.Blob([html], {
+    type: "text/html;charset=utf-8",
+  });
+  const objectUrl = globalThis.URL.createObjectURL(htmlBlob);
+  const link = document.createElement("a");
+
+  link.href = objectUrl;
+  link.download = createHtmlFileName(fileName);
+  document.body.append(link);
+  link.click();
+  setTimeout(() => {
+    link.remove();
+    globalThis.URL.revokeObjectURL(objectUrl);
+  }, 1000);
+}
+
 export function isDownloadableEntry(
   entry: FileEntry | null | undefined,
 ): entry is FileEntry {

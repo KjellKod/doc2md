@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { FileEntry } from "../types";
-import { downloadEntry, isDownloadableEntry } from "./download";
+import {
+  createHtmlFileName,
+  downloadEntry,
+  downloadHtmlFile,
+  isDownloadableEntry,
+} from "./download";
 
 function createEntry(overrides: Partial<FileEntry> = {}): FileEntry {
   return {
@@ -120,5 +125,72 @@ describe("downloadEntry", () => {
         }),
       ),
     ).toBe(true);
+  });
+});
+
+describe("createHtmlFileName", () => {
+  it("swaps the extension to .html", () => {
+    expect(createHtmlFileName("report.pdf")).toBe("report.html");
+    expect(createHtmlFileName("notes.md")).toBe("notes.html");
+  });
+
+  it("appends .html when there is no extension", () => {
+    expect(createHtmlFileName("Untitled")).toBe("Untitled.html");
+  });
+
+  it("does not treat a leading-dot name as an extension", () => {
+    expect(createHtmlFileName(".env")).toBe(".env.html");
+  });
+});
+
+describe("downloadHtmlFile", () => {
+  let capturedContent: string[];
+  let capturedTypes: (string | undefined)[];
+  let OriginalBlob: typeof Blob;
+  const mockLink = {
+    href: "",
+    download: "",
+    click: vi.fn(),
+    remove: vi.fn(),
+  };
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    capturedContent = [];
+    capturedTypes = [];
+    OriginalBlob = globalThis.Blob;
+
+    globalThis.Blob = class extends OriginalBlob {
+      constructor(parts: BlobPart[], options?: BlobPropertyBag) {
+        super(parts, options);
+        capturedContent.push(parts.map(String).join(""));
+        capturedTypes.push(options?.type);
+      }
+    } as typeof Blob;
+
+    globalThis.URL.createObjectURL = vi.fn(() => "blob:mock-url");
+    globalThis.URL.revokeObjectURL = vi.fn();
+
+    vi.spyOn(document, "createElement").mockReturnValue(
+      mockLink as unknown as HTMLAnchorElement,
+    );
+    vi.spyOn(document.body, "append").mockImplementation(
+      () => mockLink as unknown as HTMLAnchorElement,
+    );
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    globalThis.Blob = OriginalBlob;
+    vi.restoreAllMocks();
+  });
+
+  it("downloads an html blob with the html MIME type and .html filename", () => {
+    downloadHtmlFile("report.pdf", "<!DOCTYPE html><html></html>");
+
+    expect(capturedContent).toEqual(["<!DOCTYPE html><html></html>"]);
+    expect(capturedTypes).toEqual(["text/html;charset=utf-8"]);
+    expect(mockLink.download).toBe("report.html");
+    expect(mockLink.click).toHaveBeenCalled();
   });
 });

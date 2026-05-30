@@ -1,23 +1,46 @@
 import { convertFile, getFileExtension, isSupportedFormat, UNSUPPORTED_FILE_MESSAGE } from "../../../src/converters";
 import type { ConversionResult } from "../../../src/converters/types";
-import { createInputFile, writeMarkdownOutput } from "./io";
+import { markdownToHtml } from "../../../src/render/markdownToHtml";
+import { createInputFile, writeConversionOutput } from "./io";
+import type { DocumentOutputPaths } from "./types";
 import { createInputFileFromUrl, isRemoteUrl } from "./remoteDocument";
-import type { BatchResult, ConvertOptions, DocumentResult } from "./types";
+import type { BatchResult, ConvertOptions, DocumentResult, OutputFormat } from "./types";
 import { BatchLimitExceededError } from "./types";
 
 function now() {
   return Date.now();
 }
 
+function deriveTitle(fileName: string) {
+  const base = fileName.replace(/\.[^.]+$/, "");
+  return base.trim() || fileName;
+}
+
+function normalizeOutputFormat(format: unknown): OutputFormat {
+  if (format === undefined) {
+    return "md";
+  }
+
+  if (format === "md" || format === "html" || format === "both") {
+    return format;
+  }
+
+  throw new Error(
+    `Invalid value for format: expected one of md, html, both, got "${String(format)}".`
+  );
+}
+
 function toDocumentResult(
   inputPath: string,
   outputPath: string | null,
+  outputPaths: DocumentOutputPaths | undefined,
   result: ConversionResult,
   durationMs: number
 ): DocumentResult {
   return {
     inputPath,
     outputPath,
+    outputPaths,
     status: result.status,
     warnings: result.warnings,
     quality: result.quality,
@@ -59,6 +82,7 @@ export async function convertOneDocument(
   const remoteInput = isRemoteUrl(inputPath);
 
   try {
+    const format = normalizeOutputFormat(options.format);
     let file: File;
 
     if (remoteInput) {
@@ -96,16 +120,32 @@ export async function convertOneDocument(
     const result = await convertFile(file);
 
     if (result.status === "error") {
-      return toDocumentResult(inputPath, null, result, now() - startedAt);
+      return toDocumentResult(inputPath, null, undefined, result, now() - startedAt);
     }
 
-    const outputPath = await writeMarkdownOutput(
-      options.outputDir,
-      file.name,
-      result.markdown
-    );
+    const html =
+      format === "md"
+        ? undefined
+        : markdownToHtml(result.markdown, {
+            standalone: true,
+            title: deriveTitle(file.name)
+          });
 
-    return toDocumentResult(inputPath, outputPath, result, now() - startedAt);
+    const { outputPath, outputPaths } = await writeConversionOutput({
+      outputDir: options.outputDir,
+      inputName: file.name,
+      format,
+      markdown: result.markdown,
+      html
+    });
+
+    return toDocumentResult(
+      inputPath,
+      outputPath,
+      outputPaths,
+      result,
+      now() - startedAt
+    );
   } catch (error) {
     return toThrownDocumentResult(inputPath, error, now() - startedAt);
   }

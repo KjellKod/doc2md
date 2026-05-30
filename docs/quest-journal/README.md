@@ -2,6 +2,7 @@
 
 | Date | Quest | Outcome |
 |------|-------|---------|
+| 2026-05-29 | [html-export](html-export_2026-05-29.md) | One shared markdownToHtml() (remark/rehype, not marked) consumed by the app and @doc2md/core; quiet Export HTML button (web blob + desktop save-as), CLI --format md\|html\|both, load-bearing parity guard. Platinum, 1 plan iteration, 0 fix passes; unrelated Mac-P12 work preserved on save/ and rebased out for an HTML-only PR. |
 | 2026-05-26 | [mobile-real-device-fix](mobile-real-device-fix_2026-05-26.md) | The recent mobile layout branch improved responsive CSS and added viewport-size Playwright tests, but the real phone ... |
 | 2026-05-23 | [paste-router-fix](paste-router-fix_2026-05-23.md) | Implement a narrow paste-router fix, not a converter rewrite. The upload path already works because it sends the full... |
 | 2026-05-15 | [paste-to-markdown](paste-to-markdown_2026-05-15.md) | Implement ideas/paste-to-markdown-in-editor.md. Keep scope tight: intercept paste in the edit textarea, convert Linke... |

@@ -125,4 +125,52 @@ describe("convertDocuments", () => {
     expect(result.results[1].error).toContain("timed out");
     expect(result.summary.failed).toBe(1);
   });
+
+  it("writes coherent paired outputs for format both over duplicate basenames", async () => {
+    const outputDir = await createTempDir("doc2md-core-batch-both-");
+    // persona_test.txt and persona_test.docx share the basename
+    // "persona_test", which forces the suffix-pairing path under concurrency.
+    const result = await convertDocuments(
+      [fixturePath("persona_test.txt"), fixturePath("persona_test.docx")],
+      { outputDir, format: "both", concurrency: 2 }
+    );
+
+    const written = result.results.filter(
+      (entry) => entry.status === "success" || entry.status === "warning"
+    );
+    expect(written.length).toBe(2);
+
+    for (const entry of written) {
+      expect(entry.outputPaths?.md?.endsWith(".md")).toBe(true);
+      expect(entry.outputPaths?.html?.endsWith(".html")).toBe(true);
+      // Each document's .md and .html share one suffix stem.
+      const mdStem = path.basename(entry.outputPaths!.md!, ".md");
+      const htmlStem = path.basename(entry.outputPaths!.html!, ".html");
+      expect(mdStem).toBe(htmlStem);
+      // Backward-compatible outputPath is the Markdown path.
+      expect(entry.outputPath).toBe(entry.outputPaths!.md);
+    }
+
+    const stems = written.map((entry) =>
+      path.basename(entry.outputPaths!.md!, ".md")
+    );
+    expect(new Set(stems).size).toBe(2);
+  });
+
+  it("returns a clear error for invalid runtime output formats", async () => {
+    const outputDir = await createTempDir("doc2md-core-batch-format-");
+    const result = await convertDocuments([fixturePath("sample.txt")], {
+      outputDir,
+      format: "pdf"
+    } as Parameters<typeof convertDocuments>[1]);
+
+    expect(result.results).toHaveLength(1);
+    expect(result.results[0].status).toBe("error");
+    expect(result.results[0].outputPath).toBeNull();
+    expect(result.results[0].error).toBe(
+      'Invalid value for format: expected one of md, html, both, got "pdf".'
+    );
+    expect(await pathExists(`${outputDir}/sample.md`)).toBe(false);
+    expect(await pathExists(`${outputDir}/sample.html`)).toBe(false);
+  });
 });

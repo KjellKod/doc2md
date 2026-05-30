@@ -6,6 +6,7 @@ For the other perspective, see [Jean-Claude's Journal](../journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 050 | [HTML Export](050-html-export.md) | One renderer for preview and export, plus one branch-contamination lesson the process should remember |
 | 049 | [Requiem: Mobile Real Device Fix](049-requiem-mobile-real-device-fix.md) | Burying stale mobile deploy evidence, desktop-only phone confidence, and unconditional editor autofocus while adding Pixel 7 and iPhone WebKit CI coverage |
 | 048 | [Paste Router Fix](048-paste-router-fix.md) | Keeping the private repro private while teaching the clipboard router to distrust partial HTML and respect meaningful rich HTML |
 | 047 | [Requiem: AppShell Dedup Phase 2](047-requiem-appshell-dedup-phase-2.md) | Burying the App.tsx and DesktopApp.tsx duplication, the two shells pretending not to be the same organism, and the desktop geometry that had to settle for jsdom equivalence |

@@ -107,6 +107,11 @@ export interface SaveFileAsArgs {
   suggestedName: string;
   content: string;
   lineEnding: ShellLineEnding;
+  // Optional, additive. Defaults to "markdown" so existing Markdown Save As
+  // behavior is unchanged. "html" routes the native save-as to an .html
+  // panel and skips all Markdown-only side effects (target validation,
+  // remember, recents, license counter).
+  format?: "markdown" | "html";
 }
 
 export interface RevealInFinderArgs {

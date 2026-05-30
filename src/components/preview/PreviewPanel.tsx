@@ -34,11 +34,16 @@ export interface PreviewPanelProps {
   onEditorViewStateChange?: (id: string, state: EditorViewState) => void;
   onMarkdownChange?: (markdown: string) => void;
   onSave?: () => void | Promise<void>;
+  onDownloadMarkdown?: () => void | Promise<void>;
+  downloadMarkdownDisabled?: boolean;
   saveBusy?: boolean;
   saveDisabled?: boolean;
   saveKeyShortcuts?: string;
   saveState?: SaveState;
   lastSavedAt?: number | null;
+  onExportHtml?: () => void | Promise<void>;
+  exportHtmlBusy?: boolean;
+  exportHtmlDisabled?: boolean;
   onStartWriting?: () => void;
   onNewDocument?: () => void;
   editorFocusRequest?: { id: number; target: "editor" };
@@ -51,11 +56,16 @@ export default function PreviewPanel({
   onEditorViewStateChange,
   onMarkdownChange,
   onSave,
+  onDownloadMarkdown,
+  downloadMarkdownDisabled = false,
   saveBusy = false,
   saveDisabled = false,
   saveKeyShortcuts,
   saveState = "saved",
   lastSavedAt = null,
+  onExportHtml,
+  exportHtmlBusy = false,
+  exportHtmlDisabled = false,
   onStartWriting,
   onNewDocument,
   editorFocusRequest,
@@ -351,11 +361,16 @@ export default function PreviewPanel({
         showToggle={showToggle}
         showCopyButton={showCopyButton}
         onSave={onSave}
+        onDownloadMarkdown={onDownloadMarkdown}
+        downloadMarkdownDisabled={downloadMarkdownDisabled}
         saveBusy={saveBusy}
         saveDisabled={saveDisabled}
         saveKeyShortcuts={saveKeyShortcuts}
         saveState={saveState}
         lastSavedAt={lastSavedAt}
+        onExportHtml={onExportHtml}
+        exportHtmlBusy={exportHtmlBusy}
+        exportHtmlDisabled={exportHtmlDisabled}
         onNewDocument={onNewDocument}
         onModeChange={switchMode}
         onOpenFind={() => {

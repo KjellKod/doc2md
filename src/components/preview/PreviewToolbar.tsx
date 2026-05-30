@@ -1,4 +1,4 @@
-import { FilePlus, Keyboard, Search } from "lucide-react";
+import { FileCode, FilePlus, FileText, Keyboard, Search } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import type { SaveState } from "../../types/saveState";
 import SaveButton from "../SaveButton";
@@ -13,11 +13,16 @@ interface PreviewToolbarProps {
   showToggle: boolean;
   showCopyButton: boolean;
   onSave?: () => void | Promise<void>;
+  onDownloadMarkdown?: () => void | Promise<void>;
+  downloadMarkdownDisabled?: boolean;
   saveBusy: boolean;
   saveDisabled: boolean;
   saveKeyShortcuts?: string;
   saveState: SaveState;
   lastSavedAt: number | null;
+  onExportHtml?: () => void | Promise<void>;
+  exportHtmlBusy?: boolean;
+  exportHtmlDisabled?: boolean;
   onNewDocument?: () => void;
   onModeChange: (mode: PreviewModeName) => void;
   onOpenFind: () => void;
@@ -57,17 +62,24 @@ export default function PreviewToolbar({
   showToggle,
   showCopyButton,
   onSave,
+  onDownloadMarkdown,
+  downloadMarkdownDisabled = false,
   saveBusy,
   saveDisabled,
   saveKeyShortcuts,
   saveState,
   lastSavedAt,
+  onExportHtml,
+  exportHtmlBusy = false,
+  exportHtmlDisabled = false,
   onNewDocument,
   onModeChange,
   onOpenFind,
   onCopy,
 }: PreviewToolbarProps) {
   const shortcutsPanelId = useId();
+  const downloadMarkdownTooltipId = useId();
+  const downloadHtmlTooltipId = useId();
   const shortcutsButtonRef = useRef<HTMLButtonElement | null>(null);
   const shortcutsRef = useRef<HTMLDivElement | null>(null);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
@@ -103,7 +115,7 @@ export default function PreviewToolbar({
     };
   }, [isShortcutsOpen]);
 
-  if (!showToggle && !showCopyButton && !onSave) {
+  if (!showToggle && !showCopyButton && !onSave && !onExportHtml) {
     return null;
   }
 
@@ -198,6 +210,71 @@ export default function PreviewToolbar({
             <SaveStatePill state={saveState} lastSavedAt={lastSavedAt} />
           </div>
         ) : null}
+        {onDownloadMarkdown || onExportHtml ? (
+          <div
+            className="format-download-actions"
+            role="group"
+            aria-label="Download formats"
+          >
+            {onDownloadMarkdown ? (
+              <span className="instant-tooltip-anchor">
+                <button
+                  type="button"
+                  className="ghost-button format-download-button"
+                  onClick={() => void onDownloadMarkdown()}
+                  disabled={downloadMarkdownDisabled}
+                  aria-disabled={downloadMarkdownDisabled}
+                  aria-label="Download Markdown"
+                  aria-describedby={downloadMarkdownTooltipId}
+                >
+                  <FileText
+                    className="format-download-icon"
+                    aria-hidden="true"
+                  />
+                  <span className="format-download-badge" aria-hidden="true">
+                    MD
+                  </span>
+                </button>
+                <span
+                  id={downloadMarkdownTooltipId}
+                  role="tooltip"
+                  className="instant-tooltip"
+                >
+                  Download Markdown
+                </span>
+              </span>
+            ) : null}
+            {onExportHtml ? (
+              <span className="instant-tooltip-anchor">
+                <button
+                  type="button"
+                  className="ghost-button format-download-button"
+                  onClick={() => void onExportHtml()}
+                  disabled={exportHtmlDisabled || exportHtmlBusy}
+                  aria-disabled={exportHtmlDisabled || exportHtmlBusy}
+                  aria-busy={exportHtmlBusy}
+                  aria-label="Download HTML"
+                  aria-describedby={downloadHtmlTooltipId}
+                >
+                  <FileCode
+                    className="format-download-icon"
+                    aria-hidden="true"
+                  />
+                  <span className="format-download-badge" aria-hidden="true">
+                    HTML
+                  </span>
+                </button>
+                <span
+                  id={downloadHtmlTooltipId}
+                  role="tooltip"
+                  className="instant-tooltip"
+                >
+                  Download HTML
+                </span>
+              </span>
+            ) : null}
+          </div>
+        ) : null}
         {showCopyButton ? (
           <div className="preview-actions">
             <button
@@ -239,7 +316,6 @@ export default function PreviewToolbar({
               aria-label="Keyboard shortcuts"
               aria-expanded={isShortcutsOpen}
               aria-controls={shortcutsPanelId}
-              title="Keyboard shortcuts"
             >
               <Keyboard className="shortcut-reference-icon" aria-hidden="true" />
             </button>

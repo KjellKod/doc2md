@@ -10,7 +10,7 @@
 
 ---
 
-A browser-based tool that converts documents to Markdown. Drop in a file, convert it in the browser, review the result, download `.md`. The Node package and CLI also accept direct remote URLs.
+A browser-based tool that converts documents to Markdown. Drop in a file, convert it in the browser, review the result, download `.md`, or export a single self-contained `.html` file. The Node package and CLI also accept direct remote URLs and can emit Markdown, HTML, or both (`--format md|html|both`).
 
 (_[Quest](https://github.com/KjellKod/quest/blob/main/README.md)_) Built for people entering AI-assisted workflows who need a frictionless way to turn existing documents into Markdown for tools like Claude Code, Codex, coding agents, or text-first editing.
 

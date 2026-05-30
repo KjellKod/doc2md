@@ -83,6 +83,62 @@ describe("App hosted save control", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Saved");
   });
 
+  it("exports an HTML blob with the html MIME type and an .html download name", async () => {
+    const createObjectURL = vi.fn(() => "blob:doc2md-html");
+    const revokeObjectURL = vi.fn();
+    Object.defineProperty(URL, "createObjectURL", {
+      configurable: true,
+      value: createObjectURL,
+    });
+    Object.defineProperty(URL, "revokeObjectURL", {
+      configurable: true,
+      value: revokeObjectURL,
+    });
+
+    const capturedTypes: (string | undefined)[] = [];
+    const capturedContent: string[] = [];
+    const OriginalBlob = globalThis.Blob;
+    vi.stubGlobal(
+      "Blob",
+      class extends OriginalBlob {
+        constructor(parts: BlobPart[], options?: BlobPropertyBag) {
+          super(parts, options);
+          capturedTypes.push(options?.type);
+          capturedContent.push(parts.map(String).join(""));
+        }
+      } as typeof Blob,
+    );
+
+    let capturedDownloadName = "";
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(
+      function (this: HTMLAnchorElement) {
+        capturedDownloadName = this.download;
+      },
+    );
+
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Start writing" }));
+    fireEvent.change(await screen.findByLabelText("Edit markdown"), {
+      target: { value: "# Exported\n\nFrom the browser." },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Download HTML" }));
+
+    await waitFor(() => expect(createObjectURL).toHaveBeenCalledTimes(1));
+
+    const htmlBlobIndex = capturedTypes.findIndex((type) =>
+      type?.startsWith("text/html"),
+    );
+    expect(htmlBlobIndex).toBeGreaterThanOrEqual(0);
+    expect(capturedTypes[htmlBlobIndex]).toBe("text/html;charset=utf-8");
+    expect(capturedContent[htmlBlobIndex]).toContain("<!DOCTYPE html>");
+    expect(capturedContent[htmlBlobIndex]).toContain(
+      "<h1 id=\"exported\">Exported</h1>",
+    );
+    expect(capturedDownloadName.endsWith(".html")).toBe(true);
+  });
+
   it("keeps hosted Save disabled for empty scratch drafts", async () => {
     const createObjectURL = vi.fn(() => "blob:doc2md-empty");
     Object.defineProperty(URL, "createObjectURL", {

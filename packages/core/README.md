@@ -1,6 +1,7 @@
 # `@doc2md/core`
 
-Publish-ready Node API and CLI for doc2md's document-to-Markdown converters.
+Publish-ready Node API and CLI for doc2md's document converters. Output is
+Markdown by default, and optionally a single self-contained HTML file.
 
 Use this package when you want:
 
@@ -111,8 +112,12 @@ console.log(result.outputPath);
 If `@doc2md/core` is installed in your project, run the CLI with `npx` or `npm exec`:
 
 ```bash
-npx doc2md /absolute/path/resume.pdf https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md -o /absolute/path/out --max 10 --concurrency 4 --remote-timeout-ms 30000
+npx doc2md /absolute/path/resume.pdf https://raw.githubusercontent.com/KjellKod/doc2md/refs/heads/main/README.md -o /absolute/path/out --format both --max 10 --concurrency 4 --remote-timeout-ms 30000
 ```
+
+`-o` is always an output **directory**. `--format` accepts `md` (default),
+`html`, or `both`, controlling whether `name.md`, `name.html`, or both are
+written into that directory.
 
 Equivalent `npm exec` form:
 
@@ -136,12 +141,13 @@ npx doc2md /absolute/path/a.pdf /absolute/path/b.docx -o /absolute/path/out
 
 ## Output Contract
 
-- Markdown is written to disk, not embedded inline in the result JSON.
-- Result rows include `inputPath`, `outputPath`, `status`, `warnings`, `durationMs`, and optional `quality` or `error`.
+- Output files are written to disk, not embedded inline in the result JSON.
+- `--format`/`format` selects `md` (default), `html`, or `both`. HTML is a single self-contained, image-free, light-themed file with one embedded stylesheet and no external references.
+- Result rows include `inputPath`, `outputPath`, `outputPaths`, `status`, `warnings`, `durationMs`, and optional `quality` or `error`. `outputPath` stays the Markdown path for `md`/`both` and the HTML path for `html`; `outputPaths` lists every file written.
 - Unsupported files are skipped without failing the batch.
 - Supported but unreadable inputs return `status: "error"` for that document.
 - Exceeding `maxDocuments` throws `BatchLimitExceededError`.
-- Duplicate basenames use numeric suffixes such as `resume.md`, `resume-1.md`, and `resume-2.md`.
+- Duplicate basenames use numeric suffixes such as `resume.md`, `resume-1.md`, and `resume-2.md`. For `both`, the `.md` and `.html` for one document always share the same suffix, even under concurrent workers.
 - Remote URLs are fetched directly from the machine running Node; there is no doc2md proxy or backend download service.
 - Remote URL downloads time out after 30 seconds by default. Override that with `remoteTimeoutMs` in the API or `--remote-timeout-ms` in the CLI.
 - Browser-only size limits do not apply here. `@doc2md/core` does not add a byte-size cap for remote URLs.
