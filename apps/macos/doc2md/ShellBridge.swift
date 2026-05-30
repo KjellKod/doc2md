@@ -207,11 +207,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
             let fileExtension = standardizedURL.pathExtension.lowercased()
 
             if Self.markdownDirectExtensions.contains(fileExtension) {
-                let result = try withSecurityScope(for: standardizedURL) {
-                    try fileStore.open(url: standardizedURL)
-                }
-                remember(url: standardizedURL)
-                recordRecentDocumentIfEnabled(url: standardizedURL)
+                let result = try openMarkdownURL(standardizedURL)
                 resolve(id: message.id, result: ShellCallResult.openMarkdown(result))
                 return
             }
@@ -239,6 +235,40 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
         } catch {
             resolve(id: message.id, result: Self.response(for: error))
         }
+    }
+
+    // Shared entry point for Finder / Open With / drag-onto-icon opens. It
+    // reuses the exact File > Open Markdown logic (security scope, FileStore
+    // open, remember, record recent) so external opens behave identically to
+    // menu opens. Non-Markdown external URLs are rejected with an error result
+    // rather than routed through the import handoff: Finder association is
+    // Markdown only, so anything else here is unexpected and should surface a
+    // clear message instead of an empty window.
+    func openExternalMarkdownURL(_ url: URL) -> ShellCallResult {
+        let standardizedURL = url.standardizedFileURL
+        let fileExtension = standardizedURL.pathExtension.lowercased()
+
+        guard Self.markdownDirectExtensions.contains(fileExtension) else {
+            return ShellCallResult.error(
+                message: "doc2md can only open Markdown files (.md, .markdown)."
+            )
+        }
+
+        do {
+            let result = try openMarkdownURL(standardizedURL)
+            return ShellCallResult.openMarkdown(result)
+        } catch {
+            return Self.response(for: error)
+        }
+    }
+
+    private func openMarkdownURL(_ standardizedURL: URL) throws -> ShellOpenMarkdownOk {
+        let result = try withSecurityScope(for: standardizedURL) {
+            try fileStore.open(url: standardizedURL)
+        }
+        remember(url: standardizedURL)
+        recordRecentDocumentIfEnabled(url: standardizedURL)
+        return result
     }
 
     private func handleSaveFile(_ message: BridgeMessage) {
@@ -585,15 +615,8 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
 
     private func resolve<T: Encodable>(id: String, result: T, completion: (() -> Void)? = nil) {
         do {
-            let encoder = JSONEncoder()
-            let idData = try encoder.encode(id)
-            let resultData = try encoder.encode(result)
-            guard let idJSON = String(data: idData, encoding: .utf8),
-                  let resultJSON = String(data: resultData, encoding: .utf8)
-            else {
-                return
-            }
-
+            let resultJSON = try Self.encodeJSON(result)
+            let idJSON = try Self.encodeJSON(id)
             let script = "window.__doc2mdShellResolve(\(idJSON), \(resultJSON));"
 
             DispatchQueue.main.async { [weak self] in
@@ -611,6 +634,17 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
             print("ShellBridge failed to encode result: \(error.localizedDescription)")
             #endif
         }
+    }
+
+    // Single JSON encoding path shared by `resolve()` (window.__doc2mdShellResolve)
+    // and the external-open event detail in ExternalOpenRouter, so both emit a
+    // byte-identical encoding of the same ShellCallResult shape.
+    static func encodeJSON<T: Encodable>(_ value: T) throws -> String {
+        let data = try JSONEncoder().encode(value)
+        guard let json = String(data: data, encoding: .utf8) else {
+            throw FileStoreError.error(message: "Failed to encode native result as JSON.")
+        }
+        return json
     }
 
     private static func bridgeMessage(from body: Any) -> BridgeMessage? {
@@ -752,7 +786,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
 """#
 }
 
-private struct ShellCallResult: Encodable {
+struct ShellCallResult: Encodable {
     let ok: Bool
     let kind: String?
     let path: String?
