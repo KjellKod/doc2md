@@ -1,0 +1,23 @@
+ideas/settings-recent-file-typography.md
+  s_1038bade0e0cb5::t_1c00d2a1c7cb35 1-33
+ideas/startup-tips-harness.md
+  s_1038bade0e0cb5::t_b087cea390a866 1-87
+ideas/README.md
+  s_1038bade0e0cb5::t_7003274dd52741 14-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "bd354637455d1c8308f32dd31823dfbc5d22fe5d",
+  "prompts": {},
+  "sessions": {
+    "s_1038bade0e0cb5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bb751e78-3147-4b90-83c0-0df1b9bb9551",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
