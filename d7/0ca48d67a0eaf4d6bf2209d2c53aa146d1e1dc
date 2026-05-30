@@ -1,0 +1,23 @@
+docs/journal/049-celebrate-first-signed-mac-release.md
+  s_dcac04e1c855f5::t_984a6781d3df12 1-74
+.github/workflows/release-mac.yml
+  s_dcac04e1c855f5::t_8376f9738d4f0e 185-195,200,310-312
+docs/diary/2026-05-29.md
+  s_dcac04e1c855f5::t_ff2216de47766e 216-258
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "d70ca48d67a0eaf4d6bf2209d2c53aa146d1e1dc",
+  "prompts": {},
+  "sessions": {
+    "s_dcac04e1c855f5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5b56db6b-6099-4b74-87e5-1e510870b04b",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
