@@ -92,6 +92,12 @@ final class MarkdownDefaultAppHelpController {
     private var preferences: MarkdownDefaultAppHintPreferences
     private var windowController: NSWindowController?
     private(set) var currentPresentationShowsDontShowAgain = false
+    // The first-run hint is evaluated at most once per launch. Opening another
+    // file in an already-running app fires the main window's onAppear again;
+    // that must not re-show a hint the user has already seen this session. The
+    // persisted "Don't show again" flag handles suppression across launches.
+    private var hasEvaluatedFirstRunHintThisLaunch = false
+    private(set) var firstRunHintPresentationCount = 0
 
     init(preferences: MarkdownDefaultAppHintPreferences = MarkdownDefaultAppHintPreferences()) {
         self.preferences = preferences
@@ -100,10 +106,16 @@ final class MarkdownDefaultAppHelpController {
     // First-run: only shown if the user has not dismissed the hint. Shows the
     // "Don't show again" control.
     func presentFirstRunHintIfNeeded() {
+        guard !hasEvaluatedFirstRunHintThisLaunch else {
+            return
+        }
+        hasEvaluatedFirstRunHintThisLaunch = true
+
         guard !preferences.hasDismissedHint else {
             return
         }
 
+        firstRunHintPresentationCount += 1
         present(showsDontShowAgain: true)
     }
 

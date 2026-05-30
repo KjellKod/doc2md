@@ -33,6 +33,19 @@ final class MarkdownDefaultAppHintPreferencesTests: XCTestCase {
         )
     }
 
+    func testFirstRunHintShowsAtMostOncePerLaunch() {
+        let preferences = MarkdownDefaultAppHintPreferences(defaults: defaults)
+        let controller = MarkdownDefaultAppHelpController(preferences: preferences)
+
+        // Simulates the main window's onAppear firing on every Finder open: a
+        // cold launch plus repeated double-clicks into an already-running app.
+        controller.presentFirstRunHintIfNeeded()
+        controller.presentFirstRunHintIfNeeded()
+        controller.presentFirstRunHintIfNeeded()
+
+        XCTAssertEqual(controller.firstRunHintPresentationCount, 1)
+    }
+
     func testHelpPresentationDoesNotReuseFirstRunCheckbox() throws {
         let preferences = MarkdownDefaultAppHintPreferences(defaults: defaults)
         let controller = MarkdownDefaultAppHelpController(preferences: preferences)
