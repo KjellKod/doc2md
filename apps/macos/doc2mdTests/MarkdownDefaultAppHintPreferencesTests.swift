@@ -46,6 +46,18 @@ final class MarkdownDefaultAppHintPreferencesTests: XCTestCase {
         XCTAssertEqual(controller.firstRunHintPresentationCount, 1)
     }
 
+    func testFirstRunHintWindowFloatsAboveMainWindow() {
+        let preferences = MarkdownDefaultAppHintPreferences(defaults: defaults)
+        let controller = MarkdownDefaultAppHelpController(preferences: preferences)
+
+        controller.presentFirstRunHintIfNeeded()
+
+        // A normal-level window (the main shell, brought forward by the
+        // Finder-open flow) must not be able to cover the hint.
+        let hintWindow = NSApp.windows.first { $0.title == "Default Markdown App" }
+        XCTAssertEqual(hintWindow?.level, .floating)
+    }
+
     func testHelpPresentationDoesNotReuseFirstRunCheckbox() throws {
         let preferences = MarkdownDefaultAppHintPreferences(defaults: defaults)
         let controller = MarkdownDefaultAppHelpController(preferences: preferences)

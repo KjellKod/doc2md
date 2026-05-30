@@ -138,6 +138,12 @@ final class MarkdownDefaultAppHelpController {
             window.title = "Default Markdown App"
             window.center()
             window.isReleasedWhenClosed = false
+            // The hint is shown from the main window's onAppear, but the
+            // Finder-open flow brings the main window forward right after, which
+            // would bury a normal-level hint behind it. A floating level cannot
+            // be covered by the normal-level main window, so the hint stays
+            // visible until the user dismisses it.
+            window.level = .floating
             controller = NSWindowController(window: window)
             windowController = controller
         }
