@@ -182,13 +182,22 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  package-mac:
-    name: Sign, notarize, and package Mac app
+  release:
+    # One job that signs, notarizes, packages, signs the Sparkle ZIP, generates
+    # the appcast, and publishes. These steps were previously three separate
+    # jobs (package-mac, sign-sparkle, publish), each declaring
+    # `environment: mac-release` and therefore each triggering its own manual
+    # approval gate. Folding them into one job means the mac-release environment
+    # is entered once, so a release needs a SINGLE approval. The steps were
+    # already strictly sequential, so the only thing lost is the inter-job
+    # artifact upload/download (now unnecessary — everything stays in
+    # $RUNNER_TEMP within the one job).
+    name: Sign, notarize, package, and publish Mac app
     runs-on: macos-latest
     needs: build
     environment: mac-release
     permissions:
-      contents: read
+      contents: write
     steps:
       - name: Checkout resolved release tag
         uses: actions/checkout@v6
@@ -251,39 +260,6 @@ jobs:
           bash scripts/release/notarize_mac_dmg.sh
           bash scripts/release/package_sparkle_zip.sh
 
-      - name: Upload signed package artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: doc2md-package
-          path: ${{ runner.temp }}/doc2md-package
-          if-no-files-found: error
-          retention-days: 7
-
-  sign-sparkle:
-    name: Sign Sparkle ZIP and generate appcast
-    runs-on: macos-latest
-    needs: [build, package-mac]
-    environment: mac-release
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout resolved release tag
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ needs.build.outputs.sha }}
-
-      - name: Download Sparkle signing tool
-        uses: actions/download-artifact@v8
-        with:
-          name: doc2md-build
-          path: ${{ runner.temp }}/doc2md-build
-
-      - name: Download signed package artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: doc2md-package
-          path: ${{ runner.temp }}/doc2md-package
-
       - name: Sign Sparkle ZIP
         id: sparkle
         env:
@@ -321,39 +297,6 @@ jobs:
             > "$APPCAST_PATH"
           xmllint --noout "$APPCAST_PATH"
 
-      - name: Upload appcast artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: doc2md-appcast
-          path: ${{ runner.temp }}/doc2md-appcast/appcast.xml
-          if-no-files-found: error
-          retention-days: 7
-
-  publish:
-    name: Publish release assets
-    runs-on: macos-latest
-    needs: [build, package-mac, sign-sparkle]
-    environment: mac-release
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout resolved release tag
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ needs.build.outputs.sha }}
-
-      - name: Download signed package artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: doc2md-package
-          path: .
-
-      - name: Download appcast artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: doc2md-appcast
-          path: .
-
       - name: Create release if missing and upload assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -364,7 +307,7 @@ jobs:
           gh release view "$TAG" >/dev/null 2>&1 \
             || gh release create "$TAG" --latest=true --generate-notes
           gh release upload "$TAG" \
-            "doc2md-${VERSION}.dmg" \
-            "doc2md-${VERSION}.zip" \
-            "appcast.xml" \
+            "$RUNNER_TEMP/doc2md-package/doc2md-${VERSION}.dmg" \
+            "$RUNNER_TEMP/doc2md-package/doc2md-${VERSION}.zip" \
+            "$RUNNER_TEMP/doc2md-appcast/appcast.xml" \
             --clobber
