@@ -16,23 +16,42 @@ final class ExternalOpenRouter {
     // ShellBridge / WKWebView path and are injectable for unit tests so the
     // queue/readiness logic can be exercised without a live webview.
     private let opener: (URL) -> ShellCallResult
-    private let dispatcher: (ShellCallResult) -> Void
+    private let dispatcher: (ShellCallResult, @escaping (Bool) -> Void) -> Void
     private var pendingURLs: [URL] = []
     private var isAppReady = false
+    private var readinessGeneration = 0
+    private var inFlightDelivery: (url: URL, generation: Int)?
 
     init(shellBridge: ShellBridge) {
         opener = { url in shellBridge.openExternalMarkdownURL(url) }
-        dispatcher = { [weak shellBridge] result in
-            ExternalOpenRouter.dispatchToWebView(result, shellBridge: shellBridge)
+        dispatcher = { [weak shellBridge] result, completion in
+            ExternalOpenRouter.dispatchToWebView(
+                result,
+                shellBridge: shellBridge,
+                completion: completion
+            )
         }
     }
 
     init(
         opener: @escaping (URL) -> ShellCallResult,
-        dispatcher: @escaping (ShellCallResult) -> Void
+        dispatcher: @escaping (ShellCallResult, @escaping (Bool) -> Void) -> Void
     ) {
         self.opener = opener
         self.dispatcher = dispatcher
+    }
+
+    convenience init(
+        opener: @escaping (URL) -> ShellCallResult,
+        dispatcher: @escaping (ShellCallResult) -> Void
+    ) {
+        self.init(
+            opener: opener,
+            dispatcher: { result, completion in
+                dispatcher(result)
+                completion(true)
+            }
+        )
     }
 
     // Queue URLs in arrival order. Flushes immediately when the shell is
@@ -53,26 +72,51 @@ final class ExternalOpenRouter {
 
     func markWebShellNotReady() {
         isAppReady = false
+        readinessGeneration += 1
     }
 
     private func flushIfReady() {
-        guard isAppReady, !pendingURLs.isEmpty else {
+        guard isAppReady, !pendingURLs.isEmpty, inFlightDelivery == nil else {
             return
         }
 
-        let urlsToOpen = pendingURLs
-        pendingURLs.removeAll()
+        let url = pendingURLs[0]
+        let generation = readinessGeneration
+        inFlightDelivery = (url: url, generation: generation)
+        dispatcher(opener(url)) { [weak self] delivered in
+            self?.finishDelivery(
+                url: url,
+                generation: generation,
+                delivered: delivered
+            )
+        }
+    }
 
-        for url in urlsToOpen {
-            dispatcher(opener(url))
+    private func finishDelivery(url: URL, generation: Int, delivered: Bool) {
+        guard
+            let inFlightDelivery,
+            inFlightDelivery.url == url,
+            inFlightDelivery.generation == generation
+        else {
+            return
+        }
+
+        self.inFlightDelivery = nil
+        if delivered, isAppReady, generation == readinessGeneration {
+            pendingURLs.removeFirst()
+            flushIfReady()
+        } else if isAppReady, generation != readinessGeneration {
+            flushIfReady()
         }
     }
 
     private static func dispatchToWebView(
         _ result: ShellCallResult,
-        shellBridge: ShellBridge?
+        shellBridge: ShellBridge?,
+        completion: @escaping (Bool) -> Void
     ) {
         guard let webView = shellBridge?.webView else {
+            completion(false)
             return
         }
 
@@ -83,6 +127,7 @@ final class ExternalOpenRouter {
             #if DEBUG
             print("ExternalOpenRouter failed to encode result: \(error.localizedDescription)")
             #endif
+            completion(false)
             return
         }
 
@@ -97,6 +142,7 @@ final class ExternalOpenRouter {
                     print("ExternalOpenRouter failed to dispatch external open: \(error.localizedDescription)")
                 }
                 #endif
+                completion(error == nil)
             }
         }
     }

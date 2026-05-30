@@ -50,7 +50,7 @@ final class Doc2mdAppDelegateTests: XCTestCase {
         XCTAssertEqual(recorder.openedPaths, [url.path], "Buffered URLs must flush exactly once")
     }
 
-    // MARK: - Helpers
+    // MARK: Helpers
 
     private final class Recorder {
         var openedPaths: [String] = []

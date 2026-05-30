@@ -79,7 +79,34 @@ final class ExternalOpenRouterTests: XCTestCase {
         )
     }
 
-    // MARK: - Helpers
+    func testNavigationResetDuringFlushRetriesOnceAfterNextReady() {
+        let recorder = Recorder()
+        let url = makeURL("Reset.md")
+        var router: ExternalOpenRouter!
+        router = ExternalOpenRouter(
+            opener: { url in ShellCallResult.error(message: url.path) },
+            dispatcher: { result in
+                if let message = result.message {
+                    recorder.dispatchedMessages.append(message)
+                }
+                if recorder.dispatchedMessages.count == 1 {
+                    router.markWebShellNotReady()
+                }
+            }
+        )
+
+        router.markWebShellReady()
+        router.enqueue(urls: [url])
+        XCTAssertEqual(recorder.dispatchedMessages, [url.path])
+
+        router.markWebShellReady()
+        XCTAssertEqual(recorder.dispatchedMessages, [url.path, url.path])
+
+        router.markWebShellReady()
+        XCTAssertEqual(recorder.dispatchedMessages, [url.path, url.path])
+    }
+
+    // MARK: Helpers
 
     // Opener echoes the URL path so the recorder can assert order; dispatcher
     // records each delivered result. This exercises the queue/readiness logic
