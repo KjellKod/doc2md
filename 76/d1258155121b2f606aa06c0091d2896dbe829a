@@ -1,0 +1,36 @@
+src/shell/desktopAdapter.tsx
+  s_1038bade0e0cb5::t_38399c6f688159 247-256
+  s_1038bade0e0cb5::t_5ccdd229d01521 370
+  s_1038bade0e0cb5::t_a7537fdd9c4a32 366-369,371
+  s_1038bade0e0cb5::t_bafb9e9900bf16 1341
+  s_1038bade0e0cb5::t_f63aaa84b26654 1342-1346,1352-1354
+  s_1038bade0e0cb5::t_26ef48f0fc460b 1516-1525
+  s_1038bade0e0cb5::t_9609d5a8ce1365 1335-1340,1347-1351,1355-1362
+  s_1038bade0e0cb5::t_096f662b6ebabc 2326-2328
+src/__tests__/App.desktop.test.tsx
+  s_1038bade0e0cb5::t_0fd0d681db983e 3201
+  s_1038bade0e0cb5::t_37ecb4e85694a4 3157-3200,3202-3302
+  s_1038bade0e0cb5::t_b11fd282b352f2 15
+src/desktop/__tests__/useNativeMenuEvents.test.tsx
+  s_1038bade0e0cb5::t_af1d8a22b54e90 7,11
+  s_1038bade0e0cb5::t_27f70c634a2ef2 104-191
+src/desktop/useNativeMenuEvents.ts
+  s_1038bade0e0cb5::t_5319fc68e3b30e 58-62
+  s_1038bade0e0cb5::t_92f771419439d6 4,14,17-24,33-49,82-90,97-100
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "76d1258155121b2f606aa06c0091d2896dbe829a",
+  "prompts": {},
+  "sessions": {
+    "s_1038bade0e0cb5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bb751e78-3147-4b90-83c0-0df1b9bb9551",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
