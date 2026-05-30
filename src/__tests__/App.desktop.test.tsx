@@ -12,7 +12,7 @@ import {
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import DesktopApp from "../desktop/DesktopApp";
-import type { Doc2mdShell } from "../types/doc2mdShell";
+import type { Doc2mdShell, ShellFile, ShellResult } from "../types/doc2mdShell";
 import {
   MAX_BROWSER_FILE_SIZE_BYTES,
   OVERSIZED_FILE_MESSAGE,
@@ -1897,6 +1897,63 @@ describe("App desktop bridge", () => {
     cleanupShell();
   });
 
+  it("resumes native session sync after a restore failure and later user open", async () => {
+    const getSessionState = vi.fn(async () => {
+      throw new Error("native bridge unavailable");
+    });
+    const setSessionState = vi.fn(async (args: {
+      openPaths: string[];
+      selectedPath?: string;
+    }) => ({
+      ok: true as const,
+      ...args,
+      recentFiles: [],
+    }));
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const cleanupShell = installMockShell({
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: true,
+        recentFiles: [],
+      })),
+      getSessionState,
+      openFile: vi.fn(async () => ({
+        ok: true as const,
+        kind: "markdown" as const,
+        path: "/Users/me/PostFailure.md",
+        content: "# PostFailure\n",
+        mtimeMs: 10,
+        lineEnding: "lf" as const,
+      })),
+      setSessionState,
+    });
+
+    render(<DesktopApp />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Session restore failed before the app received a native result. Open a file or start a new draft.",
+    );
+    await waitFor(() => expect(getSessionState).toHaveBeenCalledTimes(1));
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    expect(setSessionState).not.toHaveBeenCalled();
+
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await screen.findByRole("heading", { name: "PostFailure" });
+
+    await waitFor(() =>
+      expect(setSessionState).toHaveBeenCalledWith({
+        openPaths: ["/Users/me/PostFailure.md"],
+        selectedPath: "/Users/me/PostFailure.md",
+      }),
+    );
+    expect(consoleError).toHaveBeenCalledWith(
+      "doc2md desktop session restore failure",
+      expect.any(Error),
+    );
+
+    cleanupShell();
+  });
+
   it("syncs only disk-backed Markdown paths to native session state", async () => {
     const setSessionState = vi.fn(async (args: {
       openPaths: string[];
@@ -3200,6 +3257,213 @@ describe("App desktop bridge", () => {
 
     expect(
       await screen.findByText("Permission needed: Select the document again."),
+    ).toBeInTheDocument();
+
+    cleanupShell();
+  });
+
+  it("renders the shell-ready marker without a selected entry", async () => {
+    const cleanupShell = installMockShell();
+
+    render(<DesktopApp />);
+
+    const marker = await screen.findByTestId("desktop-menu-bridge");
+    expect(marker).toHaveAttribute("data-doc2md-shell-ready", "true");
+    // No file is open, so the document-dependent status bar is absent, but the
+    // readiness marker is still present.
+    expect(
+      screen.queryByLabelText("Desktop file status"),
+    ).not.toBeInTheDocument();
+
+    cleanupShell();
+  });
+
+  it("loads and selects a markdown entry from an external open event", async () => {
+    const cleanupShell = installMockShell();
+
+    render(<DesktopApp />);
+    await screen.findByTestId("desktop-menu-bridge");
+
+    const result: ShellResult<ShellFile> = {
+      ok: true,
+      kind: "markdown",
+      path: "/Users/me/Finder.md",
+      content: "# Finder opened",
+      mtimeMs: 42,
+      lineEnding: "lf",
+    };
+    window.dispatchEvent(
+      new CustomEvent(NATIVE_MENU_EVENTS.externalOpen, { detail: result }),
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Finder opened" }),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
+        "Finder.md",
+      ),
+    );
+    const openButton = await awaitOpenButton("Open Finder.md");
+    expect(openButton).toHaveClass("is-selected");
+
+    cleanupShell();
+  });
+
+  it("shows a desktop error when an external open delivers an unsupported result", async () => {
+    const cleanupShell = installMockShell();
+
+    render(<DesktopApp />);
+    await screen.findByTestId("desktop-menu-bridge");
+
+    const result: ShellResult<ShellFile> = {
+      ok: false,
+      code: "error",
+      message: "doc2md can only open Markdown files (.md, .markdown).",
+    };
+    window.dispatchEvent(
+      new CustomEvent(NATIVE_MENU_EVENTS.externalOpen, { detail: result }),
+    );
+
+    expect(
+      await screen.findByText(
+        /doc2md can only open Markdown files \(\.md, \.markdown\)\./,
+      ),
+    ).toBeInTheDocument();
+
+    cleanupShell();
+  });
+
+  it("keeps an external open selected during session restore and completes restore", async () => {
+    const pendingSessionState = createDeferred<{
+      ok: true;
+      openPaths: string[];
+      selectedPath?: string;
+      recentFiles: never[];
+    }>();
+    const setSessionState = vi.fn(
+      async (args: { openPaths: string[]; selectedPath?: string }) => ({
+        ok: true as const,
+        ...args,
+        recentFiles: [],
+      }),
+    );
+    const openFile = vi.fn(async ({ path }: { path?: string } = {}) => ({
+      ok: true as const,
+      kind: "markdown" as const,
+      path: path ?? "/Users/me/Restored.md",
+      content: path === "/Users/me/External.md" ? "# External" : "# Restored",
+      mtimeMs: path === "/Users/me/External.md" ? 99 : 10,
+      lineEnding: "lf" as const,
+    }));
+    const cleanupShell = installMockShell({
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: true,
+        recentFiles: [],
+      })),
+      getSessionState: vi.fn(() => pendingSessionState.promise),
+      openFile,
+      setSessionState,
+    });
+
+    render(<DesktopApp />);
+    await screen.findByTestId("desktop-menu-bridge");
+
+    // An external open arrives while restore is still waiting on session state.
+    const external: ShellResult<ShellFile> = {
+      ok: true,
+      kind: "markdown",
+      path: "/Users/me/External.md",
+      content: "# External",
+      mtimeMs: 99,
+      lineEnding: "lf",
+    };
+    window.dispatchEvent(
+      new CustomEvent(NATIVE_MENU_EVENTS.externalOpen, { detail: external }),
+    );
+    await screen.findByRole("heading", { name: "External" });
+
+    // Restore now resolves and would normally select the restored file.
+    await act(async () => {
+      pendingSessionState.resolve({
+        ok: true,
+        openPaths: ["/Users/me/Restored.md"],
+        selectedPath: "/Users/me/Restored.md",
+        recentFiles: [],
+      });
+      await pendingSessionState.promise;
+    });
+
+    // External selection wins and restore completion lets session sync resume.
+    expect(
+      screen.getByRole("heading", { name: "External" }),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(setSessionState).toHaveBeenCalledWith(
+        expect.objectContaining({ selectedPath: "/Users/me/External.md" }),
+      ),
+    );
+
+    cleanupShell();
+  });
+
+  it("does not strand selection when an external open fails during restore", async () => {
+    const pendingSessionState = createDeferred<{
+      ok: true;
+      openPaths: string[];
+      selectedPath?: string;
+      recentFiles: never[];
+    }>();
+    const openFile = vi.fn(async ({ path }: { path?: string } = {}) => ({
+      ok: true as const,
+      kind: "markdown" as const,
+      path: path ?? "/Users/me/Restored.md",
+      content: "# Restored",
+      mtimeMs: 10,
+      lineEnding: "lf" as const,
+    }));
+    const cleanupShell = installMockShell({
+      getPersistenceSettings: vi.fn(async () => ({
+        ok: true as const,
+        persistenceEnabled: true,
+        recentFiles: [],
+      })),
+      getSessionState: vi.fn(() => pendingSessionState.promise),
+      openFile,
+    });
+
+    render(<DesktopApp />);
+    await screen.findByTestId("desktop-menu-bridge");
+
+    // An external open arrives while restore is pending, but it FAILS (no entry
+    // is produced). It must not suppress restored-entry selection.
+    const failed: ShellResult<ShellFile> = {
+      ok: false,
+      code: "error",
+      message: "doc2md can only open Markdown files (.md, .markdown).",
+    };
+    window.dispatchEvent(
+      new CustomEvent(NATIVE_MENU_EVENTS.externalOpen, { detail: failed }),
+    );
+    await screen.findByText(
+      /doc2md can only open Markdown files \(\.md, \.markdown\)\./,
+    );
+
+    await act(async () => {
+      pendingSessionState.resolve({
+        ok: true,
+        openPaths: ["/Users/me/Restored.md"],
+        selectedPath: "/Users/me/Restored.md",
+        recentFiles: [],
+      });
+      await pendingSessionState.promise;
+    });
+
+    // The restored document is selected; the failed external open did not leave
+    // the app with nothing selected.
+    expect(
+      await screen.findByRole("heading", { name: "Restored" }),
     ).toBeInTheDocument();
 
     cleanupShell();

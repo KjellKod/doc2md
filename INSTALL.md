@@ -194,6 +194,18 @@ npm install /absolute/path/to/newer-doc2md-core-<derived-version>.tgz
 
 Start from the browser UI at `https://kjellkod.github.io/doc2md/`, then use the `Install & Use` tab for the download link and the same commands shown here.
 
+## Mac App: Open Markdown Files by Double-Clicking
+
+The Mac app (`doc2md.app`) registers as a handler for `.md` and `.markdown` files once you move it to `/Applications` and launch it once. macOS does not make it the default app automatically. To open Markdown files in doc2md by double-clicking:
+
+1. Select a `.md` file in Finder.
+2. Choose `File` then `Get Info`, or press `Command I`.
+3. Under `Open With`, choose doc2md.
+4. Click `Change All...` so every `.md` file opens in doc2md.
+5. Repeat for a `.markdown` file if you use that extension; macOS tracks the two extensions separately.
+
+doc2md never changes the system default for you, and it registers for Markdown only, not for any binary or import-source format. The same steps appear as a first-run hint and are always available under `Help` then `How to Make doc2md the Default Markdown App`.
+
 ## Related Docs
 
 - [README.md](README.md)

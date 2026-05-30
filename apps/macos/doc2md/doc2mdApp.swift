@@ -2,6 +2,7 @@ import SwiftUI
 
 @main
 struct Doc2mdApp: App {
+    @NSApplicationDelegateAdaptor(Doc2mdAppDelegate.self) private var appDelegate
     @StateObject private var licenseController: LicenseController
     @StateObject private var shellHost: ShellHost
     private let sparkleController: SparkleController
@@ -30,6 +31,12 @@ struct Doc2mdApp: App {
     var body: some Scene {
         Window("doc2md", id: "main") {
             WebShellView(shellHost: shellHost)
+                .onAppear {
+                    // Idempotent: flushes any Finder URLs that arrived before
+                    // this view appeared into the ShellHost-owned router.
+                    appDelegate.configure(shellHost: shellHost)
+                    shellHost.presentMarkdownDefaultAppHintIfNeeded()
+                }
         }
         .commands {
             CommandGroup(replacing: .appInfo) {
@@ -82,6 +89,12 @@ struct Doc2mdApp: App {
             }
 
             CommandGroup(after: .help) {
+                Button("How to Make doc2md the Default Markdown App") {
+                    shellHost.menuController.showMarkdownDefaultAppHelp()
+                }
+
+                Divider()
+
                 Button("Enter License...") {
                     shellHost.menuController.showLicenseWindow()
                 }

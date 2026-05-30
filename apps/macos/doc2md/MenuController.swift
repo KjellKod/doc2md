@@ -9,6 +9,7 @@ final class MenuController: NSObject {
     private var licenseWindowController: NSWindowController?
     private var aboutWindowController: AboutWindowController?
     private var thirdPartyLicensesWindowController: ThirdPartyLicensesWindowController?
+    private let markdownDefaultAppHelpController = MarkdownDefaultAppHelpController()
 
     func newDocument() {
         dispatchNativeEvent("doc2md:native-new")
@@ -81,6 +82,14 @@ final class MenuController: NSObject {
 
     func setLicensedMonthlyUpdateChecksEnabled(_ enabled: Bool) {
         updatePreferences?.licensedMonthlyChecksEnabled = enabled
+    }
+
+    func presentMarkdownDefaultAppHintIfNeeded() {
+        markdownDefaultAppHelpController.presentFirstRunHintIfNeeded()
+    }
+
+    func showMarkdownDefaultAppHelp() {
+        markdownDefaultAppHelpController.presentHelp()
     }
 
     private func thirdPartyLicensesController() -> ThirdPartyLicensesWindowController {

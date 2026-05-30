@@ -15,6 +15,7 @@ final class ShellHost: ObservableObject {
         }
     )
     lazy var shellBridge = ShellBridge(licenseReminderController: licenseReminderController)
+    lazy var externalOpenRouter = ExternalOpenRouter(shellBridge: shellBridge)
     let menuController = MenuController()
 
     init(
@@ -30,6 +31,19 @@ final class ShellHost: ObservableObject {
     func attach(webView: WKWebView) {
         shellBridge.webView = webView
         menuController.webView = webView
+    }
+
+    func presentMarkdownDefaultAppHintIfNeeded() {
+        menuController.presentMarkdownDefaultAppHintIfNeeded()
+    }
+}
+
+extension Doc2mdAppDelegate {
+    // Convenience over configure(externalOpenRouter:) that lives in the app
+    // target alongside ShellHost, keeping the core delegate free of the
+    // ShellHost dependency so it compiles cleanly into the test target.
+    func configure(shellHost: ShellHost) {
+        configure(externalOpenRouter: shellHost.externalOpenRouter)
     }
 }
 
@@ -100,6 +114,10 @@ private struct WebView: NSViewRepresentable {
     func makeNSView(context: Context) -> WKWebView {
         let userContentController = WKUserContentController()
         shellHost.shellBridge.install(on: userContentController)
+        userContentController.add(
+            context.coordinator,
+            name: Coordinator.shellReadyMessageName
+        )
 
         let configuration = WKWebViewConfiguration()
         configuration.userContentController = userContentController
@@ -149,13 +167,13 @@ private struct WebView: NSViewRepresentable {
         webView.load(URLRequest(url: indexURL))
     }
 
-    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
+    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
         typealias ExternalURLOpener = (URL) -> Void
 
-        private static let appReadyProbeIntervalSeconds: TimeInterval = 0.5
-        private static let appReadyProbeMaxAttempts = 5
-        private static let appReadyProbeTimeoutMs =
-            Int(Double(appReadyProbeMaxAttempts - 1) * appReadyProbeIntervalSeconds * 1000)
+        // The web shell posts to this handler only after its native event
+        // listeners are installed, so it is the single source of truth for
+        // readiness used by ExternalOpenRouter to flush buffered Finder opens.
+        static let shellReadyMessageName = "doc2mdShellReady"
 
         static let defaultExternalURLOpener: ExternalURLOpener = { url in
             NSWorkspace.shared.open(url)
@@ -220,6 +238,24 @@ private struct WebView: NSViewRepresentable {
         func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
             appSchemeHandler.clearImportHandoff()
             setLoadError(nil)
+            // Every navigation (including the initial load) resets readiness.
+            // Only the doc2mdShellReady message flips it back to ready, so
+            // buffered external opens never flush against a stale web shell.
+            shellHost.externalOpenRouter.markWebShellNotReady()
+        }
+
+        // Only the doc2mdShellReady message marks the router ready. didFinish
+        // intentionally does not, because a finished navigation does not mean
+        // the web app has registered its native event listeners yet.
+        func userContentController(
+            _ userContentController: WKUserContentController,
+            didReceive message: WKScriptMessage
+        ) {
+            guard message.name == Self.shellReadyMessageName else {
+                return
+            }
+
+            shellHost.externalOpenRouter.markWebShellReady()
         }
 
         func webView(
@@ -303,39 +339,6 @@ private struct WebView: NSViewRepresentable {
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             logger.notice("load succeeded: \(webView.url?.absoluteString ?? "unknown", privacy: .public)")
-            probeAppReady(in: webView, attempt: 1)
-        }
-
-        private func probeAppReady(in webView: WKWebView, attempt: Int) {
-            webView.evaluateJavaScript("document.querySelector('[data-app-ready]') != null") { result, error in
-                if let error {
-                    guard attempt < Self.appReadyProbeMaxAttempts else {
-                        logger.error(
-                            "app ready: false: \(error.localizedDescription, privacy: .public) after \(Self.appReadyProbeTimeoutMs, privacy: .public) ms"
-                        )
-                        return
-                    }
-
-                    DispatchQueue.main.asyncAfter(deadline: .now() + Self.appReadyProbeIntervalSeconds) {
-                        self.probeAppReady(in: webView, attempt: attempt + 1)
-                    }
-                    return
-                }
-
-                if let ready = result as? Bool, ready {
-                    logger.notice("app ready: true")
-                    return
-                }
-
-                guard attempt < Self.appReadyProbeMaxAttempts else {
-                    logger.error("app ready: false: timeout after \(Self.appReadyProbeTimeoutMs, privacy: .public) ms")
-                    return
-                }
-
-                DispatchQueue.main.asyncAfter(deadline: .now() + Self.appReadyProbeIntervalSeconds) {
-                    self.probeAppReady(in: webView, attempt: attempt + 1)
-                }
-            }
         }
     }
 }

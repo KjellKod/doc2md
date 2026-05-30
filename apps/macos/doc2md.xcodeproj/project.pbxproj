@@ -69,6 +69,17 @@
 		9A0200000000000000000051 /* AboutWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000051 /* AboutWindowController.swift */; };
 		9A0200000000000000000052 /* ThirdPartyLicensesWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000052 /* ThirdPartyLicensesWindow.swift */; };
 		9A0200000000000000000053 /* ReleaseCommit.generated.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000053 /* ReleaseCommit.generated.swift */; };
+		9A0200000000000000000070 /* ExternalOpenRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000070 /* ExternalOpenRouter.swift */; };
+		9A0200000000000000000071 /* ExternalOpenRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000070 /* ExternalOpenRouter.swift */; };
+		9A0200000000000000000072 /* Doc2mdAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000071 /* Doc2mdAppDelegate.swift */; };
+		9A0200000000000000000073 /* Doc2mdAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000071 /* Doc2mdAppDelegate.swift */; };
+		9A0200000000000000000074 /* MarkdownDefaultAppHelp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000072 /* MarkdownDefaultAppHelp.swift */; };
+		9A0200000000000000000075 /* MarkdownDefaultAppHelp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000072 /* MarkdownDefaultAppHelp.swift */; };
+		9A0200000000000000000076 /* InfoPlistDocumentTypeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000073 /* InfoPlistDocumentTypeTests.swift */; };
+		9A0200000000000000000077 /* ShellBridgeExternalOpenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000074 /* ShellBridgeExternalOpenTests.swift */; };
+		9A0200000000000000000078 /* Doc2mdAppDelegateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000075 /* Doc2mdAppDelegateTests.swift */; };
+		9A0200000000000000000079 /* ExternalOpenRouterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000076 /* ExternalOpenRouterTests.swift */; };
+		9A020000000000000000007A /* MarkdownDefaultAppHintPreferencesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000077 /* MarkdownDefaultAppHintPreferencesTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -127,6 +138,14 @@
 		9A0100000000000000000051 /* AboutWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutWindowController.swift; sourceTree = "<group>"; };
 		9A0100000000000000000052 /* ThirdPartyLicensesWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThirdPartyLicensesWindow.swift; sourceTree = "<group>"; };
 		9A0100000000000000000053 /* ReleaseCommit.generated.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseCommit.generated.swift; sourceTree = "<group>"; };
+		9A0100000000000000000070 /* ExternalOpenRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalOpenRouter.swift; sourceTree = "<group>"; };
+		9A0100000000000000000071 /* Doc2mdAppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Doc2mdAppDelegate.swift; sourceTree = "<group>"; };
+		9A0100000000000000000072 /* MarkdownDefaultAppHelp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownDefaultAppHelp.swift; sourceTree = "<group>"; };
+		9A0100000000000000000073 /* InfoPlistDocumentTypeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoPlistDocumentTypeTests.swift; sourceTree = "<group>"; };
+		9A0100000000000000000074 /* ShellBridgeExternalOpenTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellBridgeExternalOpenTests.swift; sourceTree = "<group>"; };
+		9A0100000000000000000075 /* Doc2mdAppDelegateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Doc2mdAppDelegateTests.swift; sourceTree = "<group>"; };
+		9A0100000000000000000076 /* ExternalOpenRouterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalOpenRouterTests.swift; sourceTree = "<group>"; };
+		9A0100000000000000000077 /* MarkdownDefaultAppHintPreferencesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownDefaultAppHintPreferencesTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -161,8 +180,11 @@
 			isa = PBXGroup;
 			children = (
 				9A0100000000000000000000 /* doc2mdApp.swift */,
+				9A0100000000000000000071 /* Doc2mdAppDelegate.swift */,
 				9A0100000000000000000001 /* WebShellView.swift */,
 				9A0100000000000000000060 /* WebShellLinkPolicy.swift */,
+				9A0100000000000000000070 /* ExternalOpenRouter.swift */,
+				9A0100000000000000000072 /* MarkdownDefaultAppHelp.swift */,
 				9A0100000000000000000004 /* ShellBridge.swift */,
 				9A0100000000000000000005 /* MenuController.swift */,
 				9A010000000000000000000C /* SparkleController.swift */,
@@ -230,6 +252,11 @@
 				9A0100000000000000000015 /* SessionStoreTests.swift */,
 				9A010000000000000000000B /* AppSchemeImportRouteTests.swift */,
 				9A0100000000000000000061 /* WebShellLinkPolicyTests.swift */,
+				9A0100000000000000000073 /* InfoPlistDocumentTypeTests.swift */,
+				9A0100000000000000000074 /* ShellBridgeExternalOpenTests.swift */,
+				9A0100000000000000000075 /* Doc2mdAppDelegateTests.swift */,
+				9A0100000000000000000076 /* ExternalOpenRouterTests.swift */,
+				9A0100000000000000000077 /* MarkdownDefaultAppHintPreferencesTests.swift */,
 				9A0000000000000000000006 /* Licensing */,
 			);
 			path = doc2mdTests;
@@ -389,6 +416,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				9A0200000000000000000000 /* doc2mdApp.swift in Sources */,
+				9A0200000000000000000072 /* Doc2mdAppDelegate.swift in Sources */,
+				9A0200000000000000000070 /* ExternalOpenRouter.swift in Sources */,
+				9A0200000000000000000074 /* MarkdownDefaultAppHelp.swift in Sources */,
 				9A0200000000000000000001 /* WebShellView.swift in Sources */,
 				9A0200000000000000000060 /* WebShellLinkPolicy.swift in Sources */,
 				9A0200000000000000000003 /* ShellBridge.swift in Sources */,
@@ -434,6 +464,14 @@
 				9A0200000000000000000011 /* AppSchemeImportRouteTests.swift in Sources */,
 				9A0200000000000000000061 /* WebShellLinkPolicy.swift in Sources */,
 				9A0200000000000000000062 /* WebShellLinkPolicyTests.swift in Sources */,
+				9A0200000000000000000071 /* ExternalOpenRouter.swift in Sources */,
+				9A0200000000000000000073 /* Doc2mdAppDelegate.swift in Sources */,
+				9A0200000000000000000075 /* MarkdownDefaultAppHelp.swift in Sources */,
+				9A0200000000000000000076 /* InfoPlistDocumentTypeTests.swift in Sources */,
+				9A0200000000000000000077 /* ShellBridgeExternalOpenTests.swift in Sources */,
+				9A0200000000000000000078 /* Doc2mdAppDelegateTests.swift in Sources */,
+				9A0200000000000000000079 /* ExternalOpenRouterTests.swift in Sources */,
+				9A020000000000000000007A /* MarkdownDefaultAppHintPreferencesTests.swift in Sources */,
 				9A0200000000000000000030 /* LicenseClaims.swift in Sources */,
 				9A0200000000000000000031 /* LicenseToken.swift in Sources */,
 				9A0200000000000000000032 /* LicensePublicKeys.swift in Sources */,
