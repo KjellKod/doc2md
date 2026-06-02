@@ -1,0 +1,19 @@
+ideas/2026-06-01_Public_repo_hardening.md
+  s_c9f5d4552ba8b0::t_f392dcd19d0a08 1-74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "101b4ad1b9b7f4d473bb24211a66f8f136847e09",
+  "prompts": {},
+  "sessions": {
+    "s_c9f5d4552ba8b0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "775c40ef-6819-431c-9d09-2f185fc519aa",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
