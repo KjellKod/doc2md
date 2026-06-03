@@ -1,4 +1,4 @@
-const TASK_MARKER_PATTERN = /^(\s*[-*+]\s+\[)(?: |x|X)(\]\s*)/u;
+const TASK_MARKER_PATTERN = /^(\s*(?:[-*+]|\d+[.)])\s+\[)(?: |x|X)(\]\s*)/u;
 
 export function replaceTaskMarkerAtSourceLine(
   markdown: string,

@@ -493,6 +493,28 @@ describe("PreviewPanel", () => {
     expect(onChange).toHaveBeenCalledWith("- [x] Ship fix\n- [x] Write docs");
   });
 
+  it("toggles ordered task checkboxes through onMarkdownChange", () => {
+    const onChange = vi.fn();
+    render(
+      <PreviewPanel
+        entry={createEntry({
+          markdown: "1. [ ] First task\n2) [x] Second task",
+        })}
+        onMarkdownChange={onChange}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Toggle task: First task" }));
+    expect(onChange).toHaveBeenLastCalledWith(
+      "1. [x] First task\n2) [x] Second task",
+    );
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Toggle task: Second task" }));
+    expect(onChange).toHaveBeenLastCalledWith(
+      "1. [ ] First task\n2) [ ] Second task",
+    );
+  });
+
   it("toggles exact task marker variants without changing neighboring lines", () => {
     const onChange = vi.fn();
     render(
