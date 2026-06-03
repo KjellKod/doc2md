@@ -1,0 +1,35 @@
+src/__tests__/App.desktop.test.tsx
+  s_7bfcdd8910c958::t_27ddffbdc432a7 216,221,234-238,245,248-265
+.skills/quest/agents/code-reviewer.md
+  s_7bfcdd8910c958::t_e3e41716339847 38-44
+.skills/implementer/SKILL.md
+  s_7bfcdd8910c958::t_e2fd504cbf3616 81-89
+.skills/plan-reviewer/SKILL.md
+  s_7bfcdd8910c958::t_d1c6e6ddd54b2f 119-126
+tests/e2e/hosted-browser-baseline.spec.ts
+  s_7bfcdd8910c958::t_9f64e541f5cf09 220-259
+.skills/code-reviewer/SKILL.md
+  s_7bfcdd8910c958::t_e2fd504cbf3616 181-186
+.skills/quest/agents/planner.md
+  s_7bfcdd8910c958::t_e3e41716339847 32-38
+.skills/quest/agents/builder.md
+  s_7bfcdd8910c958::t_e3e41716339847 26-32
+.skills/quest/agents/plan-reviewer.md
+  s_7bfcdd8910c958::t_e3e41716339847 34-40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "9bd34cd08512ac1310701b1a6c225fd70c245fe3",
+  "prompts": {},
+  "sessions": {
+    "s_7bfcdd8910c958": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e8a4e-cfb9-74e3-9ff8-e484d255100f",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
