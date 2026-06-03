@@ -1,4 +1,4 @@
-# Public repo hardening — doc2md (drafted 2026-06-01)
+# Public repo hardening — doc2md (implemented in PR #169)
 
 ## Why
 
@@ -10,7 +10,8 @@ cannot. The sibling repo **sketch2md** already completed this pass (all 18 of it
 
 ## Current state
 
-All Actions in `.github/workflows/*` are **tag-pinned**, not SHA-pinned:
+All first-party Actions in `.github/workflows/*` are now pinned to full-length
+commit SHAs with their original version tags preserved as comments:
 
 - `actions/checkout@v6`
 - `actions/setup-node@v6`
@@ -30,12 +31,10 @@ Spread across these workflow files:
 - `release-mac.yml`
 - `security.yml`
 
-All are first-party `actions/*` (no third-party actions), so realistic risk is low —
-but tag-repointing is still possible, so SHA-pinning closes it. Because everything is
-tag-pinned, the "Require actions to be pinned to a full-length commit SHA" repo setting
-is **NOT safe to enable yet**: turning it on now would break ALL workflows.
+All are first-party `actions/*` (no third-party actions), so realistic risk was low,
+but tag-repointing was still possible. SHA-pinning closes that gap.
 
-## What to do
+## What was done
 
 1. For each `uses:` tag, resolve the tag to its current commit SHA and rewrite it,
    keeping the version as a comment. For example:
@@ -48,8 +47,8 @@ is **NOT safe to enable yet**: turning it on now would break ALL workflows.
    Note: if the tag points to an annotated tag object, dereference it to the
    underlying commit before pinning.
 2. Do this on a dedicated branch + PR, get CI green, then merge.
-3. THEN enable Settings → Actions → General → "Require actions to be pinned to a
-   full-length commit SHA".
+3. After merge, enable Settings → Actions → General → "Require actions to be
+   pinned to a full-length commit SHA".
 
 ## Watch out
 
@@ -71,4 +70,5 @@ Documentation/checklist only here:
 
 ---
 
-Drafted idea — not yet scheduled. Precedent: sketch2md PR #27 / its Phase 6.1.
+Implemented as part of PR #169 after the repository setting blocked tag-pinned
+workflows from starting. Precedent: sketch2md PR #27 / its Phase 6.1.

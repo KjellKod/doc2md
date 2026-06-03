@@ -77,14 +77,14 @@ jobs:
           } >>"$GITHUB_OUTPUT"
 
       - name: Checkout resolved release tag
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           ref: ${{ steps.resolve.outputs.sha }}
           fetch-depth: 0
           fetch-tags: true
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: 22
 
@@ -175,7 +175,7 @@ jobs:
           printf '\n' >>"$RUNNER_TEMP/doc2md-build/release-meta.json"
 
       - name: Upload unsigned build artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: doc2md-build
           path: ${{ runner.temp }}/doc2md-build
@@ -200,12 +200,12 @@ jobs:
       contents: write
     steps:
       - name: Checkout resolved release tag
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           ref: ${{ needs.build.outputs.sha }}
 
       - name: Download unsigned build artifact
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: doc2md-build
           path: ${{ runner.temp }}/doc2md-build
