@@ -1,0 +1,70 @@
+src/components/sourceLineRehype.ts
+  s_7bfcdd8910c958::t_b37f8cf2096700 16-18,36-40,58-70,74-104,136-142,144-151
+  s_7bfcdd8910c958::t_e19ea8657af1c2 1,71-73,105-135,143
+src/shell/AppShell.tsx
+  s_7bfcdd8910c958::t_daa1f437f62ed4 551
+src/__tests__/App.hosted.test.tsx
+  s_7bfcdd8910c958::t_c9e2c3ef151800 161,176-189,195-200
+  s_7bfcdd8910c958::t_eb353b0853bede 190-194
+  s_7bfcdd8910c958::t_d52057bdd8ffcd 162-175
+src/__tests__/App.desktop.test.tsx
+  s_7bfcdd8910c958::t_cace1e3600dff4 216-233,239-249
+  s_7bfcdd8910c958::t_eb353b0853bede 234-238
+src/components/preview/PreviewPanel.tsx
+  s_7bfcdd8910c958::t_d0d6d29a1df999 448
+tests/e2e/preview-panel-refactor-characterization.spec.ts
+  s_7bfcdd8910c958::t_ffe8f9198caf37 171,229
+tests/e2e/resize-handles.spec.ts
+  s_7bfcdd8910c958::t_97cc8dab42e9db 127,141,143-144,148-149
+tests/e2e/hosted-browser-baseline.spec.ts
+  s_7bfcdd8910c958::t_fe5944861f9804 53-58
+  s_7bfcdd8910c958::t_c29488aef63709 174-184,188-194
+  s_7bfcdd8910c958::t_4a055366d298f0 185-187
+  s_7bfcdd8910c958::t_ffe8f9198caf37 71,118,147,160,211
+tests/e2e/view-anchor-mode-switch.spec.ts
+  s_7bfcdd8910c958::t_ffe8f9198caf37 213,249,287,327,338,352,390,407,418,492,508,551
+src/components/PreviewPanel.test.tsx
+  s_7bfcdd8910c958::t_4a055366d298f0 466-471,491,611-612
+  s_7bfcdd8910c958::t_b7934ab4ec3410 442,473,475,480-490,492-564,600-610,613-617
+  s_7bfcdd8910c958::t_ffe8f9198caf37 168,397,799,1035,1216,1473,1503,1716,1795
+  s_7bfcdd8910c958::t_c29488aef63709 448
+src/styles/global.css
+  s_7bfcdd8910c958::t_e36e2fd409734b 3384-3385,3425-3426,3431,3679-3680,3683
+  s_7bfcdd8910c958::t_247d3f55c1ad8d 734-736
+src/components/preview/taskCheckboxSource.ts
+  s_7bfcdd8910c958::t_e8d8c078be0ede 1-31
+tests/e2e/find-highlight-leak.spec.ts
+  s_7bfcdd8910c958::t_ffe8f9198caf37 63,232,289
+src/components/preview/PreviewMode.tsx
+  s_7bfcdd8910c958::t_5e7d6695aabb3a 2,104-148,164,179,195-212,267
+  s_7bfcdd8910c958::t_e8d8c078be0ede 22
+tests/e2e/dep-bump-format-smoke.spec.ts
+  s_7bfcdd8910c958::t_ffe8f9198caf37 73,96,114,137,156
+tests/e2e/hosted-mobile-tablet-layout.spec.ts
+  s_7bfcdd8910c958::t_ffe8f9198caf37 226,229,334,408,411
+  s_7bfcdd8910c958::t_2a282419760a09 9,34-41,50-53
+tests/e2e/find-fenced-code-mode-switch.spec.ts
+  s_7bfcdd8910c958::t_ffe8f9198caf37 54
+src/App.test.tsx
+  s_7bfcdd8910c958::t_86be1b4b085dd6 194
+src/components/preview/PreviewToolbar.tsx
+  s_7bfcdd8910c958::t_af54b965f714c6 154
+tests/e2e/editor-integration.spec.ts
+  s_7bfcdd8910c958::t_ffe8f9198caf37 35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "6294b0182a6e9d3b853f631cf395f908e53ab0c3",
+  "prompts": {},
+  "sessions": {
+    "s_7bfcdd8910c958": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e8a4e-cfb9-74e3-9ff8-e484d255100f",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
