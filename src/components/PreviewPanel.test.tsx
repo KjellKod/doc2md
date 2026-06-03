@@ -498,7 +498,12 @@ describe("PreviewPanel", () => {
     render(
       <PreviewPanel
         entry={createEntry({
-          markdown: "1. [ ] First task\n2) [x] Second task",
+          markdown: [
+            "1) [ ] First task",
+            "2) [x] Second task",
+            "3) [ ] Third task",
+            "4) [ ] Fourth task",
+          ].join("\n"),
         })}
         onMarkdownChange={onChange}
       />,
@@ -506,12 +511,22 @@ describe("PreviewPanel", () => {
 
     fireEvent.click(screen.getByRole("checkbox", { name: "Toggle task: First task" }));
     expect(onChange).toHaveBeenLastCalledWith(
-      "1. [x] First task\n2) [x] Second task",
+      [
+        "1) [x] First task",
+        "2) [x] Second task",
+        "3) [ ] Third task",
+        "4) [ ] Fourth task",
+      ].join("\n"),
     );
 
     fireEvent.click(screen.getByRole("checkbox", { name: "Toggle task: Second task" }));
     expect(onChange).toHaveBeenLastCalledWith(
-      "1. [ ] First task\n2) [ ] Second task",
+      [
+        "1) [ ] First task",
+        "2) [ ] Second task",
+        "3) [ ] Third task",
+        "4) [ ] Fourth task",
+      ].join("\n"),
     );
   });
 
