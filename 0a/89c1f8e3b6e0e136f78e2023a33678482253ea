@@ -1,0 +1,43 @@
+ideas/2026-06-01_Public_repo_hardening.md
+  s_7bfcdd8910c958::t_738f2895c7d62a 1,13-14,34-35,37,50-51,73-74
+.github/workflows/codex-ci-review.yml
+  s_d8415e786d93fa::t_1a1d145b4e1717 34,39,150
+.github/workflows/codex-version-drift.yml
+  s_d8415e786d93fa::t_1a1d145b4e1717 19
+.github/workflows/deploy-pages.yml
+  s_d8415e786d93fa::t_1a1d145b4e1717 75,80,123,143
+.github/workflows/release-mac.yml
+  s_d8415e786d93fa::t_1a1d145b4e1717 80,87,178,203,208
+.github/workflows/ci.yml
+  s_d8415e786d93fa::t_1a1d145b4e1717 17,20,40,43,63,66,83,86,108
+.github/workflows/intent-review.yml
+  s_d8415e786d93fa::t_1a1d145b4e1717 36
+.github/workflows/pr-body-gate.yml
+  s_d8415e786d93fa::t_1a1d145b4e1717 21
+.github/workflows/security.yml
+  s_d8415e786d93fa::t_1a1d145b4e1717 17,39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "0a89c1f8e3b6e0e136f78e2023a33678482253ea",
+  "prompts": {},
+  "sessions": {
+    "s_7bfcdd8910c958": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e8a4e-cfb9-74e3-9ff8-e484d255100f",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_d8415e786d93fa": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "019e8a4e-cfb9-74e3-9ff8-e484d255100f",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
