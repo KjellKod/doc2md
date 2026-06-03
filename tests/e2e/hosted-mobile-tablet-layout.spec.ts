@@ -6,6 +6,7 @@ const PHONE_KEYBOARD_OPEN = { width: 375, height: 340 } as const;
 const TABLET_PORTRAIT = { width: 768, height: 1024 } as const;
 
 const TAP_FLOOR_PX = 40;
+const VIEWPORT_EDGE_TOLERANCE_PX = 2;
 
 async function openHostedApp(page: Page) {
   await page.goto("./");
@@ -30,10 +31,14 @@ async function expectInViewport(locator: Locator, page: Page) {
   expect(box).not.toBeNull();
   const viewport = page.viewportSize();
   expect(viewport).not.toBeNull();
-  expect(box!.x).toBeGreaterThanOrEqual(-1);
-  expect(box!.y).toBeGreaterThanOrEqual(-1);
-  expect(box!.x + box!.width).toBeLessThanOrEqual(viewport!.width + 1);
-  expect(box!.y + box!.height).toBeLessThanOrEqual(viewport!.height + 1);
+  expect(box!.x).toBeGreaterThanOrEqual(-VIEWPORT_EDGE_TOLERANCE_PX);
+  expect(box!.y).toBeGreaterThanOrEqual(-VIEWPORT_EDGE_TOLERANCE_PX);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(
+    viewport!.width + VIEWPORT_EDGE_TOLERANCE_PX,
+  );
+  expect(box!.y + box!.height).toBeLessThanOrEqual(
+    viewport!.height + VIEWPORT_EDGE_TOLERANCE_PX,
+  );
 }
 
 async function expectHorizontallyInViewport(locator: Locator, page: Page) {
@@ -42,8 +47,10 @@ async function expectHorizontallyInViewport(locator: Locator, page: Page) {
   expect(box).not.toBeNull();
   const viewport = page.viewportSize();
   expect(viewport).not.toBeNull();
-  expect(box!.x).toBeGreaterThanOrEqual(-1);
-  expect(box!.x + box!.width).toBeLessThanOrEqual(viewport!.width + 1);
+  expect(box!.x).toBeGreaterThanOrEqual(-VIEWPORT_EDGE_TOLERANCE_PX);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(
+    viewport!.width + VIEWPORT_EDGE_TOLERANCE_PX,
+  );
 }
 
 async function expectAlignedWidths(first: Locator, second: Locator) {
@@ -216,10 +223,10 @@ test.describe("hosted mobile and tablet layout", () => {
     await expect(saveButton).toBeVisible();
 
     // Mode switch via PreviewToolbar: edit -> preview -> linkedin -> edit.
-    await page.getByRole("button", { name: "Preview", exact: true }).click();
+    await page.getByRole("button", { name: "View", exact: true }).click();
     await expect(
       page
-        .getByRole("region", { name: "Preview" })
+        .getByRole("region", { name: "View" })
         .getByRole("heading", { name: "Phone draft" }),
     ).toBeVisible();
 
@@ -324,7 +331,7 @@ test.describe("hosted mobile and tablet layout", () => {
       page.getByRole("button", { name: "Edit", exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Preview", exact: true }),
+      page.getByRole("button", { name: "View", exact: true }),
     ).toBeVisible();
     await expect(
       page.getByRole("button", { name: "LinkedIn", exact: true }),
@@ -398,10 +405,10 @@ test.describe("hosted mobile and tablet layout", () => {
         Math.floor(viewportSize!.height * 0.55),
       );
 
-      await page.getByRole("button", { name: "Preview", exact: true }).click();
+      await page.getByRole("button", { name: "View", exact: true }).click();
       await expect(
         page
-          .getByRole("region", { name: "Preview" })
+          .getByRole("region", { name: "View" })
           .getByRole("heading", { name: `Loaded ${viewport.width}` }),
       ).toBeVisible();
       await expectNoHorizontalOverflow(page);

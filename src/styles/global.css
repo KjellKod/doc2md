@@ -731,7 +731,9 @@ button.eyebrow.eyebrow-toggle {
 }
 
 .page.is-working-mode .preview-panel {
-  min-height: min(640px, var(--preview-panel-ceiling));
+  height: var(--preview-panel-ceiling);
+  min-height: var(--preview-panel-ceiling);
+  max-height: var(--preview-panel-ceiling);
 }
 
 .page.is-working-mode .preview-panel > .panel-heading {
@@ -3379,7 +3381,8 @@ body.is-height-resizing * {
     min-width: 0;
   }
 
-  .preview-panel {
+  .preview-panel,
+  .app-shell-hosted .page.is-working-mode .preview-panel {
     height: max(50dvh, min(680px, var(--preview-panel-ceiling)));
     min-height: 50dvh;
     max-height: none;
@@ -3419,11 +3422,13 @@ body.is-height-resizing * {
     font-size: 1rem;
   }
 
-  .app-shell-hosted .preview-panel {
+  .app-shell-hosted .preview-panel,
+  .app-shell-hosted .page.is-working-mode .preview-panel {
     /* Use dvh to handle dynamic browser chrome (mobile/tablet URL bar
      * collapse/expand) without clipping the editor. */
     height: max(60dvh, min(720px, var(--preview-panel-ceiling)));
     min-height: 60dvh;
+    max-height: none;
   }
 
   .app-shell-hosted .working-mode-bar {
@@ -3671,8 +3676,10 @@ body.is-height-resizing * {
    * shove the editor below the visible viewport. Combined with the
    * sticky toolbar above, the Save action remains reachable when the
    * keyboard is open. */
-  .app-shell-hosted .preview-panel {
+  .app-shell-hosted .preview-panel,
+  .app-shell-hosted .page.is-working-mode .preview-panel {
     height: max(55dvh, min(620px, var(--preview-panel-ceiling)));
     min-height: 55dvh;
+    max-height: none;
   }
 }

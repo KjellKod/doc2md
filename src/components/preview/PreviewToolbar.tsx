@@ -151,7 +151,7 @@ export default function PreviewToolbar({
             onClick={() => onModeChange("preview")}
             aria-pressed={mode === "preview"}
           >
-            Preview
+            View
           </button>
           <div className="preview-toggle-with-tooltip">
             <button

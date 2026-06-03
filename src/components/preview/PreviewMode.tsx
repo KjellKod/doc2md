@@ -1,4 +1,5 @@
 import {
+  type ChangeEvent,
   useLayoutEffect,
   useMemo,
   type KeyboardEvent,
@@ -18,6 +19,7 @@ import {
   useRenderedActiveMatchCentering,
   useRenderedAnchorApply,
 } from "./renderedSurfaceEffects";
+import { replaceTaskMarkerAtSourceLine } from "./taskCheckboxSource";
 
 // Link classification (external / anchor / disabled) is shared with the
 // static HTML export renderer via src/render/markdownLinks.ts so the two
@@ -99,6 +101,51 @@ const previewMarkdownComponents: Components = {
   },
 };
 
+function previewMarkdownComponentsFor(
+  onTaskCheckboxToggle?: (sourceLine: number, checked: boolean) => void,
+): Components {
+  if (!onTaskCheckboxToggle) {
+    return previewMarkdownComponents;
+  }
+
+  return {
+    ...previewMarkdownComponents,
+    input({ node, type, checked, disabled, ...props }) {
+      void node;
+      const taskSourceLineValue = (props as Record<string, unknown>)[
+        "data-task-source-line"
+      ];
+      const taskSourceLine =
+        typeof taskSourceLineValue === "string"
+          ? Number.parseInt(taskSourceLineValue, 10)
+          : Number.NaN;
+
+      if (type !== "checkbox" || !Number.isInteger(taskSourceLine)) {
+        return (
+          <input
+            {...props}
+            type={type}
+            checked={checked}
+            disabled={disabled}
+          />
+        );
+      }
+
+      return (
+        <input
+          {...props}
+          type="checkbox"
+          checked={Boolean(checked)}
+          disabled={false}
+          onChange={(event: ChangeEvent<HTMLInputElement>) =>
+            onTaskCheckboxToggle(taskSourceLine, event.currentTarget.checked)
+          }
+        />
+      );
+    },
+  };
+}
+
 interface MutableElementRef<T> {
   current: T | null;
 }
@@ -114,6 +161,7 @@ interface PreviewModeProps {
   renderedViewText: string;
   viewportTopFloor: () => number;
   onReportView?: () => void;
+  onMarkdownChange?: (markdown: string) => void;
   onRenderedViewTextChange: (nextText: string) => void;
 }
 
@@ -128,6 +176,7 @@ export default function PreviewMode({
   renderedViewText,
   viewportTopFloor,
   onReportView,
+  onMarkdownChange,
   onRenderedViewTextChange,
 }: PreviewModeProps) {
   const previewWithLineMap = useMemo(
@@ -143,6 +192,24 @@ export default function PreviewMode({
     [activeFindMatch, isFindOpen],
   );
   const findHighlight = useFindHighlight(renderedFindHighlightMatch);
+  const previewComponents = useMemo(
+    () =>
+      previewMarkdownComponentsFor(
+        onMarkdownChange
+          ? (sourceLine, checked) => {
+              const nextMarkdown = replaceTaskMarkerAtSourceLine(
+                effectiveMarkdown,
+                sourceLine,
+                checked,
+              );
+              if (nextMarkdown !== effectiveMarkdown) {
+                onMarkdownChange(nextMarkdown);
+              }
+            }
+          : undefined,
+      ),
+    [effectiveMarkdown, onMarkdownChange],
+  );
   const previewRehypePlugins = useMemo(
     () => [
       // rehype-slug runs first so heading ids are in place before the
@@ -197,7 +264,7 @@ export default function PreviewMode({
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={previewRehypePlugins}
-        components={previewMarkdownComponents}
+        components={previewComponents}
       >
         {previewMarkdown}
       </ReactMarkdown>

@@ -213,6 +213,40 @@ describe("App desktop bridge", () => {
     cleanupShell();
   });
 
+  it("marks a desktop document edited when a View checkbox is toggled", async () => {
+    const openFile = vi.fn(async () => ({
+      ok: true as const,
+      kind: "markdown" as const,
+      path: "/Users/me/Tasks.md",
+      content: "- [ ] Desktop task",
+      mtimeMs: 10,
+      lineEnding: "lf" as const,
+    }));
+    const cleanupShell = installMockShell({ openFile });
+
+    render(<DesktopApp />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await awaitOpenButton("Open Tasks.md");
+
+    expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
+      "Saved",
+    );
+    const taskCheckbox = document.querySelector(
+      ".markdown-surface input[type='checkbox']",
+    );
+    expect(taskCheckbox).not.toBeNull();
+    fireEvent.click(taskCheckbox!);
+
+    await waitFor(() =>
+      expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
+        "Unsaved",
+      ),
+    );
+    expect(screen.getByRole("button", { name: "Save document" })).toBeEnabled();
+
+    cleanupShell();
+  });
+
   it("reloads the active saved desktop file from disk", async () => {
     const openFile = vi
       .fn()

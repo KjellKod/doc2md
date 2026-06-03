@@ -548,7 +548,7 @@ export default function AppShell(props: AppShellProps) {
                 ) : null}
                 <div className="panel-heading">
                   <div>
-                    <h2 id="preview-title">Preview</h2>
+                    <h2 id="preview-title">View</h2>
                     <p className="panel-copy">
                       {selectedEntry
                         ? entryDisplayName(selectedEntry)

@@ -445,6 +445,7 @@ export default function PreviewPanel({
           renderedViewRef={renderedViewRef}
           renderedViewText={renderedViewText}
           onReportView={reportView}
+          onMarkdownChange={onMarkdownChange}
           onRenderedViewTextChange={setRenderedViewText}
         />
       )}

@@ -70,7 +70,7 @@ test.describe("dep bump format smoke (PR #119)", () => {
 
     await openUploadedFile(page, "smoke-bump.md");
 
-    const preview = page.getByRole("region", { name: "Preview" });
+    const preview = page.getByRole("region", { name: "View" });
     await expect(
       preview.getByRole("heading", { name: "Bump Smoke", level: 1 }),
     ).toBeVisible();
@@ -93,7 +93,7 @@ test.describe("dep bump format smoke (PR #119)", () => {
 
     // The unit-test smoke expects the converted markdown to contain
     // "Sample PDF"; that lives in the Preview region after conversion.
-    const preview = page.getByRole("region", { name: "Preview" });
+    const preview = page.getByRole("region", { name: "View" });
     await expect(preview.getByText(/Sample PDF/i).first()).toBeVisible({
       timeout: 20_000,
     });
@@ -111,7 +111,7 @@ test.describe("dep bump format smoke (PR #119)", () => {
 
     await openUploadedFile(page, "sample.xlsx");
 
-    const preview = page.getByRole("region", { name: "Preview" });
+    const preview = page.getByRole("region", { name: "View" });
     // Markers from src/__tests__/smoke.test.ts:130: per-sheet heading and
     // the Projects table header row.
     await expect(
@@ -134,7 +134,7 @@ test.describe("dep bump format smoke (PR #119)", () => {
 
     await openUploadedFile(page, "sample.docx");
 
-    const preview = page.getByRole("region", { name: "Preview" });
+    const preview = page.getByRole("region", { name: "View" });
     // Marker from src/__tests__/smoke.test.ts:117: the Overview heading.
     await expect(
       preview.getByRole("heading", { name: /Overview/i, level: 1 }),
@@ -153,7 +153,7 @@ test.describe("dep bump format smoke (PR #119)", () => {
     await openUploadedFile(page, "find-target.md");
 
     // Wait for the preview to populate before opening Find.
-    const preview = page.getByRole("region", { name: "Preview" });
+    const preview = page.getByRole("region", { name: "View" });
     await expect(preview.getByText(/Apple Banana Cherry/i)).toBeVisible();
 
     // PreviewPanel wires the find shortcut on window keydown.

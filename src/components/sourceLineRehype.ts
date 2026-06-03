@@ -1,4 +1,4 @@
-import type { Element, Root, RootContent } from "hast";
+import type { Element, ElementContent, Root, RootContent } from "hast";
 
 /**
  * A hand-rolled rehype plugin (no extra dependency) that stamps each
@@ -13,9 +13,9 @@ import type { Element, Root, RootContent } from "hast";
  * (1-based). Defensive out-of-range lookups fall back to the formatted
  * line itself.
  *
- * Only top-level elements are stamped; nested blocks inherit their
- * parent's data attribute via DOM hierarchy when readers walk the tree
- * (the consumer needs only one stamp per displayed block).
+ * Top-level elements get `data-source-line` for viewport anchoring. Task list
+ * checkboxes also get `data-task-source-line` so rendered View checkboxes can
+ * update the exact source marker without polluting the viewport anchor stamps.
  */
 export function sourceLineRehype(originalLineFor: number[]) {
   return function plugin() {
@@ -33,6 +33,11 @@ function stamp(node: RootContent, originalLineFor: number[]) {
   }
 
   const element = node as Element;
+  stampElementSourceLine(element, originalLineFor);
+  stampTaskCheckboxes(element, originalLineFor);
+}
+
+function stampElementSourceLine(element: Element, originalLineFor: number[]) {
   const startLine = element.position?.start?.line;
 
   if (typeof startLine !== "number" || startLine < 1) {
@@ -49,4 +54,99 @@ function stamp(node: RootContent, originalLineFor: number[]) {
   }
 
   element.properties["data-source-line"] = String(original);
+}
+
+function originalSourceLineFor(element: Element, originalLineFor: number[]) {
+  const startLine = element.position?.start?.line;
+  if (typeof startLine !== "number" || startLine < 1) {
+    return null;
+  }
+  return originalLineFor[startLine - 1] !== undefined
+    ? originalLineFor[startLine - 1]
+    : startLine;
+}
+
+function hasClass(element: Element, className: string) {
+  const value = element.properties?.className;
+  return Array.isArray(value)
+    ? value.includes(className)
+    : typeof value === "string" && value.split(/\s+/u).includes(className);
+}
+
+function isCheckboxInput(element: Element) {
+  return element.tagName === "input" && element.properties?.type === "checkbox";
+}
+
+function leadingTaskCheckbox(element: Element): Element | null {
+  const firstElementChild = element.children.find(
+    (child): child is Element => child.type === "element",
+  );
+
+  if (!firstElementChild) {
+    return null;
+  }
+
+  if (isCheckboxInput(firstElementChild)) {
+    return firstElementChild;
+  }
+
+  if (firstElementChild.tagName !== "p") {
+    return null;
+  }
+
+  const paragraphFirstElement = firstElementChild.children.find(
+    (child): child is Element => child.type === "element",
+  );
+  return paragraphFirstElement && isCheckboxInput(paragraphFirstElement)
+    ? paragraphFirstElement
+    : null;
+}
+
+function textContent(node: ElementContent): string {
+  if (node.type === "text") {
+    return node.value;
+  }
+
+  if (node.type !== "element") {
+    return "";
+  }
+
+  if (node.tagName === "input" || node.tagName === "ul" || node.tagName === "ol") {
+    return "";
+  }
+
+  return node.children.map(textContent).join("");
+}
+
+function taskCheckboxLabel(element: Element, sourceLine: number) {
+  const firstElementChild = element.children.find(
+    (child): child is Element => child.type === "element",
+  );
+  const labelSource =
+    firstElementChild?.tagName === "p" ? firstElementChild.children : element.children;
+  const label = labelSource
+    .map(textContent)
+    .join("")
+    .replace(/\s+/gu, " ")
+    .trim();
+
+  return label ? `Toggle task: ${label}` : `Toggle task on line ${sourceLine}`;
+}
+
+function stampTaskCheckboxes(element: Element, originalLineFor: number[]) {
+  if (element.tagName === "li" && hasClass(element, "task-list-item")) {
+    const sourceLine = originalSourceLineFor(element, originalLineFor);
+    const checkbox = leadingTaskCheckbox(element);
+    if (sourceLine !== null && checkbox) {
+      checkbox.properties = checkbox.properties ?? {};
+      checkbox.properties["data-task-source-line"] = String(sourceLine);
+      checkbox.properties["aria-label"] = taskCheckboxLabel(element, sourceLine);
+    }
+  }
+
+  for (const child of element.children) {
+    if (child.type === "element") {
+      stampTaskCheckboxes(child, originalLineFor);
+    }
+  }
 }

@@ -32,7 +32,7 @@ async function openExistingMarkdown(page: Page, name: string, body: string) {
   // Wait for the preview to mount.
   await expect(
     page
-      .getByRole("region", { name: "Preview" })
+      .getByRole("region", { name: "View" })
       .getByRole("heading")
       .first(),
   ).toBeVisible();

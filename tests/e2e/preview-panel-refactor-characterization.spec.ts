@@ -168,7 +168,7 @@ test.describe("PreviewPanel refactor characterization", () => {
     await textarea.press("Home");
     await textarea.type("Typed prefix. ");
 
-    await page.getByRole("button", { name: "Preview", exact: true }).click();
+    await page.getByRole("button", { name: "View", exact: true }).click();
     await expect(page.locator(".markdown-surface")).toHaveCount(1);
     await expect(page.locator(".markdown-find-overlay")).toHaveCount(0);
     await expect(page.locator(".markdown-surface .markdown-find-highlight")).toHaveCount(0);
@@ -226,7 +226,7 @@ test.describe("PreviewPanel refactor characterization", () => {
     ).toBeVisible();
     await expect(page.locator(".linkedin-surface")).toHaveCount(0);
 
-    await page.getByRole("button", { name: "Preview", exact: true }).click();
+    await page.getByRole("button", { name: "View", exact: true }).click();
     await expect(page.locator(".markdown-surface")).toHaveCount(1);
 
     const landed = await renderedTopSourceLine(page, ".markdown-surface");

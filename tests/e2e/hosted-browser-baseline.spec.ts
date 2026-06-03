@@ -50,7 +50,12 @@ async function uploadMarkdownFiles(page: Page, fixtures: MarkdownFixture[]) {
   // First file open triggers working-mode auto-collapse; re-expand so the
   // file-list buttons remain locatable for tests that interact with them.
   const showUpload = page.getByRole("button", { name: "Show upload panel" });
-  if (await showUpload.isVisible().catch(() => false)) {
+  if (
+    await showUpload
+      .waitFor({ state: "visible", timeout: 1500 })
+      .then(() => true)
+      .catch(() => false)
+  ) {
     await showUpload.click();
   }
 
@@ -63,7 +68,7 @@ async function uploadMarkdownFiles(page: Page, fixtures: MarkdownFixture[]) {
 async function expectPreviewHeading(page: Page, name: string) {
   await expect(
     page
-      .getByRole("region", { name: "Preview" })
+      .getByRole("region", { name: "View" })
       .getByRole("heading", { name }),
   ).toBeVisible();
 }
@@ -110,7 +115,7 @@ test("loads hosted app regions and empty states", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Files", exact: true }),
   ).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Preview" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "View" })).toBeVisible();
   await expect(
     page.getByText("No files or drafts yet.", { exact: true }),
   ).toBeVisible();
@@ -139,7 +144,7 @@ test("creates and edits a scratch draft", async ({ page }) => {
     page.getByRole("button", { name: "Download active file" }),
   ).toBeEnabled();
 
-  await page.getByRole("button", { name: "Preview" }).click();
+  await page.getByRole("button", { name: "View" }).click();
   await expectPreviewHeading(page, "Browser baseline draft");
 });
 
@@ -152,7 +157,7 @@ test("renders GFM task lists as checkboxes without bullet markers", async ({
   const editor = page.getByLabel("Edit markdown");
   await editor.fill("- [x] Ship fix\n- [ ] Write docs");
 
-  await page.getByRole("button", { name: "Preview" }).click();
+  await page.getByRole("button", { name: "View" }).click();
 
   const taskItems = page.locator(".markdown-surface li.task-list-item");
   await expect(taskItems).toHaveCount(2);
@@ -164,6 +169,27 @@ test("renders GFM task lists as checkboxes without bullet markers", async ({
   await expect(taskItems.nth(1)).toContainText("Write docs");
   await expect(taskItems.first().locator('input[type="checkbox"]')).toBeChecked();
   await expect(taskItems.nth(1).locator('input[type="checkbox"]')).not.toBeChecked();
+});
+
+test("toggles a task checkbox in View and shows the changed marker in Edit", async ({
+  page,
+}) => {
+  await openHostedApp(page);
+
+  await page.getByRole("button", { name: "Start writing", exact: true }).click();
+  await page
+    .getByLabel("Edit markdown")
+    .fill("- [ ] Ship fix\n- [x] Keep checked");
+
+  await page.getByRole("button", { name: "View" }).click();
+  await page
+    .getByRole("checkbox", { name: "Toggle task: Ship fix" })
+    .check();
+
+  await page.getByRole("button", { name: "Edit" }).click();
+  await expect(page.getByLabel("Edit markdown")).toHaveValue(
+    "- [x] Ship fix\n- [x] Keep checked",
+  );
 });
 
 test("renders nested GFM task list checkboxes indented at matching size", async ({
@@ -182,7 +208,7 @@ test("renders nested GFM task list checkboxes indented at matching size", async 
     ].join("\n"),
   );
 
-  await page.getByRole("button", { name: "Preview" }).click();
+  await page.getByRole("button", { name: "View" }).click();
 
   const taskItems = page.locator(".markdown-surface li.task-list-item");
   await expect(taskItems).toHaveCount(3);

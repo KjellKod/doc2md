@@ -158,6 +158,46 @@ describe("App hosted save control", () => {
     expect(createObjectURL).not.toHaveBeenCalled();
   });
 
+  it("marks a hosted draft unsaved when a View checkbox is toggled", async () => {
+    const createObjectURL = vi.fn(() => "blob:doc2md-checkbox");
+    const revokeObjectURL = vi.fn();
+    Object.defineProperty(URL, "createObjectURL", {
+      configurable: true,
+      value: createObjectURL,
+    });
+    Object.defineProperty(URL, "revokeObjectURL", {
+      configurable: true,
+      value: revokeObjectURL,
+    });
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(
+      () => undefined,
+    );
+
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Start writing" }));
+    fireEvent.change(await screen.findByLabelText("Edit markdown"), {
+      target: { value: "- [ ] Hosted task" },
+    });
+
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent("Unsaved"),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Save document" }));
+    expect(screen.getByRole("status")).toHaveTextContent("Saved");
+
+    fireEvent.click(screen.getByRole("button", { name: "View" }));
+    const taskCheckbox = document.querySelector(
+      ".markdown-surface input[type='checkbox']",
+    );
+    expect(taskCheckbox).not.toBeNull();
+    fireEvent.click(taskCheckbox!);
+
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent("Unsaved"),
+    );
+  });
+
   it("adds hosted New from a dirty scratch without discarding the draft", async () => {
     const confirmSpy = vi.spyOn(window, "confirm");
 

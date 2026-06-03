@@ -60,7 +60,7 @@ async function openFixtureInPreview(page: Page) {
   // Wait for the preview heading to mount.
   await expect(
     page
-      .getByRole("region", { name: "Preview" })
+      .getByRole("region", { name: "View" })
       .getByRole("heading", { name: "Heading" }),
   ).toBeVisible();
 }
@@ -229,7 +229,7 @@ test("Symptom A (Enter-navigation variant): rendered text + structure invariant 
   }
   await expect(
     page
-      .getByRole("region", { name: "Preview" })
+      .getByRole("region", { name: "View" })
       .getByRole("heading", { name: "Dense" }),
   ).toBeVisible();
 
@@ -286,7 +286,7 @@ test("Symptom B: switching Preview → Edit → Preview with find active leaves 
   await page.getByRole("button", { name: "Next match" }).click();
 
   // Switch back to Preview.
-  await page.getByRole("button", { name: "Preview", exact: true }).click();
+  await page.getByRole("button", { name: "View", exact: true }).click();
   await expect(page.locator(".markdown-surface")).toBeVisible();
 
   const shape = await captureSurfaceShape(page);
