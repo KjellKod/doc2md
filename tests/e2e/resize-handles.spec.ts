@@ -124,7 +124,7 @@ test("resets and snap-collapses the upload panel from the split bar", async ({
   await expect(splitBar).toHaveCount(0);
 });
 
-test("grows and resets the editor height from the bottom handle", async ({
+test("shrinks and resets the editor height from the bottom handle", async ({
   page,
 }) => {
   await openHostedApp(page, 1600);
@@ -138,15 +138,15 @@ test("grows and resets the editor height from the bottom handle", async ({
   await heightHandle.scrollIntoViewIfNeeded();
   const initialPreviewBox = await boundingBox(previewPanel);
 
-  await dragFromCenter(page, heightHandle, 0, 120);
+  await dragFromCenter(page, heightHandle, 0, -120);
 
-  const grownPreviewBox = await boundingBox(previewPanel);
-  expect(grownPreviewBox.height).toBeGreaterThan(initialPreviewBox.height + 60);
+  const shrunkPreviewBox = await boundingBox(previewPanel);
+  expect(shrunkPreviewBox.height).toBeLessThan(initialPreviewBox.height - 60);
 
   await heightHandle.dblclick();
   const resetPreviewBox = await boundingBox(previewPanel);
-  expect(resetPreviewBox.height).toBeLessThanOrEqual(
-    initialPreviewBox.height + EPSILON_PX,
+  expect(resetPreviewBox.height).toBeGreaterThanOrEqual(
+    initialPreviewBox.height - EPSILON_PX,
   );
 });
 

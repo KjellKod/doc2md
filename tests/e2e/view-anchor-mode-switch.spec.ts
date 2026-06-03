@@ -210,7 +210,7 @@ test.describe("view anchor mode switch", () => {
     page,
   }) => {
     await openFixture(page);
-    await page.getByRole("button", { name: "Preview", exact: true }).click();
+    await page.getByRole("button", { name: "View", exact: true }).click();
 
     await page.evaluate(() => {
       const surface = document.querySelector(
@@ -246,7 +246,7 @@ test.describe("view anchor mode switch", () => {
     });
     const captured = await topSourceLineFromEditor(page);
 
-    await page.getByRole("button", { name: "Preview", exact: true }).click();
+    await page.getByRole("button", { name: "View", exact: true }).click();
     await (await previewSurface(page)).waitFor();
 
     const delta = await topElementYDelta(
@@ -284,7 +284,7 @@ test.describe("view anchor mode switch", () => {
     page,
   }) => {
     await openFixture(page);
-    await page.getByRole("button", { name: "Preview", exact: true }).click();
+    await page.getByRole("button", { name: "View", exact: true }).click();
     await page.evaluate(() => {
       const surface = document.querySelector(
         ".markdown-surface",
@@ -324,7 +324,7 @@ test.describe("view anchor mode switch", () => {
       document.documentElement.style.setProperty("--page-max-width", "1100px");
     });
 
-    await page.getByRole("button", { name: "Preview", exact: true }).click();
+    await page.getByRole("button", { name: "View", exact: true }).click();
     await (await previewSurface(page)).waitFor();
 
     const delta = await topElementYDelta(page, ".markdown-surface", captured);
@@ -335,7 +335,7 @@ test.describe("view anchor mode switch", () => {
     page,
   }) => {
     await openFixture(page);
-    await page.getByRole("button", { name: "Preview", exact: true }).click();
+    await page.getByRole("button", { name: "View", exact: true }).click();
     await page.evaluate(() => {
       const surface = document.querySelector(
         ".markdown-surface",
@@ -349,7 +349,7 @@ test.describe("view anchor mode switch", () => {
     await page.getByRole("button", { name: "Edit", exact: true }).click();
     await editorTextarea(page).then((textarea) => textarea.waitFor());
 
-    await page.getByRole("button", { name: "Preview", exact: true }).click();
+    await page.getByRole("button", { name: "View", exact: true }).click();
     await (await previewSurface(page)).waitFor();
 
     const delta = await topElementYDelta(page, ".markdown-surface", captured);
@@ -387,7 +387,7 @@ test.describe("view anchor mode switch", () => {
       },
     ]);
 
-    await page.getByRole("button", { name: "Preview", exact: true }).click();
+    await page.getByRole("button", { name: "View", exact: true }).click();
     await page.evaluate(() => {
       const surface = document.querySelector(
         ".markdown-surface",
@@ -404,7 +404,7 @@ test.describe("view anchor mode switch", () => {
       page.getByText("LinkedIn view is unavailable for Markdown tables."),
     ).toBeVisible();
 
-    await page.getByRole("button", { name: "Preview", exact: true }).click();
+    await page.getByRole("button", { name: "View", exact: true }).click();
     await (await previewSurface(page)).waitFor();
 
     const delta = await topElementYDelta(page, ".markdown-surface", captured);
@@ -415,7 +415,7 @@ test.describe("view anchor mode switch", () => {
     page,
   }) => {
     await openFixture(page);
-    await page.getByRole("button", { name: "Preview", exact: true }).click();
+    await page.getByRole("button", { name: "View", exact: true }).click();
 
     const stampedCount = await page.evaluate(() => {
       const surface = document.querySelector(
@@ -489,7 +489,7 @@ test.describe("cross-document view anchor", () => {
   }) => {
     await openTwoDocs(page);
     await selectDoc(page, DOC_A);
-    await page.getByRole("button", { name: "Preview", exact: true }).click();
+    await page.getByRole("button", { name: "View", exact: true }).click();
     await (await previewSurface(page)).waitFor();
 
     await page.evaluate(() => {
@@ -505,7 +505,7 @@ test.describe("cross-document view anchor", () => {
 
     // Visit the other document, then come back to the first.
     await selectDoc(page, DOC_B);
-    await page.getByRole("button", { name: "Preview", exact: true }).click();
+    await page.getByRole("button", { name: "View", exact: true }).click();
     await selectDoc(page, DOC_A);
     await (await previewSurface(page)).waitFor();
 
@@ -548,7 +548,7 @@ test.describe("cross-document view anchor", () => {
 
     // Give document A a remembered preview position.
     await selectDoc(page, DOC_A);
-    await page.getByRole("button", { name: "Preview", exact: true }).click();
+    await page.getByRole("button", { name: "View", exact: true }).click();
     await (await previewSurface(page)).waitFor();
     await page.evaluate(() => {
       const surface = document.querySelector(

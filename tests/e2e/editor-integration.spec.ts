@@ -32,7 +32,7 @@ async function openExistingMarkdown(page: Page, name: string, body: string) {
   // Wait for the preview to mount.
   await expect(
     page
-      .getByRole("region", { name: "Preview" })
+      .getByRole("region", { name: "View" })
       .getByRole("heading")
       .first(),
   ).toBeVisible();
@@ -183,6 +183,36 @@ test("Match Case is enabled by default on Cmd-F", async ({ page }) => {
   // Turning it off should bring all 3 occurrences.
   await page.getByRole("button", { name: "Case-sensitive search" }).click();
   await expect(page.locator(".find-replace-count")).toHaveText(/of 3\b/);
+});
+
+test("typing away from an active find match keeps the caret where the user placed it", async ({
+  page,
+}) => {
+  await openScratchEditor(page);
+  const editor = page.getByLabel("Edit markdown");
+  const searchText = "No phase row in this roadmap";
+  const body = [
+    "# Roadmap validation",
+    "",
+    searchText,
+    "",
+    "Other testing when applicable:",
+    "",
+  ].join("\n");
+  await editor.fill(body);
+
+  const isMac = process.platform === "darwin";
+  await page.keyboard.press(isMac ? "Meta+f" : "Control+f");
+  await page
+    .getByRole("textbox", { name: "Find markdown text" })
+    .fill(searchText);
+  await expect(page.locator(".find-replace-count")).toHaveText(/1 of 1\b/);
+
+  const insertAt = body.length;
+  await selectRange(page, insertAt, insertAt);
+  await page.keyboard.type("ffff", { delay: 0 });
+
+  await expect(editor).toHaveValue(`${body}ffff`);
 });
 
 test("Cmd-Alt-F is not intercepted by doc2md", async ({ page }) => {

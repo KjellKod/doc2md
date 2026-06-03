@@ -78,6 +78,15 @@ For each acceptance criterion, ensure at least one of:
 
 Or explicitly record why automation is not appropriate.
 
+For the main user-visible or workflow-critical acceptance criterion, coverage
+must exercise the exact reported workflow: the same mode, host/shell, file
+state, and interaction sequence. A nearby happy path is not sufficient proof.
+For browser + desktop-visible UI behavior, cover both the hosted browser path
+and the desktop adapter/native-open path, or record why one is out of scope.
+
+For bug fixes, prefer failing-first evidence: run the new regression against
+the broken code when feasible, or document why that could not be done.
+
 ### Rule 5: Stop on impactful uncertainty
 
 Stop and ask a question if any of these are unclear:

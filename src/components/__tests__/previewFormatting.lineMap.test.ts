@@ -18,6 +18,20 @@ describe("formatPreviewMarkdownWithLineMap", () => {
     }
   });
 
+  it("preserves parenthesized ordered lists as structural markdown", () => {
+    const input = [
+      "1) [ ] First task",
+      "2) [ ] Second task",
+      "3) [x] Third task",
+      "4) [ ] Fourth task",
+    ].join("\n");
+    const { markdown, originalLineFor } =
+      formatPreviewMarkdownWithLineMap(input);
+
+    expect(markdown).toBe(input);
+    expect(originalLineFor).toEqual([1, 2, 3, 4]);
+  });
+
   it("collapses consecutive blank lines while preserving the surviving blank's source", () => {
     const input = "# Heading\n\n\n\nParagraph";
     const { markdown, originalLineFor } =

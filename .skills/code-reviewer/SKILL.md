@@ -178,6 +178,12 @@ Review tests for:
 - determinism and isolation
 - realistic boundaries between unit and integration tests
 
+For the core user-visible behavior, require exact-workflow coverage: the same
+mode, host/shell, file state, and interaction sequence named by the user or
+acceptance criteria. Nearby happy-path tests are not enough. For behavior that
+exists in both hosted browser and desktop app, require both paths to be covered
+or a concrete out-of-scope explanation.
+
 If acceptance criteria exist but tests do not map to them, this is at least a **Must fix**, and often a **Blocker**.
 
 ---

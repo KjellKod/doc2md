@@ -165,7 +165,7 @@ describe("PreviewPanel", () => {
     render(<PreviewPanel entry={createEntry()} />);
 
     expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Preview" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "View" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "LinkedIn" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "LinkedIn" })).toHaveAttribute(
       "aria-describedby",
@@ -394,7 +394,7 @@ describe("PreviewPanel", () => {
 
     expect(screen.getByRole("textbox")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    fireEvent.click(screen.getByRole("button", { name: "View" }));
 
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
     expect(screen.getByText("Hello World")).toBeInTheDocument();
@@ -439,12 +439,13 @@ describe("PreviewPanel", () => {
     );
   });
 
-  it("renders GFM task list markers as disabled checkboxes", () => {
+  it("renders GFM task list markers as interactive checkboxes", () => {
     const { container } = render(
       <PreviewPanel
         entry={createEntry({
           markdown: "- [x] Ship fix\n- [ ] Write docs",
         })}
+        onMarkdownChange={vi.fn()}
       />,
     );
 
@@ -462,12 +463,140 @@ describe("PreviewPanel", () => {
 
     const checkboxes = screen.getAllByRole("checkbox");
     expect(checkboxes).toHaveLength(2);
+    expect(screen.getByRole("checkbox", { name: "Toggle task: Ship fix" })).toBe(
+      checkboxes[0],
+    );
+    expect(
+      screen.getByRole("checkbox", { name: "Toggle task: Write docs" }),
+    ).toBe(checkboxes[1]);
     expect(checkboxes[0]).toBeChecked();
-    expect(checkboxes[0]).toBeDisabled();
+    expect(checkboxes[0]).toBeEnabled();
     expect(checkboxes[1]).not.toBeChecked();
-    expect(checkboxes[1]).toBeDisabled();
+    expect(checkboxes[1]).toBeEnabled();
     expect(screen.getByText("Ship fix")).toBeInTheDocument();
     expect(screen.getByText("Write docs")).toBeInTheDocument();
+  });
+
+  it("toggles a rendered task checkbox through onMarkdownChange", () => {
+    const onChange = vi.fn();
+    render(
+      <PreviewPanel
+        entry={createEntry({
+          markdown: "- [x] Ship fix\n- [ ] Write docs",
+        })}
+        onMarkdownChange={onChange}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Toggle task: Write docs" }));
+
+    expect(onChange).toHaveBeenCalledWith("- [x] Ship fix\n- [x] Write docs");
+  });
+
+  it("toggles ordered task checkboxes through onMarkdownChange", () => {
+    const onChange = vi.fn();
+    render(
+      <PreviewPanel
+        entry={createEntry({
+          markdown: [
+            "1) [ ] First task",
+            "2) [x] Second task",
+            "3) [ ] Third task",
+            "4) [ ] Fourth task",
+          ].join("\n"),
+        })}
+        onMarkdownChange={onChange}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Toggle task: First task" }));
+    expect(onChange).toHaveBeenLastCalledWith(
+      [
+        "1) [x] First task",
+        "2) [x] Second task",
+        "3) [ ] Third task",
+        "4) [ ] Fourth task",
+      ].join("\n"),
+    );
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Toggle task: Second task" }));
+    expect(onChange).toHaveBeenLastCalledWith(
+      [
+        "1) [ ] First task",
+        "2) [ ] Second task",
+        "3) [ ] Third task",
+        "4) [ ] Fourth task",
+      ].join("\n"),
+    );
+  });
+
+  it("toggles exact task marker variants without changing neighboring lines", () => {
+    const onChange = vi.fn();
+    render(
+      <PreviewPanel
+        entry={createEntry({
+          markdown: [
+            "- [ ] Top task",
+            "  - [x] Nested task",
+            "- [X] Uppercase checked",
+            "Plain paragraph",
+          ].join("\n"),
+        })}
+        onMarkdownChange={onChange}
+      />,
+    );
+
+    fireEvent.click(screen.getAllByRole("checkbox")[1]);
+    expect(onChange).toHaveBeenLastCalledWith(
+      [
+        "- [ ] Top task",
+        "  - [ ] Nested task",
+        "- [X] Uppercase checked",
+        "Plain paragraph",
+      ].join("\n"),
+    );
+
+    fireEvent.click(screen.getAllByRole("checkbox")[2]);
+    expect(onChange).toHaveBeenLastCalledWith(
+      [
+        "- [ ] Top task",
+        "  - [x] Nested task",
+        "- [ ] Uppercase checked",
+        "Plain paragraph",
+      ].join("\n"),
+    );
+  });
+
+  it("toggles the correct task after preview formatting shifts rendered line numbers", () => {
+    const onChange = vi.fn();
+    const markdown = [
+      "Contact",
+      "Location: Denver, CO",
+      "Email: team@example.com",
+      "LinkedIn: https://example.com/company",
+      "",
+      "- [ ] Task after formatted contact block",
+    ].join("\n");
+
+    render(
+      <PreviewPanel
+        entry={createEntry({ markdown })}
+        onMarkdownChange={onChange}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("checkbox"));
+
+    expect(onChange).toHaveBeenCalledWith(
+      [
+        "Contact",
+        "Location: Denver, CO",
+        "Email: team@example.com",
+        "LinkedIn: https://example.com/company",
+        "",
+        "- [x] Task after formatted contact block",
+      ].join("\n"),
+    );
   });
 
   it("renders nested GFM task lists as nested checkbox list items", () => {
@@ -503,6 +632,26 @@ describe("PreviewPanel", () => {
       nestedList?.querySelectorAll(":scope > li.task-list-item"),
     ).toHaveLength(1);
     expect(screen.getAllByRole("checkbox")).toHaveLength(3);
+  });
+
+  it("stamps nested task checkboxes with their own source lines", () => {
+    render(
+      <ControlledPreviewPanel
+        initialMarkdown={[
+          "- [ ] Parent task",
+          "",
+          "  - [ ] Child task",
+        ].join("\n")}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Toggle task: Parent task" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Toggle task: Child task" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+    expect(screen.getByRole("textbox", { name: "Edit markdown" })).toHaveValue(
+      ["- [x] Parent task", "", "  - [x] Child task"].join("\n"),
+    );
   });
 
   it("copies the rendered preview as html and plain text in preview mode", async () => {
@@ -684,7 +833,7 @@ describe("PreviewPanel", () => {
       "# Edited\n\n- Item",
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    fireEvent.click(screen.getByRole("button", { name: "View" }));
     expect(screen.getByText("Edited")).toBeInTheDocument();
   });
 
@@ -920,7 +1069,7 @@ describe("PreviewPanel", () => {
     expect(
       screen.queryByRole("textbox", { name: "Edit markdown" }),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Preview" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "View" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
@@ -1101,7 +1250,7 @@ describe("PreviewPanel", () => {
       );
 
       fireEvent.click(screen.getByRole("button", { name: "Edit" }));
-      fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+      fireEvent.click(screen.getByRole("button", { name: "View" }));
 
       // First call captures preview-mode (covered above). Editor capture
       // happens on the edit→preview switch.
@@ -1358,7 +1507,7 @@ describe("PreviewPanel", () => {
       );
 
       fireEvent.click(screen.getByRole("button", { name: "Edit" }));
-      fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+      fireEvent.click(screen.getByRole("button", { name: "View" }));
 
       expect(topLineFromTextareaMirror).toHaveBeenCalledTimes(1);
       const callArgs =
@@ -1388,7 +1537,7 @@ describe("PreviewPanel", () => {
         screen.getByRole("textbox", { name: "Find markdown text" }),
       ).toBeInTheDocument();
     });
-    expect(screen.getByRole("button", { name: "Preview" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "View" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
@@ -1601,7 +1750,7 @@ describe("PreviewPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Find and replace" }));
     expect(screen.getByRole("search")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    fireEvent.click(screen.getByRole("button", { name: "View" }));
 
     expect(screen.getByRole("search")).toBeInTheDocument();
     expect(screen.getByText("Alpha")).toBeInTheDocument();
@@ -1680,7 +1829,7 @@ describe("PreviewPanel", () => {
     // the DOM: switch to edit, then back to preview. The deps
     // (mode + isFindOpen) change on each switch.
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
-    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    fireEvent.click(screen.getByRole("button", { name: "View" }));
     // After the second snapshot, renderedViewText reflects the current
     // surface (which still has the zero-width mark since find is open).
     await screen.findByText(/1 of/);

@@ -29,6 +29,13 @@ When running on Codex, this role is non-interactive:
 3. Explore the codebase to understand current state
 4. Write a structured implementation plan
 5. Include: scope, approach, file changes, acceptance criteria, test strategy
+   - For every user-facing or workflow-critical acceptance criterion, name the
+     exact user workflow, host/shell, and state source that must be validated.
+     If the behavior is browser- and desktop-visible, plan coverage for both
+     the hosted browser path and the desktop adapter/native-open path.
+   - Do not accept "nearby" happy-path tests as the only proof for core PR
+     behavior. The test strategy must include at least one exact-workflow
+     regression or e2e/integration test for the main user-visible claim.
 6. Write plan to `.quest/<quest_id>/phase_01_plan/plan.md` — the first lines MUST be your self-ID header (Agent/Model/Date/Quest ID) before any other content
 
 ### Subsequent invocations (refinement)

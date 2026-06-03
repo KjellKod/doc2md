@@ -35,6 +35,13 @@ There are **two** Code Review Agent invocations on each review pass. They run **
 1. Read all changed files provided by the orchestrator, or determine the touched area from builder/fixer notes when VCS metadata is unavailable
 2. Check code quality, security, and patterns against `AGENTS.md`
 3. Verify test coverage for new/changed code
+   - Map tests to acceptance criteria. If the core PR behavior is user-visible,
+     require an exact-workflow regression/e2e/integration test that exercises
+     the real mode, host/shell, file state, and interaction sequence. Flag
+     nearby happy-path-only coverage as Must fix.
+   - For behavior shared by hosted browser and desktop app, verify both paths
+     are covered or that the implementation notes justify why one path is out
+     of scope.
 4. Identify bugs, logic errors, or architectural violations
 5. Write markdown review to the assigned artifact path for the current slot
 6. Write canonical findings JSON to the assigned findings path for the current slot

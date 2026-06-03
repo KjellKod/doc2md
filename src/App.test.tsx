@@ -191,7 +191,7 @@ describe("App", () => {
       ).toBeEnabled();
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    fireEvent.click(screen.getByRole("button", { name: "View" }));
 
     expect(
       screen.getByRole("heading", { name: "Planning Notes" }),

@@ -213,6 +213,118 @@ describe("App desktop bridge", () => {
     cleanupShell();
   });
 
+  it("checks and unchecks a desktop document task checkbox in View", async () => {
+    const openFile = vi.fn(async () => ({
+      ok: true as const,
+      kind: "markdown" as const,
+      path: "/Users/me/Tasks.md",
+      content: "- [ ] Desktop task\n- [x] Keep checked",
+      mtimeMs: 10,
+      lineEnding: "lf" as const,
+    }));
+    const cleanupShell = installMockShell({ openFile });
+
+    render(<DesktopApp />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await awaitOpenButton("Open Tasks.md");
+
+    expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
+      "Saved",
+    );
+    const taskCheckbox = screen.getByRole("checkbox", {
+      name: "Toggle task: Desktop task",
+    });
+    expect(taskCheckbox).not.toBeChecked();
+    fireEvent.click(taskCheckbox);
+
+    await waitFor(() =>
+      expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
+        "Unsaved",
+      ),
+    );
+    expect(taskCheckbox).toBeChecked();
+    expect(screen.getByRole("button", { name: "Save document" })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    expect(screen.getByRole("textbox", { name: "Edit markdown" })).toHaveValue(
+      "- [x] Desktop task\n- [x] Keep checked",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "View" }));
+    const checkedTaskCheckbox = screen.getByRole("checkbox", {
+      name: "Toggle task: Desktop task",
+    });
+    expect(checkedTaskCheckbox).toBeChecked();
+    fireEvent.click(checkedTaskCheckbox);
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    await waitFor(() =>
+      expect(screen.getByRole("textbox", { name: "Edit markdown" })).toHaveValue(
+        "- [ ] Desktop task\n- [x] Keep checked",
+      ),
+    );
+
+    cleanupShell();
+  });
+
+  it("checks nested marker task checkboxes in a desktop document View", async () => {
+    const openFile = vi.fn(async () => ({
+      ok: true as const,
+      kind: "markdown" as const,
+      path: "/Users/me/NestedTasks.md",
+      content: [
+        "- [ ] First This works",
+        "1. - [ ] Second this is broken",
+        "- - [x] Third  this is broken",
+        "",
+        "- - [ ] Fourth this is broken",
+      ].join("\n"),
+      mtimeMs: 10,
+      lineEnding: "lf" as const,
+    }));
+    const cleanupShell = installMockShell({ openFile });
+
+    render(<DesktopApp />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+    await awaitOpenButton("Open NestedTasks.md");
+
+    fireEvent.click(
+      screen.getByRole("checkbox", {
+        name: "Toggle task: First This works",
+      }),
+    );
+    fireEvent.click(
+      screen.getByRole("checkbox", {
+        name: "Toggle task: Second this is broken",
+      }),
+    );
+    fireEvent.click(
+      screen.getByRole("checkbox", {
+        name: "Toggle task: Third this is broken",
+      }),
+    );
+    fireEvent.click(
+      screen.getByRole("checkbox", {
+        name: "Toggle task: Fourth this is broken",
+      }),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    await waitFor(() =>
+      expect(screen.getByRole("textbox", { name: "Edit markdown" })).toHaveValue(
+        [
+          "- [x] First This works",
+          "1. - [x] Second this is broken",
+          "- - [ ] Third  this is broken",
+          "",
+          "- - [x] Fourth this is broken",
+        ].join("\n"),
+      ),
+    );
+
+    cleanupShell();
+  });
+
   it("reloads the active saved desktop file from disk", async () => {
     const openFile = vi
       .fn()

@@ -116,6 +116,14 @@ Convert vague testing statements into explicit expectations:
 - **What is covered** (scenario level)
 - **What is mocked vs real** (dependency strategy)
 
+For the core user-visible behavior, require an exact-workflow
+regression/e2e/integration expectation. It must match the reported mode,
+host/shell, file state, and interaction sequence. Flag plans that rely only on
+nearby happy-path tests as **Must fix**.
+
+For behavior visible in both the hosted browser and desktop app, require
+coverage for both paths or a concrete out-of-scope explanation.
+
 Examples:
 - “Unit tests cover X” → list concrete test cases
 - “Integration tests exist” → describe workflow boundaries (POST → GET → UPDATE)

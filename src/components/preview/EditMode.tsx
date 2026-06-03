@@ -216,6 +216,11 @@ export default function EditMode({
       !suppressMatchCenteringForModeSwitchRef.current
     ) {
       const textarea = textareaRef.current;
+      if (textarea.ownerDocument?.activeElement === textarea) {
+        syncFindHighlightScroll();
+        return;
+      }
+
       textarea.setSelectionRange(activeFindMatch.end, activeFindMatch.end);
 
       scrollTextareaToOffset(

@@ -1,4 +1,4 @@
-const MARKDOWN_STRUCTURAL_LINE = /^(#{1,6}\s+|>\s?|[-*+]\s+|\d+\.\s+|[`~]{3,}|[-*_]{3,}\s*$)/;
+const MARKDOWN_STRUCTURAL_LINE = /^(#{1,6}\s+|>\s?|[-*+]\s+|\d+[.)]\s+|[`~]{3,}|[-*_]{3,}\s*$)/;
 const MARKDOWN_TABLE_LINE = /^\|.+\|$|^:?-{3,}:?(?:\s*\|\s*:?-{3,}:?)*$/;
 const HEADING_PUNCTUATION = /[.!?;:]$/;
 const METADATA_LABEL = /^([A-Za-z][A-Za-z0-9/&()' -]{1,42}):\s+(.+)$/;
