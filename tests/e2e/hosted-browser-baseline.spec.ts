@@ -217,6 +217,46 @@ test("checks and unchecks a task checkbox directly in View", async ({ page }) =>
   );
 });
 
+test("checks and unchecks task checkboxes for an opened markdown file in View", async ({
+  page,
+}) => {
+  await openHostedApp(page);
+
+  await uploadMarkdownFiles(page, [
+    {
+      name: "tasks.md",
+      body: "- [ ] Ship fix\n- [x] Keep checked",
+    },
+  ]);
+
+  await page.getByRole("button", { name: "View" }).click();
+
+  const shipFix = page.getByRole("checkbox", { name: "Toggle task: Ship fix" });
+  await expect(shipFix).not.toBeChecked();
+
+  await shipFix.click();
+  await expect(shipFix).toBeChecked();
+
+  await page.getByRole("button", { name: "Edit" }).click();
+  await expect(page.getByLabel("Edit markdown")).toHaveValue(
+    "- [x] Ship fix\n- [x] Keep checked",
+  );
+
+  await page.getByRole("button", { name: "View" }).click();
+  const checkedShipFix = page.getByRole("checkbox", {
+    name: "Toggle task: Ship fix",
+  });
+  await expect(checkedShipFix).toBeChecked();
+
+  await checkedShipFix.click();
+  await expect(checkedShipFix).not.toBeChecked();
+
+  await page.getByRole("button", { name: "Edit" }).click();
+  await expect(page.getByLabel("Edit markdown")).toHaveValue(
+    "- [ ] Ship fix\n- [x] Keep checked",
+  );
+});
+
 test("renders nested GFM task list checkboxes indented at matching size", async ({
   page,
 }) => {

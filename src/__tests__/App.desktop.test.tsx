@@ -213,12 +213,12 @@ describe("App desktop bridge", () => {
     cleanupShell();
   });
 
-  it("marks a desktop document edited when a View checkbox is toggled", async () => {
+  it("checks and unchecks a desktop document task checkbox in View", async () => {
     const openFile = vi.fn(async () => ({
       ok: true as const,
       kind: "markdown" as const,
       path: "/Users/me/Tasks.md",
-      content: "- [ ] Desktop task",
+      content: "- [ ] Desktop task\n- [x] Keep checked",
       mtimeMs: 10,
       lineEnding: "lf" as const,
     }));
@@ -231,18 +231,38 @@ describe("App desktop bridge", () => {
     expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
       "Saved",
     );
-    const taskCheckbox = document.querySelector(
-      ".markdown-surface input[type='checkbox']",
-    );
-    expect(taskCheckbox).not.toBeNull();
-    fireEvent.click(taskCheckbox!);
+    const taskCheckbox = screen.getByRole("checkbox", {
+      name: "Toggle task: Desktop task",
+    });
+    expect(taskCheckbox).not.toBeChecked();
+    fireEvent.click(taskCheckbox);
 
     await waitFor(() =>
       expect(screen.getByLabelText("Desktop file status")).toHaveTextContent(
         "Unsaved",
       ),
     );
+    expect(taskCheckbox).toBeChecked();
     expect(screen.getByRole("button", { name: "Save document" })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    expect(screen.getByRole("textbox", { name: "Edit markdown" })).toHaveValue(
+      "- [x] Desktop task\n- [x] Keep checked",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "View" }));
+    const checkedTaskCheckbox = screen.getByRole("checkbox", {
+      name: "Toggle task: Desktop task",
+    });
+    expect(checkedTaskCheckbox).toBeChecked();
+    fireEvent.click(checkedTaskCheckbox);
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    await waitFor(() =>
+      expect(screen.getByRole("textbox", { name: "Edit markdown" })).toHaveValue(
+        "- [ ] Desktop task\n- [x] Keep checked",
+      ),
+    );
 
     cleanupShell();
   });

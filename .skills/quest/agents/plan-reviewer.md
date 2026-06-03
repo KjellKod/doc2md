@@ -31,6 +31,13 @@ There are **two** Plan Review Agent invocations on every plan iteration. They ru
 2. Check against quest brief acceptance criteria
 3. Verify architectural consistency with `AGENTS.md` boundaries
 4. Check test strategy completeness
+   - Treat missing exact-workflow coverage for the PR's core user-visible
+     behavior as a Must fix. "Similar" happy-path tests are not enough when
+     the acceptance criterion names a specific mode, host, file state, or
+     interaction sequence.
+   - For browser + desktop-visible behavior, verify the plan names validation
+     for both hosted browser and desktop adapter/native-open paths, or gives a
+     concrete reason one path is out of scope.
 5. Identify gaps, risks, or unclear areas
 6. Write review to the assigned artifact path for the current slot
 

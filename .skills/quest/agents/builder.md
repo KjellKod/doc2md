@@ -23,6 +23,13 @@ When running on Codex, this role is non-interactive:
 1. Read the approved plan
 2. Implement changes following the plan step by step
 3. Run tests after each significant change
+   - For the main acceptance criterion, add or update an exact-workflow
+     regression/e2e/integration test that exercises the reported user path,
+     not only a narrower happy path. For UI behavior, validate the real mode,
+     host/shell, file state, and interaction sequence from the quest brief.
+   - When feasible for bug fixes, record failing-first evidence or explain why
+     the test could not be run against the pre-fix code. Do not claim the core
+     behavior is covered unless the test would fail without the implementation.
 4. Write PR description to `.quest/<quest_id>/phase_02_implementation/pr_description.md` following the format in `.skills/pr-assistant/SKILL.md`
 5. Record decisions, touched files, and tests run in `.quest/<quest_id>/phase_02_implementation/builder_feedback_discussion.md`
 6. Record assumptions not covered by the plan in the Decision Log using the `ASSUMPTION` format from `.skills/implementer/SKILL.md` "Stop on impactful uncertainty"
