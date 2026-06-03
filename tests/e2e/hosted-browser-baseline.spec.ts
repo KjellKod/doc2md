@@ -192,6 +192,31 @@ test("toggles a task checkbox in View and shows the changed marker in Edit", asy
   );
 });
 
+test("checks and unchecks a task checkbox directly in View", async ({ page }) => {
+  await openHostedApp(page);
+
+  await page.getByRole("button", { name: "Start writing", exact: true }).click();
+  await page
+    .getByLabel("Edit markdown")
+    .fill("- [ ] Ship fix\n- [x] Keep checked");
+
+  await page.getByRole("button", { name: "View" }).click();
+
+  const shipFix = page.getByRole("checkbox", { name: "Toggle task: Ship fix" });
+  await expect(shipFix).not.toBeChecked();
+
+  await shipFix.click();
+  await expect(shipFix).toBeChecked();
+
+  await shipFix.click();
+  await expect(shipFix).not.toBeChecked();
+
+  await page.getByRole("button", { name: "Edit" }).click();
+  await expect(page.getByLabel("Edit markdown")).toHaveValue(
+    "- [ ] Ship fix\n- [x] Keep checked",
+  );
+});
+
 test("renders nested GFM task list checkboxes indented at matching size", async ({
   page,
 }) => {
