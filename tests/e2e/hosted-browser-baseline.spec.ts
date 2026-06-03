@@ -257,6 +257,62 @@ test("checks and unchecks task checkboxes for an opened markdown file in View", 
   );
 });
 
+test("checks and unchecks nested marker task checkboxes in View", async ({
+  page,
+}) => {
+  await openHostedApp(page);
+
+  const markdown = [
+    "- [ ] First This works",
+    "1. - [ ] Second this is broken",
+    "- - [x] Third  this is broken",
+    "",
+    "- - [ ] Fourth this is broken",
+  ].join("\n");
+  await uploadMarkdownFiles(page, [
+    {
+      name: "nested-marker-tasks.md",
+      body: markdown,
+    },
+  ]);
+
+  await page.getByRole("button", { name: "View" }).click();
+
+  const first = page.getByRole("checkbox", {
+    name: "Toggle task: First This works",
+  });
+  const second = page.getByRole("checkbox", {
+    name: "Toggle task: Second this is broken",
+  });
+  const third = page.getByRole("checkbox", {
+    name: "Toggle task: Third this is broken",
+  });
+  const fourth = page.getByRole("checkbox", {
+    name: "Toggle task: Fourth this is broken",
+  });
+
+  await first.check();
+  await second.check();
+  await third.uncheck();
+  await fourth.check();
+
+  await expect(first).toBeChecked();
+  await expect(second).toBeChecked();
+  await expect(third).not.toBeChecked();
+  await expect(fourth).toBeChecked();
+
+  await page.getByRole("button", { name: "Edit" }).click();
+  await expect(page.getByLabel("Edit markdown")).toHaveValue(
+    [
+      "- [x] First This works",
+      "1. - [x] Second this is broken",
+      "- - [ ] Third  this is broken",
+      "",
+      "- - [x] Fourth this is broken",
+    ].join("\n"),
+  );
+});
+
 test("renders nested GFM task list checkboxes indented at matching size", async ({
   page,
 }) => {
