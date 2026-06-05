@@ -1,0 +1,19 @@
+packages/core/src/convertDocument.test.ts
+  s_5dc1ba3d4f5e71::t_d43f96129539ef 59-85
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.3",
+  "base_commit_sha": "09e126ca3c347a9d3832f633c4d4228155ce65de",
+  "prompts": {},
+  "sessions": {
+    "s_5dc1ba3d4f5e71": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e9513-da24-7143-80a1-c2b30d329cce",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
