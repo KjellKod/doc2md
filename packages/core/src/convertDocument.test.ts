@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { convertDocument } from "./index";
 import { createTempDir, fixturePath, readOutput } from "./test-helpers";
+import { JSON_VALIDATION_FAILED_MESSAGE } from "../../../src/converters/messages";
 
 describe("convertDocument", () => {
   afterEach(() => {
@@ -91,5 +92,24 @@ describe("convertDocument", () => {
 
     const html = await readOutput(result.outputPaths!.html!);
     expect(html).toContain("<!DOCTYPE html>");
+  });
+
+  it("writes Markdown for malformed JSON and returns validation quality", async () => {
+    const outputDir = await createTempDir("doc2md-core-json-warning-");
+    const result = await convertDocument(fixturePath("sample-malformed.json"), {
+      outputDir
+    });
+
+    expect(result.status).toBe("warning");
+    expect(result.outputPath?.endsWith("sample-malformed.md")).toBe(true);
+    expect(result.warnings).toEqual([JSON_VALIDATION_FAILED_MESSAGE]);
+    expect(result.quality).toEqual({
+      level: "poor",
+      summary: `Poor: ${JSON_VALIDATION_FAILED_MESSAGE}`
+    });
+
+    const contents = await readOutput(result.outputPath!);
+    expect(contents).toContain("```json");
+    expect(contents).toContain('{"name":');
   });
 });

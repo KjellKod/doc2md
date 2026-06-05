@@ -1,28 +1,49 @@
 import {
   CORRUPT_FILE_MESSAGE,
   EMPTY_FILE_MESSAGE,
+  JSON_VALIDATION_FAILED_MESSAGE,
   createErrorResult
 } from "./messages";
 import type { Converter } from "./types";
 import { readFileAsText } from "./readText";
 
 export const convertJson: Converter = async (file) => {
+  let raw: string;
+
   try {
-    const raw = (await readFileAsText(file)).trim();
+    raw = await readFileAsText(file);
+  } catch {
+    return createErrorResult(CORRUPT_FILE_MESSAGE);
+  }
 
-    if (raw.length === 0) {
-      return createErrorResult(EMPTY_FILE_MESSAGE);
-    }
+  const trimmed = raw.trim();
 
-    const parsed = JSON.parse(raw);
+  if (trimmed.length === 0) {
+    return createErrorResult(EMPTY_FILE_MESSAGE);
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed);
     const formatted = JSON.stringify(parsed, null, 2);
 
     return {
       markdown: `\`\`\`json\n${formatted}\n\`\`\``,
       warnings: [],
-      status: "success"
+      status: "success",
+      quality: {
+        level: "good",
+        summary: "Good: JSON validation passed and formatting completed."
+      }
     };
   } catch {
-    return createErrorResult(CORRUPT_FILE_MESSAGE);
+    return {
+      markdown: `\`\`\`json\n${raw}\n\`\`\``,
+      warnings: [JSON_VALIDATION_FAILED_MESSAGE],
+      status: "warning",
+      quality: {
+        level: "poor",
+        summary: `Poor: ${JSON_VALIDATION_FAILED_MESSAGE}`
+      }
+    };
   }
 };

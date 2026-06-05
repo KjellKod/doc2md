@@ -318,7 +318,7 @@ describe("PreviewPanel", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("shows the PDF quality indicator when a PDF entry includes quality metadata", () => {
+  it("shows the quality indicator when an entry includes quality metadata", () => {
     render(
       <PreviewPanel
         entry={createEntry({
@@ -334,19 +334,23 @@ describe("PreviewPanel", () => {
     expect(screen.getByText("Review")).toBeInTheDocument();
   });
 
-  it("does not show a PDF quality indicator for non-PDF entries", () => {
+  it("uses the entry format in the quality indicator label", () => {
     render(
       <PreviewPanel
         entry={createEntry({
-          format: "txt",
-          quality: REVIEW_QUALITY,
+          format: "json",
+          quality: {
+            level: "poor",
+            summary:
+              "Poor: JSON validation failed. Markdown was created from the unformatted source.",
+          },
         })}
       />,
     );
 
     expect(
-      screen.queryByRole("button", { name: /PDF quality:/ }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("button", { name: "JSON quality: Poor" }),
+    ).toBeInTheDocument();
   });
 
   it("shows the poor-quality indicator in the PDF error path", () => {

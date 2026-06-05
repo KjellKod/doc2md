@@ -1,6 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { JSON_VALIDATION_FAILED_MESSAGE } from "../../converters/messages";
 import type { FileEntry } from "../../types";
 import FileListItem from "../FileListItem";
 
@@ -105,5 +106,25 @@ describe("FileListItem", () => {
         "Unable to convert this file. Try another file or paste the text into a draft.",
       ),
     ).not.toHaveClass("status-indicator--compact");
+  });
+
+  it("surfaces JSON validation warnings in the file list status", () => {
+    render(
+      <FileListItem
+        entry={createEntry("broken.json", {
+          format: "json",
+          status: "warning",
+          warnings: [JSON_VALIDATION_FAILED_MESSAGE],
+        })}
+        checked={false}
+        onCheckedChange={vi.fn()}
+        onSelect={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Review")).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(JSON_VALIDATION_FAILED_MESSAGE),
+    ).toBeInTheDocument();
   });
 });

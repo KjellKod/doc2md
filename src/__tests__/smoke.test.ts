@@ -3,8 +3,8 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { convertFile } from "../converters";
 import {
-  CORRUPT_FILE_MESSAGE,
   EMPTY_FILE_MESSAGE,
+  JSON_VALIDATION_FAILED_MESSAGE,
   UNSUPPORTED_FILE_MESSAGE
 } from "../converters/messages";
 
@@ -234,15 +234,20 @@ describe("doc2md smoke coverage", () => {
     });
   });
 
-  it("treats malformed structured input as a corrupt file", async () => {
+  it("converts malformed JSON with a validation warning", async () => {
     const result = await convertFile(
       createFixtureFile("sample-malformed.json", "application/json")
     );
 
-    expect(result).toEqual({
-      markdown: "",
-      warnings: [CORRUPT_FILE_MESSAGE],
-      status: "error"
+    expect(result).toMatchObject({
+      warnings: [JSON_VALIDATION_FAILED_MESSAGE],
+      status: "warning",
+      quality: {
+        level: "poor",
+        summary: `Poor: ${JSON_VALIDATION_FAILED_MESSAGE}`
+      }
     });
+    expect(result.markdown).toContain("```json");
+    expect(result.markdown).toContain('{"name":');
   });
 });

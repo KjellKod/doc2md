@@ -1,9 +1,9 @@
 export type ConversionResultStatus = "success" | "warning" | "error";
 
-export type PdfQualityLevel = "good" | "review" | "poor";
+export type ConversionQualityLevel = "good" | "review" | "poor";
 
 export interface ConversionQuality {
-  level: PdfQualityLevel;
+  level: ConversionQualityLevel;
   summary: string;
 }
 

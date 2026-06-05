@@ -1,8 +1,9 @@
 import { useId, useState } from "react";
 import type { ConversionQuality } from "../converters/types";
 
-interface PdfQualityIndicatorProps {
+interface QualityIndicatorProps {
   quality: ConversionQuality;
+  format?: string;
 }
 
 const QUALITY_ICON = {
@@ -17,23 +18,33 @@ const QUALITY_LABEL = {
   poor: "Poor",
 } as const;
 
-export default function PdfQualityIndicator({
+function qualitySubject(format: string | undefined) {
+  if (!format) {
+    return "Conversion";
+  }
+
+  return format.toUpperCase();
+}
+
+export default function QualityIndicator({
   quality,
-}: PdfQualityIndicatorProps) {
+  format,
+}: QualityIndicatorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const tooltipId = useId();
   const label = QUALITY_LABEL[quality.level];
+  const subject = qualitySubject(format);
   const showVisibleLabel = quality.level !== "good";
 
   return (
     <div
-      className="pdf-quality-indicator"
+      className="quality-indicator"
       data-quality-level={quality.level}
     >
       <button
         type="button"
-        className="pdf-quality-trigger"
-        aria-label={`PDF quality: ${label}`}
+        className="quality-trigger"
+        aria-label={`${subject} quality: ${label}`}
         aria-describedby={tooltipId}
         aria-expanded={isOpen}
         onMouseEnter={() => setIsOpen(true)}
@@ -48,17 +59,17 @@ export default function PdfQualityIndicator({
           }
         }}
       >
-        <span className="pdf-quality-icon" aria-hidden="true">
+        <span className="quality-icon" aria-hidden="true">
           {QUALITY_ICON[quality.level]}
         </span>
         {showVisibleLabel ? (
-          <span className="pdf-quality-label">{label}</span>
+          <span className="quality-label">{label}</span>
         ) : null}
       </button>
       <span
         id={tooltipId}
         role="tooltip"
-        className="pdf-quality-tooltip"
+        className="quality-tooltip"
         hidden={!isOpen}
       >
         {quality.summary}

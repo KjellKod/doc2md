@@ -12,6 +12,8 @@ export const OVERSIZED_FILE_MESSAGE =
   "This file is too large for reliable in-browser conversion. Try a smaller file or use @doc2md/core locally.";
 export const EMPTY_FILE_MESSAGE =
   "This file is empty. Add content, then import it again.";
+export const JSON_VALIDATION_FAILED_MESSAGE =
+  "JSON validation failed. Markdown was created from the unformatted source.";
 export const MAX_BROWSER_FILE_SIZE_BYTES = 50 * 1024 * 1024;
 export const CONVERSION_TIMEOUT_MS = 60_000;
 export const TIMEOUT_MESSAGE =

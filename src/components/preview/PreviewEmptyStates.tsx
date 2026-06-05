@@ -1,7 +1,7 @@
 import type { FileEntry } from "../../types";
 import { entryDisplayName } from "../../utils/displayName";
 import ErrorMessage from "../ErrorMessage";
-import PdfQualityIndicator from "../PdfQualityIndicator";
+import QualityIndicator from "../QualityIndicator";
 
 interface PreviewEmptyStatesProps {
   entry: FileEntry | null;
@@ -78,10 +78,10 @@ export default function PreviewEmptyStates({
   }
 
   if (entry.status === "error") {
-    if (entry.format === "pdf" && entry.quality) {
+    if (entry.quality) {
       return (
         <div className="preview-body">
-          <PdfQualityIndicator quality={entry.quality} />
+          <QualityIndicator quality={entry.quality} format={entry.format} />
           <ErrorMessage
             message={
               entry.warnings[0] ?? CONVERSION_FAILED_FALLBACK_MESSAGE
