@@ -1,0 +1,21 @@
+docs/journal/README.md
+  s_5dc1ba3d4f5e71::t_510bc2d33824dc 9,31,33
+docs/journal/051-celebrate-json-validation-quality.md
+  s_5dc1ba3d4f5e71::t_510bc2d33824dc 1-82
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.3",
+  "base_commit_sha": "b311bec7c3ecdd762fddd8730f12448d0e54e7c0",
+  "prompts": {},
+  "sessions": {
+    "s_5dc1ba3d4f5e71": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e9513-da24-7143-80a1-c2b30d329cce",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
