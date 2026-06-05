@@ -56,6 +56,33 @@ describe("convertDocument", () => {
     expect(result.outputPaths).toEqual({ md: result.outputPath });
   });
 
+  it("writes formatted Markdown for valid JSON", async () => {
+    const outputDir = await createTempDir("doc2md-core-json-formatted-");
+    const result = await convertDocument(fixturePath("sample.json"), {
+      outputDir
+    });
+
+    expect(result.status).toBe("success");
+    expect(result.outputPath?.endsWith("sample.md")).toBe(true);
+    expect(result.quality).toEqual({
+      level: "good",
+      summary: "Good: JSON validation passed and formatting completed."
+    });
+
+    const contents = await readOutput(result.outputPath!);
+    expect(contents).toBe(
+      [
+        "```json",
+        "{",
+        '  "title": "doc2md",',
+        '  "phase": 2,',
+        '  "local": true',
+        "}",
+        "```"
+      ].join("\n")
+    );
+  });
+
   it("writes only HTML for format html", async () => {
     const outputDir = await createTempDir("doc2md-core-fmt-html-");
     const result = await convertDocument(fixturePath("sample.txt"), {
