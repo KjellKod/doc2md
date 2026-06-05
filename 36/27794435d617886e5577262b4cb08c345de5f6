@@ -1,0 +1,47 @@
+src/converters/json.test.ts
+  s_5dc1ba3d4f5e71::t_a8c0f040965ee3 4-7,21-25,29,39,43-47
+  s_5dc1ba3d4f5e71::t_18782e010dff74 40-42
+src/components/preview/PreviewEmptyStates.tsx
+  s_5dc1ba3d4f5e71::t_917d35db80eea2 4,81,84
+src/components/QualityIndicator.test.tsx
+  s_5dc1ba3d4f5e71::t_917d35db80eea2 5,7-8,15,82-96
+src/components/QualityIndicator.tsx
+  s_5dc1ba3d4f5e71::t_917d35db80eea2 4,6,21-29,31-32,36,41,46-47,62,66,72
+packages/core/src/convertDocument.test.ts
+  s_5dc1ba3d4f5e71::t_a8c0f040965ee3 4,96-113
+packages/core/src/batch.test.ts
+  s_5dc1ba3d4f5e71::t_a8c0f040965ee3 6,130-146
+src/converters/messages.ts
+  s_5dc1ba3d4f5e71::t_dadd10e455c1bf 15-16
+src/converters/json.ts
+  s_5dc1ba3d4f5e71::t_dadd10e455c1bf 4,19,21-23,25-26,32-36,39-47
+  s_5dc1ba3d4f5e71::t_18782e010dff74 11-12,14-18
+src/__tests__/smoke.test.ts
+  s_5dc1ba3d4f5e71::t_a8c0f040965ee3 7,237,242-248,250-251
+src/components/PreviewPanel.test.tsx
+  s_5dc1ba3d4f5e71::t_a8c0f040965ee3 321,337,341-346,352-353
+src/components/preview/PreviewPanel.tsx
+  s_5dc1ba3d4f5e71::t_917d35db80eea2 5,408-409
+src/styles/global.css
+  s_5dc1ba3d4f5e71::t_917d35db80eea2 2313,2321,2333,2337,2342,2354,2359,2364,2369,2373,2389,3128
+src/components/__tests__/FileListItem.test.tsx
+  s_5dc1ba3d4f5e71::t_7546bb475f2489 4,110-128
+src/converters/types.ts
+  s_5dc1ba3d4f5e71::t_dadd10e455c1bf 3,6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.3",
+  "base_commit_sha": "3627794435d617886e5577262b4cb08c345de5f6",
+  "prompts": {},
+  "sessions": {
+    "s_5dc1ba3d4f5e71": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e9513-da24-7143-80a1-c2b30d329cce",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
