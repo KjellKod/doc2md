@@ -3,6 +3,7 @@ import { access } from "node:fs/promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { BatchLimitExceededError, convertDocuments } from "./index";
 import { createTempDir, fixturePath } from "./test-helpers";
+import { JSON_VALIDATION_FAILED_MESSAGE } from "../../../src/converters/messages";
 
 async function pathExists(filePath: string) {
   try {
@@ -124,6 +125,25 @@ describe("convertDocuments", () => {
     expect(result.results[1].status).toBe("error");
     expect(result.results[1].error).toContain("timed out");
     expect(result.summary.failed).toBe(1);
+  });
+
+  it("counts malformed JSON output as warned instead of failed", async () => {
+    const outputDir = await createTempDir("doc2md-core-batch-json-warning-");
+    const result = await convertDocuments(
+      [fixturePath("sample.txt"), fixturePath("sample-malformed.json")],
+      {
+        outputDir
+      }
+    );
+
+    expect(result.results).toHaveLength(2);
+    expect(result.results[0].status).toBe("success");
+    expect(result.results[1].status).toBe("warning");
+    expect(result.results[1].outputPath?.endsWith("sample-malformed.md")).toBe(true);
+    expect(result.results[1].warnings).toEqual([JSON_VALIDATION_FAILED_MESSAGE]);
+    expect(result.summary.succeeded).toBe(1);
+    expect(result.summary.warned).toBe(1);
+    expect(result.summary.failed).toBe(0);
   });
 
   it("writes coherent paired outputs for format both over duplicate basenames", async () => {

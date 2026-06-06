@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { FileEntry } from "../../types";
 import type { SaveState } from "../../types/saveState";
 import FindReplaceBar from "../FindReplaceBar";
-import PdfQualityIndicator from "../PdfQualityIndicator";
+import QualityIndicator from "../QualityIndicator";
 import { useViewportAnchor } from "./useViewportAnchor";
 import type { FindMatch } from "../useFindReplace";
 import EditMode from "./EditMode";
@@ -405,8 +405,8 @@ export default function PreviewPanel({
         />
       ) : null}
 
-      {entry.format === "pdf" && entry.quality ? (
-        <PdfQualityIndicator quality={entry.quality} />
+      {entry.quality ? (
+        <QualityIndicator quality={entry.quality} format={entry.format} />
       ) : null}
 
       {entry.warnings.length > 0 ? (

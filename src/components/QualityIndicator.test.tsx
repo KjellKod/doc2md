@@ -2,17 +2,17 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import type { ConversionQuality } from "../converters/types";
-import PdfQualityIndicator from "./PdfQualityIndicator";
+import QualityIndicator from "./QualityIndicator";
 
-function renderIndicator(quality: ConversionQuality) {
-  render(<PdfQualityIndicator quality={quality} />);
+function renderIndicator(quality: ConversionQuality, format = "pdf") {
+  render(<QualityIndicator quality={quality} format={format} />);
 }
 
 afterEach(() => {
   cleanup();
 });
 
-describe("PdfQualityIndicator", () => {
+describe("QualityIndicator", () => {
   it("renders a good indicator with the correct accessible label", () => {
     renderIndicator({
       level: "good",
@@ -78,5 +78,20 @@ describe("PdfQualityIndicator", () => {
     expect(screen.getByRole("tooltip")).toHaveTextContent(
       "Poor: Little or no selectable text detected. This PDF may be scanned or image-based.",
     );
+  });
+
+  it("uses the document format in the accessible label", () => {
+    renderIndicator(
+      {
+        level: "poor",
+        summary:
+          "Poor: JSON validation failed. Markdown was created from the unformatted source.",
+      },
+      "json",
+    );
+
+    expect(
+      screen.getByRole("button", { name: "JSON quality: Poor" }),
+    ).toBeInTheDocument();
   });
 });
