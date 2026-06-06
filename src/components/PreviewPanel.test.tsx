@@ -62,6 +62,16 @@ function createEntry(overrides: Partial<FileEntry> = {}): FileEntry {
   };
 }
 
+function createLargeMarkdownTable(rowCount = 1_100): string {
+  const rows = ["# Report", "", "| Package | License | Notes |", "| --- | --- | --- |"];
+  for (let index = 0; index < rowCount; index += 1) {
+    const notes =
+      index === 0 ? "[docs](https://example.com/docs)" : "metadata ".repeat(8);
+    rows.push(`| package-${index} | MIT | ${notes} |`);
+  }
+  return rows.join("\n");
+}
+
 function fireEditorPaste(
   editor: HTMLElement,
   {
@@ -257,6 +267,63 @@ describe("PreviewPanel", () => {
     );
 
     expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
+  });
+
+  it("keeps ordinary GFM tables on the rich preview path", () => {
+    render(
+      <PreviewPanel
+        entry={createEntry({
+          format: "md",
+          markdown: [
+            "| Name | Score |",
+            "| --- | --- |",
+            "| Ada | 10 |",
+          ].join("\n"),
+        })}
+      />,
+    );
+
+    expect(screen.getByRole("table")).toBeInTheDocument();
+    expect(screen.queryByText("Large report preview")).not.toBeInTheDocument();
+  });
+
+  it("renders large table-heavy Markdown as a full document view", () => {
+    render(
+      <PreviewPanel
+        entry={createEntry({
+          format: "md",
+          name: "report.main.md",
+          markdown: [
+            createLargeMarkdownTable(),
+            "",
+            "## Coverage Gaps",
+            "",
+            "- `empty_resolved_file: work/android/resolved.ndjson`",
+          ].join("\n"),
+        })}
+      />,
+    );
+
+    expect(screen.getByText("Large report")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Rendering the document with a virtualized table/),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Rich table rendering skipped/),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("table")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Report" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Package" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "docs" })).toHaveAttribute(
+      "href",
+      "https://example.com/docs",
+    );
+    expect(screen.getByText("package-0")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Coverage Gaps" }),
+    ).toBeInTheDocument();
   });
 
   it("does not render toggle when entry is null", () => {

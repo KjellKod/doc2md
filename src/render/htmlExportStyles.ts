@@ -44,6 +44,27 @@ export const HTML_EXPORT_STYLES = `
     margin-bottom: 0;
   }
 
+  .large-markdown-export-notice {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+    align-items: baseline;
+    margin: 0 0 1rem;
+    padding: 0.75rem 0.85rem;
+    border: 1px solid #d4a72c;
+    border-radius: 8px;
+    background-color: #fff8c5;
+    color: #59636e;
+  }
+
+  .large-markdown-export-notice strong {
+    color: #7d4e00;
+  }
+
+  .large-markdown-source {
+    white-space: pre;
+  }
+
   h1,
   h2,
   h3,

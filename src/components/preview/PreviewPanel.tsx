@@ -11,6 +11,7 @@ import PreviewEmptyStates from "./PreviewEmptyStates";
 import PreviewMode from "./PreviewMode";
 import PreviewToolbar from "./PreviewToolbar";
 import { performPreviewCopy } from "./previewCopy";
+import { analyzeLargeMarkdown } from "../../render/largeMarkdown";
 /**
  * Per-document viewport position remembered across document switches so
  * returning to a large doc lands where you left off instead of jumping to the
@@ -243,6 +244,12 @@ export default function PreviewPanel({
   }
 
   const effectiveMarkdown = entry?.editedMarkdown ?? entry?.markdown ?? "";
+  const largeMarkdownAnalysis = useMemo(() => {
+    if (!entry || mode !== "preview" || entry.format.toLowerCase() !== "md") {
+      return null;
+    }
+    return analyzeLargeMarkdown(effectiveMarkdown);
+  }, [effectiveMarkdown, entry, mode]);
   const canEditFromEmptyState = Boolean(
     entry && (entry.isScratch || entry.editedMarkdown !== undefined),
   );
@@ -441,6 +448,7 @@ export default function PreviewPanel({
         <PreviewMode
           {...commonModeProps}
           effectiveMarkdown={effectiveMarkdown}
+          largeMarkdownAnalysis={largeMarkdownAnalysis}
           previewRef={previewRef}
           renderedViewRef={renderedViewRef}
           renderedViewText={renderedViewText}
