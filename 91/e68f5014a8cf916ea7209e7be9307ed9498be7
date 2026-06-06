@@ -1,0 +1,50 @@
+src/render/markdownToHtml.test.ts
+  s_0cd15174b8b235::t_e7774f43283a97 109-118,120
+  s_0cd15174b8b235::t_6fe2973a2db868 119
+src/components/preview/PreviewPanel.tsx
+  s_0cd15174b8b235::t_a68386b257fba0 248-252
+src/components/preview/PreviewMode.tsx
+  s_0cd15174b8b235::t_05a56b30294a09 168,176-191,297-307,309-310,314,316,318-319,348-355,429,442,444,447
+  s_0cd15174b8b235::t_39352756ba658b 5,327-328,387,428,448
+  s_0cd15174b8b235::t_b2436c03be1c75 308,311-313,315,376-386,388-394,396-405,430-432,434-436,441,443
+  s_0cd15174b8b235::t_ffa6fadc4e3e70 6,17-20,317,320-326,329-347,356-358,360,362,395,433,437-440,445-446,449-529
+  s_0cd15174b8b235::t_b4988bd7ccb772 359,361,363-375,406-427
+src/styles/global.css
+  s_0cd15174b8b235::t_d6900ed163e01b 2575,2603
+  s_0cd15174b8b235::t_06a803eddad8fa 2588,2590-2591,2594,2598,2601-2602,2605-2613,2616-2619
+  s_0cd15174b8b235::t_e8fafa56784ff0 2570-2574,2576-2587,2589,2592-2593,2595-2597,2599-2600,2604,2614-2615
+src/render/htmlExportStyles.ts
+  s_0cd15174b8b235::t_75f15824a1c0d9 47-67
+src/__tests__/App.desktop.test.tsx
+  s_0cd15174b8b235::t_ed1a7c286118be 280,295-296,298,300-302
+  s_0cd15174b8b235::t_914c2d7184a315 281-294,299
+  s_0cd15174b8b235::t_06166ceb526eb0 297
+  s_0cd15174b8b235::t_0151c975d8f512 75-77
+src/render/largeMarkdown.ts
+  s_0cd15174b8b235::t_b55b01a8c9670e 13-27,119-241
+  s_0cd15174b8b235::t_73e36a0a3ec565 28-118
+src/components/PreviewPanel.test.tsx
+  s_0cd15174b8b235::t_5d4e235487591b 290,296-302,307,311-313,315-317,319-322,324-326
+  s_0cd15174b8b235::t_66b29115cd1f1a 309
+  s_0cd15174b8b235::t_d0d0c7cb4638b0 68-70
+  s_0cd15174b8b235::t_914c2d7184a315 291-295,303-306,308,310,314,318,323
+src/render/largeMarkdown.test.ts
+  s_0cd15174b8b235::t_0c69daba1fde56 15
+  s_0cd15174b8b235::t_05a56b30294a09 1-14,16-46
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.3",
+  "base_commit_sha": "91e68f5014a8cf916ea7209e7be9307ed9498be7",
+  "prompts": {},
+  "sessions": {
+    "s_0cd15174b8b235": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e9a90-c4d3-7442-a314-f9ff69133427",
+        "model": "gpt-5.5"
+      },
+      "human_author": null
+    }
+  }
+}
