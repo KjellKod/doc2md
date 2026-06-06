@@ -1,0 +1,26 @@
+src/components/preview/PreviewPanel.tsx
+  s_ce757a9448c887::t_f7ae838b026e88 15,256-264,335-338,450
+  s_ce757a9448c887::t_7431c8a5f37bb9 297-298,332-334
+src/components/preview/EditMode.tsx
+  s_ce757a9448c887::t_f42b60a45707ab 51,166,188-189,193-194,594
+src/components/preview/largeJsonPreview.ts
+  s_ce757a9448c887::t_a5d45d5a52e0e9 2
+src/components/PreviewPanel.test.tsx
+  s_ce757a9448c887::t_a5edf1aa06394c 176-178,181-190,193-215
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.3",
+  "base_commit_sha": "21d6f649c52b6352d99d486d8d4ab0e710b32720",
+  "prompts": {},
+  "sessions": {
+    "s_ce757a9448c887": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e9a8f-42b3-70d1-b4ef-cd1f2e9a5898",
+        "model": "gpt-5.5"
+      },
+      "human_author": null
+    }
+  }
+}
