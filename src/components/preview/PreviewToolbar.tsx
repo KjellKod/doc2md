@@ -15,6 +15,7 @@ interface PreviewToolbarProps {
   onSave?: () => void | Promise<void>;
   onDownloadMarkdown?: () => void | Promise<void>;
   downloadMarkdownDisabled?: boolean;
+  downloadMarkdownBusy?: boolean;
   saveBusy: boolean;
   saveDisabled: boolean;
   saveKeyShortcuts?: string;
@@ -64,6 +65,7 @@ export default function PreviewToolbar({
   onSave,
   onDownloadMarkdown,
   downloadMarkdownDisabled = false,
+  downloadMarkdownBusy = false,
   saveBusy,
   saveDisabled,
   saveKeyShortcuts,
@@ -222,8 +224,9 @@ export default function PreviewToolbar({
                   type="button"
                   className="ghost-button format-download-button"
                   onClick={() => void onDownloadMarkdown()}
-                  disabled={downloadMarkdownDisabled}
-                  aria-disabled={downloadMarkdownDisabled}
+                  disabled={downloadMarkdownDisabled || downloadMarkdownBusy}
+                  aria-disabled={downloadMarkdownDisabled || downloadMarkdownBusy}
+                  aria-busy={downloadMarkdownBusy}
                   aria-label="Download Markdown"
                   aria-describedby={downloadMarkdownTooltipId}
                 >

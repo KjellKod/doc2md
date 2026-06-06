@@ -35,9 +35,14 @@ import {
   isDownloadableEntry,
 } from "../utils/download";
 import { renderEntryHtml } from "../utils/exportHtml";
+import { afterNextPaint, keepBusyStateVisible } from "../utils/paint";
 
 function pluralize(count: number, singular: string, plural = `${singular}s`) {
   return count === 1 ? singular : plural;
+}
+
+function getEntryMarkdown(entry: FileEntry) {
+  return entry.editedMarkdown ?? entry.markdown;
 }
 
 // Combined per-document UI memory: dragged panel height (null = auto) plus the
@@ -139,6 +144,7 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     target: "editor";
   }>({ id: 0, target: "editor" });
   const [exportHtmlBusy, setExportHtmlBusy] = useState(false);
+  const [downloadMarkdownBusy, setDownloadMarkdownBusy] = useState(false);
 
   const selectedEntryId = selectedEntry?.id ?? null;
   const hasWorkingEntry =
@@ -319,17 +325,20 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
 
   const checkedTargets = entries.filter((entry) => checkedEntryIds.has(entry.id));
 
-  const handleDownload = useCallback(() => {
+  const handleDownload = useCallback(async () => {
     const targets =
       checkedTargets.length > 0
         ? checkedTargets
         : selectedEntry
           ? [selectedEntry]
           : [];
-    for (const entry of targets) {
-      if (isDownloadableEntry(entry)) {
-        downloadEntry(entry);
-      }
+    const downloadableTargets = targets.filter(isDownloadableEntry);
+    if (downloadableTargets.length === 0) {
+      return;
+    }
+    await afterNextPaint();
+    for (const entry of downloadableTargets) {
+      downloadEntry(entry);
     }
     setCheckedEntryIds(new Set());
   }, [checkedTargets, selectedEntry]);
@@ -408,26 +417,58 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     [addFiles],
   );
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     if (!isDownloadableEntry(selectedEntry)) {
       return;
     }
-    saveState.markSaving();
-    downloadEntry(selectedEntry);
-    setEntrySaveState(selectedEntry.id, "saved");
-    setEntryLastSavedAt((current) => ({
-      ...current,
-      [selectedEntry.id]: Date.now(),
-    }));
-    saveState.markSaved();
-  }, [saveState, selectedEntry, setEntrySaveState]);
+    const entry = selectedEntry;
+    const savedMarkdown = getEntryMarkdown(entry);
+    setEntrySaveState(entry.id, "saving");
 
-  const handleDownloadMarkdown = useCallback(() => {
-    if (!isDownloadableEntry(selectedEntry)) {
+    try {
+      await afterNextPaint();
+      downloadEntry(entry);
+
+      const liveEntry = entriesRef.current.find(
+        (currentEntry) => currentEntry.id === entry.id,
+      );
+      if (!liveEntry) {
+        return;
+      }
+
+      const liveEntryMatchesSavedSnapshot =
+        getEntryMarkdown(liveEntry) === savedMarkdown;
+      if (liveEntryMatchesSavedSnapshot) {
+        setEntrySaveState(entry.id, "saved");
+        setEntryLastSavedAt((current) => ({
+          ...current,
+          [entry.id]: Date.now(),
+        }));
+        return;
+      }
+
+      setEntrySaveState(entry.id, "edited");
+    } catch (error) {
+      setEntrySaveState(entry.id, "edited");
+      console.error("doc2md hosted save failure", error);
+    }
+  }, [selectedEntry, setEntrySaveState]);
+
+  const handleDownloadMarkdown = useCallback(async () => {
+    if (!isDownloadableEntry(selectedEntry) || downloadMarkdownBusy) {
       return;
     }
-    downloadEntry(selectedEntry);
-  }, [selectedEntry]);
+    setDownloadMarkdownBusy(true);
+    try {
+      await afterNextPaint();
+      downloadEntry(selectedEntry);
+      await keepBusyStateVisible();
+    } catch (error) {
+      console.error("doc2md hosted Markdown download failure", error);
+    } finally {
+      setDownloadMarkdownBusy(false);
+    }
+  }, [downloadMarkdownBusy, selectedEntry]);
 
   const handleExportHtml = useCallback(() => {
     if (!isDownloadableEntry(selectedEntry) || exportHtmlBusy) {
@@ -437,7 +478,8 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     setExportHtmlBusy(true);
     // Lazy-render from stored Markdown, then blob-download the .html file.
     // HTML export does NOT touch the Markdown document's save state.
-    void renderEntryHtml(entry)
+    void afterNextPaint()
+      .then(() => renderEntryHtml(entry))
       .then((html) => {
         downloadHtmlFile(entry.name, html);
       })
@@ -497,6 +539,7 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     onSave: handleSave,
     onDownloadMarkdown: handleDownloadMarkdown,
     downloadMarkdownDisabled: !isDownloadableEntry(selectedEntry),
+    downloadMarkdownBusy,
     onExportHtml: handleExportHtml,
     exportHtmlBusy,
     exportHtmlDisabled,

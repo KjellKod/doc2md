@@ -5,7 +5,7 @@ import {
   EMPTY_FILE_MESSAGE,
   JSON_VALIDATION_FAILED_MESSAGE
 } from "./messages";
-import { convertJson } from "./json";
+import { convertJson, convertJsonText } from "./json";
 
 describe("convertJson", () => {
   it("pretty-prints valid JSON inside a fenced code block", async () => {
@@ -59,5 +59,21 @@ describe("convertJson", () => {
       warnings: [EMPTY_FILE_MESSAGE],
       status: "error"
     });
+  });
+
+  it("formats large JSON through the shared text helper", () => {
+    const rows = Array.from({ length: 1000 }, (_, index) => ({
+      id: index,
+      name: `Package ${index}`,
+      active: index % 2 === 0
+    }));
+
+    const result = convertJsonText(JSON.stringify({ rows }));
+
+    expect(result.status).toBe("success");
+    expect(result.warnings).toEqual([]);
+    expect(result.quality?.level).toBe("good");
+    expect(result.markdown.startsWith("```json\n{\n  \"rows\": [")).toBe(true);
+    expect(result.markdown.endsWith("\n```")).toBe(true);
   });
 });

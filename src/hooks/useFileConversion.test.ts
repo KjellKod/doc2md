@@ -14,10 +14,8 @@ const { convertFileMock } = vi.hoisted(() => ({
   convertFileMock: vi.fn(),
 }));
 
-vi.mock("../converters", () => ({
-  convertFile: convertFileMock,
-  getFileExtension: (fileName: string) =>
-    fileName.split(".").pop()?.toLowerCase() ?? "",
+vi.mock("../converters/browserConversion", () => ({
+  convertFileForUi: convertFileMock,
 }));
 
 function createSuccessResult(markdown: string) {
@@ -30,6 +28,10 @@ function createSuccessResult(markdown: string) {
 
 function createFile(name: string) {
   return new File(["content"], name, { type: "text/plain" });
+}
+
+function createJsonFile(name: string, content = "{}") {
+  return new File([content], name, { type: "application/json" });
 }
 
 function createOversizedFile(name: string) {
@@ -57,7 +59,13 @@ describe("useFileConversion", () => {
 
   it("sets error with timeout message when a converter hangs", async () => {
     vi.useFakeTimers();
-    convertFileMock.mockImplementation(() => new Promise(() => {}));
+    let capturedSignal: AbortSignal | undefined;
+    convertFileMock.mockImplementation(
+      (_file: File, options?: { signal?: AbortSignal }) => {
+        capturedSignal = options?.signal;
+        return new Promise(() => {});
+      },
+    );
 
     const { result } = renderHook(() => useFileConversion());
 
@@ -73,6 +81,70 @@ describe("useFileConversion", () => {
 
     expect(result.current.entries[0]?.status).toBe("error");
     expect(result.current.entries[0]?.warnings).toEqual([TIMEOUT_MESSAGE]);
+    expect(capturedSignal?.aborted).toBe(true);
+  });
+
+  it("keeps timeout warning when the converter rejects on timeout abort", async () => {
+    vi.useFakeTimers();
+    convertFileMock.mockImplementation(
+      (_file: File, options?: { signal?: AbortSignal }) =>
+        new Promise((_resolve, reject) => {
+          options?.signal?.addEventListener("abort", () => {
+            reject(new DOMException("Aborted", "AbortError"));
+          });
+        }),
+    );
+
+    const { result } = renderHook(() => useFileConversion());
+
+    act(() => {
+      result.current.addFiles([createFile("aborts-on-timeout.txt")]);
+    });
+
+    await flushUpdates();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(CONVERSION_TIMEOUT_MS);
+    });
+
+    expect(result.current.entries[0]?.status).toBe("error");
+    expect(result.current.entries[0]?.warnings).toEqual([TIMEOUT_MESSAGE]);
+  });
+
+  it("adds a large JSON entry before conversion resolves", async () => {
+    let resolveConversion:
+      | ((result: ReturnType<typeof createSuccessResult>) => void)
+      | undefined;
+    convertFileMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveConversion = resolve;
+        }),
+    );
+
+    const { result } = renderHook(() => useFileConversion());
+
+    act(() => {
+      result.current.addFiles([
+        createJsonFile("inventory.json", JSON.stringify({ rows: [] })),
+      ]);
+    });
+
+    await waitFor(() => {
+      expect(result.current.entries).toHaveLength(1);
+      expect(["pending", "converting"]).toContain(
+        result.current.entries[0]?.status,
+      );
+    });
+    expect(result.current.selectedEntry?.name).toBe("inventory.json");
+
+    await act(async () => {
+      resolveConversion?.(createSuccessResult("```json\n{}\n```"));
+    });
+
+    await waitFor(() => {
+      expect(result.current.entries[0]?.status).toBe("success");
+    });
   });
 
   it("completes normally when a converter resolves before timeout", async () => {
@@ -397,6 +469,7 @@ describe("useFileConversion", () => {
 
     expect(convertFileMock).toHaveBeenCalledWith(
       expect.objectContaining({ name: "imported.txt" }),
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
     expect(result.current.entries[0]).toMatchObject({
       name: "imported.md",

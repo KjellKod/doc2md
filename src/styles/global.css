@@ -2805,6 +2805,31 @@ body.is-height-resizing * {
   background: transparent;
 }
 
+.large-json-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 100%;
+}
+
+.large-json-preview-meta {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.markdown-surface .large-json-preview-code {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  white-space: pre;
+}
+
+.large-json-preview-code code {
+  display: block;
+  min-width: max-content;
+}
+
 .markdown-surface :not(pre) > code {
   padding: 0.12rem 0.35rem;
   border-radius: 6px;

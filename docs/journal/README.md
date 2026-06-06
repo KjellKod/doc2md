@@ -6,6 +6,7 @@ For the other perspective, see [Dexter's Journal](../dexter-journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 052 | [Celebration: JSON Responsiveness](052-celebrate-json-responsiveness.md) | Worker-backed JSON conversion, lightweight large-JSON preview, timeout honesty, hosted Save race fix, and full revalidation after rebasing onto latest main |
 | 051 | [Celebration: JSON Validation Quality](051-celebrate-json-validation-quality.md) | Malformed non-empty JSON now converts to raw fenced Markdown with validation warning quality, while valid JSON stays formatted and the shared quality UI covers core, web, and desktop paths |
 | 050 | [Celebration: Markdown File Association + Finder Open](050-celebrate-markdown-association.md) | doc2md.app becomes a first-class Markdown handler; dual plan review + arbiter caught a cold-launch readiness deadlock (data-app-ready needs a selected document that the Finder file would create), Codex code review found 3 bugs Claude missed, all fixed in one pass; PR #166 green |
 | 049 | [Celebration: First Signed Mac Release](049-celebrate-first-signed-mac-release.md) | The Mac release signing path finally reached and passed end-to-end after the P12 base64 decode fix (index row repaired) |

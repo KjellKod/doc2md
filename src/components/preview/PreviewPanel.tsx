@@ -37,6 +37,7 @@ export interface PreviewPanelProps {
   onSave?: () => void | Promise<void>;
   onDownloadMarkdown?: () => void | Promise<void>;
   downloadMarkdownDisabled?: boolean;
+  downloadMarkdownBusy?: boolean;
   saveBusy?: boolean;
   saveDisabled?: boolean;
   saveKeyShortcuts?: string;
@@ -59,6 +60,7 @@ export default function PreviewPanel({
   onSave,
   onDownloadMarkdown,
   downloadMarkdownDisabled = false,
+  downloadMarkdownBusy = false,
   saveBusy = false,
   saveDisabled = false,
   saveKeyShortcuts,
@@ -370,6 +372,7 @@ export default function PreviewPanel({
         onSave={onSave}
         onDownloadMarkdown={onDownloadMarkdown}
         downloadMarkdownDisabled={downloadMarkdownDisabled}
+        downloadMarkdownBusy={downloadMarkdownBusy}
         saveBusy={saveBusy}
         saveDisabled={saveDisabled}
         saveKeyShortcuts={saveKeyShortcuts}

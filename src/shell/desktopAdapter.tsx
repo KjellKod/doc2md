@@ -49,6 +49,7 @@ import {
   isDownloadableEntry,
 } from "../utils/download";
 import { renderEntryHtml } from "../utils/exportHtml";
+import { afterNextPaint, keepBusyStateVisible } from "../utils/paint";
 import type { DesktopSaveState } from "../desktop/saveState";
 import { useDesktopCapability } from "../desktop/useDesktopCapability";
 import { useDesktopSaveState } from "../desktop/useDesktopSaveState";
@@ -415,6 +416,7 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
   // state machine (BL-5): exporting HTML must never drive saveState into
   // "saving"/"saved" or otherwise touch the active Markdown document.
   const [exportHtmlBusy, setExportHtmlBusy] = useState(false);
+  const [downloadMarkdownBusy, setDownloadMarkdownBusy] = useState(false);
   const exportHtmlInFlightRef = useRef(false);
   const selectedEntryId = selectedEntry?.id ?? null;
   const hasWorkingEntry =
@@ -929,7 +931,7 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
 
   const checkedTargets = entries.filter((entry) => checkedEntryIds.has(entry.id));
 
-  const handleDownload = useCallback(() => {
+  const handleDownload = useCallback(async () => {
     const targets =
       checkedTargets.length > 0
         ? checkedTargets
@@ -937,21 +939,33 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
           ? [selectedEntry]
           : [];
 
-    for (const entry of targets) {
-      if (isDownloadableEntry(entry)) {
-        downloadEntry(entry);
-      }
+    const downloadableTargets = targets.filter(isDownloadableEntry);
+    if (downloadableTargets.length === 0) {
+      return;
+    }
+    await afterNextPaint();
+    for (const entry of downloadableTargets) {
+      downloadEntry(entry);
     }
 
     setCheckedEntryIds(new Set());
   }, [checkedTargets, selectedEntry]);
 
-  const handleDownloadMarkdown = useCallback(() => {
-    if (!isDownloadableEntry(selectedEntry)) {
+  const handleDownloadMarkdown = useCallback(async () => {
+    if (!isDownloadableEntry(selectedEntry) || downloadMarkdownBusy) {
       return;
     }
-    downloadEntry(selectedEntry);
-  }, [selectedEntry]);
+    setDownloadMarkdownBusy(true);
+    try {
+      await afterNextPaint();
+      downloadEntry(selectedEntry);
+      await keepBusyStateVisible();
+    } catch (error) {
+      console.error("doc2md desktop Markdown download failure", error);
+    } finally {
+      setDownloadMarkdownBusy(false);
+    }
+  }, [downloadMarkdownBusy, selectedEntry]);
 
   const handleClear = useCallback(() => {
     const targets =
@@ -1661,6 +1675,7 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
       setEntryDesktopSaveState(entry.id, "saving");
 
       try {
+        await afterNextPaint();
         const result = await shell.saveFile({
           path: desktopFile.path,
           content: markdownForEntry(entry),
@@ -1765,6 +1780,7 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     setEntryDesktopSaveState(entry.id, "saving");
 
     try {
+      await afterNextPaint();
       const lineEnding = lineEndingForDesktopFile(
         desktopFilesRef.current[entry.id],
       );
@@ -1859,7 +1875,8 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     // desktopFiles map (BL-5). On desktop we route through the native
     // save-as bridge with format:"html"; without a shell (hosted dev) we
     // fall back to a blob download.
-    void renderEntryHtml(entry)
+    void afterNextPaint()
+      .then(() => renderEntryHtml(entry))
       .then(async (html) => {
         if (!shell) {
           downloadHtmlFile(entry.name, html);
@@ -1932,15 +1949,22 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     void saveEntryFile(selectedEntry);
   }, [handleSaveAs, saveEntryFile, selectedEntry, setDocumentNotice]);
 
-  const hostedHandleSave = useCallback(() => {
+  const hostedHandleSave = useCallback(async () => {
     if (!isDownloadableEntry(selectedEntry)) {
       return;
     }
 
     saveState.markSaving();
-    downloadEntry(selectedEntry);
-    setEntryDesktopSaveState(selectedEntry.id, "saved");
-    saveState.markSaved();
+    try {
+      await afterNextPaint();
+      downloadEntry(selectedEntry);
+      setEntryDesktopSaveState(selectedEntry.id, "saved");
+      saveState.markSaved();
+    } catch (error) {
+      setEntryDesktopSaveState(selectedEntry.id, "edited");
+      saveState.markEdited();
+      console.error("doc2md desktop hosted-save fallback failure", error);
+    }
   }, [saveState, selectedEntry, setEntryDesktopSaveState]);
 
   const effectiveSave = isDesktop ? handleSave : hostedHandleSave;
@@ -2576,6 +2600,7 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     onSave: effectiveSave,
     onDownloadMarkdown: handleDownloadMarkdown,
     downloadMarkdownDisabled: !isDownloadableEntry(selectedEntry),
+    downloadMarkdownBusy,
     onExportHtml: handleExportHtml,
     exportHtmlBusy,
     exportHtmlDisabled,
