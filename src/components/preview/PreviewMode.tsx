@@ -2,6 +2,8 @@ import {
   type ChangeEvent,
   useLayoutEffect,
   useMemo,
+  useRef,
+  useState,
   type KeyboardEvent,
   type MouseEvent,
 } from "react";
@@ -12,6 +14,10 @@ import type { FindMatch } from "../useFindReplace";
 import { sourceLineRehype } from "../sourceLineRehype";
 import { formatPreviewMarkdownWithLineMap } from "../previewFormatting";
 import { classifyMarkdownHref } from "../../render/markdownLinks";
+import {
+  parseDominantMarkdownTable,
+  type LargeMarkdownAnalysis,
+} from "../../render/largeMarkdown";
 import { useFindHighlight } from "./useFindHighlight";
 import { useViewportAnchor } from "./useViewportAnchor";
 import {
@@ -159,6 +165,7 @@ interface PreviewModeProps {
   pendingAnchorLineRef: MutableElementRef<number>;
   suppressMatchCenteringForModeSwitchRef: MutableElementRef<boolean>;
   renderedViewText: string;
+  largeMarkdownAnalysis?: LargeMarkdownAnalysis | null;
   viewportTopFloor: () => number;
   onReportView?: () => void;
   onMarkdownChange?: (markdown: string) => void;
@@ -166,6 +173,22 @@ interface PreviewModeProps {
 }
 
 export default function PreviewMode({
+  largeMarkdownAnalysis,
+  ...props
+}: PreviewModeProps) {
+  if (largeMarkdownAnalysis?.useFallbackPreview) {
+    return (
+      <LargeMarkdownPreviewMode
+        {...props}
+        largeMarkdownAnalysis={largeMarkdownAnalysis}
+      />
+    );
+  }
+
+  return <RichPreviewMode {...props} largeMarkdownAnalysis={null} />;
+}
+
+function RichPreviewMode({
   effectiveMarkdown,
   isFindOpen,
   activeFindMatch,
@@ -269,5 +292,240 @@ export default function PreviewMode({
         {previewMarkdown}
       </ReactMarkdown>
     </div>
+  );
+}
+
+type LargeMarkdownPreviewModeProps = Omit<
+  PreviewModeProps,
+  "largeMarkdownAnalysis"
+> & {
+  largeMarkdownAnalysis: LargeMarkdownAnalysis;
+};
+
+function LargeMarkdownPreviewMode({
+  effectiveMarkdown,
+  isFindOpen,
+  activeFindMatch,
+  previewRef,
+  renderedViewRef,
+  pendingAnchorLineRef,
+  suppressMatchCenteringForModeSwitchRef,
+  renderedViewText,
+  largeMarkdownAnalysis,
+  viewportTopFloor,
+  onReportView,
+  onMarkdownChange,
+  onRenderedViewTextChange,
+}: LargeMarkdownPreviewModeProps) {
+  const surfaceRef = useRef<HTMLDivElement | null>(null);
+  const tableBodyRef = useRef<HTMLTableSectionElement | null>(null);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState(640);
+  const [tableBodyTop, setTableBodyTop] = useState(0);
+  const table = useMemo(
+    () => parseDominantMarkdownTable(effectiveMarkdown),
+    [effectiveMarkdown],
+  );
+
+  function updateScrollMetrics(element: HTMLDivElement) {
+    setScrollTop(element.scrollTop);
+    setViewportHeight(element.clientHeight || 640);
+    const tableBody = tableBodyRef.current;
+    if (tableBody) {
+      const surfaceRect = element.getBoundingClientRect();
+      const bodyRect = tableBody.getBoundingClientRect();
+      setTableBodyTop(bodyRect.top - surfaceRect.top + element.scrollTop);
+    }
+  }
+
+  useLayoutEffect(() => {
+    const element = surfaceRef.current;
+    if (element) {
+      updateScrollMetrics(element);
+    }
+  }, [effectiveMarkdown, table]);
+
+  const lineLabel =
+    largeMarkdownAnalysis.lineCount === 1
+      ? "1 line"
+      : `${largeMarkdownAnalysis.lineCount} lines`;
+  const tableLineLabel =
+    largeMarkdownAnalysis.tableLineCount === 1
+      ? "1 table line"
+      : `${largeMarkdownAnalysis.tableLineCount} table lines`;
+  const rowHeight = 42;
+  const overscan = 16;
+  const rowScrollTop = Math.max(scrollTop - tableBodyTop, 0);
+  const visibleStart = Math.max(
+    0,
+    Math.floor(rowScrollTop / rowHeight) - overscan,
+  );
+  const visibleCapacity = Math.ceil(viewportHeight / rowHeight) + overscan * 2;
+  const visibleRows =
+    table?.rows.slice(visibleStart, visibleStart + visibleCapacity) ?? [];
+  const beforeHeight = visibleStart * rowHeight;
+  const afterHeight =
+    Math.max((table?.rows.length ?? 0) - visibleStart - visibleRows.length, 0) *
+    rowHeight;
+  const columnCount = table
+    ? Math.max(
+        table.header.length,
+        ...visibleRows.map((row) => row.cells.length),
+      )
+    : 0;
+  const { applyAnchorLine } = useViewportAnchor(
+    renderedViewRef,
+    "rendered",
+    { viewportTopFloor },
+  );
+
+  useRenderedAnchorApply({
+    pendingAnchorLineRef,
+    suppressMatchCenteringForModeSwitchRef,
+    applyAnchorLine,
+  });
+
+  useLayoutEffect(() => {
+    snapshotRenderedViewText(renderedViewRef.current, onRenderedViewTextChange);
+  }, [
+    effectiveMarkdown,
+    isFindOpen,
+    onRenderedViewTextChange,
+    renderedViewRef,
+    visibleStart,
+  ]);
+
+  useRenderedActiveMatchCentering({
+    renderedViewRef,
+    isFindOpen,
+    activeFindMatch,
+    pendingAnchorLineRef,
+    suppressMatchCenteringForModeSwitchRef,
+    renderedViewText,
+  });
+
+  if (!table) {
+    return (
+      <RichPreviewMode
+        effectiveMarkdown={effectiveMarkdown}
+        isFindOpen={isFindOpen}
+        activeFindMatch={activeFindMatch}
+        previewRef={previewRef}
+        renderedViewRef={renderedViewRef}
+        pendingAnchorLineRef={pendingAnchorLineRef}
+        suppressMatchCenteringForModeSwitchRef={
+          suppressMatchCenteringForModeSwitchRef
+        }
+        renderedViewText={renderedViewText}
+        largeMarkdownAnalysis={null}
+        viewportTopFloor={viewportTopFloor}
+        onReportView={onReportView}
+        onMarkdownChange={onMarkdownChange}
+        onRenderedViewTextChange={onRenderedViewTextChange}
+      />
+    );
+  }
+
+  return (
+    <div
+      className="markdown-surface markdown-surface-large-document"
+      ref={(element) => {
+        surfaceRef.current = element;
+        previewRef.current = element;
+        renderedViewRef.current = element;
+      }}
+      onScroll={(event) => {
+        updateScrollMetrics(event.currentTarget);
+        onReportView?.();
+      }}
+    >
+      <div className="large-markdown-notice" role="status">
+        <strong>Large report</strong>
+        <span>
+          Rendering the document with a virtualized table for {lineLabel},{" "}
+          {tableLineLabel}.
+        </span>
+      </div>
+      <MarkdownDocumentFragment markdown={table.beforeMarkdown} />
+      <table className="large-markdown-table">
+        <thead>
+          <tr>
+            {table.header.map((cell, index) => (
+              <th
+                key={`${index}-${cell}`}
+                style={{ textAlign: table.alignments[index] ?? undefined }}
+              >
+                <MarkdownTableCell markdown={cell} />
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody ref={tableBodyRef}>
+          {beforeHeight > 0 ? (
+            <tr aria-hidden="true">
+              <td
+                className="large-markdown-table-spacer"
+                colSpan={columnCount}
+                style={{ height: `${beforeHeight}px` }}
+              />
+            </tr>
+          ) : null}
+          {visibleRows.map((row) => (
+            <tr
+              key={row.sourceLine}
+              data-source-line={row.sourceLine}
+              style={{ height: `${rowHeight}px` }}
+            >
+              {Array.from({ length: columnCount }, (_, index) => (
+                <td
+                  key={index}
+                  style={{ textAlign: table.alignments[index] ?? undefined }}
+                >
+                  <MarkdownTableCell markdown={row.cells[index] ?? ""} />
+                </td>
+              ))}
+            </tr>
+          ))}
+          {afterHeight > 0 ? (
+            <tr aria-hidden="true">
+              <td
+                className="large-markdown-table-spacer"
+                colSpan={columnCount}
+                style={{ height: `${afterHeight}px` }}
+              />
+            </tr>
+          ) : null}
+        </tbody>
+      </table>
+      <MarkdownDocumentFragment markdown={table.afterMarkdown} />
+    </div>
+  );
+}
+
+function MarkdownDocumentFragment({ markdown }: { markdown: string }) {
+  if (markdown.trim().length === 0) {
+    return null;
+  }
+
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      rehypePlugins={[rehypeSlug]}
+      components={previewMarkdownComponents}
+    >
+      {markdown}
+    </ReactMarkdown>
+  );
+}
+
+function MarkdownTableCell({ markdown }: { markdown: string }) {
+  if (markdown.length === 0) {
+    return null;
+  }
+
+  return (
+    <ReactMarkdown remarkPlugins={[remarkGfm]} components={previewMarkdownComponents}>
+      {markdown}
+    </ReactMarkdown>
   );
 }

@@ -2567,6 +2567,58 @@ body.is-height-resizing * {
   overflow: auto;
 }
 
+.large-markdown-notice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: baseline;
+  margin-bottom: 1rem;
+  padding: 10px 12px;
+  border: 1px solid rgba(141, 99, 24, 0.22);
+  border-radius: 8px;
+  background: var(--warning-soft);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.large-markdown-notice strong {
+  color: var(--warning);
+}
+
+.markdown-surface-large-document .large-markdown-table {
+  width: max-content;
+  min-width: 100%;
+  table-layout: auto;
+}
+
+.markdown-surface-large-document .large-markdown-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  white-space: nowrap;
+}
+
+.markdown-surface-large-document .large-markdown-table th,
+.markdown-surface-large-document .large-markdown-table td {
+  min-width: 9rem;
+  max-width: 34rem;
+  white-space: nowrap;
+}
+
+.markdown-surface-large-document .large-markdown-table td > p,
+.markdown-surface-large-document .large-markdown-table th > p {
+  margin: 0;
+  color: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.large-markdown-table-spacer {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
 .page.is-working-mode .markdown-surface,
 .page.is-working-mode .linkedin-surface,
 .page.is-working-mode .markdown-edit-area,

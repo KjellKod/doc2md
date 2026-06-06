@@ -69,6 +69,16 @@ function createSuccessResult(markdown: string) {
   };
 }
 
+function createLargeMarkdownTable(rowCount = 1_100): string {
+  const rows = ["# Report", "", "| Package | License | Notes |", "| --- | --- | --- |"];
+  for (let index = 0; index < rowCount; index += 1) {
+    const notes =
+      index === 0 ? "[docs](https://example.com/docs)" : "metadata ".repeat(8);
+    rows.push(`| package-${index} | MIT | ${notes} |`);
+  }
+  return rows.join("\n");
+}
+
 function createDeferred<T>() {
   let resolve: (value: T) => void = () => {};
   const promise = new Promise<T>((resolver) => {
@@ -263,6 +273,33 @@ describe("App desktop bridge", () => {
         "- [ ] Desktop task\n- [x] Keep checked",
       ),
     );
+
+    cleanupShell();
+  });
+
+  it("opens large desktop Markdown reports as rendered documents", async () => {
+    const openFile = vi.fn(async () => ({
+      ok: true as const,
+      kind: "markdown" as const,
+      path: "/Users/me/report.main.md",
+      content: createLargeMarkdownTable(),
+      mtimeMs: 10,
+      lineEnding: "lf" as const,
+    }));
+    const cleanupShell = installMockShell({ openFile });
+
+    render(<DesktopApp />);
+    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
+
+    await awaitOpenButton("Open report.main.md");
+    expect(await screen.findByText("Large report")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Rendering the document with a virtualized table/),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("table")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Report" }),
+    ).toBeInTheDocument();
 
     cleanupShell();
   });

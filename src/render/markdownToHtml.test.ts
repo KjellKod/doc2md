@@ -26,6 +26,14 @@ const value = 1;
 ~~struck~~
 `;
 
+function largeTableMarkdown(rowCount = 1_100): string {
+  const rows = ["# Report", "", "| Package | License | Notes |", "| --- | --- | --- |"];
+  for (let index = 0; index < rowCount; index += 1) {
+    rows.push(`| package-${index} | MIT | ${"metadata ".repeat(8)} |`);
+  }
+  return rows.join("\n");
+}
+
 describe("markdownToHtml standalone shell", () => {
   const html = markdownToHtml(SAMPLE);
 
@@ -96,6 +104,20 @@ describe("markdownToHtml content rendering", () => {
     expect(fragment).toContain("<table>");
     expect(fragment).toContain("<th>Name</th>");
     expect(fragment).toContain("<td>Ada</td>");
+  });
+
+  it("exports large table-heavy Markdown as rendered document HTML", () => {
+    const fragment = markdownToHtml(
+      `${largeTableMarkdown()}\n<script>alert(1)</script>`,
+      { standalone: false },
+    );
+
+    expect(fragment).not.toContain("Rich table rendering skipped");
+    expect(fragment).toContain("<table>");
+    expect(fragment).toContain("<th>Package</th>");
+    expect(fragment).toContain("<td>package-0</td>");
+    expect(fragment).toMatch(/&#x3c;script|&lt;script/i);
+    expect(fragment).not.toContain("<script");
   });
 
   it("renders task lists with checkbox state", () => {
