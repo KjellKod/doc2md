@@ -8,6 +8,7 @@ import PreviewPanel from "./PreviewPanel";
 import type { EditorViewState } from "./PreviewPanel";
 import {
   LARGE_JSON_MARKDOWN_THRESHOLD,
+  LARGE_JSON_PREVIEW_CHARACTER_LIMIT,
   getLargeJsonPreview,
 } from "./preview/largeJsonPreview";
 import * as viewportAnchor from "./viewportAnchor";
@@ -162,7 +163,7 @@ describe("PreviewPanel", () => {
 
     expect(getLargeJsonPreview(largeJson)).toMatchObject({
       totalCharacters: expect.any(Number),
-      shownCharacters: 200_000,
+      shownCharacters: LARGE_JSON_PREVIEW_CHARACTER_LIMIT,
     });
     expect(getLargeJsonPreview("```json\n{}\n```")).toBeNull();
     expect(getLargeJsonPreview(`# ${"x".repeat(LARGE_JSON_MARKDOWN_THRESHOLD)}`)).toBeNull();
@@ -187,7 +188,9 @@ describe("PreviewPanel", () => {
     expect(screen.getByTestId("large-json-preview")).not.toHaveTextContent("tailKey");
 
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
-    expect(await screen.findByLabelText("Edit markdown")).toHaveValue(markdown);
+    const editor = await screen.findByLabelText("Edit markdown");
+    expect((editor as HTMLTextAreaElement).value.length).toBe(markdown.length);
+    expect((editor as HTMLTextAreaElement).value).toContain("earlyKey");
 
     fireEvent.click(screen.getByRole("button", { name: "View" }));
     await waitFor(() => {

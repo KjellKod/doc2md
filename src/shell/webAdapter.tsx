@@ -428,6 +428,7 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     try {
       await afterNextPaint();
       downloadEntry(entry);
+      await keepBusyStateVisible();
 
       const liveEntry = entriesRef.current.find(
         (currentEntry) => currentEntry.id === entry.id,

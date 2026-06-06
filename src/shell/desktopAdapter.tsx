@@ -1958,6 +1958,7 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     try {
       await afterNextPaint();
       downloadEntry(selectedEntry);
+      await keepBusyStateVisible();
       setEntryDesktopSaveState(selectedEntry.id, "saved");
       saveState.markSaved();
     } catch (error) {
