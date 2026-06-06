@@ -1,0 +1,35 @@
+src/render/largeMarkdown.test.ts
+  s_0cd15174b8b235::t_05a56b30294a09 1-46
+src/components/preview/PreviewMode.tsx
+  s_0cd15174b8b235::t_39352756ba658b 5-6,17-20,314-320,324-331,341-364,366-383,385,387,392-446,448-452
+  s_0cd15174b8b235::t_05a56b30294a09 168,176-191,297-313,321-323,332-340,365,384,386,388,391,447
+  s_0cd15174b8b235::t_ce9d7ffc67a93d 389-390
+src/components/PreviewPanel.test.tsx
+  s_0cd15174b8b235::t_914c2d7184a315 288-305
+src/components/preview/PreviewPanel.tsx
+  s_0cd15174b8b235::t_a68386b257fba0 248-252
+src/styles/global.css
+  s_0cd15174b8b235::t_e8fafa56784ff0 2570-2641
+src/render/htmlExportStyles.ts
+  s_0cd15174b8b235::t_75f15824a1c0d9 47-67
+src/__tests__/App.desktop.test.tsx
+  s_0cd15174b8b235::t_914c2d7184a315 278-294
+src/render/largeMarkdown.ts
+  s_0cd15174b8b235::t_73e36a0a3ec565 13-206
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.3",
+  "base_commit_sha": "ed1bcaa13faa3f2b5d6e82496e54be86ba218af1",
+  "prompts": {},
+  "sessions": {
+    "s_0cd15174b8b235": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e9a90-c4d3-7442-a314-f9ff69133427",
+        "model": "gpt-5.5"
+      },
+      "human_author": null
+    }
+  }
+}
