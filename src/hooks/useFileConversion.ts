@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { convertFile } from "../converters";
+import { convertFileForUi } from "../converters/browserConversion";
 import {
   CONVERSION_TIMEOUT_MS,
   MAX_BROWSER_FILE_SIZE_BYTES,
@@ -58,17 +58,20 @@ export function useFileConversion() {
     updateEntry(entry.id, markEntryConverting);
 
     const timeoutError = new Error("conversion-timeout");
+    const controller = new AbortController();
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    let didTimeOut = false;
 
     try {
       const timeoutPromise = new Promise<never>((_, reject) => {
-        timeoutId = setTimeout(
-          () => reject(timeoutError),
-          CONVERSION_TIMEOUT_MS,
-        );
+        timeoutId = setTimeout(() => {
+          didTimeOut = true;
+          controller.abort();
+          reject(timeoutError);
+        }, CONVERSION_TIMEOUT_MS);
       });
       const result = await Promise.race([
-        convertFile(entry.file),
+        convertFileForUi(entry.file, { signal: controller.signal }),
         timeoutPromise,
       ]);
 
@@ -79,7 +82,10 @@ export function useFileConversion() {
       updateEntry(entry.id, (currentEntry) =>
         markEntryError(
           currentEntry,
-          getConversionFailureWarning(error, timeoutError),
+          getConversionFailureWarning(
+            didTimeOut ? timeoutError : error,
+            timeoutError,
+          ),
         ),
       );
     } finally {

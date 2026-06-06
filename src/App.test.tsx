@@ -777,7 +777,9 @@ describe("App", () => {
       screen.getByRole("button", { name: "Download selected files" }),
     );
 
-    expect(clickedDownloads).toEqual(["beta.md"]);
+    await waitFor(() => {
+      expect(clickedDownloads).toEqual(["beta.md"]);
+    });
     expect(screen.getByRole("checkbox", { name: "Select beta.txt" })).not.toBeChecked();
     expect(
       screen.getByRole("button", { name: "Download active file" }),

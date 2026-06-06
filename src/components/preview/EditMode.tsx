@@ -48,6 +48,7 @@ interface EditModeProps {
   suppressMatchCenteringForModeSwitchRef: MutableElementRef<boolean>;
   viewportTopFloor: () => number;
   autoFocusOnMount?: boolean;
+  anchorMirrorEnabled?: boolean;
   pendingEditorRestoreRef?: MutableElementRef<EditorViewState>;
   onReportView?: () => void;
   onMarkdownChange?: (markdown: string) => void;
@@ -162,6 +163,7 @@ export default function EditMode({
   suppressMatchCenteringForModeSwitchRef,
   viewportTopFloor,
   autoFocusOnMount = false,
+  anchorMirrorEnabled = true,
   pendingEditorRestoreRef,
   onReportView,
   onMarkdownChange,
@@ -183,11 +185,13 @@ export default function EditMode({
     findHighlightRef.current.scrollLeft = textareaRef.current.scrollLeft;
   }, [findHighlightRef, textareaRef]);
   const { applyAnchorLine } = useViewportAnchor(textareaRef, "textarea", {
-    mirrorRef: findHighlightRef,
-    source: effectiveMarkdown,
+    mirrorRef: anchorMirrorEnabled ? findHighlightRef : undefined,
+    source: anchorMirrorEnabled ? effectiveMarkdown : "",
     viewportTopFloor,
     afterApply: syncFindHighlightScroll,
   });
+  const findOverlaySource =
+    anchorMirrorEnabled || isFindOpen ? effectiveMarkdown : "";
 
   useLayoutEffect(() => {
     const anchorLine = pendingAnchorLineRef.current;
@@ -587,7 +591,7 @@ export default function EditMode({
         aria-hidden="true"
       >
         {renderFindHighlight(
-          effectiveMarkdown,
+          findOverlaySource,
           isFindOpen ? activeFindMatch : null,
         )}
       </pre>

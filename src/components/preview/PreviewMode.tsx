@@ -26,6 +26,8 @@ import {
   useRenderedAnchorApply,
 } from "./renderedSurfaceEffects";
 import { replaceTaskMarkerAtSourceLine } from "./taskCheckboxSource";
+import { LargeJsonPreviewView } from "./LargeJsonPreviewView";
+import { getLargeJsonPreview } from "./largeJsonPreview";
 
 // Link classification (external / anchor / disabled) is shared with the
 // static HTML export renderer via src/render/markdownLinks.ts so the two
@@ -202,17 +204,24 @@ function RichPreviewMode({
   onMarkdownChange,
   onRenderedViewTextChange,
 }: PreviewModeProps) {
-  const previewWithLineMap = useMemo(
-    () => formatPreviewMarkdownWithLineMap(effectiveMarkdown),
+  const largeJsonPreview = useMemo(
+    () => getLargeJsonPreview(effectiveMarkdown),
     [effectiveMarkdown],
   );
-  const previewMarkdown = previewWithLineMap.markdown;
+  const previewWithLineMap = useMemo(
+    () =>
+      largeJsonPreview === null
+        ? formatPreviewMarkdownWithLineMap(effectiveMarkdown)
+        : null,
+    [effectiveMarkdown, largeJsonPreview],
+  );
+  const previewMarkdown = previewWithLineMap?.markdown ?? "";
   const renderedFindHighlightMatch = useMemo(
     () =>
-      isFindOpen && activeFindMatch
+      largeJsonPreview === null && isFindOpen && activeFindMatch
         ? { start: activeFindMatch.start, end: activeFindMatch.end }
         : null,
-    [activeFindMatch, isFindOpen],
+    [activeFindMatch, isFindOpen, largeJsonPreview],
   );
   const findHighlight = useFindHighlight(renderedFindHighlightMatch);
   const previewComponents = useMemo(
@@ -234,14 +243,17 @@ function RichPreviewMode({
     [effectiveMarkdown, onMarkdownChange],
   );
   const previewRehypePlugins = useMemo(
-    () => [
-      // rehype-slug runs first so heading ids are in place before the
-      // source-line tagger or find-highlighter touch the tree.
-      rehypeSlug,
-      sourceLineRehype(previewWithLineMap.originalLineFor),
-      findHighlight,
-    ],
-    [findHighlight, previewWithLineMap.originalLineFor],
+    () =>
+      previewWithLineMap === null
+        ? []
+        : [
+          // rehype-slug runs first so heading ids are in place before the
+          // source-line tagger or find-highlighter touch the tree.
+          rehypeSlug,
+          sourceLineRehype(previewWithLineMap.originalLineFor),
+          findHighlight,
+        ],
+    [findHighlight, previewWithLineMap],
   );
   const { applyAnchorLine } = useViewportAnchor(
     renderedViewRef,
@@ -256,11 +268,16 @@ function RichPreviewMode({
   });
 
   useLayoutEffect(() => {
+    if (largeJsonPreview !== null) {
+      onRenderedViewTextChange(largeJsonPreview.previewText);
+      return;
+    }
     snapshotRenderedViewText(renderedViewRef.current, onRenderedViewTextChange);
   }, [
     activeFindMatch,
     effectiveMarkdown,
     isFindOpen,
+    largeJsonPreview,
     onRenderedViewTextChange,
     previewMarkdown,
     renderedViewRef,
@@ -268,8 +285,8 @@ function RichPreviewMode({
 
   useRenderedActiveMatchCentering({
     renderedViewRef,
-    isFindOpen,
-    activeFindMatch,
+    isFindOpen: largeJsonPreview === null && isFindOpen,
+    activeFindMatch: largeJsonPreview === null ? activeFindMatch : null,
     pendingAnchorLineRef,
     suppressMatchCenteringForModeSwitchRef,
     renderedViewText,
@@ -284,13 +301,17 @@ function RichPreviewMode({
       }}
       onScroll={() => onReportView?.()}
     >
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        rehypePlugins={previewRehypePlugins}
-        components={previewComponents}
-      >
-        {previewMarkdown}
-      </ReactMarkdown>
+      {largeJsonPreview !== null ? (
+        <LargeJsonPreviewView state={largeJsonPreview} />
+      ) : (
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          rehypePlugins={previewRehypePlugins}
+          components={previewComponents}
+        >
+          {previewMarkdown}
+        </ReactMarkdown>
+      )}
     </div>
   );
 }

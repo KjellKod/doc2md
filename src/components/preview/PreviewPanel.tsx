@@ -12,6 +12,7 @@ import PreviewMode from "./PreviewMode";
 import PreviewToolbar from "./PreviewToolbar";
 import { performPreviewCopy } from "./previewCopy";
 import { analyzeLargeMarkdown } from "../../render/largeMarkdown";
+import { getLargeJsonPreview } from "./largeJsonPreview";
 /**
  * Per-document viewport position remembered across document switches so
  * returning to a large doc lands where you left off instead of jumping to the
@@ -37,6 +38,7 @@ export interface PreviewPanelProps {
   onSave?: () => void | Promise<void>;
   onDownloadMarkdown?: () => void | Promise<void>;
   downloadMarkdownDisabled?: boolean;
+  downloadMarkdownBusy?: boolean;
   saveBusy?: boolean;
   saveDisabled?: boolean;
   saveKeyShortcuts?: string;
@@ -59,6 +61,7 @@ export default function PreviewPanel({
   onSave,
   onDownloadMarkdown,
   downloadMarkdownDisabled = false,
+  downloadMarkdownBusy = false,
   saveBusy = false,
   saveDisabled = false,
   saveKeyShortcuts,
@@ -250,6 +253,15 @@ export default function PreviewPanel({
     }
     return analyzeLargeMarkdown(effectiveMarkdown);
   }, [effectiveMarkdown, entry, mode]);
+  const usesLargeJsonLightweightPreview = useMemo(
+    () =>
+      Boolean(
+        entry &&
+          entry.format.toLowerCase() === "json" &&
+          getLargeJsonPreview(effectiveMarkdown),
+      ),
+    [effectiveMarkdown, entry],
+  );
   const canEditFromEmptyState = Boolean(
     entry && (entry.isScratch || entry.editedMarkdown !== undefined),
   );
@@ -282,8 +294,8 @@ export default function PreviewPanel({
   const activeFindSource =
     mode === "edit" ? effectiveMarkdown : renderedViewText;
   const editAnchor = useViewportAnchor(textareaRef, "textarea", {
-    mirrorRef: findHighlightRef,
-    source: effectiveMarkdown,
+    mirrorRef: usesLargeJsonLightweightPreview ? undefined : findHighlightRef,
+    source: usesLargeJsonLightweightPreview ? "" : effectiveMarkdown,
     viewportTopFloor,
   });
   const renderedAnchor = useViewportAnchor(renderedViewRef, "rendered", {
@@ -317,9 +329,13 @@ export default function PreviewPanel({
       return;
     }
 
-    const captured = captureAnchorLine();
-    if (captured !== null) {
-      pendingAnchorLineRef.current = captured;
+    if (usesLargeJsonLightweightPreview) {
+      pendingAnchorLineRef.current = null;
+    } else {
+      const captured = captureAnchorLine();
+      if (captured !== null) {
+        pendingAnchorLineRef.current = captured;
+      }
     }
     suppressMatchCenteringForModeSwitchRef.current = activeFindMatch !== null;
     setMode(nextMode);
@@ -370,6 +386,7 @@ export default function PreviewPanel({
         onSave={onSave}
         onDownloadMarkdown={onDownloadMarkdown}
         downloadMarkdownDisabled={downloadMarkdownDisabled}
+        downloadMarkdownBusy={downloadMarkdownBusy}
         saveBusy={saveBusy}
         saveDisabled={saveDisabled}
         saveKeyShortcuts={saveKeyShortcuts}
@@ -430,6 +447,7 @@ export default function PreviewPanel({
           textareaRef={textareaRef}
           findHighlightRef={findHighlightRef}
           autoFocusOnMount={autoFocusEditorOnMount}
+          anchorMirrorEnabled={!usesLargeJsonLightweightPreview}
           pendingEditorRestoreRef={pendingEditorRestoreRef}
           onReportView={reportView}
           onMarkdownChange={onMarkdownChange}

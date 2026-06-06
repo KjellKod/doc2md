@@ -4,18 +4,10 @@ import {
   JSON_VALIDATION_FAILED_MESSAGE,
   createErrorResult
 } from "./messages";
-import type { Converter } from "./types";
+import type { ConversionResult, Converter } from "./types";
 import { readFileAsText } from "./readText";
 
-export const convertJson: Converter = async (file) => {
-  let raw: string;
-
-  try {
-    raw = await readFileAsText(file);
-  } catch {
-    return createErrorResult(CORRUPT_FILE_MESSAGE);
-  }
-
+export function convertJsonText(raw: string): ConversionResult {
   const trimmed = raw.trim();
 
   if (trimmed.length === 0) {
@@ -46,4 +38,16 @@ export const convertJson: Converter = async (file) => {
       }
     };
   }
+}
+
+export const convertJson: Converter = async (file) => {
+  let raw: string;
+
+  try {
+    raw = await readFileAsText(file);
+  } catch {
+    return createErrorResult(CORRUPT_FILE_MESSAGE);
+  }
+
+  return convertJsonText(raw);
 };

@@ -6,6 +6,11 @@ import type { ConversionQuality } from "../converters/types";
 import type { FileEntry } from "../types";
 import PreviewPanel from "./PreviewPanel";
 import type { EditorViewState } from "./PreviewPanel";
+import {
+  LARGE_JSON_MARKDOWN_THRESHOLD,
+  LARGE_JSON_PREVIEW_CHARACTER_LIMIT,
+  getLargeJsonPreview,
+} from "./preview/largeJsonPreview";
 import * as viewportAnchor from "./viewportAnchor";
 
 class MockClipboardItem {
@@ -108,6 +113,11 @@ function ControlledPreviewPanel({
   );
 }
 
+function createLargeJsonMarkdown() {
+  const padding = "x".repeat(LARGE_JSON_MARKDOWN_THRESHOLD);
+  return `\`\`\`json\n{"earlyKey":true,"body":"${padding}","tailKey":true}\n\`\`\``;
+}
+
 afterEach(() => {
   cleanup();
 });
@@ -148,6 +158,77 @@ afterEach(() => {
 });
 
 describe("PreviewPanel", () => {
+  it("detects only large generated JSON fenced Markdown for lightweight preview", () => {
+    const largeJson = createLargeJsonMarkdown();
+
+    expect(getLargeJsonPreview(largeJson)).toMatchObject({
+      totalCharacters: expect.any(Number),
+      shownCharacters: LARGE_JSON_PREVIEW_CHARACTER_LIMIT,
+    });
+    expect(getLargeJsonPreview("```json\n{}\n```")).toBeNull();
+    expect(getLargeJsonPreview(`# ${"x".repeat(LARGE_JSON_MARKDOWN_THRESHOLD)}`)).toBeNull();
+    expect(getLargeJsonPreview(`\`\`\`js\n${"x".repeat(LARGE_JSON_MARKDOWN_THRESHOLD)}\n\`\`\``)).toBeNull();
+    expect(getLargeJsonPreview(`\`\`\`json\n${"x".repeat(LARGE_JSON_MARKDOWN_THRESHOLD)}`)).toBeNull();
+  });
+
+  it("uses a lightweight preview for large generated JSON and returns to it from Edit", async () => {
+    const markdown = createLargeJsonMarkdown();
+    const topLineFromTextareaMirror = vi.spyOn(
+      viewportAnchor,
+      "topLineFromTextareaMirror",
+    );
+
+    try {
+      render(
+        <PreviewPanel
+          entry={createEntry({
+            name: "inventory.json",
+            format: "json",
+            markdown,
+          })}
+        />,
+      );
+
+      expect(screen.getByTestId("large-json-preview")).toBeInTheDocument();
+      expect(screen.getByTestId("large-json-preview")).toHaveTextContent(
+        "earlyKey",
+      );
+      expect(screen.getByTestId("large-json-preview")).not.toHaveTextContent(
+        "tailKey",
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+      const editor = await screen.findByLabelText("Edit markdown");
+      expect((editor as HTMLTextAreaElement).value.length).toBe(markdown.length);
+      expect((editor as HTMLTextAreaElement).value).toContain("earlyKey");
+
+      fireEvent.click(screen.getByRole("button", { name: "View" }));
+      await waitFor(() => {
+        expect(screen.getByTestId("large-json-preview")).toBeInTheDocument();
+      });
+      expect(screen.getByTestId("large-json-preview")).not.toHaveTextContent(
+        "tailKey",
+      );
+      expect(topLineFromTextareaMirror).not.toHaveBeenCalled();
+    } finally {
+      topLineFromTextareaMirror.mockRestore();
+    }
+  });
+
+  it("marks Markdown download busy and disabled", () => {
+    render(
+      <PreviewPanel
+        entry={createEntry()}
+        onDownloadMarkdown={() => undefined}
+        downloadMarkdownBusy
+      />,
+    );
+
+    const button = screen.getByRole("button", { name: "Download Markdown" });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-busy", "true");
+  });
+
   it("restructures dense metadata blocks in preview mode", () => {
     render(
       <PreviewPanel

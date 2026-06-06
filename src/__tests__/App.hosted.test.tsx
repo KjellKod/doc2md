@@ -1,5 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -37,10 +38,8 @@ const requestInputToURLString = (input: unknown) => {
   return String(input);
 };
 
-vi.mock("../converters", () => ({
-  convertFile: convertFileMock,
-  getFileExtension: (fileName: string) =>
-    fileName.split(".").pop()?.toLowerCase() ?? "",
+vi.mock("../converters/browserConversion", () => ({
+  convertFileForUi: convertFileMock,
 }));
 
 describe("App hosted save control", () => {
@@ -79,8 +78,70 @@ describe("App hosted save control", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Save document" }));
 
-    expect(createObjectURL).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole("status")).toHaveTextContent("Saved");
+    expect(screen.getByRole("status")).toHaveTextContent("Saving");
+    expect(createObjectURL).not.toHaveBeenCalled();
+    await waitFor(() => expect(createObjectURL).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent("Saved"),
+    );
+  });
+
+  it("keeps a hosted draft unsaved when edited before deferred save completes", async () => {
+    const createObjectURL = vi.fn(() => "blob:doc2md-race");
+    const revokeObjectURL = vi.fn();
+    Object.defineProperty(URL, "createObjectURL", {
+      configurable: true,
+      value: createObjectURL,
+    });
+    Object.defineProperty(URL, "revokeObjectURL", {
+      configurable: true,
+      value: revokeObjectURL,
+    });
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(
+      () => undefined,
+    );
+
+    const animationFrameCallbacks: FrameRequestCallback[] = [];
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+      animationFrameCallbacks.push(callback);
+      return animationFrameCallbacks.length;
+    });
+    vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => undefined);
+
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Start writing" }));
+    const editor = await screen.findByLabelText("Edit markdown");
+    fireEvent.change(editor, {
+      target: { value: "# Hosted\n\nBefore save." },
+    });
+
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent("Unsaved"),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Save document" }));
+    expect(screen.getByRole("status")).toHaveTextContent("Saving");
+    expect(createObjectURL).not.toHaveBeenCalled();
+
+    fireEvent.change(editor, {
+      target: { value: "# Hosted\n\nChanged while saving." },
+    });
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent("Unsaved"),
+    );
+
+    await act(async () => {
+      for (const callback of animationFrameCallbacks.splice(0)) {
+        callback(performance.now());
+      }
+    });
+
+    await waitFor(() => expect(createObjectURL).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent("Unsaved"),
+    );
+    expect(editor).toHaveValue("# Hosted\n\nChanged while saving.");
   });
 
   it("exports an HTML blob with the html MIME type and an .html download name", async () => {
@@ -125,7 +186,15 @@ describe("App hosted save control", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Download HTML" }));
 
-    await waitFor(() => expect(createObjectURL).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole("button", { name: "Download HTML" })).toHaveAttribute(
+      "aria-busy",
+      "true",
+    );
+    await waitFor(() =>
+      expect(capturedTypes.some((type) => type?.startsWith("text/html"))).toBe(
+        true,
+      ),
+    );
 
     const htmlBlobIndex = capturedTypes.findIndex((type) =>
       type?.startsWith("text/html"),
@@ -184,7 +253,10 @@ describe("App hosted save control", () => {
       expect(screen.getByRole("status")).toHaveTextContent("Unsaved"),
     );
     fireEvent.click(screen.getByRole("button", { name: "Save document" }));
-    expect(screen.getByRole("status")).toHaveTextContent("Saved");
+    expect(screen.getByRole("status")).toHaveTextContent("Saving");
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent("Saved"),
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "View" }));
     const taskCheckbox = document.querySelector(

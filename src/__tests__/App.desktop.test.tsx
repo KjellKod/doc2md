@@ -55,10 +55,8 @@ async function awaitOpenButton(name: string | RegExp): Promise<HTMLElement> {
   return await screen.findByRole("button", { name });
 }
 
-vi.mock("../converters", () => ({
-  convertFile: convertFileMock,
-  getFileExtension: (fileName: string) =>
-    fileName.split(".").pop()?.toLowerCase() ?? "",
+vi.mock("../converters/browserConversion", () => ({
+  convertFileForUi: convertFileMock,
 }));
 
 function createSuccessResult(markdown: string) {
@@ -2475,7 +2473,7 @@ describe("App desktop bridge", () => {
     cleanupShell();
   });
 
-  it("reconstructs imported native files and sends them through convertFile", async () => {
+  it("reconstructs imported native files and sends them through UI conversion", async () => {
     mockDoc2mdProtocol();
     convertFileMock.mockResolvedValue(createSuccessResult("# Imported"));
     vi.stubGlobal(
@@ -2507,6 +2505,7 @@ describe("App desktop bridge", () => {
           type: "text/plain",
           lastModified: 10,
         }),
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
       ),
     );
     expect(await awaitOpenButton(/sample\.md/i)).toBeInTheDocument();
@@ -2634,6 +2633,7 @@ describe("App desktop bridge", () => {
     await waitFor(() =>
       expect(convertFileMock).toHaveBeenCalledWith(
         expect.objectContaining({ name: "imported.txt" }),
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
       ),
     );
 
