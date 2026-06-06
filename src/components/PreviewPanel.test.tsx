@@ -173,30 +173,46 @@ describe("PreviewPanel", () => {
 
   it("uses a lightweight preview for large generated JSON and returns to it from Edit", async () => {
     const markdown = createLargeJsonMarkdown();
-    render(
-      <PreviewPanel
-        entry={createEntry({
-          name: "inventory.json",
-          format: "json",
-          markdown,
-        })}
-      />,
+    const topLineFromTextareaMirror = vi.spyOn(
+      viewportAnchor,
+      "topLineFromTextareaMirror",
     );
 
-    expect(screen.getByTestId("large-json-preview")).toBeInTheDocument();
-    expect(screen.getByTestId("large-json-preview")).toHaveTextContent("earlyKey");
-    expect(screen.getByTestId("large-json-preview")).not.toHaveTextContent("tailKey");
+    try {
+      render(
+        <PreviewPanel
+          entry={createEntry({
+            name: "inventory.json",
+            format: "json",
+            markdown,
+          })}
+        />,
+      );
 
-    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
-    const editor = await screen.findByLabelText("Edit markdown");
-    expect((editor as HTMLTextAreaElement).value.length).toBe(markdown.length);
-    expect((editor as HTMLTextAreaElement).value).toContain("earlyKey");
-
-    fireEvent.click(screen.getByRole("button", { name: "View" }));
-    await waitFor(() => {
       expect(screen.getByTestId("large-json-preview")).toBeInTheDocument();
-    });
-    expect(screen.getByTestId("large-json-preview")).not.toHaveTextContent("tailKey");
+      expect(screen.getByTestId("large-json-preview")).toHaveTextContent(
+        "earlyKey",
+      );
+      expect(screen.getByTestId("large-json-preview")).not.toHaveTextContent(
+        "tailKey",
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+      const editor = await screen.findByLabelText("Edit markdown");
+      expect((editor as HTMLTextAreaElement).value.length).toBe(markdown.length);
+      expect((editor as HTMLTextAreaElement).value).toContain("earlyKey");
+
+      fireEvent.click(screen.getByRole("button", { name: "View" }));
+      await waitFor(() => {
+        expect(screen.getByTestId("large-json-preview")).toBeInTheDocument();
+      });
+      expect(screen.getByTestId("large-json-preview")).not.toHaveTextContent(
+        "tailKey",
+      );
+      expect(topLineFromTextareaMirror).not.toHaveBeenCalled();
+    } finally {
+      topLineFromTextareaMirror.mockRestore();
+    }
   });
 
   it("marks Markdown download busy and disabled", () => {
