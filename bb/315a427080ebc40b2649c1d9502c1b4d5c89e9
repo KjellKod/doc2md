@@ -1,0 +1,35 @@
+src/shell/desktopAdapter.tsx
+  s_ce757a9448c887::t_003a2b438f28a7 1960-1961
+src/__tests__/App.hosted.test.tsx
+  s_ce757a9448c887::t_7af55c193744fd 193,197,259
+docs/journal/README.md
+  s_ce757a9448c887::t_d3ae570b19535a 9
+src/components/preview/PreviewMode.tsx
+  s_ce757a9448c887::t_4537362681f1b6 246,252-255
+  s_ce757a9448c887::t_5e5bf2d05c8274 250-251
+src/hooks/useFileConversion.ts
+  s_ce757a9448c887::t_940dbe8e54fb86 85,88
+docs/journal/052-celebrate-json-responsiveness.md
+  s_ce757a9448c887::t_d3ae570b19535a 1-102
+src/hooks/useFileConversion.test.ts
+  s_ce757a9448c887::t_9c7e51fd2cff5b 63,68
+  s_ce757a9448c887::t_940dbe8e54fb86 102-111
+src/shell/webAdapter.tsx
+  s_ce757a9448c887::t_7b2ae130418f75 338
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.3",
+  "base_commit_sha": "bb315a427080ebc40b2649c1d9502c1b4d5c89e9",
+  "prompts": {},
+  "sessions": {
+    "s_ce757a9448c887": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e9a8f-42b3-70d1-b4ef-cd1f2e9a5898",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
