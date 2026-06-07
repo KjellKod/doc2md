@@ -243,6 +243,12 @@ test.describe("hosted mobile edit/view dominance (reproduce-first)", () => {
     expect(containerHeight).toBeLessThanOrEqual(
       maxChildHeight + SINGLE_ROW_TOLERANCE_PX,
     );
+
+    // The single row must scroll INTERNALLY, not push the toolbar past the
+    // 320px page edge. With the width bound the actions box is a horizontal
+    // scroller; without it the nowrap content can size the column-flex toolbar
+    // to its intrinsic width and overflow the page.
+    await expectNoHorizontalOverflow(page);
   });
 
   test("AC1 at 375px keyboard-open: edit surface stays visible (not collapsed)", async ({

@@ -3728,6 +3728,13 @@ body.is-height-resizing * {
     gap: 6px;
     row-gap: 6px;
     flex-wrap: nowrap;
+    /* Bound the row to the toolbar width so overflow-x creates an INTERNAL
+     * scroller instead of letting the nowrap content size the column-flex
+     * toolbar to its intrinsic width and overflow the 320px page. width +
+     * max-width pin the box; min-width: 0 lets it shrink below content. */
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
     overflow-x: auto;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
