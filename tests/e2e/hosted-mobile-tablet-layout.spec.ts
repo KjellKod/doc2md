@@ -127,6 +127,134 @@ async function uploadInvalidPdf(page: Page, name: string) {
   ]);
 }
 
+// Surface-dominance floor for the active edit/view surface relative to the
+// preview panel on hosted phones (AC2). This is a DIFFERENT invariant from the
+// existing previewPanel >= viewport.height * 0.55 (panel-vs-viewport) assertion
+// — here we measure the *surface within the panel*, so the sticky toolbar must
+// not eat the panel.
+//
+// Measured on chromium (see BASELINE MEASUREMENT test): at 375x800 the surface
+// (.markdown-edit-shell / .markdown-surface) occupies ~0.386 of the 620px panel
+// PRE-fix (toolbar ~220px) and ~0.576 POST-fix (toolbar height-stable at ~158px
+// + compacted heading/body). The floor below is committed to ONE number set
+// above the pre-fix value (so it fails-first) and below the post-fix value with
+// margin (so it is not brittle). Deliberately distinct from the existing
+// panel-vs-viewport 0.55 assertion (a different invariant). Do NOT lower this
+// number to make a regression pass.
+const SURFACE_DOMINANCE_FLOOR = 0.52;
+// Equal Edit/View window tolerance (AC2). Both surfaces are flex:1 children of
+// .preview-body, but .markdown-surface and .markdown-edit-shell carry slightly
+// different border/padding, so a few px of slack is expected.
+const EQUAL_WINDOW_TOLERANCE_PX = 4;
+
+async function startDraftWithBody(page: Page) {
+  const startWriting = page.getByRole("button", {
+    name: "Start writing",
+    exact: true,
+  });
+  await startWriting.scrollIntoViewIfNeeded();
+  await startWriting.click();
+  const editor = page.getByLabel("Edit markdown");
+  await expect(editor).toBeFocused();
+  await editor.fill(
+    "# Surface dominance\n\n" +
+      Array.from({ length: 30 }, (_, i) => `Body line ${i}.`).join("\n"),
+  );
+  return editor;
+}
+
+test.describe("hosted mobile edit/view dominance (reproduce-first)", () => {
+  test("AC2 at 375px: edit/view surface dominates the panel and Edit==View height", async ({
+    page,
+  }) => {
+    await page.setViewportSize(PHONE);
+    await openHostedApp(page);
+    await startDraftWithBody(page);
+
+    const panel = page.locator(".preview-panel");
+    const editShell = page.locator(".markdown-edit-shell");
+
+    const [panelBox, editBox] = await Promise.all([
+      panel.boundingBox(),
+      editShell.boundingBox(),
+    ]);
+    expect(panelBox).not.toBeNull();
+    expect(editBox).not.toBeNull();
+
+    // Surface dominance: the edit surface must own the majority of the panel,
+    // i.e. the sticky toolbar must not consume it. Fails pre-fix (~0.386).
+    const editRatio = editBox!.height / panelBox!.height;
+    expect(editRatio).toBeGreaterThanOrEqual(SURFACE_DOMINANCE_FLOOR);
+
+    // Switch to View and confirm the surface is equally dominant and the same
+    // size as the Edit surface (AC2 "same size window").
+    await page.getByRole("button", { name: "View", exact: true }).click();
+    const surface = page.locator(".markdown-surface");
+    const surfaceBox = await surface.boundingBox();
+    expect(surfaceBox).not.toBeNull();
+
+    const surfaceRatio = surfaceBox!.height / panelBox!.height;
+    expect(surfaceRatio).toBeGreaterThanOrEqual(SURFACE_DOMINANCE_FLOOR);
+    expect(Math.abs(editBox!.height - surfaceBox!.height)).toBeLessThanOrEqual(
+      EQUAL_WINDOW_TOLERANCE_PX,
+    );
+  });
+
+  test("AC1 at 375px keyboard-open: edit surface stays visible (not collapsed)", async ({
+    page,
+  }) => {
+    await page.setViewportSize(PHONE);
+    await openHostedApp(page);
+    const editor = await startDraftWithBody(page);
+    await editor.focus();
+
+    // Simulate the on-screen keyboard reducing the visible viewport.
+    await page.setViewportSize(PHONE_KEYBOARD_OPEN);
+    await page.evaluate(() => {
+      document
+        .querySelector(".preview-panel")
+        ?.scrollIntoView({ block: "start", behavior: "instant" as ScrollBehavior });
+    });
+
+    // Pre-fix the edit shell collapses to ~0px height at keyboard-open because
+    // min-height: 55dvh forces the panel taller than the reduced viewport while
+    // the toolbar takes ~220px. The surface must keep usable height and the
+    // editor must remain within the visible viewport so the user can edit.
+    const editShell = page.locator(".markdown-edit-shell");
+    const editBox = await editShell.boundingBox();
+    expect(editBox).not.toBeNull();
+    expect(editBox!.height).toBeGreaterThanOrEqual(64);
+    await expectInViewport(editor, page);
+  });
+
+  test("AC3 at 375px: About header is demoted vs desktop emphasis", async ({
+    page,
+  }) => {
+    // Honest fails-first invariant for AC3 (per arbiter finding arb-it1-2): the
+    // already-collapsed + below-the-panel placement is true on main, so it is
+    // NOT a reproduction. Instead we assert a *measurable demotion the fix
+    // introduces*: on hosted phones the About heading is rendered at a clearly
+    // smaller font size than its desktop emphasis. Pre-fix the phone heading is
+    // ~26.4px (no mobile treatment); this fails until the demotion rule lands.
+    await page.setViewportSize(PHONE);
+    await openHostedApp(page);
+    await startDraftWithBody(page);
+
+    const aboutHeading = page.locator(".about-section .about-header h2");
+    await aboutHeading.scrollIntoViewIfNeeded();
+    const fontSize = await aboutHeading.evaluate(
+      (el) => Number.parseFloat(getComputedStyle(el).fontSize),
+    );
+    // Desktop emphasis is ~26.4px; demoted mobile heading must be <= 20px.
+    expect(fontSize).toBeLessThanOrEqual(20);
+
+    // The About section still sits below the preview panel (regression guard
+    // for the existing placement) and starts collapsed.
+    const aboutContent = page.locator("#about-content");
+    await expect(aboutContent).toBeHidden();
+  });
+});
+
 test.describe("hosted mobile and tablet layout", () => {
   test("mobile emulation: collapsed upload rail stays horizontal with preview", async ({
     page,
