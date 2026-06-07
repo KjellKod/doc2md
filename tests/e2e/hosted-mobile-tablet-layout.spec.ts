@@ -3,7 +3,15 @@ import { Buffer } from "node:buffer";
 
 const PHONE = { width: 375, height: 800 } as const;
 const PHONE_KEYBOARD_OPEN = { width: 375, height: 340 } as const;
+// The repo's documented minimum width (global.css:92 `min-width: 320px`). The
+// narrowest phone the toolbar must stay usable on.
+const PHONE_NARROW = { width: 320, height: 800 } as const;
 const TABLET_PORTRAIT = { width: 768, height: 1024 } as const;
+
+// A single non-wrapping toolbar-actions row should be about one control tall.
+// Vertical padding/borders add a few px; two rows would be ~2x this plus the
+// row gap, so this tolerance distinguishes one row from a wrapped multi-row.
+const SINGLE_ROW_TOLERANCE_PX = 14;
 
 const TAP_FLOOR_PX = 40;
 const VIEWPORT_EDGE_TOLERANCE_PX = 2;
@@ -197,6 +205,43 @@ test.describe("hosted mobile edit/view dominance (reproduce-first)", () => {
     expect(surfaceRatio).toBeGreaterThanOrEqual(SURFACE_DOMINANCE_FLOOR);
     expect(Math.abs(editBox!.height - surfaceBox!.height)).toBeLessThanOrEqual(
       EQUAL_WINDOW_TOLERANCE_PX,
+    );
+  });
+
+  test("AC4 at 320px: secondary toolbar actions stay one height-stable row (no multi-row regrowth)", async ({
+    page,
+  }) => {
+    await page.setViewportSize(PHONE_NARROW);
+    await openHostedApp(page);
+    await startDraftWithBody(page);
+
+    const actions = page.locator(".preview-toolbar-actions");
+    await expect(actions).toBeVisible();
+
+    // At the repo's 320px min-width (global.css:92) the secondary controls plus
+    // gaps exceed the row at the 44px tap floor. PRE-fix they wrap into multiple
+    // rows (container height ~2x a single control), regrowing the toolbar and
+    // squeezing the surface again — the regression flagged in code review. The
+    // narrow-phone fix keeps them on one row that scrolls horizontally, so the
+    // container height stays within a single control row.
+    const { containerHeight, maxChildHeight, childCount } = await actions.evaluate(
+      (el) => {
+        const kids = Array.from(el.children) as HTMLElement[];
+        const maxChild = kids.reduce(
+          (max, kid) => Math.max(max, kid.getBoundingClientRect().height),
+          0,
+        );
+        return {
+          containerHeight: el.getBoundingClientRect().height,
+          maxChildHeight: maxChild,
+          childCount: kids.length,
+        };
+      },
+    );
+
+    expect(childCount).toBeGreaterThan(1);
+    expect(containerHeight).toBeLessThanOrEqual(
+      maxChildHeight + SINGLE_ROW_TOLERANCE_PX,
     );
   });
 

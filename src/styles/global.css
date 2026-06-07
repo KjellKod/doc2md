@@ -3717,10 +3717,30 @@ body.is-height-resizing * {
     display: none;
   }
 
+  /* Narrow-phone fallback (code review, repo min-width is 320px — global.css:92):
+   * the secondary controls plus gaps cannot all fit one row at 320px with the
+   * 44px tap floor, so wrapping would regrow the toolbar into multiple rows and
+   * squeeze the surface again. Keep them on a single height-stable row that
+   * scrolls horizontally instead of wrapping. Scoped to .app-shell-hosted so the
+   * desktop-adapter and bare-web shells are untouched (AC5). */
   .app-shell-hosted .preview-toolbar-actions {
     align-items: center;
     gap: 6px;
     row-gap: 6px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .app-shell-hosted .preview-toolbar-actions::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Keep each control at full tap size and let the row scroll, rather than
+   * shrinking buttons below the 44px floor or wrapping onto a new row. */
+  .app-shell-hosted .preview-toolbar-actions > * {
+    flex-shrink: 0;
   }
 
   /* Demote the secondary actions: tighter footprint, icon-first. The Edit/View
