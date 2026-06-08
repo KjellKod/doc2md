@@ -3511,16 +3511,25 @@ body.is-height-resizing * {
    * pixel reservation. The workspace gets a hard floor of one dynamic viewport
    * (dvh tracks the collapsing mobile URL bar); the upload rail/sidebar take
    * only their natural height and the edit/view panel fills the rest of that
-   * column. Using min-height (not flex-grow) means the panel can't collapse
-   * when the ABOUT section below adds content — ABOUT simply follows the
-   * workspace in flow and lands below the fold. Adapts to any phone/tablet
-   * size; scoped to the mobile breakpoint so desktop layout is untouched. */
+   * column. A flex column (not a grid 1fr row) makes the panel actually
+   * stretch to consume the leftover, so there is no dead gap between the panel
+   * and the ABOUT section that follows. min-height is the hard floor (dvh
+   * tracks the collapsing mobile URL bar); the panel can't collapse because
+   * ABOUT lives outside the workspace. Adapts to any phone/tablet size; scoped
+   * to the mobile breakpoint so desktop layout is untouched. */
   .app-shell-hosted .page.is-working-mode .workspace {
+    display: flex;
+    flex-direction: column;
     min-height: 100dvh;
-    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .app-shell-hosted .page.is-working-mode .workspace > .sidebar-panel,
+  .app-shell-hosted .page.is-working-mode .workspace > .collapse-rail {
+    flex: 0 0 auto;
   }
 
   .app-shell-hosted .page.is-working-mode .preview-panel {
+    flex: 1 1 auto;
     height: auto;
     min-height: 0;
     max-height: none;
