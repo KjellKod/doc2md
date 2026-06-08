@@ -1,0 +1,171 @@
+scripts/quest_complete.py
+  s_fce773e427ddf9::t_3db31c2416dda2 33,76-100,131-134,140-149,156,204,223-225,286-289,389,413-433,449
+scripts/quest_runtime/quest_ids.py
+  s_fce773e427ddf9::t_3db31c2416dda2 54-55
+.skills/quest/delegation/router.md
+  s_fce773e427ddf9::t_3db31c2416dda2 108-127,138-139,149-150,153
+scripts/quest_validate-handoff-contracts.sh
+  s_fce773e427ddf9::t_3db31c2416dda2 17,20
+scripts/pr_sync_default_branch.py
+  s_fce773e427ddf9::t_3db31c2416dda2 1-345
+.claude/skills/sharpen/SKILL.md
+  s_fce773e427ddf9::t_3db31c2416dda2 1-7
+.opencode/agents/fixer.md
+  s_fce773e427ddf9::t_3db31c2416dda2 10
+.ai/schemas/allowlist.schema.json
+  s_fce773e427ddf9::t_3db31c2416dda2 25,37
+.skills/pre-commit-review/SKILL.md
+  s_fce773e427ddf9::t_3db31c2416dda2 12-16,57-59
+scripts/quest_validate-quest-state.sh
+  s_fce773e427ddf9::t_3db31c2416dda2 166-227,644-657,665-666,668,674-700,836-839
+.ai/allowlist.json.quest_updated
+  s_fce773e427ddf9::t_3db31c2416dda2 1-255
+.opencode/agents/quest.md
+  s_fce773e427ddf9::t_3db31c2416dda2 26,32,36,42
+.skills/quest/agents/builder.md
+  s_fce773e427ddf9::t_3db31c2416dda2 20-21,69
+.ai/templates/quest_brief.md
+  s_fce773e427ddf9::t_3db31c2416dda2 25-43
+scripts/pr_shepherd_fetch_failed_logs.py
+  s_fce773e427ddf9::t_3db31c2416dda2 1-6,8,10-138
+scripts/quest_celebrate/persist.py
+  s_fce773e427ddf9::t_3db31c2416dda2 1-318
+scripts/quest_review_intelligence.py
+  s_fce773e427ddf9::t_3db31c2416dda2 14,80-110,286-294,477-485
+.skills/pr-shepherd/SKILL.md
+  s_fce773e427ddf9::t_3db31c2416dda2 3,19-44,60-84,106-110,112-113,123-125,128-132,136,139,144-145,205
+.opencode/agents/builder.md
+  s_fce773e427ddf9::t_3db31c2416dda2 9
+.skills/ux-context/resources/ux-guidebook.md
+  s_fce773e427ddf9::t_3db31c2416dda2 1-320
+.skills/ux-review/SKILL.md
+  s_fce773e427ddf9::t_3db31c2416dda2 1-218
+.skills/quest/delegation/workflow.md
+  s_fce773e427ddf9::t_d41a04d3073603 94,100
+scripts/quest_runtime/__init__.py
+  s_fce773e427ddf9::t_3db31c2416dda2 3-22,46,49-51,53,57,59-61,66-68,71,73,75,78-80
+.agents/skills/celebrate/SKILL.md
+  s_fce773e427ddf9::t_3db31c2416dda2 3
+scripts/pr_shepherd_checkout.py
+  s_fce773e427ddf9::t_3db31c2416dda2 2,4,6-8,10-97,99-189
+scripts/quest_runtime/pr_shepherd.py
+  s_fce773e427ddf9::t_3db31c2416dda2 1-221
+scripts/quest_runtime/artifacts.py
+  s_fce773e427ddf9::t_3db31c2416dda2 45-52,59-61,71
+scripts/quest_runtime/pr_review_cycle.py
+  s_fce773e427ddf9::t_3db31c2416dda2 17-21,23,119-273,291,297-306,881-884
+scripts/quest_startup_branch.py
+  s_fce773e427ddf9::t_3db31c2416dda2 123-257,270,282,360-361,374,394,411,428,449,469,487,507-510,522
+scripts/quest_celebrate/ascii_art.py
+  s_fce773e427ddf9::t_3db31c2416dda2 3,11-52,328-396
+.claude/skills/ux-review/SKILL.md
+  s_fce773e427ddf9::t_3db31c2416dda2 1-9
+.skills/quest/agents/README.md
+  s_fce773e427ddf9::t_3db31c2416dda2 15-24
+AGENTS.md.quest_updated
+  s_fce773e427ddf9::t_3db31c2416dda2 1-102
+.skills/README.md
+  s_fce773e427ddf9::t_3db31c2416dda2 15
+.claude/agents/plan-reviewer.md
+  s_fce773e427ddf9::t_3db31c2416dda2 22
+.codex/AGENTS.md
+  s_fce773e427ddf9::t_258c44099a2445 26-35
+.opencode/opencode.json
+  s_fce773e427ddf9::t_3db31c2416dda2 28,150-160
+.skills/pr-assistant/SKILL.md
+  s_fce773e427ddf9::t_3db31c2416dda2 13-53,80-85,111-120,237
+.agents/skills/sharpen/SKILL.md
+  s_fce773e427ddf9::t_3db31c2416dda2 1-6
+.claude/agents/planner.md
+  s_fce773e427ddf9::t_3db31c2416dda2 20
+.quest-version
+  s_fce773e427ddf9::t_3db31c2416dda2 1
+.skills/quest/SKILL.md
+  s_fce773e427ddf9::t_3db31c2416dda2 26-29,39,154-159,184-189,195,197,207-260,273,283-292
+.claude/agents/fixer.md
+  s_fce773e427ddf9::t_3db31c2416dda2 22
+.skills/quest/agents/fixer.md
+  s_fce773e427ddf9::t_3db31c2416dda2 20,28-30,83
+scripts/quest_installer.sh
+  s_fce773e427ddf9::t_3db31c2416dda2 136-141,219-231,800,807,817,832,838,843,1122-1144,1909-1910,1929
+scripts/quest_runtime/review_intelligence.py
+  s_fce773e427ddf9::t_3db31c2416dda2 31-45,53-56,98,101-102,106-107,153-164,224,635-641,685-693,705-718,723,736-737
+.claude/agents/review-arbiter.md
+  s_fce773e427ddf9::t_3db31c2416dda2 1-23
+.skills/quest/agents/planner.md
+  s_fce773e427ddf9::t_3db31c2416dda2 19,23,41-48,92
+.quest-manifest
+  s_fce773e427ddf9::t_3db31c2416dda2 1-3,6-7,9-16,30,36-37,39-63,69,71-72,76-77,79-84,89-95,97-116,122,124,126,128,134-137,141,143,146-150
+scripts/pr_shepherd_annotate_scope.py
+  s_fce773e427ddf9::t_3db31c2416dda2 1-110
+.skills/quest/agents/code-reviewer.md
+  s_fce773e427ddf9::t_3db31c2416dda2 32-36,44,66-73,124
+.claude/agents/builder.md
+  s_fce773e427ddf9::t_3db31c2416dda2 20
+.opencode/agents/planner.md
+  s_fce773e427ddf9::t_3db31c2416dda2 10
+.skills/quest/agents/plan-reviewer.md
+  s_fce773e427ddf9::t_3db31c2416dda2 27-31,95
+scripts/quest_celebrate/render_title_art.py
+  s_fce773e427ddf9::t_3db31c2416dda2 1-35
+scripts/quest_validate-manifest.sh
+  s_fce773e427ddf9::t_3db31c2416dda2 75-87,126,131
+.agents/skills/ux-review/SKILL.md
+  s_fce773e427ddf9::t_3db31c2416dda2 1-8
+.ai/quest.md
+  s_fce773e427ddf9::t_3db31c2416dda2 64-65
+.opencode/agents/review-arbiter.md
+  s_fce773e427ddf9::t_3db31c2416dda2 1-30
+.claude/agents/code-reviewer.md
+  s_fce773e427ddf9::t_3db31c2416dda2 22
+.opencode/agents/code-reviewer.md
+  s_fce773e427ddf9::t_3db31c2416dda2 11
+.claude/skills/pr-shepherd/SKILL.md
+  s_fce773e427ddf9::t_3db31c2416dda2 3
+.skills/git-commit-assistant/SKILL.md
+  s_fce773e427ddf9::t_3db31c2416dda2 14,45,92-94
+.opencode/agents/plan-reviewer.md
+  s_fce773e427ddf9::t_3db31c2416dda2 11
+.skills/quest/agents/review-arbiter.md
+  s_fce773e427ddf9::t_3db31c2416dda2 1-117
+.skills/ux-context/SKILL.md
+  s_fce773e427ddf9::t_3db31c2416dda2 1-128
+.skills/ux-context/resources/ux-stress-test.md
+  s_fce773e427ddf9::t_3db31c2416dda2 1-202
+.skills/SKILLS.md
+  s_fce773e427ddf9::t_3db31c2416dda2 43-49,79,81,85-91,99-100,102,104,106-107,109,111,113-114,116-118,120,122-123,125,127
+scripts/pr_shepherd_collect_intake.py
+  s_fce773e427ddf9::t_3db31c2416dda2 1-403
+scripts/pr_shepherd_post_reply.py
+  s_fce773e427ddf9::t_3db31c2416dda2 1-205
+.quest-checksums
+  s_fce773e427ddf9::t_3db31c2416dda2 5,8,12-13,15,17,21,23,25-30,37,40-42,44-50,53-54,56,59,64-66,68-74,76-79,82-93,98,101,105,108,112-113,115-117,119-123,126,128-129,131
+scripts/quest_checks/cli.py
+  s_fce773e427ddf9::t_3db31c2416dda2 1
+.agents/skills/pr-shepherd/SKILL.md
+  s_fce773e427ddf9::t_3db31c2416dda2 3
+.skills/sharpen/SKILL.md
+  s_fce773e427ddf9::t_3db31c2416dda2 3,19-26,31,34-35,39-42,59-91,96-106
+.skills/celebrate/SKILL.md
+  s_fce773e427ddf9::t_cf4f3ad98963ce 230
+scripts/quest_runtime/orchestration.py
+  s_fce773e427ddf9::t_3db31c2416dda2 1-423
+.quest-manifest.quest_updated
+  s_fce773e427ddf9::t_3db31c2416dda2 1-174
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "15764f73c785981e0330a9b40756ae0ec895ab4f",
+  "prompts": {},
+  "sessions": {
+    "s_fce773e427ddf9": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1dee4ef1-e8c5-4c56-b949-d8a63a0669b9",
+        "model": "composer-2.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
