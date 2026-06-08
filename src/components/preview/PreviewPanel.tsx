@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { FileEntry } from "../../types";
+import type { ConversionStatus, FileEntry } from "../../types";
 import type { SaveState } from "../../types/saveState";
 import FindReplaceBar from "../FindReplaceBar";
 import QualityIndicator from "../QualityIndicator";
@@ -77,6 +77,8 @@ export default function PreviewPanel({
 }: PreviewPanelProps) {
   const [mode, setMode] = useState<"edit" | "preview" | "linkedin">("preview");
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
+  const [justFinishedConverting, setJustFinishedConverting] = useState(false);
+  const prevEntryStatusRef = useRef<ConversionStatus | undefined>(undefined);
   const [isFindOpen, setIsFindOpen] = useState(false);
   const [showReplace, setShowReplace] = useState(false);
   const [activeFindMatch, setActiveFindMatch] = useState<FindMatch | null>(null);
@@ -129,6 +131,7 @@ export default function PreviewPanel({
     setRenderedViewText("");
     suppressMatchCenteringForModeSwitchRef.current = false;
     if (idChanged) {
+      prevEntryStatusRef.current = undefined;
       const saved = entryId ? getSavedEditorViewState?.(entryId) : undefined;
       pendingAnchorLineRef.current = saved?.anchorLine ?? null;
       pendingEditorRestoreRef.current =
@@ -143,6 +146,28 @@ export default function PreviewPanel({
     (entry.markdown.length > 0 ||
       entry.isScratch ||
       entry.editedMarkdown !== undefined);
+
+  // Keep the overlay visible briefly after conversion completes so React has
+  // time to render the content before the overlay disappears.
+  useEffect(() => {
+    const curr = entry?.status;
+    const prev = prevEntryStatusRef.current;
+    prevEntryStatusRef.current = curr;
+
+    const wasConverting = prev === "converting" || prev === "pending";
+    const isNowReady = curr === "success" || curr === "warning";
+
+    if (wasConverting && isNowReady) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setJustFinishedConverting(true);
+      const id = window.setTimeout(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setJustFinishedConverting(false);
+      }, 500);
+      return () => window.clearTimeout(id);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- prevEntryStatusRef is a ref, not a reactive value
+  }, [entry?.status]);
 
   // Close find when the active source loses find-capability (e.g. the
   // entry transitions to an error status). The render path cannot derive
@@ -302,6 +327,26 @@ export default function PreviewPanel({
     viewportTopFloor,
   });
 
+  const isConverting =
+    entry?.status === "pending" || entry?.status === "converting";
+  const showConversionOverlay = isConverting || justFinishedConverting;
+
+  const conversionOverlay = showConversionOverlay ? (
+    <div className="conversion-overlay" aria-live="polite" aria-label="Loading">
+      <div className="conversion-overlay-card">
+        <span className="conversion-overlay-spinner" aria-hidden="true" />
+        <p className="conversion-overlay-label">
+          {isConverting ? "Converting…" : "Rendering preview…"}
+        </p>
+        <p className="conversion-overlay-sub">
+          {isConverting
+            ? "Processing locally—no data leaves your device."
+            : "Building your Markdown view."}
+        </p>
+      </div>
+    </div>
+  ) : null;
+
   if (
     !entry ||
     entry.status === "pending" ||
@@ -310,11 +355,14 @@ export default function PreviewPanel({
     (entry.markdown.length === 0 && !canEditFromEmptyState)
   ) {
     return (
-      <PreviewEmptyStates
-        entry={entry}
-        canEditFromEmptyState={canEditFromEmptyState}
-        onStartWriting={onStartWriting}
-      />
+      <>
+        {conversionOverlay}
+        <PreviewEmptyStates
+          entry={entry}
+          canEditFromEmptyState={canEditFromEmptyState}
+          onStartWriting={onStartWriting}
+        />
+      </>
     );
   }
 
@@ -376,6 +424,8 @@ export default function PreviewPanel({
   };
 
   return (
+    <>
+      {conversionOverlay}
     <div className="preview-body">
       <PreviewToolbar
         toolbarRef={toolbarRef}
@@ -476,5 +526,6 @@ export default function PreviewPanel({
         />
       )}
     </div>
+    </>
   );
 }

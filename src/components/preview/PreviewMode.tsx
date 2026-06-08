@@ -374,7 +374,7 @@ function LargeMarkdownPreviewMode({
     largeMarkdownAnalysis.tableLineCount === 1
       ? "1 table line"
       : `${largeMarkdownAnalysis.tableLineCount} table lines`;
-  const rowHeight = 42;
+  const rowHeight = 72;
   const overscan = 16;
   const rowScrollTop = Math.max(scrollTop - tableBodyTop, 0);
   const visibleStart = Math.max(
@@ -495,7 +495,6 @@ function LargeMarkdownPreviewMode({
             <tr
               key={row.sourceLine}
               data-source-line={row.sourceLine}
-              style={{ height: `${rowHeight}px` }}
             >
               {Array.from({ length: columnCount }, (_, index) => (
                 <td

@@ -2602,7 +2602,6 @@ body.is-height-resizing * {
 .markdown-surface-large-document .large-markdown-table td {
   min-width: 9rem;
   max-width: 34rem;
-  white-space: nowrap;
 }
 
 .markdown-surface-large-document .large-markdown-table td > p,
@@ -3759,4 +3758,53 @@ body.is-height-resizing * {
     min-height: 55dvh;
     max-height: none;
   }
+}
+
+/* Conversion / render loading overlay */
+.conversion-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  pointer-events: none;
+}
+
+.conversion-overlay-card {
+  pointer-events: auto;
+  background: var(--panel-bg-strong);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  padding: 28px 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  box-shadow: var(--panel-shadow);
+  min-width: 200px;
+}
+
+.conversion-overlay-spinner {
+  width: 26px;
+  height: 26px;
+  border: 3px solid var(--accent-soft);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.conversion-overlay-label {
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin: 0;
+  text-align: center;
+}
+
+.conversion-overlay-sub {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  margin: 0;
+  text-align: center;
 }
