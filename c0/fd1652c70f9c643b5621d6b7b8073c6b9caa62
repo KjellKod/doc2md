@@ -1,0 +1,22 @@
+ideas/mac-desktop-app-roadmap.md
+  s_70531ac9047445::t_1618a0a5495bca 38,52-55
+docs/implementation/mac-sparkle-update-roadmap.md
+  s_70531ac9047445::t_9044893bb11eca 1-5,7-128,135-393
+  s_70531ac9047445::t_419d667f54268f 6,129-134
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "c0fd1652c70f9c643b5621d6b7b8073c6b9caa62",
+  "prompts": {},
+  "sessions": {
+    "s_70531ac9047445": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ea838-2a0e-7f90-98c2-4e2fd1b17e9b",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
