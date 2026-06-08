@@ -3551,6 +3551,30 @@ body.is-height-resizing * {
     border: 0;
   }
 
+  /* The collapsed upload control was a full-width darker "panel" bar above the
+   * editor — mostly empty void with a small "Upload" affordance. On phones make
+   * it a compact, content-width text link so it stops eating a full row of dark
+   * space, while still letting you reopen the upload panel / file list. */
+  .app-shell-hosted .page.is-working-mode .collapse-rail {
+    align-self: flex-start;
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .app-shell-hosted .page.is-working-mode .collapse-rail-button {
+    min-height: 40px;
+    padding: 6px 8px;
+    background: transparent;
+    color: var(--accent);
+  }
+
+  .app-shell-hosted .page.is-working-mode .collapse-rail-button:hover,
+  .app-shell-hosted .page.is-working-mode .collapse-rail-button:focus-visible {
+    background: var(--accent-soft);
+    transform: none;
+  }
+
   .app-shell-hosted .working-mode-bar {
     flex-wrap: wrap;
     row-gap: 8px;
