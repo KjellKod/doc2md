@@ -27,9 +27,11 @@ jobs:
       release_version: ${{ steps.resolve.outputs.release_version }}
     steps:
       - name: Authorize manual deploy (owner only)
-        if: github.event_name == 'workflow_dispatch' && github.actor != 'KjellKod'
+        if: >-
+          github.event_name == 'workflow_dispatch' &&
+          (github.actor != 'KjellKod' || github.triggering_actor != 'KjellKod')
         run: |
-          echo "::error::Manual deploy is restricted to the repository owner (KjellKod). Actor '${{ github.actor }}' is not authorized to dispatch this workflow."
+          echo "::error::Manual deploy is restricted to the repository owner (KjellKod). Triggering actor '${{ github.triggering_actor }}' (initial actor '${{ github.actor }}') is not authorized. Re-runs preserve the original actor, so triggering_actor is checked too."
           exit 1
       - id: resolve
         env:
