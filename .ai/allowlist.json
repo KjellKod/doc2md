@@ -3,6 +3,7 @@
   "description": "Creator-managed permissions for quest orchestration. Edit this file to pre-approve or restrict quest agent actions. Changes take effect on next quest run.",
   "quest_completion": {
     "enabled": true,
+    "on_complete": "celebrate",
     "animation_style": "epic",
     "show_end_credits": true,
     "show_progress_bars": true,
@@ -23,9 +24,10 @@
     "plan-reviewer-a": "claude",
     "plan-reviewer-b": "gpt-5.5",
     "arbiter": "claude",
-    "builder": "claude",
+    "builder": "gpt-5.5",
     "code-reviewer-a": "claude",
     "code-reviewer-b": "gpt-5.5",
+    "review-arbiter": "claude",
     "fixer": "gpt-5.5"
   },
   "quest_startup": {
@@ -120,6 +122,19 @@
         "gh pr view"
       ]
     },
+    "review_arbiter_agent": {
+      "file_write": [
+        ".quest/**"
+      ],
+      "file_read": [
+        "**"
+      ],
+      "bash": [
+        "git status",
+        "git diff",
+        "gh pr view"
+      ]
+    },
     "builder_agent": {
       "file_write": [
         ".quest/**",
@@ -127,9 +142,7 @@
         ".github/**",
         "docs/**",
         "ideas/**",
-        "apps/macos/**",
         "scripts/**",
-        "src/**",
         "tests/**",
         ".skills/**",
         "*.md",
@@ -164,9 +177,21 @@
         "bash scripts/quest_validate-quest-config.sh",
         "bash scripts/quest_validate-quest-state.sh",
         "bash tests/test-quest-preflight.sh",
+        "bash tests/test-quest-orchestration.sh",
         "bash tests/test-quest-runtime.sh",
         "bash tests/test-validate-handoff-contracts.sh",
-        "bash tests/test-validate-quest-state.sh"
+        "bash tests/test-validate-quest-state.sh",
+        "git worktree",
+        "git fetch",
+        "git rebase",
+        "git checkout",
+        "git switch",
+        "git add",
+        "git commit",
+        "git push",
+        "gh pr create",
+        "gh pr edit",
+        "gh pr ready"
       ]
     },
     "code_review_agent": {
@@ -198,7 +223,6 @@
         ".github/**",
         "docs/**",
         "ideas/**",
-        "apps/macos/**",
         "scripts/**",
         "tests/**",
         ".skills/**",
@@ -228,9 +252,21 @@
         "bash scripts/quest_validate-quest-config.sh",
         "bash scripts/quest_validate-quest-state.sh",
         "bash tests/test-quest-preflight.sh",
+        "bash tests/test-quest-orchestration.sh",
         "bash tests/test-quest-runtime.sh",
         "bash tests/test-validate-handoff-contracts.sh",
-        "bash tests/test-validate-quest-state.sh"
+        "bash tests/test-validate-quest-state.sh",
+        "git worktree",
+        "git fetch",
+        "git rebase",
+        "git checkout",
+        "git switch",
+        "git add",
+        "git commit",
+        "git push",
+        "gh pr create",
+        "gh pr edit",
+        "gh pr ready"
       ]
     }
   },
