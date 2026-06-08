@@ -3499,13 +3499,47 @@ body.is-height-resizing * {
     font-size: 1rem;
   }
 
-  .app-shell-hosted .preview-panel,
-  .app-shell-hosted .page.is-working-mode .preview-panel {
-    /* Use dvh to handle dynamic browser chrome (mobile/tablet URL bar
-     * collapse/expand) without clipping the editor. */
+  /* Landing/preview (non-working) keeps a sensible viewport fraction. dvh
+   * handles dynamic browser chrome (URL bar collapse/expand) without clipping. */
+  .app-shell-hosted .preview-panel {
     height: max(60dvh, min(720px, var(--preview-panel-ceiling)));
     min-height: 60dvh;
     max-height: none;
+  }
+
+  /* Working mode: maximize the active edit/view surface WITHOUT a hard-coded
+   * pixel reservation. The workspace gets a hard floor of one dynamic viewport
+   * (dvh tracks the collapsing mobile URL bar); the upload rail/sidebar take
+   * only their natural height and the edit/view panel fills the rest of that
+   * column. Using min-height (not flex-grow) means the panel can't collapse
+   * when the ABOUT section below adds content — ABOUT simply follows the
+   * workspace in flow and lands below the fold. Adapts to any phone/tablet
+   * size; scoped to the mobile breakpoint so desktop layout is untouched. */
+  .app-shell-hosted .page.is-working-mode .workspace {
+    min-height: 100dvh;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .app-shell-hosted .page.is-working-mode .preview-panel {
+    height: auto;
+    min-height: 0;
+    max-height: none;
+  }
+
+  /* The panel's "View" heading is redundant on phones with the Edit/View/
+   * LinkedIn tabs right below it. Hide it visually to reclaim space, but keep
+   * it in the a11y tree (it is the region's accessible name via
+   * aria-labelledby). The filename line below stays for context. */
+  .app-shell-hosted .page.is-working-mode .preview-panel > .panel-heading h2 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 
   .app-shell-hosted .working-mode-bar {
@@ -3609,21 +3643,53 @@ body.is-height-resizing * {
     justify-content: flex-start;
   }
 
+  /* Phones: keep "doc2md" and Open / New / Day mode on ONE compact line as
+   * plain text links (functionality over chrome) to reclaim vertical space for
+   * edit/view. width:auto keeps the actions on the logo's line; wrapping is
+   * still allowed so a very narrow (320px) screen degrades to a second row
+   * instead of overflowing horizontally. */
   .working-mode-bar {
-    align-items: flex-start;
+    align-items: center;
+    gap: 8px;
   }
 
   .page.is-working-mode .working-mode-bar {
-    max-height: 172px;
+    max-height: none;
+  }
+
+  .working-mode-logo-tooltip-wrap {
+    flex: 0 1 auto;
+    min-width: 0;
   }
 
   .working-mode-logo {
+    flex: 0 1 auto;
     max-width: 100%;
+    padding: 0 4px;
   }
 
   .working-mode-actions {
-    width: 100%;
-    justify-content: flex-start;
+    width: auto;
+    flex: 1 1 auto;
+    justify-content: flex-end;
+    gap: 4px;
+  }
+
+  /* Text-link buttons: drop the filled/bordered button chrome from BOTH the
+   * Open/New buttons and the Day/Night mode toggle (a .theme-toggle, styled
+   * separately), keeping a tap-friendly hit area. Functionality over chrome. */
+  .app-shell-hosted .working-mode-button,
+  .app-shell-hosted .working-mode-trailing-controls .theme-toggle {
+    padding: 8px 6px;
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  /* Drop the leading icons on phones so "doc2md", Open, New and Day mode fit
+   * on a single line as text links. */
+  .app-shell-hosted .working-mode-bar .working-mode-button-icon {
+    display: none;
   }
 
   .hero h1 {
