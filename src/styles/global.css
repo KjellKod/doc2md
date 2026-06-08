@@ -3681,6 +3681,89 @@ body.is-height-resizing * {
     width: 100%;
   }
 
+  /* Hosted-phone toolbar: keep the toolbar height-stable so it does not eat
+   * the edit/view surface (AC2/AC4). Stack the primary mode toggle above a
+   * single compact row of demoted secondary actions, and tighten gaps/padding
+   * so the wrapped rows do not pile up. Scoped to .app-shell-hosted so the
+   * desktop-adapter and bare-web shells are untouched (no-regression, AC5). */
+  .app-shell-hosted .preview-toolbar {
+    flex-direction: column;
+    gap: 6px;
+    padding: 6px;
+    border-radius: 14px;
+  }
+
+  /* Reclaim panel height for the surface: compact the preview-body padding and
+   * demote the redundant "View" panel heading (the Edit/View toggle already
+   * labels the panel). Both scoped to hosted phones so the surface clears the
+   * majority-of-panel floor (AC2) without touching desktop/tablet (AC5). */
+  .app-shell-hosted .preview-body {
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .app-shell-hosted .preview-panel > .panel-heading {
+    margin-bottom: 0;
+  }
+
+  .app-shell-hosted .preview-panel > .panel-heading h2 {
+    font-size: 1rem;
+  }
+
+  /* The filename copy is redundant on phones (it appears in the upload rail and
+   * working-mode bar); hide it here to reclaim height for the surface. The h2
+   * stays in the DOM (the preview section is aria-labelledby="preview-title"). */
+  .app-shell-hosted .preview-panel > .panel-heading .panel-copy {
+    display: none;
+  }
+
+  /* Narrow-phone fallback (code review, repo min-width is 320px — global.css:92):
+   * the secondary controls plus gaps cannot all fit one row at 320px with the
+   * 44px tap floor, so wrapping would regrow the toolbar into multiple rows and
+   * squeeze the surface again. Keep them on a single height-stable row that
+   * scrolls horizontally instead of wrapping. Scoped to .app-shell-hosted so the
+   * desktop-adapter and bare-web shells are untouched (AC5). */
+  .app-shell-hosted .preview-toolbar-actions {
+    align-items: center;
+    gap: 6px;
+    row-gap: 6px;
+    flex-wrap: nowrap;
+    /* Bound the row to the toolbar width so overflow-x creates an INTERNAL
+     * scroller instead of letting the nowrap content size the column-flex
+     * toolbar to its intrinsic width and overflow the 320px page. width +
+     * max-width pin the box; min-width: 0 lets it shrink below content. */
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .app-shell-hosted .preview-toolbar-actions::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Keep each control at full tap size and let the row scroll, rather than
+   * shrinking buttons below the 44px floor or wrapping onto a new row. */
+  .app-shell-hosted .preview-toolbar-actions > * {
+    flex-shrink: 0;
+  }
+
+  /* Demote the secondary actions: tighter footprint, icon-first. The Edit/View
+   * toggle and Save keep full weight; New/Find/MD/HTML/copy/shortcuts shrink so
+   * they no longer compete with the primary task. Tap floor (44px) preserved by
+   * the existing .app-shell-hosted min-height rule below. */
+  .app-shell-hosted .preview-toolbar-actions .find-entry-label {
+    display: none;
+  }
+
+  .app-shell-hosted .preview-toolbar-actions .find-entry-button,
+  .app-shell-hosted .preview-toolbar-actions .format-download-button,
+  .app-shell-hosted .preview-toolbar-actions .preview-copy-button {
+    padding-inline: 10px;
+  }
+
   .shortcut-reference-wrap {
     position: absolute;
     top: 10px;
@@ -3752,11 +3835,40 @@ body.is-height-resizing * {
   /* Keep the preview panel sized in dvh so a software keyboard does not
    * shove the editor below the visible viewport. Combined with the
    * sticky toolbar above, the Save action remains reachable when the
-   * keyboard is open. */
+   * keyboard is open.
+   *
+   * Keyboard-occlusion fix (arbiter finding arb-it1-5): iOS Safari does NOT
+   * shrink dvh for the on-screen keyboard, so a hard min-height: 55dvh forced
+   * the panel taller than the keyboard-reduced viewport and collapsed the
+   * flex:1 edit surface to ~0px. Lower the min-height floor so the panel can
+   * shrink with the visible viewport while the surface (flex:1) keeps the
+   * dominant share. No JS visualViewport handling (YAGNI). */
   .app-shell-hosted .preview-panel,
   .app-shell-hosted .page.is-working-mode .preview-panel {
     height: max(55dvh, min(620px, var(--preview-panel-ceiling)));
     min-height: 55dvh;
     max-height: none;
+  }
+
+  /* Guarantee the edit/view surface keeps usable height even when the panel is
+   * squeezed by the keyboard-reduced viewport. Without a floor the flex:1
+   * surface collapses to ~0px behind the sticky toolbar (the "can't edit"
+   * symptom). The sticky toolbar still pins to the top of the scroll container,
+   * so the surface stays reachable. Hosted phones only (AC1/AC5). */
+  .app-shell-hosted .markdown-edit-shell,
+  .app-shell-hosted .markdown-surface {
+    min-height: 96px;
+  }
+
+  /* About section demotion on hosted phones (AC3). It already starts collapsed
+   * and renders below the preview panel; this reduces its top emphasis so it
+   * reads as clearly secondary, below-the-fold content rather than competing
+   * for first-scroll real estate. Content is preserved (sponsor/credits). */
+  .app-shell-hosted .about-section {
+    margin-top: 16px;
+  }
+
+  .app-shell-hosted .about-section .about-header h2 {
+    font-size: 1.15rem;
   }
 }
