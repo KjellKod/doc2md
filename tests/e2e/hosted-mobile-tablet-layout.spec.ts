@@ -61,19 +61,6 @@ async function expectHorizontallyInViewport(locator: Locator, page: Page) {
   );
 }
 
-async function expectAlignedWidths(first: Locator, second: Locator) {
-  await expect(first).toBeVisible();
-  await expect(second).toBeVisible();
-  const [firstBox, secondBox] = await Promise.all([
-    first.boundingBox(),
-    second.boundingBox(),
-  ]);
-  expect(firstBox).not.toBeNull();
-  expect(secondBox).not.toBeNull();
-  expect(Math.abs(firstBox!.x - secondBox!.x)).toBeLessThanOrEqual(2);
-  expect(Math.abs(firstBox!.width - secondBox!.width)).toBeLessThanOrEqual(2);
-}
-
 async function expectTapTargetFloor(locator: Locator) {
   await expect(locator).toBeVisible();
   const box = await locator.boundingBox();
@@ -337,10 +324,23 @@ test.describe("hosted mobile and tablet layout", () => {
     await expectHorizontallyInViewport(workspace, page);
     await expectHorizontallyInViewport(collapseRail, page);
     await expectHorizontallyInViewport(previewPanel, page);
-    await expectAlignedWidths(collapseRail, previewPanel);
-
-    const railBox = await collapseRail.boundingBox();
+    // The collapsed upload control is now a compact, content-width text link
+    // on phones (not a full-width bar), so it intentionally no longer matches
+    // the preview's width. The invariant that still matters — and that this
+    // test guards — is that it stays a HORIZONTAL control, aligned to the
+    // preview's left edge and within its width, rather than a tall vertical
+    // side strip.
+    const [railBox, previewBox] = await Promise.all([
+      collapseRail.boundingBox(),
+      previewPanel.boundingBox(),
+    ]);
     expect(railBox).not.toBeNull();
+    expect(previewBox).not.toBeNull();
+    // Left-aligned with the preview, and no wider than it.
+    expect(Math.abs(railBox!.x - previewBox!.x)).toBeLessThanOrEqual(2);
+    expect(railBox!.width).toBeLessThanOrEqual(previewBox!.width + 2);
+    // Horizontal (wider than tall) and short — not a vertical side strip.
+    expect(railBox!.width).toBeGreaterThan(railBox!.height);
     expect(railBox!.height).toBeLessThanOrEqual(92);
   });
 
