@@ -29,22 +29,19 @@ There are **two** Code Review Agent invocations on each review pass. They run **
 - Optional diff summary from `git diff --stat` when VCS is available
 - `.quest/<id>/phase_02_implementation/builder_feedback_discussion.md` for touched files/tests when VCS is unavailable
 - `.quest/<id>/phase_03_review/review_fix_feedback_discussion.md` when present
-- Quest brief (for acceptance criteria reference)
+- Quest brief — **read fully; extract `ui_work` from `## Router Classification` before loading conditional skills. Treat missing as `false`.**
+- **If `ui_work` is absent from the brief (older format):** treat as `false` and skip the UX pass below.
+- **If the quest brief router classification has `ui_work: true`:**
+  - `.skills/ux-review/SKILL.md` — run the UX stress test against the diff as part of the review pass. Emit UX findings into the canonical findings JSON alongside other findings, tagged with `kind: "ux"` and `principle_id` (format: `ux-guidebook§<section_number>`). Severity maps P0→critical, P1→high, P2→medium, P3→low. When `ui_work_evidence` is non-empty in the brief, focus the UX pass on those files first; when empty, run the UX pass against the full diff.
+  - `.skills/ux-context/SKILL.md` — for principle references when interpreting findings.
 
 ## Responsibilities
 1. Read all changed files provided by the orchestrator, or determine the touched area from builder/fixer notes when VCS metadata is unavailable
 2. Check code quality, security, and patterns against `AGENTS.md`
 3. Verify test coverage for new/changed code
-   - Map tests to acceptance criteria. If the core PR behavior is user-visible,
-     require an exact-workflow regression/e2e/integration test that exercises
-     the real mode, host/shell, file state, and interaction sequence. Flag
-     nearby happy-path-only coverage as Must fix.
-   - For behavior shared by hosted browser and desktop app, verify both paths
-     are covered or that the implementation notes justify why one path is out
-     of scope.
 4. Identify bugs, logic errors, or architectural violations
 5. Write markdown review to the assigned artifact path for the current slot
-6. Write canonical findings JSON to the assigned findings path for the current slot
+6. Write canonical findings JSON to the assigned findings path for the current slot (see the **Output Contract** — this file is a hard, always-required output, written every run, `[]` when clean)
 
 Canonical findings schema (required fields per finding):
 `finding_id, source, kind, severity, confidence, path, line, summary, why_it_matters, evidence, action, needs_test, write_scope, related_acceptance_criteria`
@@ -65,6 +62,14 @@ Allowed enum values:
 - Quest brief and plan
 
 ## Output Contract
+
+You MUST write **two** required artifacts every run — the canonical findings JSON and `handoff.json` — alongside your markdown review. Both are hard contracts; neither is conditional on whether you found issues.
+
+**Required findings JSON (always, every run):** Write the canonical findings JSON to your slot's findings path:
+- Reviewer A: `.quest/<id>/phase_03_review/review_findings_code-reviewer-a.json`
+- Reviewer B: `.quest/<id>/phase_03_review/review_findings_code-reviewer-b.json`
+
+This file is **never optional**: write an empty JSON array (`[]`) when the review is clean, never a zero-byte file, and never rely on the orchestrator to author it. The orchestrator validates it per slot the moment you return — a missing, empty, or malformed file fails validation and is sent back to you to structure (the "structure what you already wrote" retry), never hand-authored for you.
 
 **Step 1 — Write handoff.json** to your slot's path:
 - Reviewer A: `.quest/<id>/phase_03_review/handoff_code-reviewer-a.json`
@@ -116,3 +121,4 @@ If `NEXT: fixer`, there are issues to fix.
 
 ## Skills Used
 - `.skills/code-reviewer/SKILL.md`
+- `.skills/ux-review/SKILL.md` (when quest brief has `ui_work: true`)

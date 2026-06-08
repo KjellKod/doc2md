@@ -23,6 +23,10 @@ When starting, say: "Now I understand the Quest." Then proceed.
 
 If the user provides a quest ID matching either supported Quest ID format (`<slug>_YYYY-MM-DD__HHMM` or `YYYY-MM-DD_HHMM__<slug>`):
 1. Read `.quest/<id>/state.json` and resume from the recorded phase
+1a. **Orchestration config migration.** On resume, run `quest_runtime.orchestration.migrate_from_snapshot` before dispatch (it is tested; keep the behavior in one place):
+   - **Missing `orchestration.json`** → it is written from `.quest/<id>/logs/allowlist_snapshot.json` (`models`). Only explicitly legacy-compatible newly-introduced roles (`LEGACY_COMPAT_BACKFILL_ROLES`, currently `review-arbiter`) are backfilled from `DEFAULT_MODELS`; a snapshot missing any **other** canonical role (e.g. `builder`) is **malformed** — fail closed, never invent a default (that would bypass the saved per-quest model contract). A structurally invalid snapshot (unreadable, not valid JSON, or no `models` object) is also malformed.
+   - **Existing `orchestration.json`** → it is backfilled in place with any newly-introduced canonical roles at their default, preserving every existing value/metadata field, and left byte-identical when nothing is missing — so an in-flight quest that predates a new required role does not fail validation/dispatch on resume.
+   - **Never prompt the chooser on resume.**
 2. Delegate to `delegation/workflow.md`
 
 If the user says `/quest status` or `$quest status`, handle as a utility command (see `delegation/workflow.md` Utility Commands).
@@ -32,7 +36,7 @@ If the user says `/quest status` or `$quest status`, handle as a utility command
 If no quest ID is provided:
 1. Read `delegation/router.md`
 2. Evaluate the user's input against the 7 substance dimensions
-3. Produce the routing decision JSON: `{route, confidence (0.0-1.0), risk_level, complexity, reason, missing_information}`
+3. Produce the routing decision JSON: `{route, confidence (0.0-1.0), risk_level, complexity, ui_work, ui_work_evidence, reason, missing_information}`
 
 ### Step 2b: Second Model Availability Probe (New Quest Only)
 
@@ -147,8 +151,12 @@ Before creating the quest folder, present the routing classification to the user
    - If `risk_level` is "high": **"Risk: HIGH — <reason>"**
    - If `risk_level` is "medium": **"Risk: MEDIUM — <reason>"**
    - If `risk_level` is "low": "Risk: low — <reason>"
-2. If the quest went through the questioner path, note this: "Questioning phase completed — gaps addressed before planning."
-3. Wait for user acknowledgment before proceeding (for high risk only). For medium and low, display and continue.
+2. Display the UI classification:
+   - If `ui_work` is `true`: **"UI work: yes — <ui_work_evidence>"**
+   - If `ui_work` is `false`: "UI work: no"
+   - If `ui_work` is missing or not a boolean: "UI work: malformed router data — treating as no until corrected"
+3. If the quest went through the questioner path, note this: "Questioning phase completed — gaps addressed before planning."
+4. Wait for user acknowledgment before proceeding (for high risk only). For medium and low, display and continue.
 
 ### Quest Folder Structure
 
@@ -173,13 +181,20 @@ Before creating the quest folder, present the routing classification to the user
    - Parse the JSON result
    - If `status` is `"blocked"`: show the returned `message`, do NOT create the quest folder yet, and stop for the user to resolve the git state or config
    - If `status` is `"created"` or `"skipped"`: continue and surface the returned `message` to the user
+   - Surface the returned `quest_symlink` outcome after startup:
+     - `created`: note that the worktree `.quest/` symlink was created.
+     - `present`: note that the worktree `.quest/` symlink was already present.
+     - `migrated`: tell the user that an existing worktree `.quest/` was safely migrated into the shared store.
+     - `conflict`: warn the user that same-name `.quest/` entries were preserved under `.quest_conflicts/` and need manual review.
+     - `n/a`: no linked-worktree symlink action was needed.
    - Record these fields for `state.json` initialization:
      - `vcs_available`
      - `branch`
      - `branch_mode`
      - `worktree_path` (if present)
+     - `quest_symlink`
 4. Read `quest_id_format` from `.ai/allowlist.json` using `quest_runtime.quest_ids.load_quest_id_format`; missing config defaults to `slug-first`.
-5. Create the Quest ID with `quest_runtime.quest_ids.format_quest_id(slug, timestamp, quest_id_format)`:
+5. Create the Quest ID with `quest_runtime.quest_ids.format_quest_id(slug, datetime.now(), quest_id_format)`. Pass a `datetime.datetime` object, not a preformatted timestamp string; the helper formats date/time internally.
    - Default slug-first: `<slug>_YYYY-MM-DD__HHMM`
    - Optional date-first: `YYYY-MM-DD_HHMM__<slug>`
 6. Create `.quest/<id>/` with subfolders:
@@ -189,6 +204,60 @@ Before creating the quest folder, present the routing classification to the user
    - Questioner summary (if questioning occurred)
    - **Router classification JSON** (the final routing decision that sent the quest to workflow). This is the classification produced by the most recent router evaluation — if the router ran twice (once before questioning, once after), record the second (final) classification.
 8. Copy `.ai/allowlist.json` to `.quest/<id>/logs/allowlist_snapshot.json`
+8.5. **Per-quest orchestration chooser.** Display the active `models` block from `.ai/allowlist.json`. For each role unused in the chosen `quest_mode` (e.g., `plan-reviewer-b`, `arbiter`, `code-reviewer-b`, and `review-arbiter` in solo mode), append `  (unused in this mode)` after the model name. Then prompt:
+
+   ```
+   Quest orchestration for `<slug>` (<mode>):
+
+     planner           <model>
+     plan-reviewer-a   <model>
+     plan-reviewer-b   <model>  (unused in this mode)   [solo only]
+     arbiter           <model>  (unused in this mode)   [solo only]
+     builder           <model>
+     code-reviewer-a   <model>
+     code-reviewer-b   <model>  (unused in this mode)   [solo only]
+     review-arbiter    <model>  (unused in this mode)   [solo only]
+     fixer             <model>
+
+   Customize for this quest only? [y/N]
+   ```
+
+   **On N (default; single Enter):** before writing, validate every active-role model from the expanded default block against the Step 2b preflight result using the same availability rules as overrides below. If Step 2b was healthy, reject any unavailable active-role model as malformed config and stop before dispatch. If the user explicitly chose the single-model continuation after Step 2b failed, remap unavailable active-role models to this orchestrator's native runtime (`claude` for Claude-led sessions, `gpt-5.5` for Codex-led sessions) before writing so `orchestration.json` only contains runnable active-role assignments. Then write `.quest/<id>/orchestration.json` with:
+   - `version: 1`
+   - `models`: `.ai/allowlist.json` `.models` expanded to all 9 canonical keys; omitted keys use the documented defaults (`planner=claude`, `plan-reviewer-a=claude`, `plan-reviewer-b=gpt-5.5`, `arbiter=claude`, `builder=gpt-5.5`, `code-reviewer-a=claude`, `code-reviewer-b=gpt-5.5`, `review-arbiter=claude`, `fixer=gpt-5.5`)
+   - `source: "default"`
+   - `overridden_roles: []`
+   - `preflight_validated_at: <ISO8601 now>`
+
+   **On Y:** present the shorthand override prompt:
+
+   ```
+   Enter overrides as comma-separated role=model pairs.
+   Roles: planner, plan-reviewer-a, plan-reviewer-b, arbiter, builder, code-reviewer-a, code-reviewer-b, review-arbiter, fixer
+   Models: any model name your preflight reports as available (e.g., claude, codex, gpt-5.5)
+   Example: planner=claude, builder=claude
+   (empty input = no overrides, equivalent to N)
+
+   Overrides:
+   ```
+
+   **Parse contract (each full override-line submission is one attempt; cap re-prompts at 3, abort on the 4th rejection):**
+
+   1. **Tokenize.** Split the outer input on `,`. Trim each resulting piece. Empty pieces are silently skipped (so a trailing comma is fine).
+   2. **One `=` per piece.** Each non-empty piece must contain exactly one `=` character. Reject pieces with zero `=` or two or more `=` characters using `Override syntax error: '<piece>' (expected role=model). Re-enter overrides.`
+   3. **Role name (LHS of `=`).** Trim, normalize to lowercase, then exact-match against the canonical role list (`planner`, `plan-reviewer-a`, `plan-reviewer-b`, `arbiter`, `builder`, `code-reviewer-a`, `code-reviewer-b`, `review-arbiter`, `fixer`). Reject unknown names with `Unknown role: <input> (valid: planner, plan-reviewer-a, plan-reviewer-b, arbiter, builder, code-reviewer-a, code-reviewer-b, review-arbiter, fixer)` and re-prompt.
+   4. **Model name (RHS of `=`).** Trim. Lexeme is `[^,=]+` non-empty. No further character constraints — `gpt-5.5`, `claude-opus-4.7`, `o1-mini` and similar tokens are all accepted at the parser level.
+   5. **Unused-in-mode roles** (`plan-reviewer-b`, `arbiter`, `code-reviewer-b`, and `review-arbiter` in solo). Warn `Role <name> is unused in <mode> mode — override ignored.` and skip the override; do not record it in `overridden_roles`.
+   6. **Availability check.** Classify Claude-family model names as `claude` and `claude-*` (for example `claude-opus-4.7`); every other model name is Codex-backed. In Claude-led sessions, Claude-family models are available and Codex-backed models require Codex MCP availability from the Step 2b preflight result. In Codex-led sessions, Codex-backed models are available and Claude-family models require the top-level `available` boolean from the Step 2b preflight result, which represents Claude bridge availability. If the relevant cache/result is missing or stale (older than the preflight TTL), rerun `scripts/quest_preflight.sh --orchestrator <self>` once and reuse the fresh result. Reject unavailable models with the preflight `warning` text and re-prompt the override line.
+   7. **Re-prompt cap.** An "attempt" is one full override-line submission, not one role=model pair. Three rejected attempts in a row abort startup with `Override validation failed after 3 attempts — quest startup cancelled.`
+
+   Once all overrides pass validation, build the merged `models` block (defaults from `.ai/allowlist.json`, with omitted role keys filled from the documented defaults above, overlaid with the validated overrides — `overridden_roles` excludes ignored-because-unused entries) and write `.quest/<id>/orchestration.json` with:
+   - `version: 1`
+   - `models`: merged block (all 9 keys present; unused-in-mode roles still carry the default value)
+   - `source: "overridden"`
+   - `overridden_roles`: list of role names that were actually overridden
+   - `preflight_validated_at: <ISO8601 now>`
+
 9. Initialize `state.json`:
    ```json
    {
@@ -201,6 +270,7 @@ Before creating the quest folder, present the routing classification to the user
      "branch": "quest/<slug> or current branch",
      "branch_mode": "branch | worktree | none",
      "worktree_path": "/absolute/path/to/worktree (worktree mode only)",
+     "quest_symlink": "created | present | migrated | conflict | n/a",
      "plan_iteration": 0,
      "fix_iteration": 0,
      "created_at": "<timestamp>",
@@ -210,3 +280,13 @@ Before creating the quest folder, present the routing classification to the user
    Set `quest_mode` to the user's final selection: `"workflow"` (default) or `"solo"`. This field is read by `workflow.md` to determine agent dispatch and by `validate-quest-state.sh` for artifact checks.
    `vcs_available` must be copied directly from `scripts/quest_startup_branch.py` output. Do not infer it from `branch_mode`.
    `branch_mode` records the actual startup mode used for this quest run after no-op handling. If Quest starts on an existing feature branch, set `branch_mode` to `"none"` and record that branch in `branch`.
+   `quest_symlink` must be copied directly from `scripts/quest_startup_branch.py` output. Do not infer it from `branch_mode` or `worktree_path`.
+
+### UI Work Propagation
+
+When the recorded router classification has `ui_work: true`, downstream dispatch must load the UX skills:
+
+- Planner, builder, fixer agents auto-load `.skills/ux-context/SKILL.md`
+- Plan-reviewer and code-reviewer agents auto-load `.skills/ux-review/SKILL.md`
+
+The agent files in `.skills/quest/agents/` enforce this — the orchestrator's job is to preserve the full router JSON in the brief so each agent can read it.

@@ -26,8 +26,8 @@ Play a rich, visually stunning celebration for a completed quest.
 ### Step 1: Resolve the Quest Source
 
 If the user provides an argument:
-1. If it's a full path (starts with `/` or `.`), use it directly
-2. If it looks like a quest ID (e.g., `name-resolution_2026-03-04__1954`), look in:
+1. If it looks like a path (absolute or relative), resolve it and use it only if it stays under `.quest/`, `.quest/archive/`, or `docs/quest-journal/`; otherwise reject it
+2. If it looks like a quest ID (e.g., `name-resolution_2026-03-04__1954` or `2026-03-04_1954__name-resolution`), look in:
    - `.quest/<id>/` (active quest)
    - `.quest/archive/<id>/` (archived quest)
    - `docs/quest-journal/` for a matching filename (journaled quest)
@@ -46,19 +46,39 @@ If no argument is provided:
 - `quest_brief.md` — quest name, risk level, scope, acceptance criteria
 - `phase_01_plan/handoff_arbiter.json` — arbiter verdict and summary
 - `phase_01_plan/handoff.json` — planner summary
+- `phase_01_plan/deferred_backlog_matches.json` — prior deferred findings resurfaced for this quest, if present
 - `phase_02_implementation/handoff.json` — builder summary, files changed
 - `phase_03_review/handoff_code-reviewer-a.json` — reviewer verdict
 - `phase_03_review/handoff_code-reviewer-b.json` — reviewer verdict
 - `phase_03_review/handoff_fixer.json` — fixer summary, what was fixed, test counts
+- `.quest/backlog/deferred_findings.jsonl` — repo-level deferred findings backlog; filter entries where `deferred_by_quest` matches the current quest ID
 
 **From a journal entry** (`docs/quest-journal/*.md`):
 1. Look for a `celebration_data` JSON block between `<!-- celebration-data-start -->` and `<!-- celebration-data-end -->` markers
-2. If found: use the structured data (agents, achievements, metrics, quality tier, quote, victory narrative)
+2. If found: use the structured data (agents, achievements, metrics, quality tier, quote, victory narrative, carry-over findings)
 3. If not found (legacy entries): "wing it" from the markdown text — read the sections for iterations, files changed, outcome, and the "what started it" quote. Improvise achievements and metrics from context.
 
-### Step 3: Generate the Celebration as Rich Markdown
+### Step 3: Verify Carry-Over Section Visibility
 
-**IMPORTANT: Write the celebration directly as your response text. Do NOT run a script. Do NOT wrap the entire celebration in a code block. The UI renders agent markdown beautifully, but ASCII/block-letter title art must be wrapped in a triple-backtick fenced code block — `<pre>` tags render inconsistently in the agent terminal and drop the monospace grid.**
+Before rendering, explicitly decide whether the celebration should show the carry-over sections:
+
+1. Check `phase_01_plan/deferred_backlog_matches.json`
+   - If the file is missing, unreadable, or empty, treat `Inherited Findings Used` as count `0`
+   - If present, count only records with a usable short summary
+2. Check `.quest/backlog/deferred_findings.jsonl`
+   - Filter entries where `deferred_by_quest` matches the current quest ID
+   - If the file is missing, unreadable, or no matching records exist, treat `Findings Left For Future Quests` as count `0`
+3. Render each carry-over section only when its artifact-backed count is greater than `0`
+4. If both counts are `0`, include one short empty-state section instead:
+   - `Carry-Over Findings`
+   - `No carry-over findings this round; nothing was inherited from earlier quests and nothing needs to be saved for the next one.`
+5. Do not replace this with vague filler, "no baggage", or inferred planner insights
+
+### Step 4: Generate the Celebration as Rich Markdown
+
+**IMPORTANT: Write the celebration directly as your response text. Do NOT run a script. Do NOT wrap the entire celebration in a code block. The UI renders agent markdown beautifully, but ASCII/block-letter title art must be wrapped in a fenced code block (triple backticks) so spacing is preserved without turning the whole celebration into a code block.**
+
+When invoked from Quest completion, surface the celebration in the chat response before final status, archive-only summaries, PR creation, or shepherding. Persisted celebration files and links are supplemental; they do not count as showing the celebration.
 
 You have all the data from the artifacts. Now **create your own celebration**. Be creative. Make it feel like an achievement, not a status report.
 
@@ -76,6 +96,15 @@ You have all the data from the artifacts. Now **create your own celebration**. B
 - A quote from the actual quest (arbiter verdict, reviewer summary, fixer handoff)
 - Victory narrative — what this quest proved or demonstrated (or survival narrative for rough ones)
 
+**Carry-over sections**:
+- `Inherited Findings Used`
+  - source: `phase_01_plan/deferred_backlog_matches.json`
+  - when count > 0, show count plus up to 3 short summaries
+- `Findings Left For Future Quests`
+  - source: `.quest/backlog/deferred_findings.jsonl` entries where `deferred_by_quest == current quest ID`
+  - when count > 0, show count plus up to 3 short summaries
+- If both counts are `0`, show the explicit empty-state `Carry-Over Findings` note above instead of these sections
+
 **Use markdown richly:**
 - `#` and `##` headers (they render big and bold)
 - `**bold**` for emphasis
@@ -87,19 +116,28 @@ You have all the data from the artifacts. Now **create your own celebration**. B
 - Tables if they help present the data
 
 **ASCII/block-letter title rules:**
-- Wrap block-letter rows inside a triple-backtick fenced code block (no language tag). The agent terminal renders `<pre>` inconsistently; fenced code blocks are reliable monospace.
+- Wrap the block-letter title art in a fenced code block (triple backticks).
+- Inside that code block, emit block-letter rows as plain text lines only.
 - Do **not** prefix block-letter rows with `#`, `-`, `>`, or any other markdown marker.
-- Keep the title art contiguous with no blank separator inserted inside the rows.
-- After the closing fence, leave one normal blank line before the rest of the celebration.
+- Use the full celebration block-letter style shown in the good example below (FIGlet/ANSI-Shadow-like `██╗`, `╚═╝`, `╔══` forms), not the compact 5-row fallback font when the artifact is meant to be read on GitHub.
+- Preserve all title text. Never drop or obscure letters just to fit a line; split the title into multiple readable blocks instead.
+- Put one complete word or short phrase per block. For titles longer than about 8-10 letters, prefer one word per block.
+- Leave one blank line between word blocks inside the title code fence so each word reads independently.
+- After the closing backticks, leave one normal blank line before the rest of the celebration.
 
 **Do NOT:**
-- Put too many characters on one line of block letters — max ~5 letters per line, break long names across multiple lines (one word per block, like the HELLO/WORLD example)
-- Wrap the entire celebration in a code block (kills the rich rendering) — only wrap the title art itself
-- Use `<pre>` tags for title art — use fenced code blocks so the terminal renderer actually shows the monospace characters
+- Put too many characters on one line of block letters. Break long names across multiple blocks.
+- Emit cramped generated chunks such as `INSTALL` + `BRANCH` when the title is `Installer Branch Conflict`; that hides the actual title.
+- Use generic boxed text such as `╔════╗ INSTALLER BRANCH ╚════╝`; it is readable but not the celebration block-letter style.
+- Truncate words by emitting only the first chunk (`CELEBR` without the remaining `ATIONS`, `INSTAL` without the remaining `LER`, etc.).
+- Wrap the entire celebration in a single code block (kills the rich rendering — only the title art goes in a code fence)
+- Leave block-letter title art outside a code fence when it depends on ASCII spacing
+- Use `<pre>` tags — they don't render reliably across terminals
 - Prefix ASCII title art with markdown header markers such as `#`
 - Use generic achievements like "Quest Complete" or "Battle Tested"
 - Use generic metrics like "Files Changed: 22" or "Agents Involved: 0"
 - Use fallback quotes like "Shipping should feel like a celebration"
+- Invent carry-over "insights" not backed by the artifacts above
 - Follow a rigid template — reimagine the presentation each time
 
 **Example of the kind of output that looks amazing** (but don't copy this — create your own based on what you read):
@@ -122,7 +160,45 @@ You have all the data from the artifacts. Now **create your own celebration**. B
  ╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═════╝
 ```
 
-Break the text across **multiple lines** — max ~5 letters per line. Each word gets its own block, like "HELLO" on one line and "WORLD" on the next. For longer words, hyphenate: "RESOL-" on one line and "UTION" on the next. This keeps it readable without horizontal overflow.
+Break the text into readable word blocks. Each complete word should usually get its own block, like "HELLO" followed by "WORLD". If a single word would overflow, split it into adjacent chunks with no dropped letters, like "RESOL" followed by "UTION". This keeps the title readable without forcing the old compact fallback font.
+
+**Good title art example:**
+
+```
+██████╗ ███████╗██████╗ ███████╗██╗███████╗████████╗
+██╔══██╗██╔════╝██╔══██╗██╔════╝██║██╔════╝╚══██╔══╝
+██████╔╝█████╗  ██████╔╝███████╗██║███████╗   ██║
+██╔═══╝ ██╔══╝  ██╔══██╗╚════██║██║╚════██║   ██║
+██║     ███████╗██║  ██║███████║██║███████║   ██║
+╚═╝     ╚══════╝╚═╝  ╚═╝╚══════╝╚═╝╚══════╝   ╚═╝
+
+ ██████╗███████╗██╗     ███████╗██████╗
+██╔════╝██╔════╝██║     ██╔════╝██╔══██╗
+██║     █████╗  ██║     █████╗  ██████╔╝
+██║     ██╔══╝  ██║     ██╔══╝  ██╔══██╗
+╚██████╗███████╗███████╗███████╗██████╔╝
+ ╚═════╝╚══════╝╚══════╝╚══════╝╚═════╝
+```
+
+**Bad title art examples:**
+
+```
+████  █████ ████   ████ █████  ████
+█   █ █     █   █ █       █   █
+...
+ ████ █████ █████ █████ ████  █   █
+```
+
+This is bad because it is a compact generated chunk, truncates/obscures the title, and does not read like the established celebration style.
+
+```
+╔══════════════════════════════════════╗
+║          INSTALLER BRANCH           ║
+║        CONFLICT RESOLVED            ║
+╚══════════════════════════════════════╝
+```
+
+This is bad because it is a box, not block-letter celebration title art.
 
  🎉 🎉 🎉 🎉  🙌  🎉 🎉 🎉 🎉  
 
@@ -151,7 +227,7 @@ Break the text across **multiple lines** — max ~5 letters per line. Each word 
 
 ---
 
-### Quality Tier Scale — The Full Honest Spectrum
+## Quality Tier Scale — The Full Honest Spectrum
 
 The tier must be candid. Smooth quests get celebrated. Rough quests get acknowledged with humor and respect — they still shipped.
 
