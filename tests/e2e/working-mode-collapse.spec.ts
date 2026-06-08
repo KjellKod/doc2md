@@ -56,29 +56,51 @@ test("shows the upload rail tooltip while collapsed", async ({ page }) => {
   );
   expect(railOverflow).toBe("visible");
 
-  const tooltipBox = await tooltip.boundingBox();
-  const railBox = await rail.boundingBox();
-  const showUploadBox = await showUpload.boundingBox();
   const viewport = page.viewportSize();
-  expect(tooltipBox).not.toBeNull();
-  expect(railBox).not.toBeNull();
-  expect(showUploadBox).not.toBeNull();
   expect(viewport).not.toBeNull();
 
-  expect(tooltipBox!.x).toBeGreaterThanOrEqual(
-    showUploadBox!.x + showUploadBox!.width,
-  );
-  expect(tooltipBox!.x).toBeGreaterThanOrEqual(0);
-  expect(tooltipBox!.x + tooltipBox!.width).toBeLessThanOrEqual(viewport!.width);
-  expect(tooltipBox!.y).toBeGreaterThanOrEqual(0);
-  expect(tooltipBox!.y + tooltipBox!.height).toBeLessThanOrEqual(viewport!.height);
-  expect(
-    Math.abs(
-      tooltipBox!.y +
-        tooltipBox!.height / 2 -
-        (railBox!.y + railBox!.height / 2),
-    ),
-  ).toBeLessThanOrEqual(8);
+  // De-flake: the tooltip is centered on the rail via `top: 50%` +
+  // `translateY(-50%)`, so its center equals the rail center by construction.
+  // The previous check read tooltipBox and railBox in separate boundingBox()
+  // calls, so a layout shift between them (a late web-font swap changing the
+  // rail height) compared two different layout states and intermittently
+  // reported a ~11px offset in CI. Wait for fonts to settle, then read every
+  // rect in ONE synchronous frame and retry until stable, so tooltip and rail
+  // are always measured in the same layout state.
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+
+  await expect(async () => {
+    const geom = await tooltip.evaluate((tip) => {
+      const button = document.querySelector(
+        'button[aria-label="Show upload panel"]',
+      ) as HTMLElement;
+      const rail = button.parentElement as HTMLElement;
+      const t = tip.getBoundingClientRect();
+      const r = rail.getBoundingClientRect();
+      const b = button.getBoundingClientRect();
+      return {
+        tooltipLeft: t.x,
+        tooltipRight: t.x + t.width,
+        tooltipTop: t.y,
+        tooltipBottom: t.y + t.height,
+        tooltipCenterY: t.y + t.height / 2,
+        railCenterY: r.y + r.height / 2,
+        buttonRight: b.x + b.width,
+      };
+    });
+
+    // Tooltip sits to the right of the button, fully within the viewport.
+    expect(geom.tooltipLeft).toBeGreaterThanOrEqual(geom.buttonRight);
+    expect(geom.tooltipLeft).toBeGreaterThanOrEqual(0);
+    expect(geom.tooltipRight).toBeLessThanOrEqual(viewport!.width);
+    expect(geom.tooltipTop).toBeGreaterThanOrEqual(0);
+    expect(geom.tooltipBottom).toBeLessThanOrEqual(viewport!.height);
+
+    // Tooltip is vertically centered on the rail (measured in one frame).
+    expect(
+      Math.abs(geom.tooltipCenterY - geom.railCenterY),
+    ).toBeLessThanOrEqual(8);
+  }).toPass({ timeout: 5000 });
 });
 
 test("does not auto-collapse when the user has already adjusted the sidebar", async ({

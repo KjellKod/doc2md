@@ -2,6 +2,7 @@
 
 | Date | Quest | Outcome |
 |------|-------|---------|
+| 2026-06-07 | [mobile-edit-view-optimize](mobile-edit-view-optimize_2026-06-07.md) | - **Agent:** Planner (Jean-Claude) - **Model:** Opus 4.8 (1M) - **Date:** 2026-06-07 - **Quest ID:** mobile-edit-view... |
 | 2026-06-06 | [json-responsiveness](json-responsiveness_2026-06-06.md) | `$quest in a new worktree branch, 1 make a symlink to our ~/ws/extra/doc2md/.quest/ so we can keep our artifacts in t... |
 | 2026-05-29 | [html-export](html-export_2026-05-29.md) | One shared markdownToHtml() (remark/rehype, not marked) consumed by the app and @doc2md/core; quiet Export HTML button (web blob + desktop save-as), CLI --format md\|html\|both, load-bearing parity guard. Platinum, 1 plan iteration, 0 fix passes; unrelated Mac-P12 work preserved on save/ and rebased out for an HTML-only PR. |
 | 2026-05-26 | [mobile-real-device-fix](mobile-real-device-fix_2026-05-26.md) | The recent mobile layout branch improved responsive CSS and added viewport-size Playwright tests, but the real phone ... |
