@@ -72,6 +72,19 @@ get_manifest_files() {
 
 MANIFEST_FILES=$(get_manifest_files | sort)
 
+TEST_MANIFEST_FILES=$(echo "$MANIFEST_FILES" | grep '^tests/' || true)
+if [ -n "$TEST_MANIFEST_FILES" ]; then
+  log_error "Repo tests do not belong in .quest-manifest or the Quest installer."
+  echo ""
+  echo "Remove these test-only paths from .quest-manifest:"
+  echo "$TEST_MANIFEST_FILES" | while read -r f; do
+    echo "  - $f"
+  done
+  echo ""
+  echo "Installed projects should receive Quest runtime files only, not this repo's test suite."
+  exit 1
+fi
+
 # Define which directories/patterns should be in the manifest
 # These are the Quest framework files that the installer ships
 EXPECTED_PATTERNS=(
@@ -107,20 +120,15 @@ EXPECTED_PATTERNS=(
   "scripts/quest_validate-quest-state.sh"
   "scripts/quest_checks/*.py"
   "scripts/quest_runtime/*.py"
-  "tests/integration/test-enforce-allowlist.sh"
-  "tests/test-quest-preflight.sh"
-  "tests/test-quest-runtime.sh"
-  "tests/test-validate-handoff-contracts.sh"
-  "tests/test-validate-quest-state.sh"
 )
 
 # Find all files matching our patterns
-# Prune local-only state so it does not masquerade as installer-managed content.
+# Prune nested git worktrees so their files do not masquerade as repo content.
 FOUND_FILES=""
 for pattern in "${EXPECTED_PATTERNS[@]}"; do
   # Use find with -path to handle glob patterns
   matches=$(find . \
-    -type d \( -path './.claude/projects' -o -path './.claude/worktrees' -o -path './.worktrees' -o -path './.git' \) -prune -o \
+    -type d \( -path './.claude/worktrees' -o -path './.worktrees' -o -path './.git' \) -prune -o \
     -path "./$pattern" -type f -print 2>/dev/null | sed 's|^\./||' || true)
   if [ -n "$matches" ]; then
     FOUND_FILES="$FOUND_FILES"$'\n'"$matches"

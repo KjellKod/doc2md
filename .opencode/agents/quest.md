@@ -23,28 +23,25 @@ Follow `.skills/quest/SKILL.md` exactly. The phases are:
 5. **Plan Iteration** -- if ITERATE, re-dispatch `planner` with arbiter feedback (max 4 iterations)
 6. **Present Plan** -- show plan to user. **STOP and wait for the human user to respond.** You MUST ask the human for approval and you MUST NOT proceed to Build until the human explicitly approves. Do not assume approval. Do not skip this step. Do not auto-approve.
 7. **Build** -- dispatch `builder` subagent
-8. **Dual Code Review** -- fan-out: dispatch `code-reviewer-a` AND `code-reviewer-b`, fan-in to arbiter
+8. **Dual Code Review** -- fan-out: dispatch `code-reviewer-a` AND `code-reviewer-b`, fan-in to `review-arbiter` (NOT `arbiter` — that one is plan-phase only). Skip the arbiter only when both reviewers return empty findings.
 9. **Fix Loop** -- if ITERATE, dispatch `fixer`, then re-review (max 3 iterations)
 10. **Complete** -- summarize results
 
 ## Fan-Out / Fan-In Pattern
 
-For dual reviews (Steps 3 and 8):
+For dual reviews (Steps 3 and 8). Plan review fans into `arbiter`; code review fans into `review-arbiter` — they are distinct roles with opposite risk postures:
 1. Call `task` with `subagent_type: plan-reviewer-a` (or `code-reviewer-a`)
 2. Call `task` with `subagent_type: plan-reviewer-b` (or `code-reviewer-b`)
 3. Collect both handoff results
-4. Call `task` with `subagent_type: arbiter` passing both review artifact paths
+4. Plan review → call `task` with `subagent_type: arbiter`; code review → call `task` with `subagent_type: review-arbiter`, passing both review artifact paths
 
 Sequential fan-out is acceptable. True parallelism is not required.
 
 ## Codex Dispatch (via MCP)
 
-For these roles, use `codex_codex` MCP tool instead of `task`:
-  plan-reviewer-b, builder, code-reviewer-b, fixer
+Resolve each role's model from `.quest/<id>/orchestration.json` before dispatch. Claude-family model names (`claude` and `claude-*`) use the Claude `task` path when native task execution is available; Codex-backed model names use the `codex_codex` MCP tool. Do not use a fixed role list for runtime selection.
 
 To continue a Codex conversation, use `codex_codex-reply` with the `threadId` from the previous response.
-
-All other roles use `task` dispatch as described above.
 
 Note: The MCP server is the official Codex CLI MCP server (`codex mcp-server`), configured as `codex` in opencode.json. It exposes two tools: `codex` (start session) and `codex-reply` (continue session). In OpenCode these become `codex_codex` and `codex_codex-reply`.
 

@@ -40,6 +40,13 @@ This directory contains specialized skills for AI agents working in this reposit
 
 **Location:** `.skills/code-reviewer/SKILL.md`
 
+### pre-commit-review
+**Purpose:** Review local staged plus unstaged tracked-file changes before commit or before a PR exists.
+
+**Use when:** The user invokes `/pre-commit-review`, asks for a pre-commit review, asks to review local changes before commit, or wants a local working-tree review before a PR exists.
+
+**Location:** `.skills/pre-commit-review/SKILL.md`
+
 ### ci-code-reviewer
 **Purpose:** Automated CI code review for GitHub PRs using OpenAI Codex. Validates PR descriptions, enforces Quest architecture boundaries, checks quality, and maps test coverage to acceptance criteria.
 
@@ -69,11 +76,18 @@ This directory contains specialized skills for AI agents working in this reposit
 **Location:** `.skills/pr-assistant/SKILL.md`
 
 ### pr-shepherd
-**Purpose:** Push a draft PR and iterate until CI passes and review comments are resolved, then mark ready for review. Handles the full lifecycle of getting a PR merged with inline-first review handling.
+**Purpose:** Shepherd an existing PR through CI and review comments, then mark ready for review when clean. Uses inline-first review handling; PR creation belongs to pr-assistant.
 
-**Use when:** The user wants to push a PR through CI and review, or asks to shepherd/babysit a PR until it's ready.
+**Use when:** The user wants to keep an existing PR moving through CI and review, or asks to shepherd/babysit a PR until it's ready.
 
 **Location:** `.skills/pr-shepherd/SKILL.md`
+
+### review-decisions
+**Purpose:** Shared policy for translating canonical review findings into deterministic backlog decisions (`fix_now`, `verify_first`, `defer`, `drop`, `needs_human_decision`) including loop-cap behavior and deferred backlog lineage.
+
+**Use when:** Arbiter or automation needs to produce `review_backlog.json`, enforce the review-loop cap, or append deferred findings to `.quest/backlog/deferred_findings.jsonl`.
+
+**Location:** `.skills/review-decisions/SKILL.md`
 
 ### gpt
 **Purpose:** Delegate tasks to OpenAI Codex (GPT-5.4) via MCP. Provides structured invocation with sensible defaults for sandbox, model, and reasoning effort.
@@ -82,33 +96,35 @@ This directory contains specialized skills for AI agents working in this reposit
 
 **Location:** `.skills/gpt/SKILL.md`
 
-### jc-and-dexter
-**Purpose:** Cross-agent conversation practice. Jean-Claude (Claude) and Dexter (Codex) talk at natural moments, write memoir entries in their own voice, and log user interaction insights for continuity across sessions.
-
-**Use when:** During quest workflows (at least once per quest), after significant user conversations, when something interesting happens worth two perspectives, or when the user asks JC and Dexter to talk.
-
-**Location:** `.skills/jc-and-dexter/SKILL.md`
-
-### ux
-**Purpose:** Guidelines for reviewing, designing, and implementing UI changes. Covers KISS, YAGNI, SRP, clean visual hierarchy, flex layout patterns, download UX, accessibility, and responsive breakpoints.
-
-**Use when:** Before adding or modifying any UI component, reviewing UI-related PRs, diagnosing visual bugs, or when the user reports UX problems.
-
-**Location:** `.skills/ux/SKILL.md`
-
 ### celebrate
-**Purpose:** Play a quest completion ceremony — alternates between Jean-Claude's celebration (even PRs) and Dexter's requiem (odd PRs). Block letters or tombstones, achievements or epitaphs. Every ceremony is saved to the agent's journal for posterity.
+**Purpose:** Play a rich quest completion celebration animation with block letters, achievements, impact metrics, quality score, and end credits. Runs the celebrate script or produces a manual celebration from quest artifacts.
 
 **Use when:** The user invokes `/celebrate`, asks to celebrate a quest, or when a quest reaches completion. Also triggered by the quest workflow Step 7.
 
-**Location:** `.skills/celebrate/SKILL.md` + `.skills/jc-and-dexter/CELEBRATE.md` for routing
+**Location:** `.skills/celebrate/SKILL.md`
 
-### doc2md
-**Purpose:** Portable wrapper skill for converting one or more local documents to Markdown through `@doc2md/core` without reimplementing converter logic.
+### sharpen
+**Purpose:** Adversarial interview against a plan, design, or write-up — one question at a time, each with a recommended answer attached — to surface contradictions, hidden assumptions, and unresolved tradeoffs before they ship. Also has a `ux-defaults` mode for locking in UX choices (gray ramp, density, mobile relevance, accent) when a backend engineer can recognize good UX but can't articulate it from scratch.
 
-**Use when:** A repo wants an agent-friendly document-to-markdown skill backed by the published package, especially for MCP preprocessing, resume screening, or batch document extraction.
+**Use when:** The user invokes `/sharpen` or `$sharpen`, says "sharpen this", "stress-test this", "find the holes", "challenge my plan", or wants to confirm shared understanding before locking a decision. Auto-routes to `ux-defaults` mode when invoked during plan presentation on a `ui_work: true` quest; can also be invoked explicitly as `/sharpen ux-defaults`.
 
-**Location:** `.skills/doc2md/SKILL.md`
+**Location:** `.skills/sharpen/SKILL.md`
+
+### ux-context
+**Purpose:** Primer skill that loads the canonical UX guidebook and stress-test rubric. Auto-attached by the orchestrator when the router classifies a quest as `ui_work: true`, so planners, builders, and fixers shape their output against durable UX principles (Norman, Rams, Nielsen, Apple HIG, Refactoring UI, Linear/Vercel/Rauno). Bundles the canonical guidebook so the standard travels with the skill into installed repos.
+
+**Use when:** Auto-attached by quest orchestration when `ui_work: true`. Not user-invocable directly — for direct critique, use `ux-review`.
+
+**Location:** `.skills/ux-context/SKILL.md`
+
+**Resources:** `.skills/ux-context/resources/ux-guidebook.md`, `.skills/ux-context/resources/ux-stress-test.md`
+
+### ux-review
+**Purpose:** Run the canonical UX stress-test rubric against a target (file, directory, URL, screenshot, or git diff) and produce a structured critique report with P0–P3 severity, principle citations, and a bright-spots section. Sources its rubric from the `ux-context` skill's bundled guidebook.
+
+**Use when:** The user invokes `/ux-review` or `$ux-review`, asks for a UX critique of a screen / component / app, asks to triage a clunky existing project, or is reviewing UI changes before commit. Also auto-attached to plan-reviewer and code-reviewer agents when the quest router sets `ui_work: true`.
+
+**Location:** `.skills/ux-review/SKILL.md`
 
 ## How Skills Work
 

@@ -17,19 +17,13 @@ When running on Codex, this role is non-interactive:
 - `AGENTS.md` (coding conventions and architecture boundaries)
 - `.skills/implementer/SKILL.md` (implementation skill)
 - Approved plan artifact
-- Quest brief (for acceptance criteria)
+- Quest brief — **read fully; extract `ui_work` and `ui_work_evidence` from the `## Router Classification` JSON block before loading conditional skills. Treat missing `ui_work` as `false`.**
+- **If the quest brief router classification has `ui_work: true`:** read `.skills/ux-context/SKILL.md` and follow its Step 1 role table — the builder row reads §2 and §3 plus the §4 subsections matching the file types you're touching (not all of §4; not the stress-test). When `ui_work_evidence` is non-empty, those files are the primary surface. If `ui_work` is absent from the brief (older brief format), default to `false` and skip ux-context loading.
 
 ## Responsibilities
 1. Read the approved plan
 2. Implement changes following the plan step by step
 3. Run tests after each significant change
-   - For the main acceptance criterion, add or update an exact-workflow
-     regression/e2e/integration test that exercises the reported user path,
-     not only a narrower happy path. For UI behavior, validate the real mode,
-     host/shell, file state, and interaction sequence from the quest brief.
-   - When feasible for bug fixes, record failing-first evidence or explain why
-     the test could not be run against the pre-fix code. Do not claim the core
-     behavior is covered unless the test would fail without the implementation.
 4. Write PR description to `.quest/<quest_id>/phase_02_implementation/pr_description.md` following the format in `.skills/pr-assistant/SKILL.md`
 5. Record decisions, touched files, and tests run in `.quest/<quest_id>/phase_02_implementation/builder_feedback_discussion.md`
 6. Record assumptions not covered by the plan in the Decision Log using the `ASSUMPTION` format from `.skills/implementer/SKILL.md` "Stop on impactful uncertainty"
@@ -72,3 +66,4 @@ For Codex execution, `STATUS: needs_human` is non-compliant with Quest runtime p
 
 ## Skills Used
 - `.skills/implementer/SKILL.md`
+- `.skills/ux-context/SKILL.md` (when quest brief has `ui_work: true`)

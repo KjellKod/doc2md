@@ -163,6 +163,68 @@ validate_state_json() {
   fi
 }
 
+# Validate orchestration.json exists and contains valid models for the active mode.
+# This is the per-quest source of truth for models.<role>; see
+# .skills/quest/SKILL.md Step 3 sub-step 8.5 (chooser) and Step 1 sub-step 1a
+# (resume migration) for how the file is produced.
+validate_orchestration_json() {
+  local quest_dir="$1"
+  local orch_file="$quest_dir/orchestration.json"
+
+  if [ ! -f "$orch_file" ]; then
+    fail "orchestration.json not found at $orch_file"
+    return
+  fi
+
+  if ! jq empty "$orch_file" 2>/dev/null; then
+    fail "orchestration.json is not valid JSON"
+    return
+  fi
+
+  local version
+  version=$(jq -r '.version // empty' "$orch_file" 2>/dev/null)
+  if [ "$version" != "1" ]; then
+    fail "orchestration.json version must be 1 (got '$version')"
+    return
+  fi
+
+  if ! jq -e 'has("models") and (.models | type == "object")' "$orch_file" >/dev/null 2>&1; then
+    fail "orchestration.json missing required object: models"
+    return
+  fi
+
+  local source
+  source=$(jq -r '.source // empty' "$orch_file" 2>/dev/null)
+  case "$source" in
+    default|overridden) ;;
+    *) fail "orchestration.json source must be 'default' or 'overridden' (got '$source')"; return ;;
+  esac
+
+  # Required roles depend on quest_mode.
+  # Keep this list in sync with workflow.md dispatch sites
+  # (planner, plan-reviewer-a, plan-reviewer-b, arbiter, builder,
+  # code-reviewer-a, code-reviewer-b, review-arbiter, fixer).
+  local required_roles=("planner" "plan-reviewer-a" "builder" "code-reviewer-a" "fixer")
+  if [ "$QUEST_MODE" != "solo" ]; then
+    required_roles+=("plan-reviewer-b" "arbiter" "code-reviewer-b" "review-arbiter")
+  fi
+
+  local missing_roles=()
+  local role
+  for role in "${required_roles[@]}"; do
+    if ! jq -e --arg r "$role" '.models[$r] | type == "string" and length > 0' "$orch_file" >/dev/null 2>&1; then
+      missing_roles+=("$role")
+    fi
+  done
+
+  if [ "${#missing_roles[@]}" -gt 0 ]; then
+    fail "orchestration.json: required model unset for active mode ($QUEST_MODE): ${missing_roles[*]}"
+    return
+  fi
+
+  pass "orchestration.json valid (source=$source, mode=$QUEST_MODE)"
+}
+
 # Validate the transition is allowed
 # Returns the transition key if valid, empty string if not
 validate_transition() {
@@ -579,25 +641,63 @@ validate_semantic_content() {
         fail "Semantic check: review backlog has $REVIEW_BACKLOG_HUMAN_DECISION_COUNT needs_human_decision item(s); cannot auto-complete"
       fi
 
-      # Safety check: block completion if any reviewer handoff requested fixes
+      # Safety check. Two separable concerns:
+      #  (1) The required reviewer handoffs must always be PRESENT and well-formed
+      #      (valid JSON, status=complete, next null|fixer) — validated in every
+      #      mode/path via read_required_reviewer_handoff.
+      #  (2) Whether a reviewer's next=fixer BLOCKS completion is conditional: it
+      #      is authoritative only when there is no trustworthy review-arbiter
+      #      verdict. Once the review-arbiter has adjudicated (handoff present and
+      #      complete), the arbiter's verdict is authoritative and per-reviewer
+      #      next hints are diagnostic-only (workflow.md Step 5, Q5). Solo mode,
+      #      the dual-empty skip, and the arbiter fail-open path have no trustworthy
+      #      arbiter verdict (the orchestrator deletes/clears handoff_review-arbiter.json
+      #      on fail-open and between rounds), so the per-reviewer next gate applies.
+
+      # (1) Always validate reviewer handoff presence/shape (and capture next).
       local reviewer_a_handoff="$quest_dir/phase_03_review/handoff_code-reviewer-a.json"
       local next_a
       if ! read_required_reviewer_handoff "$reviewer_a_handoff"; then
         return
       fi
       next_a="$REQUIRED_HANDOFF_NEXT"
-      if [ "$next_a" = "fixer" ]; then
-        fail "Semantic check: code-reviewer-a requested fixes (next=fixer) but completion attempted"
-      fi
 
+      local next_b=""
+      local has_reviewer_b=0
       if [ "$QUEST_MODE" != "solo" ]; then
+        has_reviewer_b=1
         local reviewer_b_handoff="$quest_dir/phase_03_review/handoff_code-reviewer-b.json"
-        local next_b
         if ! read_required_reviewer_handoff "$reviewer_b_handoff"; then
           return
         fi
         next_b="$REQUIRED_HANDOFF_NEXT"
-        if [ "$next_b" = "fixer" ]; then
+      fi
+
+      # Is there a trustworthy review-arbiter verdict this round?
+      local arbiter_handoff="$quest_dir/phase_03_review/handoff_review-arbiter.json"
+      local arbiter_trustworthy=0
+      local arbiter_next=""
+      if [ "$QUEST_MODE" != "solo" ] && [ -f "$arbiter_handoff" ] \
+        && jq empty "$arbiter_handoff" 2>/dev/null \
+        && jq -e 'has("status") and .status == "complete" and has("next") and (.next == null or .next == "fixer")' "$arbiter_handoff" >/dev/null 2>&1; then
+        arbiter_trustworthy=1
+        arbiter_next=$(jq -r '.next' "$arbiter_handoff" 2>/dev/null)
+        [ "$arbiter_next" = "null" ] && arbiter_next=""
+      fi
+
+      # (2) next-based gating.
+      if [ "$arbiter_trustworthy" -eq 1 ]; then
+        # Arbiter verdict authoritative; reviewer next hints are diagnostic-only.
+        if [ "$arbiter_next" = "fixer" ]; then
+          fail "Semantic check: review-arbiter requested fixes (next=fixer) but completion attempted"
+        fi
+      else
+        # No trustworthy arbiter verdict (solo / dual-empty skip / fail-open):
+        # the per-reviewer signal applies.
+        if [ "$next_a" = "fixer" ]; then
+          fail "Semantic check: code-reviewer-a requested fixes (next=fixer) but completion attempted"
+        fi
+        if [ "$has_reviewer_b" -eq 1 ] && [ "$next_b" = "fixer" ]; then
           fail "Semantic check: code-reviewer-b requested fixes (next=fixer) but completion attempted"
         fi
       fi
@@ -732,6 +832,11 @@ main() {
     echo "Report this validation failure to the user and STOP."
     exit 1
   fi
+
+  # Per-quest orchestration config check (introduced by the
+  # per-quest-orchestration-override quest). Runs on every transition once
+  # state.json is known-valid.
+  validate_orchestration_json "$quest_dir"
 
   local checkpoint_plan_reviewed=false
   if [ "$used_flag_syntax" = true ] && [ "$target_phase" = "plan_reviewed" ]; then

@@ -23,6 +23,16 @@ This repository uses **layered documentation** for AI agent context management.
 | History | `docs/implementation/history/` | Past decisions, when investigating |
 | Guides | `docs/guides/` | Reference docs, when doing specific tasks |
 
+## Agent Identity
+
+You are **Dexter**. Read `docs/persona.md` for the full voice contract.
+- You write your memoir at `docs/dexter-journal/` — numbered sequentially (001, 002, ...)
+- Your counterpart is **Jean-Claude** (Claude) — he writes his at `docs/journal/`
+- You talk to each other during Quest workflows and when something interesting happens
+- You remember user preferences and adapt over time (see "User Interaction Memory" in persona.md)
+- Before substantial work, scan `docs/diary/` for user interaction insights, then both journals for context
+- After significant sessions, log what you learned in `docs/diary/YYYY-MM-DD-slug.md`
+
 ## Quick Navigation
 
 - **Multi-agent orchestration?** → Use `$quest` (thin wrapper in `.agents/skills/quest/SKILL.md`, which delegates to `.skills/quest/SKILL.md`)
@@ -30,20 +40,12 @@ This repository uses **layered documentation** for AI agent context management.
 - **Building a feature?** → Use `.skills/implementer/` skill
 - **Reviewing an implementation plan?** → Use `.skills/plan-reviewer/` skill
 - **Reviewing code?** → Use `.skills/code-reviewer/` skill
+- **Lock in UX defaults (mobile, gray ramp, density, ratio, accent, destructive actions) for a UI project?** → Use `$sharpen ux-defaults` — walks each decision with a recommended answer attached. Auto-invoked when the workflow runs `$sharpen` during plan presentation on a `ui_work: true` quest.
+- **Review a UI / screen / component for UX?** → Use `$ux-review` command or `.skills/ux-review/` skill
+- **Producing UI work in a quest?** → The orchestrator auto-attaches `.skills/ux-context/` to planner, builder, and fixer when the router classifies the quest as `ui_work: true`
 - **Commit message?** → Use `.skills/git-commit-assistant/` skill
 - **Create or update a PR?** → Use `.skills/pr-assistant/` skill
 - **Understanding the system?** → Start with `docs/architecture/` if present
-
-## Agent Identity
-
-You are **Dexter**. Read `docs/persona.md` for the full voice contract.
-
-- You write your memoir at `docs/dexter-journal/` — numbered sequentially (001, 002, ...)
-- Your counterpart is **Jean-Claude** (Claude) — he writes his at `docs/journal/`
-- You talk to each other during Quest workflows and when something interesting happens
-- You remember user preferences and adapt over time (see "User Interaction Memory" in persona.md)
-- Before substantial work, scan `docs/diary/` for user interaction insights, then both journals for context
-- After significant sessions, log what you learned in `docs/diary/YYYY-MM-DD-slug.md`
 
 ## Quest Discipline (Codex)
 
@@ -66,6 +68,8 @@ This repository uses **skills** for specialized workflows. Skills are automatica
 - **celebrate:** Play quest completion celebration animation with achievements, metrics, and credits
 - **plan-reviewer:** Review implementation plans and PR specifications for test coverage
 - **code-reviewer:** Review actual code for quality, security, and patterns
+- **ux-review:** Run the canonical UX stress-test rubric against a target (file, directory, URL, screenshot, or diff) and produce a P0–P3 critique with principle citations
+- **ux-context:** UX principles primer (auto-attached by quest orchestration when `ui_work: true`); bundles the canonical UX guidebook as a resource so the standard travels with the skill
 - **implementer:** Step-by-step implementation with traceability
 - **git-commit-assistant:** Generate commit messages from staged diff, match repo conventions, append Quest co-author trailer
 - **pr-assistant:** Create and update GitHub PRs in draft mode, generate title/description from branch commits

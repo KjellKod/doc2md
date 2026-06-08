@@ -4,7 +4,7 @@ When starting, say: "Now I understand the Quest." Then proceed directly with the
 
 Follow these steps in order. After each step that modifies state, update `.quest/<id>/state.json`.
 
-**State update helper:** Use `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition <phase> ...` for state mutations instead of hand-editing `state.json`. The `--transition` flag validates the transition against `validate-quest-state.sh` before writing — if validation fails, state.json is not modified. Use `--phase` only for non-transition updates (e.g., setting status without changing phase). Add `--expect-phase <current>` for optimistic locking — the transition is rejected immediately if the on-disk phase doesn't match the expected value, preventing TOCTOU race conditions when multiple agents update state concurrently. **Recommended for all Codex-orchestrated transitions.**
+**State update helper:** Use `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition <phase> ...` for state mutations instead of hand-editing `state.json`. The `--transition` flag validates the transition against `quest_validate-quest-state.sh` before writing — if validation fails, state.json is not modified. Use `--phase` only for non-transition updates (e.g., setting status without changing phase). Add `--expect-phase <current>` for optimistic locking — the transition is rejected immediately if the on-disk phase doesn't match the expected value, preventing TOCTOU race conditions when multiple agents update state concurrently. **Recommended for all Codex-orchestrated transitions.**
 
 ### Defaults (Opinionated)
 
@@ -14,6 +14,19 @@ Quest is opinionated: default to **thorough**, but be **progressive** and avoid 
 - **Progressive exploration:** Start from the context digest + allowlist + plan. Only deep-dive into the repo when the plan/implementation needs it.
 - **Timebox structure discovery:** Avoid full repo inventories. Do a quick top-level scan + targeted `rg` searches instead of browsing directory-by-directory.
 - **If the user wants speed:** Offer to proceed with minimal questions + explicit assumptions (fast intake).
+
+<!-- Heading text below drives four anchor references in this file (#ui-work-propagation-cross-cutting--applies-to-every-phase). If you rename, update the cross-references too. -->
+
+### UI Work Propagation (cross-cutting — applies to every phase)
+
+When the brief's router classification has `ui_work: true`, the dispatched agent auto-loads `.skills/ux-context/SKILL.md` (planner / builder / fixer) or `.skills/ux-review/SKILL.md` (plan-reviewer / code-reviewer). **The orchestrator does not inject UX skills; the agent role files enforce this directly from the brief.** The orchestrator's only job is to preserve the full router JSON in `.quest/<id>/quest_brief.md` so each agent can read it.
+
+When `ui_work_evidence` is non-empty, the named files are the primary surface for planning and review. When empty, the planner uses the inference table at `.skills/ux-context/resources/ux-guidebook.md §4.9`; reviewers run the UX pass against the full diff.
+
+Phase-specific notes (just pointers — the propagation rule itself does not vary):
+- Plan phase: plan-reviewer embeds UX findings inline in markdown using `[N]` format; arbiter synthesizes findings from the markdown.
+- Code review phase: code-reviewer writes canonical findings JSON with `kind: "ux"` and `principle_id`.
+- Fix phase: fixer cites `ux-guidebook§<n>` in commit messages for UX-resolved findings.
 
 ### Codex Availability Probe (Run Once Per Session — Applies to ALL Codex MCP calls)
 
@@ -75,29 +88,16 @@ This rule is global. Individual steps below name the target runtime and artifact
 
 **Role permissions:** Per-role file and bash access is enforced by `.claude/hooks/enforce-allowlist.sh`, which reads `role_permissions` from `.ai/allowlist.json` on every tool invocation. See the allowlist for the current permission grants per role.
 
-### Quest Mode Check
-
-On entry, read `quest_mode` from `.quest/<id>/state.json`. Default to `"workflow"` if missing.
-
-Quest mode determines agent dispatch and iteration limits:
-
-| Aspect              | workflow (default) | solo              |
-|---------------------|-------------------|-------------------|
-| Plan reviewers      | Dual (A + B)      | Single (A only)   |
-| Arbiter             | Yes               | No — Reviewer A's verdict is used directly |
-| Code reviewers      | Dual (A + B)      | Single (A only)   |
-| Max fix iterations  | From allowlist gates (default 3) | min(solo.max_fix_iterations, allowlist gates) |
-
-**Solo verdict remapping:** In solo mode, Reviewer A's handoff says `next: "arbiter"` per the reviewer agent contract. The workflow remaps this: when `quest_mode == "solo"` and Reviewer A says `next: "arbiter"`, treat it as `next: "builder"` (approved). Write the remapped value to state for downstream consumers. If Reviewer A says `next: "planner"`, it means revision needed — no remapping.
-
 ### Cross-Agent Conversation & Journaling Protocol
 
 This section is referenced by Steps 3, 5, and 7. It is **non-blocking** — conversation failure never stops the quest.
+
 Persona-specific prompts, memoir rules, diary rules, and closeout bookkeeping live in `.skills/quest/persona-closeout.md`; keep those details there so workflow merges do not accidentally strip Jean-Claude or Dexter state.
 
 **Availability:** Depends on which runtime is orchestrating:
 - **Claude-led sessions:** Use the cached `codex_available` boolean. If false, fall back to solo reflection.
 - **Codex-led sessions:** Use the cached `claude_bridge_available` boolean. If true, invoke Claude via the bridge for the Jean-Claude side of the conversation. If false, fall back to solo reflection.
+
 Do NOT re-probe in either case.
 
 **When to converse:**
@@ -106,7 +106,6 @@ Do NOT re-probe in either case.
 - At quest completion during Step 7 "Persona closeout"
 
 **How to invoke (depends on orchestrator):**
-
 - **Claude-led sessions:** Use `mcp__codex__codex` for the Dexter side of the conversation.
 - **Codex-led sessions:** Use `python3 scripts/quest_claude_bridge.py` directly for the Jean-Claude side of the conversation. Do not use `quest_claude_runner.py`; it has handoff polling and context-health logging that do not apply to conversations.
 - Use the prompt, access-scope, and write-permission rules in `.skills/quest/persona-closeout.md`.
@@ -122,6 +121,22 @@ Do NOT re-probe in either case.
 At Step 7, follow `.skills/quest/persona-closeout.md` for completion conversation, memoir entries, diary entry, and bookkeeping. Keep this workflow section focused on hook timing, availability, and failure behavior.
 
 **Failure handling:** If the conversation invocation fails, log the failure to `.quest/<id>/logs/conversation.log` and continue. The orchestrator notes the attempt in the diary entry described by `.skills/quest/persona-closeout.md`, but does not retry or block.
+
+### Quest Mode Check
+
+On entry, read `quest_mode` from `.quest/<id>/state.json`. Default to `"workflow"` if missing.
+
+Quest mode determines agent dispatch and iteration limits:
+
+| Aspect              | workflow (default) | solo              |
+|---------------------|-------------------|-------------------|
+| Plan reviewers      | Dual (A + B)      | Single (A only)   |
+| Plan arbiter        | Yes               | No — Reviewer A's verdict is used directly |
+| Code reviewers      | Dual (A + B)      | Single (A only)   |
+| Code-review arbiter | Yes               | No — single reviewer, nothing to adjudicate |
+| Max fix iterations  | From allowlist gates (default 3) | min(solo.max_fix_iterations, allowlist gates) |
+
+**Solo verdict remapping:** In solo mode, Reviewer A's handoff says `next: "arbiter"` per the reviewer agent contract. The workflow remaps this: when `quest_mode == "solo"` and Reviewer A says `next: "arbiter"`, treat it as `next: "builder"` (approved). Write the remapped value to state for downstream consumers. If Reviewer A says `next: "planner"`, it means revision needed — no remapping.
 
 ### Hard Phase Gate (No Pre-Build Source Edits)
 
@@ -161,7 +176,7 @@ After any subagent completes, the orchestrator reads the agent's `handoff.json` 
 5. **Artifact preparation (before every role invocation):**
    Before invoking any role, the orchestrator MUST:
    1. Resolve artifact paths: `expected_artifacts_for_role(quest_dir, phase, agent)`
-   2. Prepare files: `prepare_artifact_files(paths)` — creates parent directories and truncates files
+   2. Prepare files: `prepare_artifact_files(paths)` — creates parent directories and truncates every resolved role-output path. Canonical files that must survive failed attempts MUST NOT be returned by `expected_artifacts_for_role`; use scratch paths and publish after validation instead.
    3. Include in the role prompt:
       ```
       Artifact files have been prepared for you. Overwrite these files directly:
@@ -216,6 +231,7 @@ After any subagent completes, the orchestrator reads the agent's `handoff.json` 
 | Build | Builder | `.quest/<id>/phase_02_implementation/handoff.json` |
 | Code Review | Slot A | `.quest/<id>/phase_03_review/handoff_code-reviewer-a.json` |
 | Code Review | Slot B | `.quest/<id>/phase_03_review/handoff_code-reviewer-b.json` |
+| Code Review | Review Arbiter | `.quest/<id>/phase_03_review/handoff_review-arbiter.json` |
 | Fix | Fixer | `.quest/<id>/phase_03_review/handoff_fixer.json` |
 
 The orchestrator NEVER reads full review files, plan content, or build output for routing decisions. Only handoff.json (and, for Step 3.5, the plan file itself as a bounded exception).
@@ -244,6 +260,18 @@ The orchestrator NEVER reads full review files, plan content, or build output fo
 ```
 <timestamp> | phase=<phase> | agent=<agent_name> | runtime=claude|codex | iter=<plan_iteration or fix_iteration> | handoff_json=found|missing|unparsable | source=handoff_json|text_fallback
 ```
+
+**Findings-compliance dimension (code-review reviewer slots only).** `handoff.json` compliance is one dimension; the per-slot findings JSON gate (Step 5) is a **second** dimension that must be just as auditable. For code-reviewer slot entries (`agent=code-reviewer-a|code-reviewer-b`), append a `findings=` field to the line so every retry, fallback, and block the findings gate produces is logged, not just half-captured:
+```
+<timestamp> | phase=code_review | agent=code-reviewer-<slot> | runtime=claude|codex | iter=<fix_iteration> | handoff_json=found|missing|unparsable | source=handoff_json|text_fallback | findings=found|found_retry|fallback|missing_block
+```
+Findings-compliance vocabulary:
+- `findings=found` — valid canonical findings JSON (including an explicit `[]`) on the slot's first return.
+- `findings=found_retry` — valid only after the "structure the review you already wrote" retry (same reviewer, same runtime).
+- `findings=fallback` — valid only after a cross-runtime fallback for that slot, or (for the merged/adjudicated file in §5) after the arbiter fail-open to deterministic `merge-findings`.
+- `findings=missing_block` — recovery genuinely failed (retry AND cross-runtime fallback exhausted) → routed to the `needs_human_decision` presentation or a hard block.
+
+Omit the `findings=` field for non-reviewer agents; it has no meaning for them.
 
 Use `plan_iteration` for plan/plan_review phases, `fix_iteration` for code_review/fix phases, and `1` for build (single pass).
 Set `runtime` to the runtime actually used for that invocation (`claude` or `codex`).
@@ -345,7 +373,7 @@ gates.max_plan_iterations (default: 4)
    - If matches exist, surface: `N deferred findings touch this code -- pull into scope?`
 
 2. **Invoke Planner** (default Codex `mcp__codex__codex`, Claude runtime fallback):
-   - Read `models.planner` from allowlist.
+   - Read `models.planner` from `.quest/<id>/orchestration.json`.
    - If planner model is Codex, invoke via `mcp__codex__codex` with `sandbox_permissions: "workspace-write"`.
    - If planner model is Claude, invoke through Claude runtime (native `Task(...)` when available, bridge in Codex-led sessions).
    - **Artifact preparation** (per Handoff File Polling §5): Resolve and prepare `plan.md` and `handoff.json` in `.quest/<id>/phase_01_plan/`.
@@ -379,7 +407,7 @@ gates.max_plan_iterations (default: 4)
 
    **If `quest_mode == "workflow"` (default):** Invoke BOTH Plan Reviewers IN PARALLEL.
 
-   Read `models.plan-reviewer-a` and `models.plan-reviewer-b` from allowlist to determine runtime for each slot. If model is Claude, use Claude runtime; if Codex, use `mcp__codex__codex`.
+   Read `models.plan-reviewer-a` and `models.plan-reviewer-b` from `.quest/<id>/orchestration.json` to determine runtime for each slot. If model is Claude, use Claude runtime; if Codex, use `mcp__codex__codex`.
 
    Two different models review independently for model diversity:
    - **Reviewer A**: dispatched by orchestrator → `.quest/<id>/phase_01_plan/review_plan-reviewer-a.md`
@@ -387,7 +415,7 @@ gates.max_plan_iterations (default: 4)
 
    **Artifact preparation** (per Handoff File Polling §5): Before issuing reviewer calls, resolve and prepare artifacts for both Reviewer A (`review_plan-reviewer-a.md`, `handoff_plan-reviewer-a.json`) and Reviewer B (`review_plan-reviewer-b.md`, `handoff_plan-reviewer-b.json`) in `.quest/<id>/phase_01_plan/`.
 
-   **Slot A** (runtime per `models.plan-reviewer-a`; full and fast modes):
+   **Slot A** (runtime per `models.plan-reviewer-a` from `.quest/<id>/orchestration.json`; full and fast modes):
    **Full mode** (default for plan review):
    ```
    Task(
@@ -437,7 +465,7 @@ gates.max_plan_iterations (default: 4)
    **Full mode** (default for plan review):
    ```
    mcp__codex__codex(
-     model: <models.plan-reviewer-b from allowlist>,
+     model: <models.plan-reviewer-b from .quest/<id>/orchestration.json>,
      sandbox_permissions: "workspace-write",
      prompt: "You are Plan Reviewer B.
      Non-interactive rule: do not ask questions and do not return STATUS: needs_human. If details are missing, make explicit assumptions and continue.
@@ -461,7 +489,7 @@ gates.max_plan_iterations (default: 4)
    **Fast mode** (only if `review_mode: fast`):
    ```
    mcp__codex__codex(
-     model: <models.plan-reviewer-b from allowlist>,
+     model: <models.plan-reviewer-b from .quest/<id>/orchestration.json>,
      sandbox_permissions: "workspace-write",
      prompt: "You are Plan Reviewer B.
      Non-interactive rule: do not ask questions and do not return STATUS: needs_human. If details are missing, make explicit assumptions and continue.
@@ -508,7 +536,7 @@ gates.max_plan_iterations (default: 4)
    - Do not require `review_backlog.json` for the solo transition path.
    - Log: `Plan review: arbiter=skipped (solo mode, using reviewer-a verdict)` to `.quest/<id>/logs/parallelism.log`
 
-   **If `quest_mode == "workflow"` (default):** Read `models.arbiter` from allowlist. Invoke Arbiter through the corresponding runtime:
+   **If `quest_mode == "workflow"` (default):** Read `models.arbiter` from `.quest/<id>/orchestration.json`. Invoke Arbiter through the corresponding runtime:
    - Contract-hardening rollout order (required when implementing this behavior): land workflow + helper CLI (`build-backlog --phase`) + runtime `.next` artifact wiring first; trim arbiter output contract second. This prevents transient mismatches during migration.
    - Before each arbiter attempt, remove stale scratch artifacts:
      - `.quest/<id>/phase_01_plan/review_findings.json.next`
@@ -579,6 +607,8 @@ gates.max_plan_iterations (default: 4)
      - If `auto_approve_phases.plan_refinement` is false: Ask user to approve refinement
      - Otherwise: Loop back to step 0 (stale handoff/scratch cleanup)
 
+- **UI work:** see [UI Work Propagation](#ui-work-propagation-cross-cutting--applies-to-every-phase) at the top of this file — the rule is uniform across phases.
+
 ### Step 3.5: Interactive Plan Presentation (MANDATORY HUMAN GATE)
 
 After plan approval, present the plan interactively before proceeding to build.
@@ -619,24 +649,31 @@ After plan approval, present the plan interactively before proceeding to build.
      • ...
 
    Full plan: .quest/<id>/phase_01_plan/plan.md
-   Arbiter verdict: <NEXT line from arbiter handoff>
+   Verdict: <workflow mode: NEXT line from arbiter handoff; solo mode: Reviewer A next after solo remapping>
    ═══════════════════════════════════════════
    ```
-   Target ~150–300 words across the five sections combined. Always print the header bar, the artifact path footer, and the arbiter NEXT line. Always print the closing bar last.
+   Target ~150–300 words across the five sections combined. Always print the header bar and the artifact path footer. In workflow mode, print the arbiter NEXT line. In solo mode, print Reviewer A's next value after solo remapping. Always print the closing bar last.
 
 **2. Offer the Plan Presentation Menu:**
-   After the executive summary, ask exactly:
+   After the executive summary, ask exactly. Option 2's wording depends on whether the plan actually contains a `## UX Defaults` section (not just the brief's `ui_work` flag — render-layer guards may have suppressed emission on a false-positive). If the plan has the section, use the UX-aware wording; otherwise the generic wording.
    ```
    How would you like to proceed?
      1. Walk me through it phase by phase
      2. Sharpen the plan with me — I'll challenge assumptions and tradeoffs (Q&A, ~5–10 questions)
+   ```
+   When the plan contains a `## UX Defaults` section, substitute option 2 wording with:
+   ```
+     2. Sharpen UX defaults (mobile, gray ramp, density, ratio, accent, destructive actions) and the plan with me
+   ```
+   Then add option 3:
+   ```
      3. Looks good, proceed to build
    ```
    STOP and wait for the human to respond. Do not assume a default.
 
 **3. Handle Menu Response:**
    - **Option 1 (walkthrough)** — also matches `walk`, `walkthrough`, `phases`, `detail`, `detailed`, `yes`: Continue to substep 4 (Phase Extraction). After the walkthrough completes (substep 7's last-phase branch), return here and re-show the menu **with option 1 removed** (only options 2 and 3 remain). Repeat handling.
-   - **Option 2 (sharpen)** — also matches `sharpen`, `grill`, `stress`, `challenge`: Invoke the `/sharpen` skill (`.skills/sharpen/SKILL.md`) against `.quest/<id>/phase_01_plan/plan.md`. When sharpen completes, read its structured exit summary (Resolved / Open / Next):
+   - **Option 2 (sharpen)** — also matches `sharpen`, `grill`, `stress`, `challenge`: Invoke the `/sharpen` skill (`.skills/sharpen/SKILL.md`). **When the plan contains a `## UX Defaults` section, pass `ux-defaults` as the argument so sharpen runs its six-question UX interview against the plan; otherwise invoke sharpen against `.quest/<id>/phase_01_plan/plan.md` for a generic sharpen pass.** When sharpen completes, read its structured exit summary (Resolved / Open / Next):
      - If the **Next** field says `no changes needed` (or equivalent — no revisions listed): Transition state atomically `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition presentation_complete --status complete --expect-phase presenting` — if this fails, report the validation error to the user and STOP. Do NOT modify state.json manually. Then proceed to Step 4. **Sharpen completion is terminal — do not re-show the menu.**
      - If the **Next** field lists revisions (e.g. `re-plan with these revisions: …`): Jump to substep 8 (Change Handling) using the **sharpen entry path**. Substep 8(a) is skipped; substep 8(b) writes the sharpen-format block to user_feedback.md.
    - **Option 3 (proceed)** — also matches `proceed`, `build`, `looks good`, `ship it`, `no`, `n`, `skip`: Transition state atomically `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition presentation_complete --status complete --expect-phase presenting` — if this fails, report the validation error to the user and STOP. Do NOT modify state.json manually. Then proceed to Step 4 (Build Phase).
@@ -742,7 +779,7 @@ After plan approval, present the plan interactively before proceeding to build.
 1. **Atomic transition:** `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition building --status in_progress --last-role builder_agent --expect-phase presentation_complete` — if this fails, report the validation error to the user and STOP. Do NOT modify state.json manually.
 
 2. **Invoke Builder** (default Codex `mcp__codex__codex`, Claude runtime fallback):
-   - Read `models.builder` from allowlist.
+   - Read `models.builder` from `.quest/<id>/orchestration.json`.
    - If builder model is Codex, invoke via `mcp__codex__codex` with `sandbox_permissions: "workspace-write"`.
    - If builder model is Claude, invoke through Claude runtime (native `Task(...)` when available, bridge in Codex-led sessions).
    - Run the builder from `source_workspace_root`. If this quest uses a separate worktree, source changes happen there while `.quest/<id>/...` artifacts still point at the original repo root.
@@ -779,6 +816,8 @@ After plan approval, present the plan interactively before proceeding to build.
 
 4. Proceed to Step 5
 
+- **UI work:** see [UI Work Propagation](#ui-work-propagation-cross-cutting--applies-to-every-phase) at the top of this file — the rule is uniform across phases.
+
 ### Step 5: Review Phase
 
 1. **Update state:** `status: in_progress`, `last_role: code_review_agent`
@@ -811,7 +850,7 @@ After plan approval, present the plan interactively before proceeding to build.
 
    **If `quest_mode == "workflow"` (default):** Invoke BOTH Code Reviewers IN PARALLEL.
 
-   Read `models.code-reviewer-a` and `models.code-reviewer-b` from allowlist to determine runtime for each slot. If model is Claude, use Claude runtime; if Codex, use `mcp__codex__codex`.
+   Read `models.code-reviewer-a` and `models.code-reviewer-b` from `.quest/<id>/orchestration.json` to determine runtime for each slot. If model is Claude, use Claude runtime; if Codex, use `mcp__codex__codex`.
 
    Two different models review independently for model diversity:
    - **Reviewer A**: dispatched by orchestrator → `.quest/<id>/phase_03_review/review_code-reviewer-a.md`
@@ -822,7 +861,7 @@ After plan approval, present the plan interactively before proceeding to build.
    - Reviewer B: `review_code-reviewer-b.md`, `review_findings_code-reviewer-b.json`, `handoff_code-reviewer-b.json`
    in `.quest/<id>/phase_03_review/` (Reviewer B only in workflow mode).
 
-   **Slot A** (runtime per `models.code-reviewer-a`; full and fast modes):
+   **Slot A** (runtime per `models.code-reviewer-a` from `.quest/<id>/orchestration.json`; full and fast modes):
    **Full mode**:
    ```
    Task(
@@ -887,7 +926,7 @@ After plan approval, present the plan interactively before proceeding to build.
    **Full mode**:
    ```
    mcp__codex__codex(
-     model: <models.code-reviewer-b from allowlist>,
+     model: <models.code-reviewer-b from .quest/<id>/orchestration.json>,
      sandbox_permissions: "workspace-write",
      prompt: "You are Code Reviewer B.
      Non-interactive rule: do not ask questions and do not return STATUS: needs_human. If details are missing, make explicit assumptions and continue.
@@ -919,7 +958,7 @@ After plan approval, present the plan interactively before proceeding to build.
    **Fast mode**:
    ```
    mcp__codex__codex(
-     model: <models.code-reviewer-b from allowlist>,
+     model: <models.code-reviewer-b from .quest/<id>/orchestration.json>,
      sandbox_permissions: "workspace-write",
      prompt: "You are Code Reviewer B.
      Non-interactive rule: do not ask questions and do not return STATUS: needs_human. If details are missing, make explicit assumptions and continue.
@@ -957,6 +996,17 @@ After plan approval, present the plan interactively before proceeding to build.
      - Claude slot follows the Claude-runtime precedence: native task may use direct text fallback; bridge path applies Tier B (permission escalation via `--add-dir`) for write-boundary/permission failures, then Tier C (retry once for timeout/malformed output, block immediately on auth/CLI failures).
      - Codex slot: classify failure via `classify_failure_kind` logic. Tier B (write-boundary/permission): retry with `sandbox_permissions: "danger-full-access"` only with explicit user approval or an equivalent persisted approval; otherwise stop and surface the approval need. Tier C (timeout, model, or Tier B exhausted): timeout → Claude runtime fallback immediately; other failures → retry once with strict non-interactive reminder, then Claude runtime fallback.
 
+   **Per-slot findings gate (fail closed on the contract, fail open on the value):**
+   The canonical findings JSON is a hard contract like `handoff.json` — always required, validated per-slot the moment a reviewer returns, never silently repaired by the orchestrator. After reading a slot's `handoff.json` and confirming its review markdown exists, immediately validate **that slot's** findings file (do NOT wait for the merged/adjudicated file in §5):
+   - `python3 scripts/quest_review_intelligence.py validate-findings --input .quest/<id>/phase_03_review/review_findings_code-reviewer-<slot>.json`
+   - Key the gate off the **exit code and structured `{"ok": ..., "count": ..., "errors": [...]}` payload** — never parse a traceback. A missing, empty (zero-byte), unparsable, or wrong-shape findings file all return `ok: false` + non-zero exit and are treated as a **non-compliant return** for that slot. An explicit `[]` (clean review) is valid and passes.
+   - On a non-compliant slot, route it through the existing **three-tier fallback ladder** (Handoff File Polling §6) with two findings-specific refinements:
+     - **The retry is "structure the review you already wrote," not a fresh review.** If a valid prose review exists for the slot (`review_code-reviewer-<slot>.md` is present and non-empty), re-invoke the **same reviewer** with: *"You already wrote `review_code-reviewer-<slot>.md`. Emit the structured findings JSON from it into `review_findings_code-reviewer-<slot>.json` — `[]` if there are none."* The reviewer transcribes its own prose. The orchestrator MUST NOT hand-author or invent the findings file.
+     - **Cross-runtime fallback applies before any block.** A Codex findings failure falls back to a Claude reviewer for that slot (and vice-versa) per the ladder's Tier C, before the step is ever considered blocked. A true block therefore follows both a retry *and* a different model.
+   - **When recovery genuinely fails** (the structure-from-prose retry *and* the cross-runtime fallback both still yield no valid findings), do not silently drop the slot. Reuse the `needs_human_decision` presentation (Step 5 §6 below) with the prose review attached and the other slot's valid findings surfaced, letting the human choose: proceed with the valid slot and attach the prose as an unstructured backlog note; triage the prose with the human now (explicit, logged as degraded); re-run the slot; or pause. A hard `blocked` state remains only for "user chose pause" or the truly nothing-salvageable case (both slots failed AND no prose). Governing rule: **fail closed on the contract, fail open on the value** — never fabricate structured data, but never discard the human-readable review the reviewer actually wrote.
+   - **Findings-compliance logging:** record the per-slot outcome in `context_health.log` using the findings-compliance vocabulary (see the Context health logging format): `findings=found` (valid on first return), `findings=found_retry` (valid after the structure-from-prose retry), `findings=fallback` (valid only after cross-runtime fallback, or after the arbiter fail-open path in §5), or `findings=missing_block` (recovery genuinely failed → human decision / block).
+   - **Solo mode:** only Reviewer A ran; validate Reviewer A's slot file with the same gate. There is no Reviewer B slot to validate.
+
    **Parallelism check (orchestrator-timed):**
    1. Create `.quest/<id>/logs/` directory if it doesn't exist
    2. Append a line to `.quest/<id>/logs/parallelism.log`:
@@ -965,13 +1015,60 @@ After plan approval, present the plan interactively before proceeding to build.
       ```
       The wall-clock duration covers both agents. Since both calls are issued in the same message, they run concurrently by construction. Agent self-reported timestamps are unreliable and must NOT be used for parallelism verification.
 
-5. **Merge canonical findings and build decisions backlog:**
-   - Merge per-slot canonical findings into phase-level findings:
-     - Workflow mode:
-       - `python3 scripts/quest_review_intelligence.py merge-findings --inputs .quest/<id>/phase_03_review/review_findings_code-reviewer-a.json .quest/<id>/phase_03_review/review_findings_code-reviewer-b.json --output .quest/<id>/phase_03_review/review_findings.json`
-     - Solo mode:
-       - `python3 scripts/quest_review_intelligence.py merge-findings --inputs .quest/<id>/phase_03_review/review_findings_code-reviewer-a.json --output .quest/<id>/phase_03_review/review_findings.json`
-   - Validate merged findings:
+5. **Adjudicate (workflow) or merge (solo), then build decisions backlog:**
+
+   Both per-slot findings files have already passed the **per-slot findings gate** (§4). This stage produces the phase-level canonical `review_findings.json`, then runs `validate-findings` + `build-backlog` unchanged.
+
+   **Workflow mode — review-arbiter REPLACES `merge-findings`:** the arbiter judges each finding's truth against the diff; deterministic `build-backlog` still classifies the survivors.
+   - **Skip the arbiter ONLY when both reviewers returned empty (`[]` / `[]`)** — use the deterministic `merge-findings` passthrough below (it yields `[]`). Otherwise (any non-empty slot), **always run the arbiter**, including the asymmetric case (A clean, B found N) that is the primary reason this role exists. Do not try to detect "identical non-empty findings".
+   - **Arbiter invocation** (mirrors the plan-arbiter `.next` staging pattern in Step 3 §5):
+     - Read `models.review-arbiter` from `.quest/<id>/orchestration.json`; invoke through the corresponding runtime.
+     - Before each attempt, remove stale scratch artifacts: `.quest/<id>/phase_03_review/review_findings.json.next`, `.quest/<id>/phase_03_review/review_backlog.json.next`.
+     - **Artifact preparation** (per Handoff File Polling §5): prepare `review_arbiter_verdict.md.next`, `review_findings.json.next`, and `handoff_review-arbiter.json` in `.quest/<id>/phase_03_review/`. The canonical `review_findings.json` / `review_arbiter_verdict.md` are NOT prepared or truncated; publish the `.next` files only after validation succeeds.
+     - **Provide the actual diff as evidence (REQUIRED).** The review-arbiter has no Bash, so the orchestrator MUST write the patch the reviewers saw to `.quest/<id>/phase_03_review/review_diff.patch` and pass that path in the prompt:
+       - If `vcs_available == true`: write the patch to the **absolute** quest path (the redirect target is not affected by `git -C`), e.g. `git -C <source_workspace_root> diff > <repo_root_abs>/.quest/<id>/phase_03_review/review_diff.patch` — same diff scope the reviewers were given; append any untracked new files.
+       - If `vcs_available == false`: skip the patch file and instead tell the arbiter to read the changed source files directly (same no-VCS scope the reviewers used).
+       - Do not pass only `git diff --stat`; the stat alone is insufficient evidence for adjudication.
+     - Prompt (paths only, no embedded artifact content):
+       ```
+       You are the Review Arbiter Agent.
+
+       Read your instructions: .skills/quest/agents/review-arbiter.md
+
+       Quest brief: .quest/<id>/quest_brief.md
+       Plan: .quest/<id>/phase_01_plan/plan.md
+       Reviewer A findings: .quest/<id>/phase_03_review/review_findings_code-reviewer-a.json
+       Reviewer B findings: .quest/<id>/phase_03_review/review_findings_code-reviewer-b.json
+       Full diff/patch (judge findings against this): .quest/<id>/phase_03_review/review_diff.patch
+         (no-VCS: read the changed source files directly — see <file list>)
+       Changed files: <file list>
+       Diff summary: <git diff --stat>
+
+       Artifact files have been prepared for you. Overwrite these files directly:
+       - .quest/<id>/phase_03_review/review_arbiter_verdict.md.next
+       - .quest/<id>/phase_03_review/review_findings.json.next
+       - .quest/<id>/phase_03_review/handoff_review-arbiter.json
+       Do not create Quest artifacts via shell redirection, heredocs, or echo.
+       End with: ---HANDOFF--- STATUS/ARTIFACTS/NEXT/SUMMARY
+       NEXT: fixer (issues remain) or null (nothing actionable survived)
+       ```
+     - Wait for the runtime; read `.quest/<id>/phase_03_review/handoff_review-arbiter.json`; apply Handoff File Polling precedence and the three-tier ladder. Log a `context_health.log` line for `(phase=code_review, agent=review-arbiter)`.
+     - Validate the arbiter's scratch findings before any canonical publish:
+       - `python3 scripts/quest_review_intelligence.py validate-findings --input .quest/<id>/phase_03_review/review_findings.json.next`
+     - **Arbiter failure → fail open to deterministic merge (Q4):** if the arbiter fails (block, missing/unparsable handoff after the ladder, or `validate-findings` on `.next` still fails) after **one retry / cross-runtime attempt**, FALL OPEN to the deterministic `merge-findings` union below. **Delete `handoff_review-arbiter.json`** so the Step 6 completion safety check does not mistake a failed-open run's leftover `complete` handoff for a trustworthy arbiter verdict (the canonical findings now come from the deterministic merge, so the per-reviewer signal must apply). Log the degradation and surface a one-line degraded note to the user (`Review arbiter unavailable — fell back to deterministic merge-findings union for this round`), record `findings=fallback` for the phase in `context_health.log`. The fallback still runs `validate-findings` + `build-backlog` afterward (fail open on the value, NOT around the gates).
+     - On arbiter success: publish atomically only after `validate-findings` on `.next` passes:
+       - `os.replace(".quest/<id>/phase_03_review/review_arbiter_verdict.md.next", ".quest/<id>/phase_03_review/review_arbiter_verdict.md")`
+       - `os.replace(".quest/<id>/phase_03_review/review_findings.json.next", ".quest/<id>/phase_03_review/review_findings.json")`
+     - **Auto-approve:** `auto_approve_phases.code_review` is `true` by default. When approved-without-human-response, **communicate the arbiter's A-vs-B coverage summary (agreed / A-only / B-only / dismissed-with-reason) and continue** — do not block waiting. The human-gated decision point applies only when auto-approve is off or a `needs_human_decision` item exists.
+
+   **Deterministic merge passthrough (solo mode, dual-empty skip, or arbiter fail-open):**
+   - Workflow mode (dual-empty skip OR arbiter fail-open):
+     - `python3 scripts/quest_review_intelligence.py merge-findings --inputs .quest/<id>/phase_03_review/review_findings_code-reviewer-a.json .quest/<id>/phase_03_review/review_findings_code-reviewer-b.json --output .quest/<id>/phase_03_review/review_findings.json`
+   - Solo mode (single reviewer = nothing to adjudicate; the arbiter is skipped, mirroring plan-phase solo):
+     - `python3 scripts/quest_review_intelligence.py merge-findings --inputs .quest/<id>/phase_03_review/review_findings_code-reviewer-a.json --output .quest/<id>/phase_03_review/review_findings.json`
+
+   **Then, unchanged for all paths (arbiter publish, dual-empty skip, solo, or fail-open):**
+   - Validate the canonical phase-level findings:
      - `python3 scripts/quest_review_intelligence.py validate-findings --input .quest/<id>/phase_03_review/review_findings.json`
    - Build canonical review backlog (decision stage):
      - `python3 scripts/quest_review_intelligence.py build-backlog --findings .quest/<id>/phase_03_review/review_findings.json --output .quest/<id>/phase_03_review/review_backlog.json`
@@ -980,9 +1077,10 @@ After plan approval, present the plan interactively before proceeding to build.
      - `verify_first`
    - Deferred backlog handling:
      - For entries with decision `defer`, append to `.quest/backlog/deferred_findings.jsonl` with lineage fields using `append-deferred`
+     - (The review-arbiter additionally persists dismissed findings + rationale to a separate `.quest/backlog/dismissed_findings.jsonl` log — NOT the deferred reservoir, so dismissed findings are never rescanned as deferred work; see `review-arbiter.md`.)
 
 6. **Route after decisions stage:**
-   - **Safety check:** If any reviewer handoff has `next: "fixer"` but the canonical backlog has no `fix_now`/`verify_first` items, warn the user: "Reviewer flagged issues but canonical backlog is empty — review findings may be incomplete." Ask the user how to proceed (re-review or manually inspect and repair the findings/handoffs). Do not auto-transition to fixing with an empty actionable backlog, and do not offer `accept as-is` unless an explicit waiver path is added to the validator contract.
+   - **Safety check (re-anchored to the arbiter verdict — Q5):** In workflow mode, when the arbiter **ran and produced a trustworthy verdict**, the **arbiter's** verdict is the authoritative signal: if the arbiter handoff has `next: "fixer"` but the canonical backlog has no `fix_now`/`verify_first` items, warn the user: "Review arbiter flagged issues but canonical backlog is empty — review findings may be incomplete." In that case per-reviewer `next` hints are **diagnostic-only**. **When there is no trustworthy arbiter verdict — solo mode (no review-arbiter role), the workflow dual-empty fast path (`[]` / `[]`), OR the arbiter fail-open path (fell back to deterministic `merge-findings`) — the per-reviewer check applies instead:** if any reviewer handoff has `next: "fixer"` but the backlog has no actionable items, raise the same warning against the per-reviewer signal (the fail-open path has no arbiter verdict to anchor on, so reviewer hints must NOT be treated as diagnostic-only there). In all cases ask the user how to proceed (re-review or manually inspect and repair the findings/handoffs). Do not auto-transition to fixing with an empty actionable backlog, and do not offer `accept as-is` unless an explicit waiver path is added to the validator contract.
    - If `review_backlog.json` contains any `fix_now` or `verify_first` item:
      - Transition atomically: `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition fixing --status in_progress --expect-phase reviewing`
      - Proceed to Step 6
@@ -992,6 +1090,8 @@ After plan approval, present the plan interactively before proceeding to build.
    - If no actionable items and no `needs_human_decision` items remain:
      - Transition atomically: `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition complete --status complete --expect-phase reviewing`
      - Proceed to Step 7
+
+- **UI work:** see [UI Work Propagation](#ui-work-propagation-cross-cutting--applies-to-every-phase) at the top of this file — the rule is uniform across phases.
 
 ### Step 6: Fix Phase
 
@@ -1010,7 +1110,7 @@ After plan approval, present the plan interactively before proceeding to build.
 1. **Update state:** `phase: fixing`, `fix_iteration += 1`, `last_role: fixer_agent`
 
 2. **Invoke Fixer** (default Codex `mcp__codex__codex`, Claude runtime fallback):
-   - Read `models.fixer` from allowlist.
+   - Read `models.fixer` from `.quest/<id>/orchestration.json`.
    - If fixer model is Codex, invoke via `mcp__codex__codex` with `sandbox_permissions: "workspace-write"`.
    - If fixer model is Claude, invoke through Claude runtime (native `Task(...)` when available, bridge in Codex-led sessions).
    - Run the fixer from `source_workspace_root`. If this quest uses a separate worktree, source fixes happen there while `.quest/<id>/...` artifacts remain in the original repo root.
@@ -1047,7 +1147,7 @@ After plan approval, present the plan interactively before proceeding to build.
      - Only ask the user questions if the Claude runtime fallback returns `needs_human`.
    - If the final selected attempt still has missing/unparsable handoff.json, parse text handoff from response as last-resort compatibility fallback.
 
-3. **Clear stale handoff files:** Delete any existing `handoff_code-reviewer-a.json` (and `handoff_code-reviewer-b.json` if workflow mode) in `.quest/<id>/phase_03_review/` to prevent stale data from the previous review iteration being read when code reviewers are re-invoked.
+3. **Clear stale handoff files:** Delete any existing `handoff_code-reviewer-a.json` (and `handoff_code-reviewer-b.json` and `handoff_review-arbiter.json` if workflow mode) in `.quest/<id>/phase_03_review/` to prevent stale data from the previous review iteration being read when the reviewers/arbiter are re-invoked. (Clearing the arbiter handoff also stops a prior round's `complete` verdict from being mistaken for this round's when the arbiter is skipped or falls open.)
 
 4. **Atomic transition:** `python3 scripts/quest_state.py --quest-dir .quest/<id> --transition reviewing --status in_progress --expect-phase fixing` — if fails, report to user and STOP. Do NOT modify state.json manually.
 
@@ -1066,18 +1166,29 @@ After plan approval, present the plan interactively before proceeding to build.
        - Append `defer` entries to `.quest/backlog/deferred_findings.jsonl`
        - Warn user, ask to proceed manually or accept remaining items as deferred debt
 
+- **UI work:** see [UI Work Propagation](#ui-work-propagation-cross-cutting--applies-to-every-phase) at the top of this file — the rule is uniform across phases.
+
 ### Step 7: Complete
 
 1. **Update state:** `phase: complete`, `status: complete`
 
-2. **Ask user before celebrating:**
-   - Prompt: "Quest is complete! What would you like to do?"
-     - **Celebrate!** — proceed to step 3 (run the celebration animation)
-     - **Skip celebration** — go straight to step 4 (journal + summary, no animation)
-   - In non-interactive / CI environments, skip the prompt and run the celebration automatically
+2. **Celebration behavior (read `quest_completion.on_complete` from allowlist; default `celebrate`):**
+   `on_complete` controls **only the prompt and the animation**. Every path
+   still continues through step 4 onward (journal + summary + archive) — the
+   quest always journals, summarizes, and archives regardless of this setting.
+   - **`celebrate`** (default): skip the prompt and proceed directly to step 3 (run the celebration animation), then step 4 (journal + summary + archive).
+   - **`ask`**: Prompt "Quest is complete! What would you like to do?"
+     - **Celebrate!** — proceed to step 3 (run the celebration animation), then step 4
+     - **Skip celebration** — go straight to step 4 (journal + summary + archive, no animation)
+   - **`archive_silent`**: skip the prompt and skip the animation; go straight to step 4 (journal + summary + archive). No celebration.
+   - In non-interactive / CI environments: honor `archive_silent` (no animation); for `ask` or `celebrate`, run the celebration automatically. All paths still archive.
 
 3. **Run celebration (skill-first):**
-   - Invoke the `celebrate` skill and provide the quest ID/path so it reads artifacts and renders rich markdown directly
+   - Invoke the `celebrate` skill and provide the quest ID/path so it reads artifacts and renders rich markdown directly in the assistant response
+   - The user-visible celebration is required whenever `on_complete` is `celebrate`, the user chooses `Celebrate!`, or the user explicitly asks to celebrate
+   - Do not treat a generated journal entry, persisted celebration markdown file, command output, or artifact link as a substitute for showing the celebration in chat
+   - Render the celebration before final archive-only status, PR creation, PR shepherding, cleanup, or any other requested post-Quest follow-through
+   - If `archive_silent` is configured or the user explicitly chooses `Skip celebration`, say the celebration was intentionally skipped
    - Do NOT call the Python celebration script from this step in interactive agent flows
    - Optional fallback (non-interactive/runtime-only): `python3 scripts/quest_celebrate/celebrate.py --quest-dir .quest/<id> --style epic || true`
    - This step is fire-and-forget: if celebration fails, quest completion continues
@@ -1115,6 +1226,7 @@ After plan approval, present the plan interactively before proceeding to build.
      - Builder = `(phase=build, agent=builder)`
      - Code Review Slot A = `(phase=code_review, agent=code-reviewer-a)`
      - Code Review Slot B = `(phase=code_review, agent=code-reviewer-b)`
+     - Review Arbiter = `(phase=code_review, agent=review-arbiter)`
      - Fixer = `(phase=fix, agent=fixer)`
    - For each role instance, report `X/Y` where:
      - `Y` = total observed invocations for that exact `(phase, agent)` pair in the log
@@ -1135,6 +1247,7 @@ After plan approval, present the plan interactively before proceeding to build.
        Builder (<runtime>): <X>/<Y> (<percentage or n/a>)
        Code Review Slot A (<runtime>): <X>/<Y> (<percentage or n/a>)
        Code Review Slot B (<runtime>): <X>/<Y> (<percentage or n/a>)
+       Review Arbiter (<runtime>): <X>/<Y> (<percentage or n/a>)
        Fixer (<runtime>): <X>/<Y> (<percentage or n/a>)
      ```
    - For codex-only quests, explicitly show `Claude agents: 0/0 (n/a)` if no Claude entries exist.
@@ -1147,13 +1260,7 @@ After plan approval, present the plan interactively before proceeding to build.
    - If compliance is <50%:
       "Low compliance -- discard approach is not effective. Recommend upgrading to run_in_background: true."
 
-6. **Persona closeout** (required before archive unless explicitly waived):
-    - Read `.skills/quest/persona-closeout.md`.
-    - Run the completion conversation hook described there when available, or log the fallback/skip to `.quest/<id>/logs/conversation.log`.
-    - Preserve Jean-Claude/Dexter memory according to that addendum: write or intentionally waive memoir/diary artifacts, and update matching indexes when entries are written.
-    - Keep this step non-blocking for conversation failures, but do not silently drop persona memory. If a memoir or diary artifact is intentionally skipped, record the waiver reason in `.quest/<id>/logs/conversation.log` before archiving.
-
-7. **Create quest journal entry and archive** (automated via script):
+6. **Create quest journal entry and archive** (automated via script):
     ```bash
     python3 scripts/quest_complete.py --quest-dir .quest/<id>
     ```
@@ -1174,12 +1281,12 @@ After plan approval, present the plan interactively before proceeding to build.
       - Remove the idea file (e.g., `ideas/my-idea.md`)
       - Add a `done` row to `ideas/README.md` index: `| done | ~~idea-slug~~ | One-line pitch. See [journal](../docs/quest-journal/slug_date.md). |`
 
-8. **Verify archival:**
+7. **Verify archival:**
     - Confirm `.quest/archive/<id>/` exists
     - Confirm `.quest/<id>/` no longer exists
     - `.quest/` root should only contain active quests, `archive/`, and `audit.log`
 
-9. **Next steps suggestion:**
+8. **Next steps suggestion:**
     ```
     If vcs_available: Review changes with git diff; commit with git add -p && git commit
     If no VCS: Review files directly and initialize git only if you want versioned follow-up work
@@ -1187,12 +1294,12 @@ After plan approval, present the plan interactively before proceeding to build.
     - **Draft PR:** use `.skills/pr-assistant/SKILL.md` (preserve any existing bot-managed PR sections when editing PR body)
     - **PR review gate:** post an explicit review comment on the draft/ready PR, then merge only after NIT filtering using `AGENTS.md` rubric (readability-first, KISS/YAGNI/SRP/DRY, simple robust over complex elegance, avoid mocking-hell)
 
-10. **Context reset suggestion:**
+9. **Context reset suggestion:**
     ```
     Quest complete. Consider running /clear before your next quest to reset context.
     ```
 
-11. **Check for Quest updates:**
+10. **Check for Quest updates:**
    After the quest completes, check if a Quest update is available (if enough time has passed since the last check).
 
    **Configuration:**
@@ -1306,9 +1413,10 @@ If a Claude role returns `STATUS: needs_human`:
 | Builder | `models.builder` | `gpt-5.5` | Codex or Claude runtime per config |
 | Code Reviewer A | `models.code-reviewer-a` | `claude` | Claude runtime or Codex per config |
 | Code Reviewer B | `models.code-reviewer-b` | `gpt-5.5` | Claude runtime or Codex per config |
+| Review Arbiter | `models.review-arbiter` | `claude` | Claude runtime or Codex per config |
 | Fixer | `models.fixer` | `gpt-5.5` | Codex or Claude runtime per config |
 
-All role-to-model assignments are read from `.ai/allowlist.json` → `models`. The defaults above apply when a key is missing. **Model diversity** in review phases gives independent perspectives from different model families. If roles are executed through Codex-backed tools, runtime attribution in `context_health.log` must record `codex`.
+All role-to-model assignments are read from `.quest/<id>/orchestration.json` → `models` for the active quest. `.ai/allowlist.json` → `models` is consulted only at quest startup as the default source the chooser pre-fills; see `.skills/quest/SKILL.md` Step 3 sub-step 8.5 and Step 1 sub-step 1a. The defaults above are startup defaults only: once `orchestration.json` exists, dispatch must stop on missing active-role model keys or active-role model keys that are not non-empty strings instead of falling back. **Model diversity** in review phases gives independent perspectives from different model families. If roles are executed through Codex-backed tools, runtime attribution in `context_health.log` must record `codex`.
 
 ### Codex MCP Prompt Pattern
 
@@ -1367,7 +1475,7 @@ Codex MCP calls can be slower when each run must:
 **Example minimal prompt:**
 ```
 mcp__codex__codex(
-  model: <models.plan-reviewer-b from allowlist>,
+  model: <models.plan-reviewer-b from .quest/<id>/orchestration.json>,
   prompt: "Review .quest/<id>/phase_01_plan/plan.md
 
   List any issues (max 5 bullets). Write to .quest/<id>/phase_01_plan/review_plan-reviewer-b.md
