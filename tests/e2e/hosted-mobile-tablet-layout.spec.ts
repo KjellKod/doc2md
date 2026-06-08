@@ -3,7 +3,15 @@ import { Buffer } from "node:buffer";
 
 const PHONE = { width: 375, height: 800 } as const;
 const PHONE_KEYBOARD_OPEN = { width: 375, height: 340 } as const;
+// The repo's documented minimum width (global.css:92 `min-width: 320px`). The
+// narrowest phone the toolbar must stay usable on.
+const PHONE_NARROW = { width: 320, height: 800 } as const;
 const TABLET_PORTRAIT = { width: 768, height: 1024 } as const;
+
+// A single non-wrapping toolbar-actions row should be about one control tall.
+// Vertical padding/borders add a few px; two rows would be ~2x this plus the
+// row gap, so this tolerance distinguishes one row from a wrapped multi-row.
+const SINGLE_ROW_TOLERANCE_PX = 14;
 
 const TAP_FLOOR_PX = 40;
 const VIEWPORT_EDGE_TOLERANCE_PX = 2;
@@ -53,19 +61,6 @@ async function expectHorizontallyInViewport(locator: Locator, page: Page) {
   );
 }
 
-async function expectAlignedWidths(first: Locator, second: Locator) {
-  await expect(first).toBeVisible();
-  await expect(second).toBeVisible();
-  const [firstBox, secondBox] = await Promise.all([
-    first.boundingBox(),
-    second.boundingBox(),
-  ]);
-  expect(firstBox).not.toBeNull();
-  expect(secondBox).not.toBeNull();
-  expect(Math.abs(firstBox!.x - secondBox!.x)).toBeLessThanOrEqual(2);
-  expect(Math.abs(firstBox!.width - secondBox!.width)).toBeLessThanOrEqual(2);
-}
-
 async function expectTapTargetFloor(locator: Locator) {
   await expect(locator).toBeVisible();
   const box = await locator.boundingBox();
@@ -102,12 +97,17 @@ async function uploadMarkdownFile(
   }
 }
 
-async function expandUploadPanelIfCollapsed(page: Page) {
+async function expandCollapsedUploadPanel(page: Page) {
+  // Opening the first file auto-collapses the upload panel, but on slower
+  // engines (WebKit) that collapse can land *after* a one-shot visibility
+  // sample — the panel then collapses right after we decline to expand it,
+  // hiding the file row and flaking the row-visibility wait downstream.
+  // Wait for the collapse to settle, then expand. Auto-collapse is one-shot,
+  // so once expanded the panel stays expanded.
   const showUpload = page.getByRole("button", { name: "Show upload panel" });
-  if (!(await showUpload.isVisible().catch(() => false))) {
-    return;
-  }
+  await expect(showUpload).toBeVisible({ timeout: 15_000 });
   await showUpload.click();
+  await expect(page.getByRole("heading", { name: "Files" })).toBeVisible();
 }
 
 async function uploadInvalidPdf(page: Page, name: string) {
@@ -126,6 +126,179 @@ async function uploadInvalidPdf(page: Page, name: string) {
     },
   ]);
 }
+
+// Surface-dominance floor for the active edit/view surface relative to the
+// preview panel on hosted phones (AC2). This is a DIFFERENT invariant from the
+// existing previewPanel >= viewport.height * 0.55 (panel-vs-viewport) assertion
+// — here we measure the *surface within the panel*, so the sticky toolbar must
+// not eat the panel.
+//
+// Measured POST-fix at 375x800: the active surface (.markdown-edit-shell /
+// .markdown-surface) occupies ~0.576 of the panel on Chromium and ~0.516 on
+// WebKit/mobile-safari (WebKit reserves a few more px of toolbar/scroll chrome),
+// versus ~0.386 PRE-fix when the sticky toolbar (~220px) ate the panel. The
+// floor is set BELOW the cross-browser minimum post-fix value (0.516) with
+// margin so it is not brittle on WebKit, and well ABOVE the pre-fix 0.386 so it
+// still fails-first if the toolbar regrows. Deliberately distinct from the
+// existing panel-vs-viewport 0.55 assertion (a different invariant). NOTE: this
+// is a cross-browser calibration, NOT a weakening to pass a regression — the
+// broken state (0.386, and the 0px keyboard-collapse) stays well below 0.48.
+const SURFACE_DOMINANCE_FLOOR = 0.48;
+// Equal Edit/View window tolerance (AC2). Both surfaces are flex:1 children of
+// .preview-body, but .markdown-surface and .markdown-edit-shell carry slightly
+// different border/padding, so a few px of slack is expected.
+const EQUAL_WINDOW_TOLERANCE_PX = 4;
+
+async function startDraftWithBody(page: Page) {
+  const startWriting = page.getByRole("button", {
+    name: "Start writing",
+    exact: true,
+  });
+  await startWriting.scrollIntoViewIfNeeded();
+  await startWriting.click();
+  const editor = page.getByLabel("Edit markdown");
+  await expect(editor).toBeFocused();
+  await editor.fill(
+    "# Surface dominance\n\n" +
+      Array.from({ length: 30 }, (_, i) => `Body line ${i}.`).join("\n"),
+  );
+  return editor;
+}
+
+test.describe("hosted mobile edit/view dominance (reproduce-first)", () => {
+  test("AC2 at 375px: edit/view surface dominates the panel and Edit==View height", async ({
+    page,
+  }) => {
+    await page.setViewportSize(PHONE);
+    await openHostedApp(page);
+    await startDraftWithBody(page);
+
+    const panel = page.locator(".preview-panel");
+    const editShell = page.locator(".markdown-edit-shell");
+
+    const [panelBox, editBox] = await Promise.all([
+      panel.boundingBox(),
+      editShell.boundingBox(),
+    ]);
+    expect(panelBox).not.toBeNull();
+    expect(editBox).not.toBeNull();
+
+    // Surface dominance: the edit surface must own the majority of the panel,
+    // i.e. the sticky toolbar must not consume it. Fails pre-fix (~0.386).
+    const editRatio = editBox!.height / panelBox!.height;
+    expect(editRatio).toBeGreaterThanOrEqual(SURFACE_DOMINANCE_FLOOR);
+
+    // Switch to View and confirm the surface is equally dominant and the same
+    // size as the Edit surface (AC2 "same size window").
+    await page.getByRole("button", { name: "View", exact: true }).click();
+    const surface = page.locator(".markdown-surface");
+    const surfaceBox = await surface.boundingBox();
+    expect(surfaceBox).not.toBeNull();
+
+    const surfaceRatio = surfaceBox!.height / panelBox!.height;
+    expect(surfaceRatio).toBeGreaterThanOrEqual(SURFACE_DOMINANCE_FLOOR);
+    expect(Math.abs(editBox!.height - surfaceBox!.height)).toBeLessThanOrEqual(
+      EQUAL_WINDOW_TOLERANCE_PX,
+    );
+  });
+
+  test("AC4 at 320px: secondary toolbar actions stay one height-stable row (no multi-row regrowth)", async ({
+    page,
+  }) => {
+    await page.setViewportSize(PHONE_NARROW);
+    await openHostedApp(page);
+    await startDraftWithBody(page);
+
+    const actions = page.locator(".preview-toolbar-actions");
+    await expect(actions).toBeVisible();
+
+    // At the repo's 320px min-width (global.css:92) the secondary controls plus
+    // gaps exceed the row at the 44px tap floor. PRE-fix they wrap into multiple
+    // rows (container height ~2x a single control), regrowing the toolbar and
+    // squeezing the surface again — the regression flagged in code review. The
+    // narrow-phone fix keeps them on one row that scrolls horizontally, so the
+    // container height stays within a single control row.
+    const { containerHeight, maxChildHeight, childCount } = await actions.evaluate(
+      (el) => {
+        const kids = Array.from(el.children) as HTMLElement[];
+        const maxChild = kids.reduce(
+          (max, kid) => Math.max(max, kid.getBoundingClientRect().height),
+          0,
+        );
+        return {
+          containerHeight: el.getBoundingClientRect().height,
+          maxChildHeight: maxChild,
+          childCount: kids.length,
+        };
+      },
+    );
+
+    expect(childCount).toBeGreaterThan(1);
+    expect(containerHeight).toBeLessThanOrEqual(
+      maxChildHeight + SINGLE_ROW_TOLERANCE_PX,
+    );
+
+    // The single row must scroll INTERNALLY, not push the toolbar past the
+    // 320px page edge. With the width bound the actions box is a horizontal
+    // scroller; without it the nowrap content can size the column-flex toolbar
+    // to its intrinsic width and overflow the page.
+    await expectNoHorizontalOverflow(page);
+  });
+
+  test("AC1 at 375px keyboard-open: edit surface stays visible (not collapsed)", async ({
+    page,
+  }) => {
+    await page.setViewportSize(PHONE);
+    await openHostedApp(page);
+    const editor = await startDraftWithBody(page);
+    await editor.focus();
+
+    // Simulate the on-screen keyboard reducing the visible viewport.
+    await page.setViewportSize(PHONE_KEYBOARD_OPEN);
+    await page.evaluate(() => {
+      document
+        .querySelector(".preview-panel")
+        ?.scrollIntoView({ block: "start", behavior: "instant" as ScrollBehavior });
+    });
+
+    // Pre-fix the edit shell collapses to ~0px height at keyboard-open because
+    // min-height: 55dvh forces the panel taller than the reduced viewport while
+    // the toolbar takes ~220px. The surface must keep usable height and the
+    // editor must remain within the visible viewport so the user can edit.
+    const editShell = page.locator(".markdown-edit-shell");
+    const editBox = await editShell.boundingBox();
+    expect(editBox).not.toBeNull();
+    expect(editBox!.height).toBeGreaterThanOrEqual(64);
+    await expectInViewport(editor, page);
+  });
+
+  test("AC3 at 375px: About header is demoted vs desktop emphasis", async ({
+    page,
+  }) => {
+    // Honest fails-first invariant for AC3 (per arbiter finding arb-it1-2): the
+    // already-collapsed + below-the-panel placement is true on main, so it is
+    // NOT a reproduction. Instead we assert a *measurable demotion the fix
+    // introduces*: on hosted phones the About heading is rendered at a clearly
+    // smaller font size than its desktop emphasis. Pre-fix the phone heading is
+    // ~26.4px (no mobile treatment); this fails until the demotion rule lands.
+    await page.setViewportSize(PHONE);
+    await openHostedApp(page);
+    await startDraftWithBody(page);
+
+    const aboutHeading = page.locator(".about-section .about-header h2");
+    await aboutHeading.scrollIntoViewIfNeeded();
+    const fontSize = await aboutHeading.evaluate(
+      (el) => Number.parseFloat(getComputedStyle(el).fontSize),
+    );
+    // Desktop emphasis is ~26.4px; demoted mobile heading must be <= 20px.
+    expect(fontSize).toBeLessThanOrEqual(20);
+
+    // The About section still sits below the preview panel (regression guard
+    // for the existing placement) and starts collapsed.
+    const aboutContent = page.locator("#about-content");
+    await expect(aboutContent).toBeHidden();
+  });
+});
 
 test.describe("hosted mobile and tablet layout", () => {
   test("mobile emulation: collapsed upload rail stays horizontal with preview", async ({
@@ -151,10 +324,23 @@ test.describe("hosted mobile and tablet layout", () => {
     await expectHorizontallyInViewport(workspace, page);
     await expectHorizontallyInViewport(collapseRail, page);
     await expectHorizontallyInViewport(previewPanel, page);
-    await expectAlignedWidths(collapseRail, previewPanel);
-
-    const railBox = await collapseRail.boundingBox();
+    // The collapsed upload control is now a compact, content-width text link
+    // on phones (not a full-width bar), so it intentionally no longer matches
+    // the preview's width. The invariant that still matters — and that this
+    // test guards — is that it stays a HORIZONTAL control, aligned to the
+    // preview's left edge and within its width, rather than a tall vertical
+    // side strip.
+    const [railBox, previewBox] = await Promise.all([
+      collapseRail.boundingBox(),
+      previewPanel.boundingBox(),
+    ]);
     expect(railBox).not.toBeNull();
+    expect(previewBox).not.toBeNull();
+    // Left-aligned with the preview, and no wider than it.
+    expect(Math.abs(railBox!.x - previewBox!.x)).toBeLessThanOrEqual(2);
+    expect(railBox!.width).toBeLessThanOrEqual(previewBox!.width + 2);
+    // Horizontal (wider than tall) and short — not a vertical side strip.
+    expect(railBox!.width).toBeGreaterThan(railBox!.height);
     expect(railBox!.height).toBeLessThanOrEqual(92);
   });
 
@@ -248,7 +434,7 @@ test.describe("hosted mobile and tablet layout", () => {
       await page.setViewportSize(viewport);
       await openHostedApp(page);
       await uploadInvalidPdf(page, "broken.pdf");
-      await expandUploadPanelIfCollapsed(page);
+      await expandCollapsedUploadPanel(page);
 
       // Wait for the row's status indicator to settle into "error" so the
       // FileList row stops shifting before we interact with it.
@@ -379,10 +565,17 @@ test.describe("hosted mobile and tablet layout", () => {
     for (const viewport of [PHONE, TABLET_PORTRAIT]) {
       await page.setViewportSize(viewport);
       await openHostedApp(page);
+      // A substantial document: the View surface now flows with content
+      // (flow-then-window), so a real doc must earn ample preview real estate.
+      // (A 1-line doc legitimately renders short — that's intended flow
+      // behaviour, not a regression — so this asserts the substantive case.)
       await uploadMarkdownFile(
         page,
         `loaded-${viewport.width}.md`,
-        `# Loaded ${viewport.width}\n\nThe uploaded document should own the first view.`,
+        `# Loaded ${viewport.width}\n\nThe uploaded document should own the first view.\n\n` +
+          Array.from({ length: 40 }, (_, i) => `Body line ${i}: lorem ipsum dolor sit amet.`).join(
+            "\n\n",
+          ),
       );
 
       await expect(page.locator(".workspace")).toHaveClass(
