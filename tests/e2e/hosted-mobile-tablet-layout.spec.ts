@@ -110,12 +110,17 @@ async function uploadMarkdownFile(
   }
 }
 
-async function expandUploadPanelIfCollapsed(page: Page) {
+async function expandCollapsedUploadPanel(page: Page) {
+  // Opening the first file auto-collapses the upload panel, but on slower
+  // engines (WebKit) that collapse can land *after* a one-shot visibility
+  // sample — the panel then collapses right after we decline to expand it,
+  // hiding the file row and flaking the row-visibility wait downstream.
+  // Wait for the collapse to settle, then expand. Auto-collapse is one-shot,
+  // so once expanded the panel stays expanded.
   const showUpload = page.getByRole("button", { name: "Show upload panel" });
-  if (!(await showUpload.isVisible().catch(() => false))) {
-    return;
-  }
+  await expect(showUpload).toBeVisible({ timeout: 15_000 });
   await showUpload.click();
+  await expect(page.getByRole("heading", { name: "Files" })).toBeVisible();
 }
 
 async function uploadInvalidPdf(page: Page, name: string) {
@@ -429,7 +434,7 @@ test.describe("hosted mobile and tablet layout", () => {
       await page.setViewportSize(viewport);
       await openHostedApp(page);
       await uploadInvalidPdf(page, "broken.pdf");
-      await expandUploadPanelIfCollapsed(page);
+      await expandCollapsedUploadPanel(page);
 
       // Wait for the row's status indicator to settle into "error" so the
       // FileList row stops shifting before we interact with it.
