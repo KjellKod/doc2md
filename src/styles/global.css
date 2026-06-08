@@ -710,14 +710,22 @@ button.eyebrow.eyebrow-toggle {
 }
 
 .preview-panel {
-  /* De-cramp desktop: reserve less fixed chrome and allow a taller pane so the
-   * editor/preview is not vertically squeezed on laptops. */
-  --preview-panel-ceiling: calc(100dvh - 160px);
+  --preview-panel-ceiling: calc(100dvh - 280px);
   position: relative;
-  height: min(1100px, var(--preview-panel-ceiling));
-  min-height: min(680px, var(--preview-panel-ceiling));
+  height: min(900px, var(--preview-panel-ceiling));
+  min-height: min(620px, var(--preview-panel-ceiling));
   max-height: var(--preview-panel-ceiling);
   overflow: visible;
+}
+
+/* De-cramp the HOSTED desktop pane only (scoped to .app-shell-hosted so the
+ * desktop/Electron baseline is unchanged): reserve less fixed chrome and allow
+ * a taller pane so the editor/preview is not vertically squeezed on laptops.
+ * Mobile widths override this in the media queries below. */
+.app-shell-hosted .preview-panel {
+  --preview-panel-ceiling: calc(100dvh - 160px);
+  height: min(1100px, var(--preview-panel-ceiling));
+  min-height: min(680px, var(--preview-panel-ceiling));
 }
 
 .page.is-working-mode .working-mode-bar {
@@ -3540,7 +3548,7 @@ body.is-height-resizing * {
 
   .app-shell-hosted .page.is-working-mode .markdown-surface,
   .app-shell-hosted .page.is-working-mode .linkedin-surface {
-    flex: 0 1 auto;
+    flex: 0 0 auto;
     height: auto;
     max-height: 250dvh;
   }
