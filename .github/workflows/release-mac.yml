@@ -2,9 +2,14 @@ name: Mac release
 
 run-name: "Release/Deployment: ${{ inputs.tag || github.ref_name }}"
 
+# DISABLED (pre-launch cost control): automatic macOS DMG builds on release
+# tags are turned OFF to stop burning macos-latest runner minutes while the app
+# is not yet public. The workflow is intentionally kept (not deleted). Manual
+# runs remain available via "Run workflow" as an escape hatch. To re-enable
+# automatic Mac releases, uncomment the `push:` trigger below.
 "on":
-  push:
-    tags: ["*.*.*"]
+  # push:
+  #   tags: ["*.*.*"]
   workflow_dispatch:
     inputs:
       tag:
