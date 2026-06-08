@@ -710,10 +710,12 @@ button.eyebrow.eyebrow-toggle {
 }
 
 .preview-panel {
-  --preview-panel-ceiling: calc(100dvh - 280px);
+  /* De-cramp desktop: reserve less fixed chrome and allow a taller pane so the
+   * editor/preview is not vertically squeezed on laptops. */
+  --preview-panel-ceiling: calc(100dvh - 160px);
   position: relative;
-  height: min(900px, var(--preview-panel-ceiling));
-  min-height: min(620px, var(--preview-panel-ceiling));
+  height: min(1100px, var(--preview-panel-ceiling));
+  min-height: min(680px, var(--preview-panel-ceiling));
   max-height: var(--preview-panel-ceiling);
   overflow: visible;
 }
@@ -3507,32 +3509,46 @@ body.is-height-resizing * {
     max-height: none;
   }
 
-  /* Working mode: maximize the active edit/view surface WITHOUT a hard-coded
-   * pixel reservation. The workspace gets a hard floor of one dynamic viewport
-   * (dvh tracks the collapsing mobile URL bar); the upload rail/sidebar take
-   * only their natural height and the edit/view panel fills the rest of that
-   * column. A flex column (not a grid 1fr row) makes the panel actually
-   * stretch to consume the leftover, so there is no dead gap between the panel
-   * and the ABOUT section that follows. min-height is the hard floor (dvh
-   * tracks the collapsing mobile URL bar); the panel can't collapse because
-   * ABOUT lives outside the workspace. Adapts to any phone/tablet size; scoped
-   * to the mobile breakpoint so desktop layout is untouched. */
+  /* Working mode, READ-ONLY surfaces (View / LinkedIn): "flow-then-window".
+   * The page scrolls and the surface grows with the document up to a
+   * ~2.5x-viewport ceiling, after which it becomes an inner scroll region and
+   * the existing table virtualization engages (it measures this element's
+   * clientHeight/scrollTop). This stops short docs from leaving dead space and
+   * stops reading from feeling cramped, while keeping virtualization for very
+   * long docs. Edit is deliberately EXCLUDED (via :has) so the keyboard-
+   * occlusion handling further below stays intact — textareas can't autosize
+   * and a dvh-based min-height would re-break iOS keyboard sizing. Desktop uses
+   * the taller bounded pane from --preview-panel-ceiling above. */
   .app-shell-hosted .page.is-working-mode .workspace {
     display: flex;
     flex-direction: column;
-    min-height: 100dvh;
+    min-height: 0;
   }
 
   .app-shell-hosted .page.is-working-mode .workspace > .sidebar-panel,
-  .app-shell-hosted .page.is-working-mode .workspace > .collapse-rail {
+  .app-shell-hosted .page.is-working-mode .workspace > .collapse-rail,
+  .app-shell-hosted .page.is-working-mode .preview-panel {
     flex: 0 0 auto;
   }
 
-  .app-shell-hosted .page.is-working-mode .preview-panel {
-    flex: 1 1 auto;
+  .app-shell-hosted .page.is-working-mode .preview-panel:has(.markdown-surface),
+  .app-shell-hosted .page.is-working-mode .preview-panel:has(.linkedin-surface) {
     height: auto;
     min-height: 0;
     max-height: none;
+  }
+
+  .app-shell-hosted .page.is-working-mode .markdown-surface,
+  .app-shell-hosted .page.is-working-mode .linkedin-surface {
+    flex: 0 1 auto;
+    height: auto;
+    max-height: 250dvh;
+  }
+
+  .app-shell-hosted .page.is-working-mode .preview-panel:has(.markdown-surface) .preview-toolbar,
+  .app-shell-hosted .page.is-working-mode .preview-panel:has(.linkedin-surface) .preview-toolbar {
+    position: sticky;
+    top: 0;
   }
 
   /* The panel's "View" heading is redundant on phones with the Edit/View/

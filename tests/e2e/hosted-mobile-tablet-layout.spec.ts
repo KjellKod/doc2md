@@ -565,10 +565,17 @@ test.describe("hosted mobile and tablet layout", () => {
     for (const viewport of [PHONE, TABLET_PORTRAIT]) {
       await page.setViewportSize(viewport);
       await openHostedApp(page);
+      // A substantial document: the View surface now flows with content
+      // (flow-then-window), so a real doc must earn ample preview real estate.
+      // (A 1-line doc legitimately renders short — that's intended flow
+      // behaviour, not a regression — so this asserts the substantive case.)
       await uploadMarkdownFile(
         page,
         `loaded-${viewport.width}.md`,
-        `# Loaded ${viewport.width}\n\nThe uploaded document should own the first view.`,
+        `# Loaded ${viewport.width}\n\nThe uploaded document should own the first view.\n\n` +
+          Array.from({ length: 40 }, (_, i) => `Body line ${i}: lorem ipsum dolor sit amet.`).join(
+            "\n\n",
+          ),
       );
 
       await expect(page.locator(".workspace")).toHaveClass(
