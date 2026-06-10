@@ -1,0 +1,29 @@
+src/shell/webAdapter.tsx
+  s_81f9eb4ea69527::t_ab7475a3864e81 568-573
+  s_81f9eb4ea69527::t_84294fa8413581 18
+src/styles/global.css
+  s_81f9eb4ea69527::t_2d25a5c1fc456b 3032-3077
+src/components/StarOnGithubButton.tsx
+  s_81f9eb4ea69527::t_57e6d3999d1160 1-32
+docs/diary/2026-06-10.md
+  s_81f9eb4ea69527::t_7b52f5fdab5038 1-58
+src/components/AboutSection.tsx
+  s_81f9eb4ea69527::t_e29ff7e32506b8 116-119
+  s_81f9eb4ea69527::t_5784f8457016af 2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "e5b78c4eca060d648913a7961d825dbbf3c42127",
+  "prompts": {},
+  "sessions": {
+    "s_81f9eb4ea69527": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0a5203db-c120-4db1-a0c3-d588b75b82b2",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
