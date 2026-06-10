@@ -1,4 +1,5 @@
 import { useState } from "react";
+import StarOnGithubButton from "./StarOnGithubButton";
 
 export default function AboutSection() {
   const [isOpen, setIsOpen] = useState(false);
@@ -110,6 +111,10 @@ export default function AboutSection() {
           <strong>Jean-Claude</strong>
         </a>
         .
+      </p>
+
+      <p className="about-star">
+        <StarOnGithubButton variant="full" />
       </p>
 
       <p className="about-support">
