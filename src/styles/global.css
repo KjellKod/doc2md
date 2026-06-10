@@ -3029,6 +3029,52 @@ body.is-height-resizing * {
   color: var(--text-primary);
 }
 
+/* Star-on-GitHub call to action. Shares the theme-toggle outline-pill look so
+   the hero-top variant sits flush beside the toggle; tokens are theme-aware so
+   dark mode needs no override. Static link, no live star count (local-first). */
+.star-github-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 11px 16px;
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  background: var(--panel-bg-strong);
+  color: var(--text-secondary);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.star-github-button:hover,
+.star-github-button:focus-visible {
+  transform: translateY(-1px);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.star-github-icon {
+  width: 1rem;
+  height: 1rem;
+  fill: currentColor;
+  stroke: currentColor;
+  flex-shrink: 0;
+}
+
+/* About footer wrapper keeps the full pill left-aligned and self-sized. */
+.about-star {
+  margin: 14px 0 0;
+}
+
 :root[data-theme="dark"] .hero-pill {
   background: rgba(27, 33, 40, 0.82);
 }
