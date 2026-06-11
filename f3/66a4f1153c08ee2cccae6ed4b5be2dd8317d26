@@ -1,0 +1,19 @@
+docs/diary/2026-06-10.md
+  s_81f9eb4ea69527::t_caf6364256e3fe 59-96
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "f366a4f1153c08ee2cccae6ed4b5be2dd8317d26",
+  "prompts": {},
+  "sessions": {
+    "s_81f9eb4ea69527": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0a5203db-c120-4db1-a0c3-d588b75b82b2",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
