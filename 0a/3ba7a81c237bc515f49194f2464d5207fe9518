@@ -1,0 +1,19 @@
+ideas/webkit-mobile-edit-view-flake-hardening.md
+  s_81f9eb4ea69527::t_088fce13d2c62b 1-68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "0a3ba7a81c237bc515f49194f2464d5207fe9518",
+  "prompts": {},
+  "sessions": {
+    "s_81f9eb4ea69527": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0a5203db-c120-4db1-a0c3-d588b75b82b2",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
