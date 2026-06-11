@@ -15,7 +15,6 @@ import type { ChangeEvent, ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BROWSER_FILE_ACCEPT } from "../components/DropZone";
 import type { DropZoneProps } from "../components/DropZone";
-import StarOnGithubButton from "../components/StarOnGithubButton";
 import ThemeToggle from "../components/ThemeToggle";
 import type { WorkingModeBarProps } from "../components/WorkingModeBar";
 import { useFileConversion } from "../hooks/useFileConversion";
@@ -565,12 +564,7 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     trailingControls: <ThemeToggle />,
   };
 
-  const heroActionsSlot = (
-    <>
-      <StarOnGithubButton variant="compact" />
-      <ThemeToggle />
-    </>
-  );
+  const heroActionsSlot = <ThemeToggle />;
 
   const dropZoneProps: DropZoneProps = {
     onFilesAdded: addFiles,

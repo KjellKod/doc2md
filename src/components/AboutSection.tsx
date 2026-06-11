@@ -11,15 +11,18 @@ export default function AboutSection() {
           <p className="eyebrow">About</p>
           <h2 id="about-title">Why this utility exists</h2>
         </div>
-        <button
-          type="button"
-          className="secondary-button"
-          aria-expanded={isOpen}
-          aria-controls="about-content"
-          onClick={() => setIsOpen((currentValue) => !currentValue)}
-        >
-          {isOpen ? "Hide details" : "Read the story"}
-        </button>
+        <div className="about-header-actions">
+          <button
+            type="button"
+            className="secondary-button"
+            aria-expanded={isOpen}
+            aria-controls="about-content"
+            onClick={() => setIsOpen((currentValue) => !currentValue)}
+          >
+            {isOpen ? "Hide details" : "Read the story"}
+          </button>
+          <StarOnGithubButton />
+        </div>
       </div>
 
       <div
@@ -111,10 +114,6 @@ export default function AboutSection() {
           <strong>Jean-Claude</strong>
         </a>
         .
-      </p>
-
-      <p className="about-star">
-        <StarOnGithubButton variant="full" />
       </p>
 
       <p className="about-support">

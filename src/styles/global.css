@@ -864,6 +864,7 @@ button.eyebrow.eyebrow-toggle {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 16px;
   min-width: 0;
 }
@@ -3029,9 +3030,9 @@ body.is-height-resizing * {
   color: var(--text-primary);
 }
 
-/* Star-on-GitHub call to action. Shares the theme-toggle outline-pill look so
-   the hero-top variant sits flush beside the toggle; tokens are theme-aware so
-   dark mode needs no override. Static link, no live star count (local-first). */
+/* Star-on-GitHub call to action in the About footer. Borrows the theme-toggle
+   outline-pill look; tokens are theme-aware so dark mode needs no override.
+   Static link, no live star count (local-first). */
 .star-github-button {
   display: inline-flex;
   align-items: center;
@@ -3070,9 +3071,13 @@ body.is-height-resizing * {
   flex-shrink: 0;
 }
 
-/* About footer wrapper keeps the full pill left-aligned and self-sized. */
-.about-star {
-  margin: 14px 0 0;
+/* About header right-side actions: "Read the story" toggle and the star pill
+   share one row, the toggle to the left of the pill. */
+.about-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 :root[data-theme="dark"] .hero-pill {
