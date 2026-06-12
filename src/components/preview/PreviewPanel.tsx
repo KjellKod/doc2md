@@ -13,6 +13,8 @@ import PreviewToolbar from "./PreviewToolbar";
 import { performPreviewCopy } from "./previewCopy";
 import { analyzeLargeMarkdown } from "../../render/largeMarkdown";
 import { getLargeJsonPreview } from "./largeJsonPreview";
+import { detectJsonFormatTarget } from "./editorJsonFormat";
+import { commitTargetedInsert } from "./targetedTextareaEdit";
 /**
  * Per-document viewport position remembered across document switches so
  * returning to a large doc lands where you left off instead of jumping to the
@@ -83,6 +85,10 @@ export default function PreviewPanel({
   const [showReplace, setShowReplace] = useState(false);
   const [activeFindMatch, setActiveFindMatch] = useState<FindMatch | null>(null);
   const [renderedViewText, setRenderedViewText] = useState("");
+  const [editorSelection, setEditorSelection] = useState<{
+    start: number;
+    end: number;
+  }>({ start: 0, end: 0 });
   const [findFocusRequest, setFindFocusRequest] =
     useState<{ id: number; target: "find" | "replace" }>({
       id: 0,
@@ -299,6 +305,21 @@ export default function PreviewPanel({
       mode === "linkedin" ? getLinkedInPreviewState(effectiveMarkdown) : null,
     [mode, effectiveMarkdown],
   );
+  // Reactive enabled-state for the Format JSON toolbar button. Approximate by
+  // design: the click handler re-reads the live textarea authoritatively and
+  // no-ops on null, so a stale selection here can only under-enable (safe),
+  // never trigger a wrong rewrite. Only computed in edit mode.
+  const jsonFormatTarget = useMemo(
+    () =>
+      mode === "edit"
+        ? detectJsonFormatTarget(
+            effectiveMarkdown,
+            editorSelection.start,
+            editorSelection.end,
+          )
+        : null,
+    [mode, effectiveMarkdown, editorSelection.start, editorSelection.end],
+  );
   const showToggle = Boolean(
     entry &&
       (entry.status === "success" || entry.status === "warning") &&
@@ -415,6 +436,39 @@ export default function PreviewPanel({
     onEditorViewStateChange(entryId, state);
   }
 
+  // One-shot Format JSON action. Re-reads the LIVE textarea as the source of
+  // truth (the reactive jsonFormatTarget is only used for enabled-state) and
+  // commits through commitTargetedInsert so the format is a single native undo
+  // step, mirroring EditMode's commitTargeted fallback. No-ops on null target,
+  // so a click on a stale-enabled button can never rewrite a non-JSON target.
+  function handleFormatJson() {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      return;
+    }
+    const target = detectJsonFormatTarget(
+      textarea.value,
+      textarea.selectionStart,
+      textarea.selectionEnd,
+    );
+    if (!target) {
+      return;
+    }
+    const ok = commitTargetedInsert(textarea, target);
+    if (!ok) {
+      const nextValue =
+        textarea.value.slice(0, target.start) +
+        target.text +
+        textarea.value.slice(target.end);
+      onMarkdownChange?.(nextValue);
+      window.setTimeout(() => {
+        const ta = textareaRef.current;
+        if (ta) ta.setSelectionRange(target.caretStart, target.caretEnd);
+      }, 0);
+    }
+    setEditorSelection({ start: target.caretStart, end: target.caretEnd });
+  }
+
   const commonModeProps = {
     activeFindMatch,
     isFindOpen,
@@ -446,6 +500,9 @@ export default function PreviewPanel({
         exportHtmlBusy={exportHtmlBusy}
         exportHtmlDisabled={exportHtmlDisabled}
         onNewDocument={onNewDocument}
+        showFormatJson={mode === "edit"}
+        formatJsonDisabled={jsonFormatTarget === null}
+        onFormatJson={handleFormatJson}
         onModeChange={switchMode}
         onOpenFind={() => {
           setIsFindOpen(true);
@@ -502,6 +559,9 @@ export default function PreviewPanel({
           onReportView={reportView}
           onMarkdownChange={onMarkdownChange}
           onLargeMarkdownPaste={onLargeMarkdownPaste}
+          onSelectionChange={(start, end) =>
+            setEditorSelection({ start, end })
+          }
         />
       ) : mode === "linkedin" && linkedinPreviewState ? (
         <LinkedInMode

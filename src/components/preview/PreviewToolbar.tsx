@@ -1,4 +1,4 @@
-import { FileCode, FilePlus, FileText, Keyboard, Search } from "lucide-react";
+import { Braces, FileCode, FilePlus, FileText, Keyboard, Search } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import type { SaveState } from "../../types/saveState";
 import SaveButton from "../SaveButton";
@@ -25,6 +25,9 @@ interface PreviewToolbarProps {
   exportHtmlBusy?: boolean;
   exportHtmlDisabled?: boolean;
   onNewDocument?: () => void;
+  showFormatJson?: boolean;
+  formatJsonDisabled?: boolean;
+  onFormatJson?: () => void;
   onModeChange: (mode: PreviewModeName) => void;
   onOpenFind: () => void;
   onCopy: () => void;
@@ -75,6 +78,9 @@ export default function PreviewToolbar({
   exportHtmlBusy = false,
   exportHtmlDisabled = false,
   onNewDocument,
+  showFormatJson = false,
+  formatJsonDisabled = false,
+  onFormatJson,
   onModeChange,
   onOpenFind,
   onCopy,
@@ -82,6 +88,7 @@ export default function PreviewToolbar({
   const shortcutsPanelId = useId();
   const downloadMarkdownTooltipId = useId();
   const downloadHtmlTooltipId = useId();
+  const formatJsonTooltipId = useId();
   const shortcutsButtonRef = useRef<HTMLButtonElement | null>(null);
   const shortcutsRef = useRef<HTMLDivElement | null>(null);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
@@ -200,6 +207,28 @@ export default function PreviewToolbar({
             <Search className="find-entry-icon" aria-hidden="true" />
             <span className="find-entry-label">Find</span>
           </button>
+        ) : null}
+        {showFormatJson ? (
+          <span className="instant-tooltip-anchor">
+            <button
+              type="button"
+              className="ghost-button format-download-button"
+              onClick={onFormatJson}
+              disabled={formatJsonDisabled}
+              aria-disabled={formatJsonDisabled}
+              aria-label="Format JSON"
+              aria-describedby={formatJsonTooltipId}
+            >
+              <Braces className="format-download-icon" aria-hidden="true" />
+            </button>
+            <span
+              id={formatJsonTooltipId}
+              role="tooltip"
+              className="instant-tooltip"
+            >
+              Format JSON
+            </span>
+          </span>
         ) : null}
         {onSave ? (
           <div className="save-control-group">
