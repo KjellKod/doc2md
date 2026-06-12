@@ -1705,6 +1705,13 @@ body.is-height-resizing * {
   gap: 8px;
 }
 
+.preview-toggle-cluster {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .preview-toggle-with-tooltip {
   position: relative;
   display: inline-flex;
@@ -1889,6 +1896,45 @@ body.is-height-resizing * {
   width: 48px;
   height: 44px;
   color: var(--text-secondary);
+}
+
+.adjust-formatting-button.is-newly-available {
+  border-color: rgba(36, 104, 74, 0.42);
+  background: var(--success-soft);
+  box-shadow:
+    0 0 0 1px rgba(36, 104, 74, 0.12),
+    0 10px 24px rgba(36, 104, 74, 0.16);
+  color: var(--success);
+  animation: adjust-formatting-arrive 1200ms ease-out 0s 4;
+}
+
+@keyframes adjust-formatting-arrive {
+  0% {
+    transform: translateY(0) scale(1);
+    box-shadow:
+      0 0 0 0 rgba(36, 104, 74, 0.24),
+      0 10px 24px rgba(36, 104, 74, 0.16);
+  }
+
+  42% {
+    transform: translateY(-1px) scale(1.04);
+    box-shadow:
+      0 0 0 8px rgba(36, 104, 74, 0),
+      0 14px 30px rgba(36, 104, 74, 0.2);
+  }
+
+  100% {
+    transform: translateY(0) scale(1);
+    box-shadow:
+      0 0 0 0 rgba(36, 104, 74, 0),
+      0 10px 24px rgba(36, 104, 74, 0.16);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adjust-formatting-button.is-newly-available {
+    animation: none;
+  }
 }
 
 .find-entry-button:hover,
@@ -3190,6 +3236,15 @@ body.is-height-resizing * {
   background: rgba(23, 27, 33, 0.68);
 }
 
+:root[data-theme="dark"] .adjust-formatting-button.is-newly-available {
+  border-color: rgba(99, 210, 151, 0.44);
+  background: rgba(99, 210, 151, 0.14);
+  box-shadow:
+    0 0 0 1px rgba(99, 210, 151, 0.12),
+    0 10px 24px rgba(0, 0, 0, 0.22);
+  color: var(--success);
+}
+
 :root[data-theme="dark"] .shortcut-reference-button {
   border-color: rgba(204, 214, 223, 0.1);
   background: transparent;
@@ -3679,6 +3734,10 @@ body.is-height-resizing * {
     flex-wrap: wrap;
   }
 
+  .app-shell-hosted .preview-toggle-cluster {
+    flex-wrap: wrap;
+  }
+
   .app-shell-hosted .file-list-item-top {
     flex-wrap: wrap;
     row-gap: 6px;
@@ -3854,6 +3913,10 @@ body.is-height-resizing * {
     width: 100%;
   }
 
+  .preview-toggle-cluster {
+    width: 100%;
+  }
+
   /* Hosted-phone toolbar: keep the toolbar height-stable so it does not eat
    * the edit/view surface (AC2/AC4). Stack the primary mode toggle above a
    * single compact row of demoted secondary actions, and tighten gaps/padding
@@ -3864,6 +3927,10 @@ body.is-height-resizing * {
     gap: 6px;
     padding: 6px;
     border-radius: 14px;
+  }
+
+  .app-shell-hosted .preview-toggle-cluster {
+    width: 100%;
   }
 
   /* Reclaim panel height for the surface: compact the preview-body padding and
@@ -3930,6 +3997,13 @@ body.is-height-resizing * {
     display: inline-flex;
     align-items: center;
     height: 44px;
+  }
+
+  .app-shell-hosted .preview-toggle-cluster > .instant-tooltip-anchor {
+    display: inline-flex;
+    align-items: center;
+    height: 44px;
+    flex-shrink: 0;
   }
 
   /* Demote the secondary actions: tighter footprint, icon-first. The Edit/View

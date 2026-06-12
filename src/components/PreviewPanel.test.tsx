@@ -2211,6 +2211,7 @@ describe("PreviewPanel Adjust formatting toolbar action", () => {
   // delete restores the original absent state).
   afterEach(() => {
     delete (document as { execCommand?: unknown }).execCommand;
+    vi.useRealTimers();
   });
 
   it("renders the Adjust formatting button only in edit mode when formatting is available", () => {
@@ -2227,9 +2228,31 @@ describe("PreviewPanel Adjust formatting toolbar action", () => {
     ).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
-    expect(
-      screen.getByRole("button", { name: "Adjust formatting" }),
-    ).toBeInTheDocument();
+    const button = screen.getByRole("button", { name: "Adjust formatting" });
+    expect(button).toBeInTheDocument();
+
+    const buttonNames = screen.getAllByRole("button").map((element) => {
+      const explicitName = element.getAttribute("aria-label");
+      return explicitName ?? element.textContent?.trim();
+    });
+    expect(buttonNames.indexOf("Adjust formatting")).toBe(
+      buttonNames.indexOf("LinkedIn") + 1,
+    );
+  });
+
+  it("removes the new-formatting spotlight after 20 seconds", () => {
+    vi.useFakeTimers();
+    render(<ControlledPreviewPanel initialMarkdown='{"a":1}' />);
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+    const button = screen.getByRole("button", { name: "Adjust formatting" });
+    expect(button).toHaveClass("is-newly-available");
+
+    act(() => {
+      vi.advanceTimersByTime(20_000);
+    });
+
+    expect(button).not.toHaveClass("is-newly-available");
   });
 
   it("hides the button when the editor content is prose (AC4)", () => {
@@ -2253,9 +2276,11 @@ describe("PreviewPanel Adjust formatting toolbar action", () => {
     }) as HTMLTextAreaElement;
     const button = screen.getByRole("button", { name: "Adjust formatting" });
     expect(button).toBeEnabled();
+    expect(button).toHaveClass("is-newly-available");
 
     fireEvent.click(button);
 
+    expect(button).not.toHaveClass("is-newly-available");
     expect(editor).toHaveValue(
       '```json\n{\n  "name": "doc2md",\n  "active": true\n}\n```',
     );
