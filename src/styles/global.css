@@ -3923,6 +3923,15 @@ body.is-height-resizing * {
     flex-shrink: 0;
   }
 
+  /* Tooltip wrappers are flex items in the one-row action scroller. Size them
+   * like the buttons they wrap so adding an edit-only icon cannot change the
+   * toolbar row height on hosted phones. */
+  .app-shell-hosted .preview-toolbar-actions > .instant-tooltip-anchor {
+    display: inline-flex;
+    align-items: center;
+    height: 44px;
+  }
+
   /* Demote the secondary actions: tighter footprint, icon-first. The Edit/View
    * toggle and Save keep full weight; New/Find/MD/HTML/copy/shortcuts shrink so
    * they no longer compete with the primary task. Tap floor (44px) preserved by
