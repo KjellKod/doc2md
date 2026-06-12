@@ -1,0 +1,19 @@
+src/styles/global.css
+  s_4c83edcd0b5775::t_6de88b2e26b335 3926-3934
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "ba52c1f7b75f9406e462d6517917e00988b97314",
+  "prompts": {},
+  "sessions": {
+    "s_4c83edcd0b5775": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019eb880-ebcc-76f2-a68c-35a2c107edef",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
