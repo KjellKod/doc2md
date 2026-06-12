@@ -1,0 +1,26 @@
+src/components/PreviewPanel.test.tsx
+  s_4c83edcd0b5775::t_32ec20c5b08e62 2214,2231-2255,2279,2283
+src/styles/global.css
+  s_4c83edcd0b5775::t_f8986a2ad7cceb 1934-1939
+  s_4c83edcd0b5775::t_451bdb2fc22995 1708-1714,1901-1931,3239-3247,3737-3740,3916-3919,3932-3935,4002-4006
+src/components/preview/PreviewToolbar.tsx
+  s_4c83edcd0b5775::t_a471d66b851d4f 102,136-140,142,144-145,147,151-160,176,178-183,185,187-207,215-220,224-226,228,230-234,236-255,257-259
+  s_4c83edcd0b5775::t_b4bb2da5dd4d5c 161-167
+  s_4c83edcd0b5775::t_d87c55f56dd42a 101,141,143,146,148-150,177,184,186
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "29748fa0fd6e7294d29f9298b8f144712340d471",
+  "prompts": {},
+  "sessions": {
+    "s_4c83edcd0b5775": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019eb880-ebcc-76f2-a68c-35a2c107edef",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
