@@ -1,4 +1,11 @@
-import { Braces, FileCode, FilePlus, FileText, Keyboard, Search } from "lucide-react";
+import {
+  FileCode,
+  FilePlus,
+  FileText,
+  Keyboard,
+  Search,
+  WandSparkles,
+} from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import type { SaveState } from "../../types/saveState";
 import SaveButton from "../SaveButton";
@@ -25,9 +32,9 @@ interface PreviewToolbarProps {
   exportHtmlBusy?: boolean;
   exportHtmlDisabled?: boolean;
   onNewDocument?: () => void;
-  showFormatJson?: boolean;
-  formatJsonDisabled?: boolean;
-  onFormatJson?: () => void;
+  showAdjustFormatting?: boolean;
+  adjustFormattingDisabled?: boolean;
+  onAdjustFormatting?: () => void;
   onModeChange: (mode: PreviewModeName) => void;
   onOpenFind: () => void;
   onCopy: () => void;
@@ -78,9 +85,9 @@ export default function PreviewToolbar({
   exportHtmlBusy = false,
   exportHtmlDisabled = false,
   onNewDocument,
-  showFormatJson = false,
-  formatJsonDisabled = false,
-  onFormatJson,
+  showAdjustFormatting = false,
+  adjustFormattingDisabled = false,
+  onAdjustFormatting,
   onModeChange,
   onOpenFind,
   onCopy,
@@ -88,7 +95,7 @@ export default function PreviewToolbar({
   const shortcutsPanelId = useId();
   const downloadMarkdownTooltipId = useId();
   const downloadHtmlTooltipId = useId();
-  const formatJsonTooltipId = useId();
+  const adjustFormattingTooltipId = useId();
   const shortcutsButtonRef = useRef<HTMLButtonElement | null>(null);
   const shortcutsRef = useRef<HTMLDivElement | null>(null);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
@@ -208,25 +215,28 @@ export default function PreviewToolbar({
             <span className="find-entry-label">Find</span>
           </button>
         ) : null}
-        {showFormatJson ? (
+        {showAdjustFormatting ? (
           <span className="instant-tooltip-anchor">
             <button
               type="button"
               className="ghost-button format-download-button"
-              onClick={onFormatJson}
-              disabled={formatJsonDisabled}
-              aria-disabled={formatJsonDisabled}
-              aria-label="Format JSON"
-              aria-describedby={formatJsonTooltipId}
+              onClick={onAdjustFormatting}
+              disabled={adjustFormattingDisabled}
+              aria-disabled={adjustFormattingDisabled}
+              aria-label="Adjust formatting"
+              aria-describedby={adjustFormattingTooltipId}
             >
-              <Braces className="format-download-icon" aria-hidden="true" />
+              <WandSparkles
+                className="format-download-icon"
+                aria-hidden="true"
+              />
             </button>
             <span
-              id={formatJsonTooltipId}
+              id={adjustFormattingTooltipId}
               role="tooltip"
               className="instant-tooltip"
             >
-              Format JSON
+              Adjust formatting
             </span>
           </span>
         ) : null}

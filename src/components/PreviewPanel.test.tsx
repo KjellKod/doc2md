@@ -2197,7 +2197,7 @@ describe("PreviewPanel format download buttons", () => {
 //  - A Playwright/desktop e2e for the click→format flow is intentionally
 //    OUT OF SCOPE for this slice: it has parity with the existing edit-command
 //    coverage (component + manual smoke, not e2e).
-describe("PreviewPanel Format JSON toolbar action", () => {
+describe("PreviewPanel Adjust formatting toolbar action", () => {
   function mockExecCommandReturnsFalse() {
     Object.defineProperty(document, "execCommand", {
       configurable: true,
@@ -2213,33 +2213,32 @@ describe("PreviewPanel Format JSON toolbar action", () => {
     delete (document as { execCommand?: unknown }).execCommand;
   });
 
-  it("renders the Format JSON button only in edit mode (edit-only control)", () => {
+  it("renders the Adjust formatting button only in edit mode when formatting is available", () => {
     render(<ControlledPreviewPanel initialMarkdown='{"a":1}' />);
 
     // Default preview mode: control absent.
     expect(
-      screen.queryByRole("button", { name: "Format JSON" }),
+      screen.queryByRole("button", { name: "Adjust formatting" }),
     ).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "LinkedIn" }));
     expect(
-      screen.queryByRole("button", { name: "Format JSON" }),
+      screen.queryByRole("button", { name: "Adjust formatting" }),
     ).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     expect(
-      screen.getByRole("button", { name: "Format JSON" }),
+      screen.getByRole("button", { name: "Adjust formatting" }),
     ).toBeInTheDocument();
   });
 
-  it("disables the button when the editor content is prose (AC4)", () => {
+  it("hides the button when the editor content is prose (AC4)", () => {
     render(<ControlledPreviewPanel initialMarkdown="# Hello World" />);
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
 
-    const button = screen.getByRole("button", { name: "Format JSON" });
-    expect(button).toBeInTheDocument();
-    expect(button).toBeDisabled();
-    expect(button).not.toHaveAttribute("title");
+    expect(
+      screen.queryByRole("button", { name: "Adjust formatting" }),
+    ).not.toBeInTheDocument();
   });
 
   it("formats a whole-document one-line object into a fenced indented block (AC1)", () => {
@@ -2252,7 +2251,7 @@ describe("PreviewPanel Format JSON toolbar action", () => {
     const editor = screen.getByRole("textbox", {
       name: "Edit markdown",
     }) as HTMLTextAreaElement;
-    const button = screen.getByRole("button", { name: "Format JSON" });
+    const button = screen.getByRole("button", { name: "Adjust formatting" });
     expect(button).toBeEnabled();
 
     fireEvent.click(button);
@@ -2260,6 +2259,34 @@ describe("PreviewPanel Format JSON toolbar action", () => {
     expect(editor).toHaveValue(
       '```json\n{\n  "name": "doc2md",\n  "active": true\n}\n```',
     );
+  });
+
+  it("shows the button after a native unchanged plain-text JSON paste into an empty editor", async () => {
+    render(<ControlledPreviewPanel initialMarkdown="" />);
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+    const editor = screen.getByRole("textbox", {
+      name: "Edit markdown",
+    }) as HTMLTextAreaElement;
+    expect(
+      screen.queryByRole("button", { name: "Adjust formatting" }),
+    ).not.toBeInTheDocument();
+
+    const json = '{"dbBackend":"sqlite","activeAdapters":{"db":"sqlite"}}';
+    fireEditorPaste(editor, { plainText: json });
+    fireEvent.change(editor, {
+      target: {
+        value: json,
+        selectionStart: json.length,
+        selectionEnd: json.length,
+      },
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: "Adjust formatting" }),
+      ).toBeEnabled();
+    });
   });
 
   it("formats only the selected raw JSON snippet, leaving surrounding Markdown byte-identical (AC2)", () => {
@@ -2278,7 +2305,7 @@ describe("PreviewPanel Format JSON toolbar action", () => {
     editor.setSelectionRange(before.length, before.length + json.length);
     fireEvent.select(editor);
 
-    const button = screen.getByRole("button", { name: "Format JSON" });
+    const button = screen.getByRole("button", { name: "Adjust formatting" });
     expect(button).toBeEnabled();
 
     fireEvent.click(button);
@@ -2298,7 +2325,7 @@ describe("PreviewPanel Format JSON toolbar action", () => {
     const editor = screen.getByRole("textbox", {
       name: "Edit markdown",
     }) as HTMLTextAreaElement;
-    const button = screen.getByRole("button", { name: "Format JSON" });
+    const button = screen.getByRole("button", { name: "Adjust formatting" });
     expect(button).toBeEnabled();
 
     fireEvent.click(button);
@@ -2321,13 +2348,13 @@ describe("PreviewPanel Format JSON toolbar action", () => {
     const editor = screen.getByRole("textbox", {
       name: "Edit markdown",
     }) as HTMLTextAreaElement;
-    const button = screen.getByRole("button", { name: "Format JSON" });
-
-    // (a) Button is disabled, so the action cannot fire.
-    expect(button).toBeDisabled();
+    // (a) Button is hidden, so the action cannot fire or show an unavailable
+    // cursor over a non-action.
+    expect(
+      screen.queryByRole("button", { name: "Adjust formatting" }),
+    ).not.toBeInTheDocument();
 
     const valueBefore = editor.value;
-    fireEvent.click(button);
 
     // (a) No edit committed via the change/fallback path.
     expect(onMarkdownChange).not.toHaveBeenCalled();
