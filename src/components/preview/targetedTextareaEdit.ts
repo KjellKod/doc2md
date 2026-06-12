@@ -2,7 +2,7 @@
  * Shared targeted-textarea edit primitives.
  *
  * Extracted from EditMode.tsx so the editor's keyboard commands and the
- * toolbar's Format JSON action commit through the SAME undo semantics: a
+ * toolbar's formatting action commit through the SAME undo semantics: a
  * single native `insertText` so the browser records exactly one undo step.
  * Keeping one implementation prevents behavior drift between the two callers.
  */

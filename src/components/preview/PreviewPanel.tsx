@@ -305,11 +305,12 @@ export default function PreviewPanel({
       mode === "linkedin" ? getLinkedInPreviewState(effectiveMarkdown) : null,
     [mode, effectiveMarkdown],
   );
-  // Reactive enabled-state for the Format JSON toolbar button. Approximate by
-  // design: the click handler re-reads the live textarea authoritatively and
+  // Reactive availability for the generic Adjust formatting toolbar action.
+  // Approximate by design: the click handler re-reads the live textarea and
   // no-ops on null, so a stale selection here can only under-enable (safe),
-  // never trigger a wrong rewrite. Only computed in edit mode.
-  const jsonFormatTarget = useMemo(
+  // never trigger a wrong rewrite. Only computed in edit mode. JSON is the
+  // first formatter; this remains intentionally generic at the toolbar layer.
+  const formattingTarget = useMemo(
     () =>
       mode === "edit"
         ? detectJsonFormatTarget(
@@ -436,12 +437,12 @@ export default function PreviewPanel({
     onEditorViewStateChange(entryId, state);
   }
 
-  // One-shot Format JSON action. Re-reads the LIVE textarea as the source of
-  // truth (the reactive jsonFormatTarget is only used for enabled-state) and
+  // One-shot formatting action. Re-reads the LIVE textarea as the source of
+  // truth (the reactive formattingTarget is only used for availability) and
   // commits through commitTargetedInsert so the format is a single native undo
   // step, mirroring EditMode's commitTargeted fallback. No-ops on null target,
   // so a click on a stale-enabled button can never rewrite a non-JSON target.
-  function handleFormatJson() {
+  function handleAdjustFormatting() {
     const textarea = textareaRef.current;
     if (!textarea) {
       return;
@@ -500,9 +501,9 @@ export default function PreviewPanel({
         exportHtmlBusy={exportHtmlBusy}
         exportHtmlDisabled={exportHtmlDisabled}
         onNewDocument={onNewDocument}
-        showFormatJson={mode === "edit"}
-        formatJsonDisabled={jsonFormatTarget === null}
-        onFormatJson={handleFormatJson}
+        showAdjustFormatting={mode === "edit" && formattingTarget !== null}
+        adjustFormattingDisabled={formattingTarget === null}
+        onAdjustFormatting={handleAdjustFormatting}
         onModeChange={switchMode}
         onOpenFind={() => {
           setIsFindOpen(true);

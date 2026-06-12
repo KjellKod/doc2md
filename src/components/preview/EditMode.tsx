@@ -206,9 +206,9 @@ export default function EditMode({
     syncFindHighlightScroll();
   }, [effectiveMarkdown, pendingEditorRestoreRef, textareaRef, syncFindHighlightScroll]);
 
-  // Report the initial selection once the textarea is mounted so the toolbar's
-  // Format JSON enabled-state is correct before the user moves the caret. This
-  // is JSON-agnostic; it only lifts the live selection range.
+  // Report the initial selection once the textarea is mounted so toolbar
+  // formatter availability is correct before the user moves the caret. This
+  // only lifts the live selection range; formatter detection stays upstream.
   useEffect(() => {
     const textarea = textareaRef.current;
     if (textarea) {
@@ -383,6 +383,7 @@ export default function EditMode({
       return;
     }
     onMarkdownChange?.(event.target.value);
+    onSelectionChange?.(event.target.selectionStart, event.target.selectionEnd);
   }
 
   useEffect(() => {
