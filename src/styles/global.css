@@ -4032,6 +4032,31 @@ body.is-height-resizing * {
     max-height: none;
   }
 
+  /* The tablet/phone stacking pass lets rendered Markdown auto-size so long
+   * converted documents are readable. In hosted-phone working mode that makes
+   * View grow to content height while Edit stays a bounded textarea window,
+   * breaking the Edit==View surface contract. Re-bound Markdown View on phones
+   * and let the surface scroll internally, matching Edit without touching
+   * desktop/tablet or LinkedIn mode. */
+  .app-shell-hosted .page.is-working-mode .preview-panel:has(.markdown-surface) {
+    height: max(55dvh, min(620px, var(--preview-panel-ceiling)));
+    min-height: 55dvh;
+    max-height: none;
+  }
+
+  .app-shell-hosted .page.is-working-mode .preview-panel:has(.markdown-surface)
+    .preview-body {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .app-shell-hosted .page.is-working-mode .markdown-surface {
+    flex: 1 1 auto;
+    height: auto;
+    max-height: none;
+    overflow: auto;
+  }
+
   /* Guarantee the edit/view surface keeps usable height even when the panel is
    * squeezed by the keyboard-reduced viewport. Without a floor the flex:1
    * surface collapses to ~0px behind the sticky toolbar (the "can't edit"
