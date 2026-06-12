@@ -6,6 +6,7 @@ For the other perspective, see [Jean-Claude's Journal](../journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 052 | [Requiem: Editor JSON Format](052-requiem-editor-json-format.md) | One-shot editor-side JSON formatting, fenced-block preservation, undo-aware targeted textarea edits, and review-driven caret/test-isolation cleanup |
 | 051 | [Requiem: JSON Responsiveness](051-requiem-json-responsiveness.md) | Worker-backed JSON conversion, lightweight large-JSON preview, timeout-abort honesty, and hosted Save state that no longer declares victory over the wrong snapshot |
 | 050 | [HTML Export](050-html-export.md) | One renderer for preview and export, plus one branch-contamination lesson the process should remember |
 | 049 | [Requiem: Mobile Real Device Fix](049-requiem-mobile-real-device-fix.md) | Burying stale mobile deploy evidence, desktop-only phone confidence, and unconditional editor autofocus while adding Pixel 7 and iPhone WebKit CI coverage |

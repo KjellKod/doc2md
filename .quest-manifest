@@ -39,6 +39,7 @@
 .claude/skills/pre-commit-review/SKILL.md
 .claude/skills/sharpen/SKILL.md
 .claude/skills/ux-review/SKILL.md
+.claude/CLAUDE.md
 .claude/AGENTS.md
 .codex/AGENTS.md
 .opencode/agents/arbiter.md
@@ -55,6 +56,7 @@
 .agents/skills/README.md
 .agents/skills/celebrate/SKILL.md
 .agents/skills/git-commit-assistant/SKILL.md
+.agents/skills/gpt/SKILL.md
 .agents/skills/pr-assistant/SKILL.md
 .agents/skills/pr-shepherd/SKILL.md
 .agents/skills/quest/SKILL.md
@@ -66,6 +68,8 @@
 .skills/SKILLS.md
 .skills/ci-code-reviewer/SKILL.md
 .skills/code-reviewer/SKILL.md
+.skills/doc2md/SKILL.md
+.skills/doc2md/examples/basic-usage.md
 .skills/pre-commit-review/SKILL.md
 .skills/git-commit-assistant/SKILL.md
 .skills/pr-assistant/SKILL.md
@@ -81,11 +85,15 @@
 .skills/ux-context/resources/ux-stress-test.md
 .skills/ux-review/SKILL.md
 .skills/gpt/SKILL.md
+.skills/jc-and-dexter/CELEBRATE.md
+.skills/jc-and-dexter/SKILL.md
 .skills/quest/SKILL.md
 .skills/quest/delegation/questioner.md
 .skills/quest/delegation/router.md
 .skills/quest/delegation/workflow.md
+.skills/quest/persona-closeout.md
 .skills/review-decisions/SKILL.md
+.skills/ux/SKILL.md
 scripts/quest_validate-quest-config.sh
 scripts/quest_validate-quest-state.sh
 scripts/quest_validate-manifest.sh

@@ -2186,3 +2186,155 @@ describe("PreviewPanel format download buttons", () => {
     expect(button).toHaveAttribute("aria-busy", "true");
   });
 });
+
+// Coverage boundary notes (carried from plan review):
+//  - The single-native-undo-step guarantee (⌘Z restores the pre-format text)
+//    runs through commitTargetedInsert → execCommand("insertText"), which is
+//    unavailable in jsdom. These component tests therefore exercise the
+//    onMarkdownChange fallback path only — identical to how the existing
+//    bold/italic/list/paste edit-command tests in this file assert. The real
+//    undo path is validated by the manual Mac-app smoke test in the plan.
+//  - A Playwright/desktop e2e for the click→format flow is intentionally
+//    OUT OF SCOPE for this slice: it has parity with the existing edit-command
+//    coverage (component + manual smoke, not e2e).
+describe("PreviewPanel Format JSON toolbar action", () => {
+  function mockExecCommandReturnsFalse() {
+    Object.defineProperty(document, "execCommand", {
+      configurable: true,
+      value: vi.fn(() => false),
+    });
+  }
+
+  // mockExecCommandReturnsFalse stubs the global document.execCommand via a
+  // configurable property; delete it after each test so the stub never leaks
+  // past this block and couples to later tests (jsdom ships no execCommand, so
+  // delete restores the original absent state).
+  afterEach(() => {
+    delete (document as { execCommand?: unknown }).execCommand;
+  });
+
+  it("renders the Format JSON button only in edit mode (edit-only control)", () => {
+    render(<ControlledPreviewPanel initialMarkdown='{"a":1}' />);
+
+    // Default preview mode: control absent.
+    expect(
+      screen.queryByRole("button", { name: "Format JSON" }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "LinkedIn" }));
+    expect(
+      screen.queryByRole("button", { name: "Format JSON" }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    expect(
+      screen.getByRole("button", { name: "Format JSON" }),
+    ).toBeInTheDocument();
+  });
+
+  it("disables the button when the editor content is prose (AC4)", () => {
+    render(<ControlledPreviewPanel initialMarkdown="# Hello World" />);
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+    const button = screen.getByRole("button", { name: "Format JSON" });
+    expect(button).toBeInTheDocument();
+    expect(button).toBeDisabled();
+    expect(button).not.toHaveAttribute("title");
+  });
+
+  it("formats a whole-document one-line object into a fenced indented block (AC1)", () => {
+    mockExecCommandReturnsFalse();
+    render(
+      <ControlledPreviewPanel initialMarkdown='{"name":"doc2md","active":true}' />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+    const editor = screen.getByRole("textbox", {
+      name: "Edit markdown",
+    }) as HTMLTextAreaElement;
+    const button = screen.getByRole("button", { name: "Format JSON" });
+    expect(button).toBeEnabled();
+
+    fireEvent.click(button);
+
+    expect(editor).toHaveValue(
+      '```json\n{\n  "name": "doc2md",\n  "active": true\n}\n```',
+    );
+  });
+
+  it("formats only the selected raw JSON snippet, leaving surrounding Markdown byte-identical (AC2)", () => {
+    mockExecCommandReturnsFalse();
+    const before = "Here is some config:\n\n";
+    const json = '{"a":1,"b":2}';
+    const after = "\n\nThanks.";
+    render(
+      <ControlledPreviewPanel initialMarkdown={before + json + after} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+    const editor = screen.getByRole("textbox", {
+      name: "Edit markdown",
+    }) as HTMLTextAreaElement;
+    editor.setSelectionRange(before.length, before.length + json.length);
+    fireEvent.select(editor);
+
+    const button = screen.getByRole("button", { name: "Format JSON" });
+    expect(button).toBeEnabled();
+
+    fireEvent.click(button);
+
+    expect(editor).toHaveValue(
+      before + '{\n  "a": 1,\n  "b": 2\n}' + after,
+    );
+  });
+
+  it("reformats a json fenced block while preserving the fence (AC3)", () => {
+    mockExecCommandReturnsFalse();
+    render(
+      <ControlledPreviewPanel initialMarkdown={'```json\n{"a":1,"b":2}\n```'} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+    const editor = screen.getByRole("textbox", {
+      name: "Edit markdown",
+    }) as HTMLTextAreaElement;
+    const button = screen.getByRole("button", { name: "Format JSON" });
+    expect(button).toBeEnabled();
+
+    fireEvent.click(button);
+
+    expect(editor).toHaveValue('```json\n{\n  "a": 1,\n  "b": 2\n}\n```');
+  });
+
+  it("does not rewrite malformed JSON and shows no success UI (AC4)", () => {
+    mockExecCommandReturnsFalse();
+    const onMarkdownChange = vi.fn();
+    const malformed = '{"a":1,}';
+    render(
+      <PreviewPanel
+        entry={createEntry({ markdown: malformed, editedMarkdown: malformed })}
+        onMarkdownChange={onMarkdownChange}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+    const editor = screen.getByRole("textbox", {
+      name: "Edit markdown",
+    }) as HTMLTextAreaElement;
+    const button = screen.getByRole("button", { name: "Format JSON" });
+
+    // (a) Button is disabled, so the action cannot fire.
+    expect(button).toBeDisabled();
+
+    const valueBefore = editor.value;
+    fireEvent.click(button);
+
+    // (a) No edit committed via the change/fallback path.
+    expect(onMarkdownChange).not.toHaveBeenCalled();
+    // (b) Textarea content byte-identical.
+    expect(editor.value).toBe(valueBefore);
+    // (c) No success/confirmation affordance exists (the design has none).
+    expect(screen.queryByText(/formatted/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+});

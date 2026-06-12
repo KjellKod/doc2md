@@ -14,17 +14,14 @@ import {
   type ClipboardPasteConversion,
 } from "./pasteToMarkdown";
 import { useViewportAnchor } from "./useViewportAnchor";
+import {
+  commitTargetedInsert,
+  targetedFromSelectionEdit,
+  type TargetedInsert,
+} from "./targetedTextareaEdit";
 import type { EditorViewState } from "./PreviewPanel";
 
 const LARGE_PASTE_MARKDOWN_LENGTH = 200;
-
-interface TargetedInsert {
-  start: number;
-  end: number;
-  text: string;
-  caretStart: number;
-  caretEnd: number;
-}
 
 interface PasteSnapshot {
   html: string;
@@ -53,76 +50,7 @@ interface EditModeProps {
   onReportView?: () => void;
   onMarkdownChange?: (markdown: string) => void;
   onLargeMarkdownPaste?: (markdown: string) => void;
-}
-
-/**
- * Replace [start, end) in `textarea.value` with `text` via a native input
- * event so the browser records ONE undo step. Synchronously sets the
- * post-insertion selection. Returns true on success.
- */
-function commitTargetedInsert(
-  textarea: HTMLTextAreaElement,
-  insert: TargetedInsert,
-): boolean {
-  if (textarea.ownerDocument?.activeElement !== textarea) {
-    textarea.focus();
-  }
-  if (textarea.ownerDocument?.activeElement !== textarea) {
-    return false;
-  }
-  textarea.setSelectionRange(insert.start, insert.end);
-  const exec = textarea.ownerDocument?.execCommand;
-  if (typeof exec !== "function") {
-    return false;
-  }
-  let ok: boolean;
-  try {
-    ok = exec.call(
-      textarea.ownerDocument,
-      "insertText",
-      false,
-      insert.text,
-    );
-  } catch {
-    return false;
-  }
-  if (!ok) {
-    return false;
-  }
-  textarea.setSelectionRange(insert.caretStart, insert.caretEnd);
-  return true;
-}
-
-function targetedFromSelectionEdit(
-  oldValue: string,
-  newValue: string,
-  selectionStart: number,
-  selectionEnd: number,
-): TargetedInsert {
-  let prefixLen = 0;
-  const minLen = Math.min(oldValue.length, newValue.length);
-  while (
-    prefixLen < minLen &&
-    oldValue.charCodeAt(prefixLen) === newValue.charCodeAt(prefixLen)
-  ) {
-    prefixLen += 1;
-  }
-  let suffixLen = 0;
-  while (
-    suffixLen < oldValue.length - prefixLen &&
-    suffixLen < newValue.length - prefixLen &&
-    oldValue.charCodeAt(oldValue.length - 1 - suffixLen) ===
-      newValue.charCodeAt(newValue.length - 1 - suffixLen)
-  ) {
-    suffixLen += 1;
-  }
-  return {
-    start: prefixLen,
-    end: oldValue.length - suffixLen,
-    text: newValue.slice(prefixLen, newValue.length - suffixLen),
-    caretStart: selectionStart,
-    caretEnd: selectionEnd,
-  };
+  onSelectionChange?: (start: number, end: number) => void;
 }
 
 function renderFindHighlight(source: string, match: FindMatch | null) {
@@ -168,6 +96,7 @@ export default function EditMode({
   onReportView,
   onMarkdownChange,
   onLargeMarkdownPaste,
+  onSelectionChange,
 }: EditModeProps) {
   const isComposingRef = useRef(false);
   const pasteConversionActiveRef = useRef(false);
@@ -276,6 +205,17 @@ export default function EditMode({
     }
     syncFindHighlightScroll();
   }, [effectiveMarkdown, pendingEditorRestoreRef, textareaRef, syncFindHighlightScroll]);
+
+  // Report the initial selection once the textarea is mounted so the toolbar's
+  // Format JSON enabled-state is correct before the user moves the caret. This
+  // is JSON-agnostic; it only lifts the live selection range.
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      onSelectionChange?.(textarea.selectionStart, textarea.selectionEnd);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only initial selection report
+  }, []);
 
   function handleEditorScroll() {
     syncFindHighlightScroll();
@@ -604,7 +544,13 @@ export default function EditMode({
         onChange={handleTextareaChange}
         onPaste={handleTextareaPaste}
         onScroll={handleEditorScroll}
-        onSelect={() => onReportView?.()}
+        onSelect={(event) => {
+          onReportView?.();
+          onSelectionChange?.(
+            event.currentTarget.selectionStart,
+            event.currentTarget.selectionEnd,
+          );
+        }}
         onKeyDown={handleTextareaKeyDown}
         onCompositionStart={() => {
           isComposingRef.current = true;
