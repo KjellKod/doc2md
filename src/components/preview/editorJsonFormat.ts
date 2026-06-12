@@ -10,6 +10,12 @@
  * Canonical format source: src/converters/json.ts (`convertJsonText`). The
  * shared semantics is `JSON.stringify(parsed, null, 2)` plus, for a whole
  * document of raw JSON, the ```json fence wrapper. Keep the two in sync.
+ *
+ * Editor paste has one extra conservative normalization: text copied from
+ * Markdown can carry escaped underscores inside otherwise-valid JSON
+ * (`commit\_sha`). JSON.parse rejects that escape, so we only normalize `\_`
+ * to `_` when the normalized full target parses as JSON. Other malformed JSON
+ * remains unformatted.
  */
 
 import type { TargetedInsert } from "./targetedTextareaEdit";
@@ -30,10 +36,26 @@ function formatJsonBody(raw: string): string | null {
   if (!looksLikeRawJson(trimmed)) {
     return null;
   }
-  try {
-    return JSON.stringify(JSON.parse(trimmed), null, 2);
-  } catch {
+  const parsed = parseJsonOrMarkdownEscapedJson(trimmed);
+  if (parsed === null) {
     return null;
+  }
+  return JSON.stringify(parsed, null, 2);
+}
+
+function parseJsonOrMarkdownEscapedJson(trimmed: string): unknown | null {
+  try {
+    return JSON.parse(trimmed) as unknown;
+  } catch {
+    const normalized = trimmed.replace(/\\_/g, "_");
+    if (normalized === trimmed) {
+      return null;
+    }
+    try {
+      return JSON.parse(normalized) as unknown;
+    } catch {
+      return null;
+    }
   }
 }
 

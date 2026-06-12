@@ -2289,6 +2289,35 @@ describe("PreviewPanel Adjust formatting toolbar action", () => {
     });
   });
 
+  it("shows the button for pasted JSON with Markdown-escaped underscores", async () => {
+    render(<ControlledPreviewPanel initialMarkdown="" />);
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+    const editor = screen.getByRole("textbox", {
+      name: "Edit markdown",
+    }) as HTMLTextAreaElement;
+    const json = '{"build":{"commit\\_sha":"d514327"}}';
+
+    fireEditorPaste(editor, { plainText: json });
+    fireEvent.change(editor, {
+      target: {
+        value: json,
+        selectionStart: json.length,
+        selectionEnd: json.length,
+      },
+    });
+
+    const button = await screen.findByRole("button", {
+      name: "Adjust formatting",
+    });
+    expect(button).toBeEnabled();
+
+    fireEvent.click(button);
+    expect(editor).toHaveValue(
+      '```json\n{\n  "build": {\n    "commit_sha": "d514327"\n  }\n}\n```',
+    );
+  });
+
   it("formats only the selected raw JSON snippet, leaving surrounding Markdown byte-identical (AC2)", () => {
     mockExecCommandReturnsFalse();
     const before = "Here is some config:\n\n";
