@@ -1,0 +1,69 @@
+src/components/preview/PreviewToolbar.tsx
+  s_dc4e5a891848df::t_75a3e92319d45b 1
+  s_dc4e5a891848df::t_f8f7e223dddc5a 211-214,216-221,223-232
+  s_dc4e5a891848df::t_9745cfedeed267 81-83,91
+  s_dc4e5a891848df::t_d8d097414a58a5 215,222
+  s_dc4e5a891848df::t_c88df59902a714 28-30
+src/components/preview/targetedTextareaEdit.ts
+  s_dc4e5a891848df::t_71bbccb1207d1e 1-86
+src/components/preview/EditMode.tsx
+  s_dc4e5a891848df::t_d0e132f55bde76 53
+  s_dc4e5a891848df::t_7f7177d70d8374 209-219
+  s_dc4e5a891848df::t_3001f51de95795 99
+  s_dc4e5a891848df::t_dcac47f6399218 547-553
+  s_dc4e5a891848df::t_5deb100bd46139 17-21
+src/components/preview/editorJsonFormat.ts
+  s_8aea2a69971b0a::t_e36001ab564254 125,129,131
+  s_dc4e5a891848df::t_df4daf3d345443 1-124,126-128,130,132-170
+src/components/PreviewPanel.test.tsx
+  s_8aea2a69971b0a::t_3cb0d153275037 2208-2215
+  s_dc4e5a891848df::t_daa82f8629b1c8 2189-2207,2216-2340
+src/components/preview/editorJsonFormat.test.ts
+  s_dc4e5a891848df::t_0f07fac1be6ee1 1-44,48-149
+  s_8aea2a69971b0a::t_dc8c6b1b59ced7 45-47
+docs/dexter-journal/README.md
+  s_4c83edcd0b5775::t_8394c27ed78537 9
+src/components/preview/PreviewPanel.tsx
+  s_dc4e5a891848df::t_8bd101c35c1430 308-322
+  s_dc4e5a891848df::t_57cecfa5c1cf9d 16-17
+  s_dc4e5a891848df::t_0835e4a3ef6204 503-505
+  s_dc4e5a891848df::t_7fd4cfa27161c9 562-564
+  s_dc4e5a891848df::t_e39bdc0f844464 439-471
+  s_dc4e5a891848df::t_25331ad0146fcc 88-91
+docs/dexter-journal/052-requiem-editor-json-format.md
+  s_4c83edcd0b5775::t_8394c27ed78537 1-102
+.quest-manifest
+  s_4c83edcd0b5775::t_ac4e798d5510d9 42,59,71-72,88-89,94,96
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "27f3ee6a606e14cc752b1c297621a7ba314e2252",
+  "prompts": {},
+  "sessions": {
+    "s_4c83edcd0b5775": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019eb880-ebcc-76f2-a68c-35a2c107edef",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_8aea2a69971b0a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "96796d66-2d88-4d88-bd7a-7ead699aa2f5",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_dc4e5a891848df": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c5062457-c4f8-42c6-a554-27538660169d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
