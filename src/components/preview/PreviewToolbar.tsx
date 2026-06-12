@@ -98,6 +98,8 @@ export default function PreviewToolbar({
   const adjustFormattingTooltipId = useId();
   const shortcutsButtonRef = useRef<HTMLButtonElement | null>(null);
   const shortcutsRef = useRef<HTMLDivElement | null>(null);
+  const adjustFormattingButtonRef = useRef<HTMLButtonElement | null>(null);
+  const adjustFormattingSpotlightTimerRef = useRef<number | null>(null);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const rows = shortcutRows(saveKeyShortcuts);
 
@@ -131,7 +133,38 @@ export default function PreviewToolbar({
     };
   }, [isShortcutsOpen]);
 
-  if (!showToggle && !showCopyButton && !onSave && !onExportHtml) {
+  useEffect(() => {
+    if (adjustFormattingSpotlightTimerRef.current !== null) {
+      window.clearTimeout(adjustFormattingSpotlightTimerRef.current);
+      adjustFormattingSpotlightTimerRef.current = null;
+    }
+    const button = adjustFormattingButtonRef.current;
+    if (!showAdjustFormatting) {
+      button?.classList.remove("is-newly-available");
+      return;
+    }
+    button?.classList.add("is-newly-available");
+    adjustFormattingSpotlightTimerRef.current = window.setTimeout(() => {
+      adjustFormattingButtonRef.current?.classList.remove(
+        "is-newly-available",
+      );
+      adjustFormattingSpotlightTimerRef.current = null;
+    }, 20_000);
+    return () => {
+      if (adjustFormattingSpotlightTimerRef.current !== null) {
+        window.clearTimeout(adjustFormattingSpotlightTimerRef.current);
+        adjustFormattingSpotlightTimerRef.current = null;
+      }
+    };
+  }, [showAdjustFormatting]);
+
+  if (
+    !showToggle &&
+    !showAdjustFormatting &&
+    !showCopyButton &&
+    !onSave &&
+    !onExportHtml
+  ) {
     return null;
   }
 
@@ -140,6 +173,38 @@ export default function PreviewToolbar({
     window.setTimeout(() => shortcutsButtonRef.current?.focus(), 0);
   }
 
+  function handleAdjustFormattingClick() {
+    adjustFormattingButtonRef.current?.classList.remove("is-newly-available");
+    onAdjustFormatting?.();
+  }
+
+  const adjustFormattingControl = showAdjustFormatting ? (
+    <span className="instant-tooltip-anchor">
+      <button
+        ref={adjustFormattingButtonRef}
+        type="button"
+        className="ghost-button format-download-button adjust-formatting-button"
+        onClick={handleAdjustFormattingClick}
+        disabled={adjustFormattingDisabled}
+        aria-disabled={adjustFormattingDisabled}
+        aria-label="Adjust formatting"
+        aria-describedby={adjustFormattingTooltipId}
+      >
+        <WandSparkles
+          className="format-download-icon"
+          aria-hidden="true"
+        />
+      </button>
+      <span
+        id={adjustFormattingTooltipId}
+        role="tooltip"
+        className="instant-tooltip"
+      >
+        Adjust formatting
+      </span>
+    </span>
+  ) : null;
+
   return (
     <div
       ref={(element) => {
@@ -147,50 +212,51 @@ export default function PreviewToolbar({
       }}
       className="preview-toolbar"
     >
-      {showToggle ? (
-        <div
-          className="preview-toggle"
-          role="group"
-          aria-label="View mode"
-        >
-          <button
-            type="button"
-            className={`preview-toggle-button${mode === "edit" ? " is-active" : ""}`}
-            onClick={() => onModeChange("edit")}
-            aria-pressed={mode === "edit"}
+      <div className="preview-toggle-cluster">
+        {showToggle ? (
+          <div
+            className="preview-toggle"
+            role="group"
+            aria-label="View mode"
           >
-            Edit
-          </button>
-          <button
-            type="button"
-            className={`preview-toggle-button${mode === "preview" ? " is-active" : ""}`}
-            onClick={() => onModeChange("preview")}
-            aria-pressed={mode === "preview"}
-          >
-            View
-          </button>
-          <div className="preview-toggle-with-tooltip">
             <button
               type="button"
-              className={`preview-toggle-button${mode === "linkedin" ? " is-active" : ""}`}
-              onClick={() => onModeChange("linkedin")}
-              aria-pressed={mode === "linkedin"}
-              aria-describedby="linkedin-toggle-tooltip"
+              className={`preview-toggle-button${mode === "edit" ? " is-active" : ""}`}
+              onClick={() => onModeChange("edit")}
+              aria-pressed={mode === "edit"}
             >
-              LinkedIn
+              Edit
             </button>
-            <span
-              id="linkedin-toggle-tooltip"
-              role="tooltip"
-              className="preview-toggle-tooltip"
+            <button
+              type="button"
+              className={`preview-toggle-button${mode === "preview" ? " is-active" : ""}`}
+              onClick={() => onModeChange("preview")}
+              aria-pressed={mode === "preview"}
             >
-              Unicode formatting for easy LinkedIn posting
-            </span>
+              View
+            </button>
+            <div className="preview-toggle-with-tooltip">
+              <button
+                type="button"
+                className={`preview-toggle-button${mode === "linkedin" ? " is-active" : ""}`}
+                onClick={() => onModeChange("linkedin")}
+                aria-pressed={mode === "linkedin"}
+                aria-describedby="linkedin-toggle-tooltip"
+              >
+                LinkedIn
+              </button>
+              <span
+                id="linkedin-toggle-tooltip"
+                role="tooltip"
+                className="preview-toggle-tooltip"
+              >
+                Unicode formatting for easy LinkedIn posting
+              </span>
+            </div>
           </div>
-        </div>
-      ) : (
-        <div />
-      )}
+        ) : null}
+        {adjustFormattingControl}
+      </div>
       <div className="preview-toolbar-actions">
         {onNewDocument ? (
           <button
@@ -214,31 +280,6 @@ export default function PreviewToolbar({
             <Search className="find-entry-icon" aria-hidden="true" />
             <span className="find-entry-label">Find</span>
           </button>
-        ) : null}
-        {showAdjustFormatting ? (
-          <span className="instant-tooltip-anchor">
-            <button
-              type="button"
-              className="ghost-button format-download-button"
-              onClick={onAdjustFormatting}
-              disabled={adjustFormattingDisabled}
-              aria-disabled={adjustFormattingDisabled}
-              aria-label="Adjust formatting"
-              aria-describedby={adjustFormattingTooltipId}
-            >
-              <WandSparkles
-                className="format-download-icon"
-                aria-hidden="true"
-              />
-            </button>
-            <span
-              id={adjustFormattingTooltipId}
-              role="tooltip"
-              className="instant-tooltip"
-            >
-              Adjust formatting
-            </span>
-          </span>
         ) : null}
         {onSave ? (
           <div className="save-control-group">
