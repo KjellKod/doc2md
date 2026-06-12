@@ -36,6 +36,14 @@ describe("detectJsonFormatTarget — whole document (no selection)", () => {
     expect(apply(value, target)).toBe("```json\n[\n  1,\n  2,\n  3\n]\n```");
   });
 
+  it("normalizes Markdown-escaped underscores before formatting otherwise-valid JSON", () => {
+    const value = '{"build":{"commit\\_sha":"d514327"}}';
+    const target = detectJsonFormatTarget(value, 0, 0);
+    expect(apply(value, target)).toBe(
+      '```json\n{\n  "build": {\n    "commit_sha": "d514327"\n  }\n}\n```',
+    );
+  });
+
   it("reformats an existing json fenced block and preserves the fence (AC3)", () => {
     const value = '```json\n{"a":1,"b":2}\n```';
     const target = detectJsonFormatTarget(value, 0, 0);
