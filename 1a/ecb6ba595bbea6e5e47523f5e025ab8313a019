@@ -1,0 +1,31 @@
+src/components/preview/targetedTextareaEdit.ts
+  s_4c83edcd0b5775::t_31de6b46a2c160 5
+src/components/preview/PreviewToolbar.tsx
+  s_4c83edcd0b5775::t_9970e96bf43cdc 1-8,229-232
+  s_4c83edcd0b5775::t_eaf11e691dcfda 35-37,88-90,98,218,223-227,235,239
+src/components/preview/EditMode.tsx
+  s_4c83edcd0b5775::t_37d4f5c45d6f05 209-211
+  s_4c83edcd0b5775::t_17232080642baf 386
+src/components/preview/PreviewPanel.tsx
+  s_4c83edcd0b5775::t_1cc7312ecc12c7 309
+  s_4c83edcd0b5775::t_8f62bba3911c3f 308,311-313,440-441,445,504-506
+src/components/PreviewPanel.test.tsx
+  s_4c83edcd0b5775::t_90be96882fc932 2200,2216,2221,2226,2231,2240,2254,2272,2287,2308,2328,2354
+  s_4c83edcd0b5775::t_8147dc57c02c68 2235,2239,2241,2264-2271,2273-2286,2288-2289,2351-2353,2355
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.6",
+  "base_commit_sha": "1aecb6ba595bbea6e5e47523f5e025ab8313a019",
+  "prompts": {},
+  "sessions": {
+    "s_4c83edcd0b5775": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019eb880-ebcc-76f2-a68c-35a2c107edef",
+        "model": "gpt-5.5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
