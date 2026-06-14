@@ -136,6 +136,41 @@ describe("PreviewOverflowMenu (P1 a11y)", () => {
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 
+  it("skips disabled items during keyboard navigation (no stuck focus)", () => {
+    // A disabled item sitting between enabled ones must not trap Arrow/Tab
+    // navigation: a disabled <button> cannot receive focus, so including it in
+    // the nav list would leave focus stuck on the current item.
+    render(
+      <PreviewOverflowMenu
+        items={[
+          { key: "new", label: "New document", onSelect: vi.fn() },
+          {
+            key: "md",
+            label: "Download Markdown",
+            onSelect: vi.fn(),
+            disabled: true,
+          },
+          { key: "html", label: "Download HTML", onSelect: vi.fn() },
+        ]}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "More actions" }));
+
+    const newItem = screen.getByRole("menuitem", { name: "New document" });
+    const htmlItem = screen.getByRole("menuitem", { name: "Download HTML" });
+
+    expect(newItem).toHaveFocus();
+    // ArrowDown skips the disabled "Download Markdown" and lands on HTML.
+    fireEvent.keyDown(newItem, { key: "ArrowDown" });
+    expect(htmlItem).toHaveFocus();
+    // Wrap back to the first enabled item (only two are focusable).
+    fireEvent.keyDown(htmlItem, { key: "ArrowDown" });
+    expect(newItem).toHaveFocus();
+    // ArrowUp also wraps across the disabled item.
+    fireEvent.keyDown(newItem, { key: "ArrowUp" });
+    expect(htmlItem).toHaveFocus();
+  });
+
   it("does not invoke disabled items", () => {
     const onExport = vi.fn();
     render(

@@ -75,8 +75,13 @@ export default function PreviewOverflowMenu({
   };
 
   const handleMenuKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    // Exclude disabled items from the keyboard navigation list: a disabled
+    // <button> cannot receive focus, so including it would let ArrowDown/Tab
+    // try to focus a dead target and leave focus stuck on the current item
+    // (e.g. a busy/disabled Download Markdown sitting before HTML/Copy). This
+    // mirrors the first-enabled focus-on-open behavior above.
     const focusableItems = itemRefs.current.filter(
-      (item): item is HTMLButtonElement => item !== null,
+      (item): item is HTMLButtonElement => item !== null && !item.disabled,
     );
     if (focusableItems.length === 0) {
       return;
