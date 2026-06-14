@@ -10,6 +10,8 @@ import { useEffect, useId, useRef, useState } from "react";
 import type { SaveState } from "../../types/saveState";
 import SaveButton from "../SaveButton";
 import SaveStatePill from "../SaveStatePill";
+import PreviewOverflowMenu from "./PreviewOverflowMenu";
+import type { PreviewOverflowMenuItem } from "./PreviewOverflowMenu";
 
 type PreviewModeName = "edit" | "preview" | "linkedin";
 
@@ -38,6 +40,13 @@ interface PreviewToolbarProps {
   onModeChange: (mode: PreviewModeName) => void;
   onOpenFind: () => void;
   onCopy: () => void;
+  // Web-only render-layer flag (render-layer split, NOT responsive-shrink —
+  // ux-guidebook§5.3). When true (hosted phones), the toolbar collapses to a
+  // single band: the Edit/View/LinkedIn toggle + Save stay primary and the
+  // demoted New/Find/MD/HTML/Copy/shortcuts actions move behind a single
+  // overflow "More" menu. Desktop and bare shells leave this undefined and
+  // render the existing two-band layout byte-for-byte.
+  compactToolbar?: boolean;
 }
 
 interface ShortcutRow {
@@ -91,6 +100,7 @@ export default function PreviewToolbar({
   onModeChange,
   onOpenFind,
   onCopy,
+  compactToolbar = false,
 }: PreviewToolbarProps) {
   const shortcutsPanelId = useId();
   const downloadMarkdownTooltipId = useId();
@@ -178,6 +188,64 @@ export default function PreviewToolbar({
     onAdjustFormatting?.();
   }
 
+  const copyActionLabel =
+    mode === "preview"
+      ? "Copy formatted text"
+      : mode === "linkedin"
+        ? "Copy LinkedIn text"
+        : "Copy markdown document";
+
+  // Demoted actions for the compact overflow menu (P1). Each reuses the exact
+  // callback already wired into the non-compact toolbar so behavior is shared;
+  // only the chrome (a single "More" menu vs the second action row) differs.
+  // Save is intentionally NOT here — it stays primary in the toolbar actions
+  // band (arbiter F3).
+  const overflowItems: PreviewOverflowMenuItem[] = [];
+  if (onNewDocument) {
+    overflowItems.push({
+      key: "new",
+      label: "New document",
+      onSelect: onNewDocument,
+    });
+  }
+  if (showToggle) {
+    overflowItems.push({
+      key: "find",
+      label: "Find and replace",
+      onSelect: onOpenFind,
+    });
+  }
+  if (onDownloadMarkdown) {
+    overflowItems.push({
+      key: "download-markdown",
+      label: "Download Markdown",
+      onSelect: () => void onDownloadMarkdown(),
+      disabled: downloadMarkdownDisabled || downloadMarkdownBusy,
+    });
+  }
+  if (onExportHtml) {
+    overflowItems.push({
+      key: "export-html",
+      label: "Download HTML",
+      onSelect: () => void onExportHtml(),
+      disabled: exportHtmlDisabled || exportHtmlBusy,
+    });
+  }
+  if (showCopyButton) {
+    overflowItems.push({
+      key: "copy",
+      label: copyActionLabel,
+      onSelect: onCopy,
+    });
+  }
+  if (showToggle) {
+    overflowItems.push({
+      key: "shortcuts",
+      label: "Keyboard shortcuts",
+      onSelect: () => setIsShortcutsOpen(true),
+    });
+  }
+
   const adjustFormattingControl = showAdjustFormatting ? (
     <span className="instant-tooltip-anchor">
       <button
@@ -204,6 +272,115 @@ export default function PreviewToolbar({
       </span>
     </span>
   ) : null;
+
+  // Save stays primary in BOTH layouts (arbiter F3). SaveStatePill rides with
+  // it so the save-feedback signifier is never dropped in compact mode
+  // (ux-guidebook§4.7).
+  const saveControlGroup = onSave ? (
+    <div className="save-control-group">
+      <SaveButton
+        onSave={onSave}
+        disabled={saveDisabled}
+        busy={saveBusy}
+        ariaKeyshortcuts={saveKeyShortcuts}
+      />
+      <SaveStatePill state={saveState} lastSavedAt={lastSavedAt} />
+    </div>
+  ) : null;
+
+  // The shortcuts popover is shared by both layouts. In compact mode the
+  // overflow menu's "Keyboard shortcuts" item opens it; closeShortcuts() uses
+  // optional chaining so a missing trigger button (compact) does not throw.
+  const shortcutsPopover =
+    showToggle && isShortcutsOpen ? (
+      <div
+        ref={shortcutsRef}
+        id={shortcutsPanelId}
+        className="shortcut-reference-popover"
+        role="dialog"
+        aria-label="Keyboard shortcuts"
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            event.preventDefault();
+            event.stopPropagation();
+            closeShortcuts();
+          }
+        }}
+      >
+        <dl className="shortcut-reference-list">
+          {rows.map((row) => (
+            <div className="shortcut-reference-row" key={row.label}>
+              <dt>{row.label}</dt>
+              <dd>{row.keys}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    ) : null;
+
+  if (compactToolbar) {
+    return (
+      <div
+        ref={(element) => {
+          toolbarRef.current = element;
+        }}
+        className="preview-toolbar preview-toolbar-compact"
+      >
+        <div className="preview-toggle-cluster">
+          {showToggle ? (
+            <div className="preview-toggle" role="group" aria-label="View mode">
+              <button
+                type="button"
+                className={`preview-toggle-button${mode === "edit" ? " is-active" : ""}`}
+                onClick={() => onModeChange("edit")}
+                aria-pressed={mode === "edit"}
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                className={`preview-toggle-button${mode === "preview" ? " is-active" : ""}`}
+                onClick={() => onModeChange("preview")}
+                aria-pressed={mode === "preview"}
+              >
+                View
+              </button>
+              <div className="preview-toggle-with-tooltip">
+                <button
+                  type="button"
+                  className={`preview-toggle-button${mode === "linkedin" ? " is-active" : ""}`}
+                  onClick={() => onModeChange("linkedin")}
+                  aria-pressed={mode === "linkedin"}
+                  aria-describedby="linkedin-toggle-tooltip"
+                >
+                  LinkedIn
+                </button>
+                <span
+                  id="linkedin-toggle-tooltip"
+                  role="tooltip"
+                  className="preview-toggle-tooltip"
+                >
+                  Unicode formatting for easy LinkedIn posting
+                </span>
+              </div>
+            </div>
+          ) : null}
+          {adjustFormattingControl}
+        </div>
+        {/* Single action band: Save stays primary; everything else is demoted
+            into the overflow menu. Keeping Save + More here means
+            .preview-toolbar-actions retains >1 child so the AC4 e2e assertion
+            (childCount > 1) stays green (arbiter F3). */}
+        <div className="preview-toolbar-actions">
+          {saveControlGroup}
+          {overflowItems.length > 0 ? (
+            <PreviewOverflowMenu items={overflowItems} />
+          ) : null}
+          {shortcutsPopover}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

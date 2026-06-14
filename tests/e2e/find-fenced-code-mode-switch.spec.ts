@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { openFindBar } from "./helpers/findBar";
 import { Buffer } from "node:buffer";
 
 const FENCED_XML = [
@@ -43,7 +44,7 @@ test("find keeps fenced XML highlight aligned after edit-to-preview source switc
   await openMarkdown(page);
 
   await page.getByRole("button", { name: "Edit", exact: true }).click();
-  await page.getByRole("button", { name: "Find and replace" }).click();
+  await openFindBar(page);
   const findInput = page.getByRole("textbox", { name: "Find markdown text" });
   await findInput.fill("RunAtLoad");
   await expect(page.locator(".find-replace-count")).toHaveText("1 of 1");

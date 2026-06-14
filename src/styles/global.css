@@ -1851,6 +1851,70 @@ body.is-height-resizing * {
   white-space: nowrap;
 }
 
+/* PreviewOverflowMenu (P1). Base styles for the hosted-phone "More" menu.
+ * Mirrors the shortcut-reference-popover surface and the working-mode recent
+ * menu item layout so the demoted actions read as a coherent menu. The trigger
+ * itself only renders on the compact (hosted-phone) toolbar path. */
+.preview-overflow-menu {
+  position: relative;
+  display: inline-flex;
+}
+
+.preview-overflow-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 8;
+  display: grid;
+  gap: 2px;
+  min-width: 12rem;
+  max-width: min(18rem, calc(100vw - 32px));
+  padding: 6px;
+  border: 1px solid rgba(23, 56, 76, 0.16);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.98);
+  color: var(--text-primary);
+  box-shadow: 0 18px 42px rgba(27, 39, 49, 0.16);
+}
+
+.preview-overflow-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.preview-overflow-item:hover,
+.preview-overflow-item:focus-visible {
+  background: rgba(23, 56, 76, 0.08);
+}
+
+.preview-overflow-item:disabled,
+.preview-overflow-item[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+:root[data-theme="dark"] .preview-overflow-popover {
+  border-color: rgba(204, 214, 223, 0.14);
+  background: rgba(26, 31, 37, 0.98);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.32);
+}
+
+:root[data-theme="dark"] .preview-overflow-item:hover,
+:root[data-theme="dark"] .preview-overflow-item:focus-visible {
+  background: rgba(204, 214, 223, 0.12);
+}
+
 .find-entry-button,
 .format-download-button,
 .find-replace-icon-button,
@@ -3917,12 +3981,16 @@ body.is-height-resizing * {
     width: 100%;
   }
 
-  /* Hosted-phone toolbar: keep the toolbar height-stable so it does not eat
-   * the edit/view surface (AC2/AC4). Stack the primary mode toggle above a
-   * single compact row of demoted secondary actions, and tighten gaps/padding
-   * so the wrapped rows do not pile up. Scoped to .app-shell-hosted so the
-   * desktop-adapter and bare-web shells are untouched (no-regression, AC5). */
-  .app-shell-hosted .preview-toolbar {
+  /* Hosted-phone toolbar fold (P1). The toolbar now renders structurally as a
+   * single band: PreviewToolbar's compactToolbar path lifts Save into the
+   * primary cluster and demotes New/Find/MD/HTML/Copy/shortcuts into a single
+   * overflow "More" menu, so there is no second action ROW of buttons to tame
+   * with column-flex + horizontal-scroll hacks anymore. We keep the primary
+   * mode toggle above the Save + More action band (two short, height-stable
+   * rows) and tighten gaps/padding. Scoped to .preview-toolbar-compact AND
+   * .app-shell-hosted so the desktop-adapter and bare-web shells are untouched
+   * (no-regression, AC5). */
+  .app-shell-hosted .preview-toolbar-compact {
     flex-direction: column;
     gap: 6px;
     padding: 6px;
@@ -3931,6 +3999,45 @@ body.is-height-resizing * {
 
   .app-shell-hosted .preview-toggle-cluster {
     width: 100%;
+  }
+
+  /* The single action band: Save (primary) + the overflow "More" trigger sit on
+   * one short row. Only two children, so it stays height-stable without the
+   * old nowrap horizontal-scroll machinery. */
+  .app-shell-hosted .preview-toolbar-compact .preview-toolbar-actions {
+    position: relative;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .app-shell-hosted .preview-overflow-menu {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+  }
+
+  .app-shell-hosted .preview-overflow-trigger {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* P2: fold the standalone UPLOAD collapse-rail into the working-mode bar on
+   * hosted phones. The rail ate its own band above the editor; hide it in
+   * WORKING MODE (where the working-mode bar is live and carries the reopen
+   * "Uploads" control wired to handleShowSidebar). It is scoped to
+   * .page.is-working-mode on purpose: outside working mode the working-mode bar
+   * is inert (AppShell wraps it aria-hidden+inert when !isWorkingMode), so the
+   * rail must stay visible there to avoid a collapsed + non-working-mode
+   * dead-end (arbiter F5). CSS-only — the shared AppShell rail TSX branch is
+   * untouched, so desktop and bare shells still render the rail everywhere
+   * (AC-P2b). */
+  .app-shell-hosted .page.is-working-mode .collapse-rail {
+    display: none;
   }
 
   /* Reclaim panel height for the surface: compact the preview-body padding and
@@ -3957,67 +4064,14 @@ body.is-height-resizing * {
     display: none;
   }
 
-  /* Narrow-phone fallback (code review, repo min-width is 320px — global.css:92):
-   * the secondary controls plus gaps cannot all fit one row at 320px with the
-   * 44px tap floor, so wrapping would regrow the toolbar into multiple rows and
-   * squeeze the surface again. Keep them on a single height-stable row that
-   * scrolls horizontally instead of wrapping. Scoped to .app-shell-hosted so the
-   * desktop-adapter and bare-web shells are untouched (AC5). */
-  .app-shell-hosted .preview-toolbar-actions {
-    align-items: center;
-    gap: 6px;
-    row-gap: 6px;
-    flex-wrap: nowrap;
-    /* Bound the row to the toolbar width so overflow-x creates an INTERNAL
-     * scroller instead of letting the nowrap content size the column-flex
-     * toolbar to its intrinsic width and overflow the 320px page. width +
-     * max-width pin the box; min-width: 0 lets it shrink below content. */
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .app-shell-hosted .preview-toolbar-actions::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Keep each control at full tap size and let the row scroll, rather than
-   * shrinking buttons below the 44px floor or wrapping onto a new row. */
-  .app-shell-hosted .preview-toolbar-actions > * {
-    flex-shrink: 0;
-  }
-
-  /* Tooltip wrappers are flex items in the one-row action scroller. Size them
-   * like the buttons they wrap so adding an edit-only icon cannot change the
-   * toolbar row height on hosted phones. */
-  .app-shell-hosted .preview-toolbar-actions > .instant-tooltip-anchor {
-    display: inline-flex;
-    align-items: center;
-    height: 44px;
-  }
-
+  /* The adjust-formatting wand rides in the primary toggle cluster in compact
+   * mode; size its tooltip wrapper like a tap target so an edit-only icon
+   * cannot shift the cluster row height on hosted phones. */
   .app-shell-hosted .preview-toggle-cluster > .instant-tooltip-anchor {
     display: inline-flex;
     align-items: center;
     height: 44px;
     flex-shrink: 0;
-  }
-
-  /* Demote the secondary actions: tighter footprint, icon-first. The Edit/View
-   * toggle and Save keep full weight; New/Find/MD/HTML/copy/shortcuts shrink so
-   * they no longer compete with the primary task. Tap floor (44px) preserved by
-   * the existing .app-shell-hosted min-height rule below. */
-  .app-shell-hosted .preview-toolbar-actions .find-entry-label {
-    display: none;
-  }
-
-  .app-shell-hosted .preview-toolbar-actions .find-entry-button,
-  .app-shell-hosted .preview-toolbar-actions .format-download-button,
-  .app-shell-hosted .preview-toolbar-actions .preview-copy-button {
-    padding-inline: 10px;
   }
 
   .shortcut-reference-wrap {

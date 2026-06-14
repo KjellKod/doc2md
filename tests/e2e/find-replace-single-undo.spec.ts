@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { openFindBar } from "./helpers/findBar";
 
 async function openEditorWith(page: Page, content: string) {
   await page.goto("./");
@@ -18,7 +19,7 @@ test("Replace (single match) commits as a single native undo on Chromium", async
   const originalContent = "apple banana apple cherry";
   await openEditorWith(page, originalContent);
 
-  await page.getByRole("button", { name: "Find and replace" }).click();
+  await openFindBar(page);
   await page
     .getByRole("textbox", { name: "Find markdown text" })
     .fill("apple");

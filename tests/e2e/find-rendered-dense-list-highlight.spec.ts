@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { openFindBar } from "./helpers/findBar";
 import { Buffer } from "node:buffer";
 
 const DENSE_METADATA = [
@@ -34,7 +35,7 @@ test("preview find highlights the searched word inside formatted metadata lists"
 }) => {
   await openMarkdown(page);
 
-  await page.getByRole("button", { name: "Find and replace" }).click();
+  await openFindBar(page);
   await page
     .getByRole("textbox", { name: "Find markdown text" })
     .fill("Gamma");
