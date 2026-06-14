@@ -228,4 +228,69 @@ describe("WorkingModeBar", () => {
     expect(baseBarRule).toContain("overflow: hidden;");
     expect(activeBarRule).toContain("overflow: visible;");
   });
+
+  describe("P2 upload reopen via trailingControls (F5 / AC-P2c)", () => {
+    it("renders the show-upload control passed through the existing trailingControls slot", () => {
+      const onShowUpload = vi.fn();
+      renderBar({
+        trailingControls: (
+          <button
+            type="button"
+            className="working-mode-show-upload"
+            aria-label="Show upload panel"
+            onClick={onShowUpload}
+          >
+            Uploads
+          </button>
+        ),
+      });
+
+      const reopen = screen.getByRole("button", { name: "Show upload panel" });
+      expect(reopen).toBeInTheDocument();
+      fireEvent.click(reopen);
+      expect(onShowUpload).toHaveBeenCalledTimes(1);
+    });
+
+    it("desktop variant without trailing controls is byte-identical to today (no upload affordance, no new prop)", () => {
+      renderBar({ variant: "desktop" });
+
+      // No trailing-controls wrapper renders when nothing is passed, so the
+      // desktop bar is unchanged. Reusing trailingControls (not a new
+      // uploadToggle prop) makes this trivially true.
+      expect(
+        document.querySelector(".working-mode-trailing-controls"),
+      ).toBeNull();
+      expect(
+        screen.queryByRole("button", { name: "Show upload panel" }),
+      ).not.toBeInTheDocument();
+      // Open + New are the only action buttons (plus the logo).
+      expect(
+        screen.getByRole("button", { name: "Open" }),
+      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "New" })).toBeInTheDocument();
+    });
+
+    it("hides the hosted-phone collapse rail only in working mode so it is never the sole inert reopen path (F5)", () => {
+      // CSS guard: the rail is hidden under .page.is-working-mode (where the
+      // working-mode bar is live), NOT unconditionally — preventing a
+      // collapsed + non-working-mode dead-end where the inert bar would be the
+      // only reopen path.
+      const styles = readFileSync(globalCssPath, "utf8");
+      // There are multiple rules for this selector (tablet styling + the phone
+      // hide); assert at least one body contains display:none. The rule is
+      // scoped to .page.is-working-mode, never the bare .collapse-rail, so the
+      // dead-end F5 warns about cannot occur.
+      const matches = [
+        ...styles.matchAll(
+          /\.app-shell-hosted \.page\.is-working-mode \.collapse-rail\s*\{([^}]*)\}/g,
+        ),
+      ].map((match) => match[1]);
+      expect(matches.some((body) => body.includes("display: none;"))).toBe(true);
+      // Guard against an over-broad hide that would also kill the rail outside
+      // working mode (the F5 dead-end).
+      expect(styles).not.toContain(
+        ".app-shell-hosted .collapse-rail {\n    display: none;",
+      );
+    });
+  });
 });

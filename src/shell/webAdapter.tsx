@@ -11,6 +11,7 @@
 // apps/macos/**, NOT in the React shell. This adapter does not render any
 // updater UI.
 
+import { FolderOpen } from "lucide-react";
 import type { ChangeEvent, ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BROWSER_FILE_ACCEPT } from "../components/DropZone";
@@ -73,6 +74,10 @@ export type WebAppShellAdapter = {
   desktopStatusSlot: ReactNode;
   hiddenInputSlot: ReactNode;
   nativeMenuBridgeSlot: ReactNode;
+  // P1 render-layer split: true on hosted phone-width viewports so AppShell
+  // folds the preview toolbar into a single band. Desktop/bare never compute
+  // this (their adapters don't set it), so they keep the two-band toolbar.
+  compactToolbar: boolean;
 };
 
 export function useWebAppShellAdapter(): WebAppShellAdapter {
@@ -117,6 +122,37 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     (id: string) => docViewStateRef.current.get(id)?.editor,
     [],
   );
+  // P1: track the hosted-phone breakpoint so the preview toolbar folds into a
+  // single band only on phones (the same `<=720px` gate the hosted-phone CSS
+  // block uses). This is a render-layer signal owned by the WEB adapter
+  // (render-layer split, ux-guidebook§5.3) — the desktop adapter never computes
+  // it, so the desktop two-band toolbar is untouched. SSR-safe initial value.
+  const [compactToolbar, setCompactToolbar] = useState(() => {
+    if (
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function"
+    ) {
+      return false;
+    }
+    return window.matchMedia("(max-width: 720px)").matches;
+  });
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") {
+      return;
+    }
+    const mediaQueryList = window.matchMedia("(max-width: 720px)");
+    const handleChange = (event: MediaQueryList | MediaQueryListEvent) => {
+      setCompactToolbar(event.matches);
+    };
+    handleChange(mediaQueryList);
+    if (typeof mediaQueryList.addEventListener === "function") {
+      mediaQueryList.addEventListener("change", handleChange);
+      return () => mediaQueryList.removeEventListener("change", handleChange);
+    }
+    mediaQueryList.addListener(handleChange);
+    return () => mediaQueryList.removeListener(handleChange);
+  }, []);
+
   const selectedEntryIdForResize = selectedEntry?.id ?? null;
   const resize = useWorkspaceResize({
     autoCollapseResponsiveWidths: true,
@@ -299,6 +335,22 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     }
     resize.triggerFirstOpenAutoCollapse(Boolean(selectedEntry?.isScratch));
   }, [resize, selectedEntry?.isScratch, selectedEntryId]);
+
+  // P0: on hosted phones, re-collapse the upload sidebar whenever a non-scratch
+  // document becomes selected, so tapping a file fills the screen with the
+  // document and the reopen-Uploads dead-end disappears. Driven from a
+  // post-select effect keyed on selectedEntryId (mirroring the one-shot effect
+  // above) so `selectedEntry?.isScratch` is read AFTER React re-derives the new
+  // selection — NOT synchronously inside handleSelectEntry, which would read the
+  // PREVIOUSLY selected entry's scratch flag (arbiter F1). The hook applies the
+  // phone-width gate and the userTouchedSidebarRef guard (F2).
+  const collapseSidebarOnPhoneSelect = resize.collapseSidebarOnPhoneSelect;
+  useEffect(() => {
+    if (selectedEntryId === null) {
+      return;
+    }
+    collapseSidebarOnPhoneSelect(Boolean(selectedEntry?.isScratch));
+  }, [collapseSidebarOnPhoneSelect, selectedEntry?.isScratch, selectedEntryId]);
 
   const toggleCheckedEntry = useCallback((entryId: string, checked: boolean) => {
     setCheckedEntryIds((current) => {
@@ -556,12 +608,54 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     onToggleAllChecked: toggleAllChecked,
   };
 
+  // P2 + arb-1: on hosted phones the standalone UPLOAD collapse-rail is hidden
+  // in working mode (CSS) to stop it eating its own band. The collapse/reopen
+  // affordance is surfaced through WorkingModeBar's EXISTING trailingControls
+  // slot (arbiter F5 — reuse, don't add a parallel uploadToggle prop). It is a
+  // TOGGLE, not reopen-only: when the sidebar is collapsed it offers "Show
+  // uploads" (handleShowSidebar); when expanded it offers "Hide uploads"
+  // (handleCollapseSidebar). This is the phone-reachable collapse path —
+  // .collapse-toggle is display:none at <=980px and collapseSidebarOnPhoneSelect
+  // bails once userTouchedSidebarRef is set, so without a visible hide control a
+  // user who manually reopened Uploads has NO way back to the collapsed
+  // full-screen reading view for the rest of the session (the exact P0 dead-end
+  // this quest removes — AC-P0a, ux-guidebook§11/§4.5: keep the user in control,
+  // never trapped, recovery cheap and reversible). aria-expanded reflects the
+  // sidebar state so screen readers hear the toggle semantics. The working-mode
+  // bar is non-inert in working mode (AppShell wraps it inert only when NOT in
+  // working mode), so this control is reachable wherever the rail is hidden.
+  // Desktop never sets compact, so its trailing slot stays the theme toggle
+  // alone (byte-identical).
+  const uploadToggleControl = compactToolbar ? (
+    <button
+      type="button"
+      className="secondary-button working-mode-button working-mode-show-upload"
+      onClick={
+        resize.sidebarCollapsed
+          ? resize.handleShowSidebar
+          : resize.handleCollapseSidebar
+      }
+      aria-expanded={!resize.sidebarCollapsed}
+      aria-label={
+        resize.sidebarCollapsed ? "Show upload panel" : "Hide upload panel"
+      }
+    >
+      <FolderOpen className="working-mode-button-icon" aria-hidden="true" />
+      <span>Uploads</span>
+    </button>
+  ) : null;
+
   const workingModeBarProps: WorkingModeBarProps = {
     variant: "browser",
     onHome: handleReturnHome,
     onOpen: handleBrowserOpenRequest,
     onNew: handleNewDocument,
-    trailingControls: <ThemeToggle />,
+    trailingControls: (
+      <>
+        {uploadToggleControl}
+        <ThemeToggle />
+      </>
+    ),
   };
 
   const heroActionsSlot = <ThemeToggle />;
@@ -603,5 +697,6 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     desktopStatusSlot: null,
     hiddenInputSlot,
     nativeMenuBridgeSlot: null,
+    compactToolbar,
   };
 }

@@ -3,6 +3,7 @@
 // catch the kinds of regressions that single-keystroke unit tests miss.
 
 import { expect, test, type Page } from "@playwright/test";
+import { openFindBar } from "./helpers/findBar";
 import { Buffer } from "node:buffer";
 
 async function openScratchEditor(page: Page) {
@@ -249,7 +250,7 @@ test("Cmd-Alt-F is not intercepted by doc2md", async ({ page }) => {
 // BUG 6 — Find input must not autocorrect / capitalize on the user.
 test("Find input does not autocorrect / autocapitalize", async ({ page }) => {
   await openScratchEditor(page);
-  await page.getByRole("button", { name: "Find and replace" }).click();
+  await openFindBar(page);
   const findInput = page.getByRole("textbox", { name: "Find markdown text" });
   await findInput.click();
   // Match attributes that disable browser-side text correction. The
@@ -271,7 +272,7 @@ test("Replace All on a moderate document is fast", async ({ page }) => {
       "\n",
     );
   await editor.fill(body);
-  await page.getByRole("button", { name: "Find and replace" }).click();
+  await openFindBar(page);
   await page
     .getByRole("textbox", { name: "Find markdown text" })
     .fill("apple");
@@ -299,7 +300,7 @@ test("Cmd-Z after Replace All restores matches one at a time", async ({
   const editor = page.getByLabel("Edit markdown");
   await editor.fill("apple banana apple cherry apple");
 
-  await page.getByRole("button", { name: "Find and replace" }).click();
+  await openFindBar(page);
   await page
     .getByRole("textbox", { name: "Find markdown text" })
     .fill("apple");
@@ -360,7 +361,7 @@ test("Replace All scales to 16K-word documents with 250 replacements", async ({
   }, body);
   await expect(editor).toHaveValue(body);
 
-  await page.getByRole("button", { name: "Find and replace" }).click();
+  await openFindBar(page);
   await page
     .getByRole("textbox", { name: "Find markdown text" })
     .fill("lorem");

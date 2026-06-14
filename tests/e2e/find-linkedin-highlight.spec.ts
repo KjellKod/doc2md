@@ -9,6 +9,7 @@
 // test asserts LinkedIn mode renders a <mark> for the active find match
 // just like Preview mode does.
 import { expect, test, type Page } from "@playwright/test";
+import { openFindBar } from "./helpers/findBar";
 import { Buffer } from "node:buffer";
 
 // LinkedIn formatting converts **bold** / _italic_ into Unicode bold /
@@ -54,7 +55,7 @@ test("LinkedIn mode renders an active-match <mark> and advances on Next", async 
 }) => {
   await openInLinkedIn(page);
 
-  await page.getByRole("button", { name: "Find and replace" }).click();
+  await openFindBar(page);
   const findInput = page.getByRole("textbox", { name: "Find markdown text" });
   await findInput.fill("alpha");
   // Match Case is on by default; lowercase "alpha" finds 4 plain

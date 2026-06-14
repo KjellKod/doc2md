@@ -51,6 +51,7 @@ function AppContent() {
       hiddenInputSlot={adapter.hiddenInputSlot}
       nativeMenuBridgeSlot={adapter.nativeMenuBridgeSlot}
       appShellClassExtension="app-shell-hosted"
+      compactToolbar={adapter.compactToolbar}
     />
   );
 }

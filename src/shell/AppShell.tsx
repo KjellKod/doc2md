@@ -174,6 +174,13 @@ export type AppShellProps = {
   // Optional view-switcher-meta override for the install page. Defaults
   // to the canonical static copy below.
   installViewMetaText?: string;
+
+  // Web-only render-layer flag (P1, ux-guidebook§5.3). The hosted web adapter
+  // sets this true on phone-width viewports to fold the preview toolbar into a
+  // single band with an overflow menu. Desktop and bare shells leave it
+  // undefined, so PreviewToolbar renders the existing two-band layout
+  // byte-for-byte (render-layer split, not responsive-shrink).
+  compactToolbar?: boolean;
 };
 
 function PanelRightOpenIcon(props: SVGProps<SVGSVGElement>) {
@@ -260,6 +267,7 @@ export default function AppShell(props: AppShellProps) {
     heroClassExtension,
     appShellClassExtension,
     installViewMetaText,
+    compactToolbar,
   } = props;
 
   const convertTabRef = useRef<HTMLButtonElement>(null);
@@ -580,6 +588,7 @@ export default function AppShell(props: AppShellProps) {
                   exportHtmlDisabled={previewPanelSaveProps.exportHtmlDisabled}
                   onMarkdownChange={callbacks.onMarkdownChange}
                   onLargeMarkdownPaste={callbacks.onLargeMarkdownPaste}
+                  compactToolbar={compactToolbar}
                 />
                 {selectedEntry ? (
                   <>

@@ -53,6 +53,10 @@ export interface PreviewPanelProps {
   onNewDocument?: () => void;
   editorFocusRequest?: { id: number; target: "editor" };
   onLargeMarkdownPaste?: (markdown: string) => void;
+  // Web-only render-layer flag forwarded to PreviewToolbar (P1). Hosted phones
+  // pass true to fold the toolbar into a single band; desktop/bare shells leave
+  // it undefined and render the two-band layout unchanged (ux-guidebook§5.3).
+  compactToolbar?: boolean;
 }
 
 export default function PreviewPanel({
@@ -76,6 +80,7 @@ export default function PreviewPanel({
   onNewDocument,
   editorFocusRequest,
   onLargeMarkdownPaste,
+  compactToolbar,
 }: PreviewPanelProps) {
   const [mode, setMode] = useState<"edit" | "preview" | "linkedin">("preview");
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
@@ -504,6 +509,7 @@ export default function PreviewPanel({
         showAdjustFormatting={mode === "edit" && formattingTarget !== null}
         adjustFormattingDisabled={formattingTarget === null}
         onAdjustFormatting={handleAdjustFormatting}
+        compactToolbar={compactToolbar}
         onModeChange={switchMode}
         onOpenFind={() => {
           setIsFindOpen(true);

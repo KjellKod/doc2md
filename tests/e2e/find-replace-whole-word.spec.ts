@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { openFindBar } from "./helpers/findBar";
 
 async function openEditorWith(page: Page, content: string) {
   await page.goto("./");
@@ -16,7 +17,7 @@ test("Whole Word reduces the match count to whole-word occurrences only", async 
   await openEditorWith(page, "foo foobar foo_bar foo2 foo");
 
   // Open find from the toolbar.
-  await page.getByRole("button", { name: "Find and replace" }).click();
+  await openFindBar(page);
   const findInput = page.getByRole("textbox", { name: "Find markdown text" });
   await findInput.fill("foo");
 
