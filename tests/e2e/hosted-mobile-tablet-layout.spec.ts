@@ -192,6 +192,30 @@ test.describe("hosted mobile edit/view dominance (reproduce-first)", () => {
     // size as the Edit surface (AC2 "same size window").
     await page.getByRole("button", { name: "View", exact: true }).click();
     const surface = page.locator(".markdown-surface");
+    await expect(surface).toBeVisible();
+
+    // WebKit/mobile-safari hardening (documented flake — see
+    // docs/diary/2026-06-10.md / ideas/webkit-mobile-edit-view-flake-hardening.md):
+    // after the mode switch the markdown-surface mounts and the panel re-bounds
+    // (:has(.markdown-surface) at <=720px) one frame later. A one-shot
+    // boundingBox() can sample the surface mid-transition at content height,
+    // reporting a large transient delta vs the bounded Edit shell. Poll until
+    // the surface height settles to the Edit window before the strict parity
+    // assertion below. The EQUAL_WINDOW_TOLERANCE_PX bound is unchanged, so a
+    // genuine steady-state divergence never converges and still fails — this
+    // waits out the transition, it does not weaken the invariant.
+    await expect
+      .poll(
+        async () => {
+          const box = await surface.boundingBox();
+          return box
+            ? Math.abs(box.height - editBox!.height)
+            : Number.POSITIVE_INFINITY;
+        },
+        { message: "View surface height should settle to the Edit window" },
+      )
+      .toBeLessThanOrEqual(EQUAL_WINDOW_TOLERANCE_PX);
+
     const surfaceBox = await surface.boundingBox();
     expect(surfaceBox).not.toBeNull();
 
