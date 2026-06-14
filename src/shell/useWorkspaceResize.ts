@@ -138,6 +138,19 @@ export type WorkspaceResizeResult = {
    */
   triggerFirstOpenAutoCollapse: (selectedEntryIsScratch: boolean) => void;
   /**
+   * Re-collapses the upload sidebar on hosted phones when the user opens a
+   * non-scratch document, so tapping a file fills the screen with the document
+   * (P0). Unlike `triggerFirstOpenAutoCollapse` this is NOT a one-shot — it can
+   * fire on every qualifying select — but it honors `userTouchedSidebarRef`:
+   * once the user has manually expanded/resized the sidebar (e.g. to pick
+   * several files), this is suppressed so it does not fight that intent (F2).
+   * Phone-gated via `(max-width: 720px)` matchMedia and skipped for scratch
+   * drafts. Calling adapters wire this from a post-select effect keyed on the
+   * selected id so scratch-ness is read AFTER React re-derives the selection
+   * (F1), never from the stale pre-select value.
+   */
+  collapseSidebarOnPhoneSelect: (selectedEntryIsScratch: boolean) => void;
+  /**
    * Recomputes the edit-shell height ceiling against the current layout.
    * Exposed so adapters can re-trigger measurement after the working-mode
    * collapse — a reflow the internal ResizeObserver can miss because none of
@@ -689,6 +702,45 @@ export function useWorkspaceResize(
     [autoCollapseResponsiveWidths, sidebarCollapsed, sidebarWidth],
   );
 
+  const collapseSidebarOnPhoneSelect = useCallback(
+    (selectedEntryIsScratch: boolean) => {
+      // Scratch drafts keep the sidebar open (mirror the one-shot's scratch
+      // guard at the top of triggerFirstOpenAutoCollapse).
+      if (selectedEntryIsScratch) {
+        return;
+      }
+      // Already collapsed → nothing to do.
+      if (sidebarCollapsed) {
+        return;
+      }
+      // F2: respect a deliberate manual sidebar action. If the user expanded or
+      // resized the sidebar themselves (e.g. to pick several files), do not slam
+      // it shut on their next selection — that would fight the multi-file pick
+      // the brief names as a probe (ux-guidebook§4.5: don't undo a user's
+      // explicit action). The reopen affordance (collapse rail / working-mode
+      // upload control) remains available either way.
+      if (userTouchedSidebarRef.current) {
+        return;
+      }
+      // Phone-only: 720px matches the hosted-phone CSS block and is a
+      // deliberately tighter gate than the one-shot's 980px. SSR/typeof guarded.
+      if (
+        typeof window === "undefined" ||
+        typeof window.matchMedia !== "function" ||
+        !window.matchMedia("(max-width: 720px)").matches
+      ) {
+        return;
+      }
+      // Save a restore width and collapse (mirror handleCollapseSidebar). Do NOT
+      // set firstAutoCollapseFiredRef: this is a per-select trigger, not the
+      // one-shot, and must not consume the one-shot's budget.
+      restoreSidebarWidthRef.current =
+        sidebarWidth ?? measureSidebarWidth() ?? DEFAULT_SIDEBAR_WIDTH;
+      setSidebarCollapsed(true);
+    },
+    [sidebarCollapsed, sidebarWidth],
+  );
+
   const pageFrameStyle = {
     "--page-max-width": `${BASE_PAGE_MAX_WIDTH}px`,
   } as CSSProperties;
@@ -729,6 +781,7 @@ export function useWorkspaceResize(
     handleHeightResizeMouseUp,
     handleHeightResizeReset,
     triggerFirstOpenAutoCollapse,
+    collapseSidebarOnPhoneSelect,
     recomputeEditShellHeightCeiling,
   };
 }

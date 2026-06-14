@@ -25,6 +25,7 @@
 // (failing-first). Single-cell phrases like "On Track" stay matched
 // in both modes throughout.
 import { expect, test, type Page } from "@playwright/test";
+import { openFindBar } from "./helpers/findBar";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -57,7 +58,7 @@ async function openXlsxFixture(page: Page) {
 async function openFindWithQuery(page: Page, query: string) {
   // Open find via the toolbar button so the bar is present regardless
   // of platform-specific Cmd/Ctrl bindings.
-  await page.getByRole("button", { name: "Find and replace" }).click();
+  await openFindBar(page);
   const findInput = page.getByRole("textbox", { name: "Find markdown text" });
   await expect(findInput).toBeVisible();
   await findInput.fill(query);

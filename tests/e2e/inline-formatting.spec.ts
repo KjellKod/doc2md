@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { openShortcutsReference } from "./helpers/findBar";
 
 async function openScratchEditor(page: Page) {
   await page.goto("./");
@@ -56,11 +57,12 @@ test("Cmd-K inserts a link skeleton at the caret", async ({ page }) => {
   await expect(editor).toHaveValue("hi[](url)");
 });
 
-test("shortcut reference is reachable and dismisses with Escape", async ({ page }) => {
+test("shortcut reference is reachable and dismisses with Escape", async ({
+  page,
+  isMobile,
+}) => {
   await openScratchEditor(page);
-  const shortcuts = page.getByRole("button", { name: "Keyboard shortcuts" });
-
-  await shortcuts.click();
+  await openShortcutsReference(page);
 
   const dialog = page.getByRole("dialog", { name: "Keyboard shortcuts" });
   await expect(dialog).toBeVisible();
@@ -85,7 +87,16 @@ test("shortcut reference is reachable and dismisses with Escape", async ({ page 
   await page.keyboard.press("Escape");
 
   await expect(dialog).toBeHidden();
-  await expect(shortcuts).toBeFocused();
+  // Focus-return-to-trigger is a desktop-toolbar a11y contract (the trigger is
+  // the persistent "Keyboard shortcuts" button). On hosted phones (P1) the
+  // trigger is an overflow-menu item that no longer exists once the popover
+  // opened, so the focus-return target is layout-specific — assert it only
+  // where the direct trigger persists.
+  if (!isMobile) {
+    await expect(
+      page.getByRole("button", { name: "Keyboard shortcuts" }),
+    ).toBeFocused();
+  }
 });
 
 test("Cmd-Shift-8 toggles an unordered list across selected lines", async ({ page }) => {

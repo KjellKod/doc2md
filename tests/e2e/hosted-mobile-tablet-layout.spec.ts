@@ -192,6 +192,30 @@ test.describe("hosted mobile edit/view dominance (reproduce-first)", () => {
     // size as the Edit surface (AC2 "same size window").
     await page.getByRole("button", { name: "View", exact: true }).click();
     const surface = page.locator(".markdown-surface");
+    await expect(surface).toBeVisible();
+
+    // WebKit/mobile-safari hardening (documented flake — see
+    // docs/diary/2026-06-10.md / ideas/webkit-mobile-edit-view-flake-hardening.md):
+    // after the mode switch the markdown-surface mounts and the panel re-bounds
+    // (:has(.markdown-surface) at <=720px) one frame later. A one-shot
+    // boundingBox() can sample the surface mid-transition at content height,
+    // reporting a large transient delta vs the bounded Edit shell. Poll until
+    // the surface height settles to the Edit window before the strict parity
+    // assertion below. The EQUAL_WINDOW_TOLERANCE_PX bound is unchanged, so a
+    // genuine steady-state divergence never converges and still fails — this
+    // waits out the transition, it does not weaken the invariant.
+    await expect
+      .poll(
+        async () => {
+          const box = await surface.boundingBox();
+          return box
+            ? Math.abs(box.height - editBox!.height)
+            : Number.POSITIVE_INFINITY;
+        },
+        { message: "View surface height should settle to the Edit window" },
+      )
+      .toBeLessThanOrEqual(EQUAL_WINDOW_TOLERANCE_PX);
+
     const surfaceBox = await surface.boundingBox();
     expect(surfaceBox).not.toBeNull();
 
@@ -242,6 +266,53 @@ test.describe("hosted mobile edit/view dominance (reproduce-first)", () => {
     // 320px page edge. With the width bound the actions box is a horizontal
     // scroller; without it the nowrap content can size the column-flex toolbar
     // to its intrinsic width and overflow the page.
+    await expectNoHorizontalOverflow(page);
+  });
+
+  test("P1 at 375px: preview toolbar is one band with demoted actions behind a More menu", async ({
+    page,
+  }) => {
+    await page.setViewportSize(PHONE);
+    await openHostedApp(page);
+    await startDraftWithBody(page);
+
+    // Primary controls stay inline (Edit/View/LinkedIn + Save).
+    await expect(page.getByRole("button", { name: "Edit", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "View", exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "LinkedIn", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Save document" }),
+    ).toBeVisible();
+
+    // Demoted actions are NOT top-level buttons; they live behind one "More"
+    // trigger (the single-band fold). New/Find are not directly visible.
+    const overflowTrigger = page.getByRole("button", { name: "More actions" });
+    await expect(overflowTrigger).toBeVisible();
+    await expectTapTargetFloor(overflowTrigger);
+
+    await overflowTrigger.click();
+    const menu = page.getByRole("menu", { name: "More actions" });
+    await expect(menu).toBeVisible();
+    await expect(
+      menu.getByRole("menuitem", { name: "New document" }),
+    ).toBeVisible();
+    await expect(
+      menu.getByRole("menuitem", { name: "Find and replace" }),
+    ).toBeVisible();
+    await expect(
+      menu.getByRole("menuitem", { name: "Download Markdown" }),
+    ).toBeVisible();
+    await expect(
+      menu.getByRole("menuitem", { name: "Keyboard shortcuts" }),
+    ).toBeVisible();
+
+    // Escape closes the menu and returns focus to the trigger (a11y, AC-P1b).
+    await page.keyboard.press("Escape");
+    await expect(menu).toBeHidden();
+    await expect(overflowTrigger).toBeFocused();
+
     await expectNoHorizontalOverflow(page);
   });
 
@@ -301,7 +372,7 @@ test.describe("hosted mobile edit/view dominance (reproduce-first)", () => {
 });
 
 test.describe("hosted mobile and tablet layout", () => {
-  test("mobile emulation: collapsed upload rail stays horizontal with preview", async ({
+  test("mobile emulation: upload rail folds into the working-mode bar (P2)", async ({
     page,
     isMobile,
   }) => {
@@ -311,37 +382,122 @@ test.describe("hosted mobile and tablet layout", () => {
     await uploadMarkdownFile(
       page,
       "mobile-rail.md",
-      "# Mobile rail\n\nThe collapsed upload control must not become a side strip.",
+      "# Mobile rail\n\nThe standalone upload rail must fold into the working bar.",
     );
 
     const workspace = page.locator(".workspace");
-    const collapseRail = page.locator(".collapse-rail");
     const previewPanel = page.locator(".preview-panel");
+    // The first upload auto-collapses into working mode.
     await expect(workspace).toHaveClass(/sidebar-collapsed/);
-    await collapseRail.scrollIntoViewIfNeeded();
 
-    await expectNoHorizontalOverflow(page);
+    // P2/F4: the standalone collapse-rail is hidden (display:none) in working
+    // mode on hosted phones. Use visibility semantics (auto-waiting), NOT
+    // boundingBox() math — a display:none element has a null box. The rail
+    // element is still in the DOM (shared AppShell branch unchanged) but hidden.
+    const collapseRail = page.locator(".collapse-rail");
+    await expect(collapseRail).toBeHidden();
+
+    // The reopen affordance now lives in the working-mode bar and is reachable
+    // (the bar is non-inert in working mode). Tapping it reopens the sidebar via
+    // the same handleShowSidebar callback the rail used.
+    const showUpload = page
+      .locator(".working-mode-bar")
+      .getByRole("button", { name: "Show upload panel" });
+    await expect(showUpload).toBeVisible();
+    await expectHorizontallyInViewport(showUpload, page);
+    await showUpload.click();
+
+    await expect(page.getByRole("heading", { name: "Files" })).toBeVisible();
+    await expect(workspace).not.toHaveClass(/sidebar-collapsed/);
+
+    // No layout regressions from the fold.
     await expectHorizontallyInViewport(workspace, page);
-    await expectHorizontallyInViewport(collapseRail, page);
     await expectHorizontallyInViewport(previewPanel, page);
-    // The collapsed upload control is now a compact, content-width text link
-    // on phones (not a full-width bar), so it intentionally no longer matches
-    // the preview's width. The invariant that still matters — and that this
-    // test guards — is that it stays a HORIZONTAL control, aligned to the
-    // preview's left edge and within its width, rather than a tall vertical
-    // side strip.
-    const [railBox, previewBox] = await Promise.all([
-      collapseRail.boundingBox(),
-      previewPanel.boundingBox(),
-    ]);
-    expect(railBox).not.toBeNull();
-    expect(previewBox).not.toBeNull();
-    // Left-aligned with the preview, and no wider than it.
-    expect(Math.abs(railBox!.x - previewBox!.x)).toBeLessThanOrEqual(2);
-    expect(railBox!.width).toBeLessThanOrEqual(previewBox!.width + 2);
-    // Horizontal (wider than tall) and short — not a vertical side strip.
-    expect(railBox!.width).toBeGreaterThan(railBox!.height);
-    expect(railBox!.height).toBeLessThanOrEqual(92);
+    await expectNoHorizontalOverflow(page);
+  });
+
+  test("mobile emulation: after a manual reopen the upload toggle can re-collapse the sidebar (AC-P0a, arb-1)", async ({
+    page,
+    isMobile,
+  }) => {
+    // arb-1 regression guard: handleShowSidebar sets userTouchedSidebarRef,
+    // which permanently suppresses collapseSidebarOnPhoneSelect, and the manual
+    // .collapse-toggle is display:none at <=980px. Without a visible hide
+    // affordance, a user who reopens Uploads to compare files would have NO way
+    // back to the collapsed full-screen reading view for the rest of the session
+    // — the exact P0 dead-end this quest removes. The working-mode upload
+    // control is a TOGGLE, so re-collapse must stay reachable after a reopen.
+    test.skip(!isMobile, "device-emulation regression for mobile projects");
+
+    await openHostedApp(page);
+    await uploadMarkdownFile(
+      page,
+      "mobile-toggle.md",
+      "# Mobile toggle\n\nThe upload toggle must re-collapse after a manual reopen.",
+    );
+
+    const workspace = page.locator(".workspace");
+    // First upload auto-collapses into working mode.
+    await expect(workspace).toHaveClass(/sidebar-collapsed/);
+
+    // Manually reopen Uploads (sets userTouchedSidebarRef → suppresses
+    // collapse-on-select for the rest of the session).
+    const showUpload = page
+      .locator(".working-mode-bar")
+      .getByRole("button", { name: "Show upload panel" });
+    await expect(showUpload).toBeVisible();
+    await showUpload.click();
+    await expect(workspace).not.toHaveClass(/sidebar-collapsed/);
+
+    // The SAME control is now a "Hide upload panel" toggle (aria-expanded flips
+    // to true). It must be reachable and re-collapse the workspace despite the
+    // sticky userTouchedSidebarRef.
+    const hideUpload = page
+      .locator(".working-mode-bar")
+      .getByRole("button", { name: "Hide upload panel" });
+    await expect(hideUpload).toBeVisible();
+    await expect(hideUpload).toHaveAttribute("aria-expanded", "true");
+    await expectHorizontallyInViewport(hideUpload, page);
+    await hideUpload.click();
+
+    // Back to the collapsed full-screen reading view — no dead-end.
+    await expect(workspace).toHaveClass(/sidebar-collapsed/);
+    await expect(
+      page
+        .locator(".working-mode-bar")
+        .getByRole("button", { name: "Show upload panel" }),
+    ).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+  });
+
+  test("desktop viewport: the collapse rail still renders when the sidebar is collapsed (AC-P2b)", async ({
+    page,
+    isMobile,
+  }) => {
+    // AC-P2b home (F4): the desktop rail is unchanged. The hosted-phone hide is
+    // scoped to .app-shell-hosted .page.is-working-mode at <=720px, so a desktop
+    // viewport never matches it. Skip on the mobile-emulation projects; this is
+    // the desktop-width contract.
+    test.skip(isMobile, "desktop-width rail contract; mobile projects hide it");
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await openHostedApp(page);
+    await uploadMarkdownFile(
+      page,
+      "desktop-rail.md",
+      "# Desktop rail\n\nThe rail must still render at desktop widths.",
+    );
+
+    // The first open auto-collapses; on desktop the rail stays visible (it is
+    // the reopen control there). Visibility semantics, not boundingBox math.
+    const showUpload = page.getByRole("button", { name: "Show upload panel" });
+    await expect(showUpload).toBeVisible({ timeout: 15_000 });
+    const collapseRail = page.locator(".collapse-rail");
+    await expect(collapseRail).toBeVisible();
+
+    // And it still reopens the upload panel.
+    await showUpload.click();
+    await expect(page.getByRole("heading", { name: "Files" })).toBeVisible();
   });
 
   test("mobile emulation: keyboard-open editor remains focused and bounded", async ({

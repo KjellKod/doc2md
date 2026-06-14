@@ -18,6 +18,7 @@
 // invariants will fail after match navigation.
 
 import { expect, test, type Page } from "@playwright/test";
+import { openFindBar } from "./helpers/findBar";
 import { Buffer } from "node:buffer";
 
 // Markdown that has multiple matches across emphasis spans. The plain
@@ -128,7 +129,7 @@ test("Symptom A: navigating matches in Preview does not shift visible text or du
   expect(baseline.emCount, "fixture must render <em>").toBe(1);
 
   // Open find from the toolbar (preview mode — match in rendered text).
-  await page.getByRole("button", { name: "Find and replace" }).click();
+  await openFindBar(page);
   const findInput = page.getByRole("textbox", { name: "Find markdown text" });
   await findInput.fill("alpha");
   // Match Case is on by default; lowercase "alpha" finds 3 occurrences.
@@ -235,7 +236,7 @@ test("Symptom A (Enter-navigation variant): rendered text + structure invariant 
 
   const baseline = await captureSurfaceShape(page);
 
-  await page.getByRole("button", { name: "Find and replace" }).click();
+  await openFindBar(page);
   const findInput = page.getByRole("textbox", { name: "Find markdown text" });
   await findInput.fill("alpha");
   await expect(page.locator(".find-replace-count")).toHaveText(/of \d/);
@@ -278,7 +279,7 @@ test("Symptom B: switching Preview → Edit → Preview with find active leaves 
 
   // Switch to Edit, open find, navigate matches, then come back.
   await page.getByRole("button", { name: "Edit", exact: true }).click();
-  await page.getByRole("button", { name: "Find and replace" }).click();
+  await openFindBar(page);
   await page
     .getByRole("textbox", { name: "Find markdown text" })
     .fill("alpha");

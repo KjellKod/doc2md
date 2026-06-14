@@ -25,6 +25,7 @@
 // macOS user with classic scrollbars.
 
 import { expect, test, type Page } from "@playwright/test";
+import { openFindBar } from "./helpers/findBar";
 import { Buffer } from "node:buffer";
 
 async function openEditor(page: Page) {
@@ -138,7 +139,7 @@ test("editor find scrolls long unbroken wrapped text to the active match", async
     await showUpload.click();
   }
   await page.getByRole("button", { name: "Edit", exact: true }).click();
-  await page.getByRole("button", { name: "Find and replace" }).click();
+  await openFindBar(page);
   await page
     .getByRole("textbox", { name: "Find markdown text" })
     .fill("TARGET");
