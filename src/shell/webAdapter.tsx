@@ -608,28 +608,42 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     onToggleAllChecked: toggleAllChecked,
   };
 
-  // P2: on hosted phones the standalone UPLOAD collapse-rail is hidden in
-  // working mode (CSS) to stop it eating its own band. The reopen affordance is
-  // surfaced through WorkingModeBar's EXISTING trailingControls slot (arbiter
-  // F5 — reuse, don't add a parallel uploadToggle prop), wired to the SAME
-  // handleShowSidebar callback the rail button used. It renders only when the
-  // rail would be hidden (compact phone + collapsed sidebar); the working-mode
+  // P2 + arb-1: on hosted phones the standalone UPLOAD collapse-rail is hidden
+  // in working mode (CSS) to stop it eating its own band. The collapse/reopen
+  // affordance is surfaced through WorkingModeBar's EXISTING trailingControls
+  // slot (arbiter F5 — reuse, don't add a parallel uploadToggle prop). It is a
+  // TOGGLE, not reopen-only: when the sidebar is collapsed it offers "Show
+  // uploads" (handleShowSidebar); when expanded it offers "Hide uploads"
+  // (handleCollapseSidebar). This is the phone-reachable collapse path —
+  // .collapse-toggle is display:none at <=980px and collapseSidebarOnPhoneSelect
+  // bails once userTouchedSidebarRef is set, so without a visible hide control a
+  // user who manually reopened Uploads has NO way back to the collapsed
+  // full-screen reading view for the rest of the session (the exact P0 dead-end
+  // this quest removes — AC-P0a, ux-guidebook§11/§4.5: keep the user in control,
+  // never trapped, recovery cheap and reversible). aria-expanded reflects the
+  // sidebar state so screen readers hear the toggle semantics. The working-mode
   // bar is non-inert in working mode (AppShell wraps it inert only when NOT in
-  // working mode), so whenever the rail is hidden this control is reachable —
-  // no collapsed + non-working-mode dead-end (F5). Desktop never sets compact,
-  // so its trailing slot stays the theme toggle alone (byte-identical).
-  const showUploadControl =
-    compactToolbar && resize.sidebarCollapsed ? (
-      <button
-        type="button"
-        className="secondary-button working-mode-button working-mode-show-upload"
-        onClick={resize.handleShowSidebar}
-        aria-label="Show upload panel"
-      >
-        <FolderOpen className="working-mode-button-icon" aria-hidden="true" />
-        <span>Uploads</span>
-      </button>
-    ) : null;
+  // working mode), so this control is reachable wherever the rail is hidden.
+  // Desktop never sets compact, so its trailing slot stays the theme toggle
+  // alone (byte-identical).
+  const uploadToggleControl = compactToolbar ? (
+    <button
+      type="button"
+      className="secondary-button working-mode-button working-mode-show-upload"
+      onClick={
+        resize.sidebarCollapsed
+          ? resize.handleShowSidebar
+          : resize.handleCollapseSidebar
+      }
+      aria-expanded={!resize.sidebarCollapsed}
+      aria-label={
+        resize.sidebarCollapsed ? "Show upload panel" : "Hide upload panel"
+      }
+    >
+      <FolderOpen className="working-mode-button-icon" aria-hidden="true" />
+      <span>Uploads</span>
+    </button>
+  ) : null;
 
   const workingModeBarProps: WorkingModeBarProps = {
     variant: "browser",
@@ -638,7 +652,7 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     onNew: handleNewDocument,
     trailingControls: (
       <>
-        {showUploadControl}
+        {uploadToggleControl}
         <ThemeToggle />
       </>
     ),

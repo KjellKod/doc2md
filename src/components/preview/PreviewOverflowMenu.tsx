@@ -1,6 +1,10 @@
 import { MoreHorizontal } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
-import type { KeyboardEvent, MouseEvent as ReactMouseEvent } from "react";
+import type {
+  KeyboardEvent,
+  MouseEvent as ReactMouseEvent,
+  RefObject,
+} from "react";
 
 // A single overflow "More" control that demotes the low-frequency toolbar
 // actions on hosted phones (P1). It mirrors the proven a11y of the
@@ -20,14 +24,22 @@ export interface PreviewOverflowMenuItem {
 
 interface PreviewOverflowMenuProps {
   items: PreviewOverflowMenuItem[];
+  // Optional shared ref to the overflow trigger button. The compact toolbar
+  // passes its own ref so a popover opened from a menu item (e.g. the keyboard
+  // shortcuts dialog) can return focus to this trigger on dismiss, instead of
+  // the never-mounted non-compact shortcuts button (ux-guidebook§4.8 — a
+  // dismissible overlay must return focus to its trigger).
+  triggerRef?: RefObject<HTMLButtonElement | null>;
 }
 
 export default function PreviewOverflowMenu({
   items,
+  triggerRef: externalTriggerRef,
 }: PreviewOverflowMenuProps) {
   const menuId = useId();
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const internalTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const triggerRef = externalTriggerRef ?? internalTriggerRef;
   const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const [isOpen, setIsOpen] = useState(false);
 

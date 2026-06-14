@@ -6,7 +6,7 @@ import {
   Search,
   WandSparkles,
 } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { SaveState } from "../../types/saveState";
 import SaveButton from "../SaveButton";
 import SaveStatePill from "../SaveStatePill";
@@ -107,11 +107,27 @@ export default function PreviewToolbar({
   const downloadHtmlTooltipId = useId();
   const adjustFormattingTooltipId = useId();
   const shortcutsButtonRef = useRef<HTMLButtonElement | null>(null);
+  // Compact mode has no dedicated shortcuts trigger — the popover opens from the
+  // overflow menu's "Keyboard shortcuts" item. Hold a ref to the overflow
+  // trigger so closing the popover returns focus there instead of the
+  // never-mounted shortcutsButtonRef (which dropped focus to <body> on the
+  // compact path; ux-guidebook§4.8).
+  const overflowTriggerRef = useRef<HTMLButtonElement | null>(null);
   const shortcutsRef = useRef<HTMLDivElement | null>(null);
   const adjustFormattingButtonRef = useRef<HTMLButtonElement | null>(null);
   const adjustFormattingSpotlightTimerRef = useRef<number | null>(null);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const rows = shortcutRows(saveKeyShortcuts);
+
+  // The element to restore focus to when the shortcuts popover closes: the
+  // dedicated shortcuts button on the non-compact toolbar, or the overflow
+  // trigger that opened the popover on the compact toolbar. Resolved at call
+  // time so whichever branch is mounted wins (ux-guidebook§4.8 — a dismissible
+  // overlay must return focus to its trigger).
+  const focusShortcutsTrigger = useCallback(() => {
+    const target = shortcutsButtonRef.current ?? overflowTriggerRef.current;
+    window.setTimeout(() => target?.focus(), 0);
+  }, []);
 
   useEffect(() => {
     if (!isShortcutsOpen) {
@@ -122,7 +138,8 @@ export default function PreviewToolbar({
       const target = event.target as Node | null;
       if (
         !shortcutsRef.current?.contains(target) &&
-        !shortcutsButtonRef.current?.contains(target)
+        !shortcutsButtonRef.current?.contains(target) &&
+        !overflowTriggerRef.current?.contains(target)
       ) {
         setIsShortcutsOpen(false);
       }
@@ -131,7 +148,7 @@ export default function PreviewToolbar({
       if (event.key === "Escape") {
         event.preventDefault();
         setIsShortcutsOpen(false);
-        window.setTimeout(() => shortcutsButtonRef.current?.focus(), 0);
+        focusShortcutsTrigger();
       }
     };
 
@@ -141,7 +158,7 @@ export default function PreviewToolbar({
       document.removeEventListener("mousedown", handleMouseDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isShortcutsOpen]);
+  }, [isShortcutsOpen, focusShortcutsTrigger]);
 
   useEffect(() => {
     if (adjustFormattingSpotlightTimerRef.current !== null) {
@@ -180,7 +197,7 @@ export default function PreviewToolbar({
 
   function closeShortcuts() {
     setIsShortcutsOpen(false);
-    window.setTimeout(() => shortcutsButtonRef.current?.focus(), 0);
+    focusShortcutsTrigger();
   }
 
   function handleAdjustFormattingClick() {
@@ -289,8 +306,10 @@ export default function PreviewToolbar({
   ) : null;
 
   // The shortcuts popover is shared by both layouts. In compact mode the
-  // overflow menu's "Keyboard shortcuts" item opens it; closeShortcuts() uses
-  // optional chaining so a missing trigger button (compact) does not throw.
+  // overflow menu's "Keyboard shortcuts" item opens it; closeShortcuts() routes
+  // through focusShortcutsTrigger(), which returns focus to the overflow trigger
+  // on the compact path and the dedicated shortcuts button otherwise
+  // (ux-guidebook§4.8 — a dismissible overlay must return focus to its trigger).
   const shortcutsPopover =
     showToggle && isShortcutsOpen ? (
       <div
@@ -374,7 +393,10 @@ export default function PreviewToolbar({
         <div className="preview-toolbar-actions">
           {saveControlGroup}
           {overflowItems.length > 0 ? (
-            <PreviewOverflowMenu items={overflowItems} />
+            <PreviewOverflowMenu
+              items={overflowItems}
+              triggerRef={overflowTriggerRef}
+            />
           ) : null}
           {shortcutsPopover}
         </div>

@@ -392,6 +392,60 @@ test.describe("hosted mobile and tablet layout", () => {
     await expectNoHorizontalOverflow(page);
   });
 
+  test("mobile emulation: after a manual reopen the upload toggle can re-collapse the sidebar (AC-P0a, arb-1)", async ({
+    page,
+    isMobile,
+  }) => {
+    // arb-1 regression guard: handleShowSidebar sets userTouchedSidebarRef,
+    // which permanently suppresses collapseSidebarOnPhoneSelect, and the manual
+    // .collapse-toggle is display:none at <=980px. Without a visible hide
+    // affordance, a user who reopens Uploads to compare files would have NO way
+    // back to the collapsed full-screen reading view for the rest of the session
+    // — the exact P0 dead-end this quest removes. The working-mode upload
+    // control is a TOGGLE, so re-collapse must stay reachable after a reopen.
+    test.skip(!isMobile, "device-emulation regression for mobile projects");
+
+    await openHostedApp(page);
+    await uploadMarkdownFile(
+      page,
+      "mobile-toggle.md",
+      "# Mobile toggle\n\nThe upload toggle must re-collapse after a manual reopen.",
+    );
+
+    const workspace = page.locator(".workspace");
+    // First upload auto-collapses into working mode.
+    await expect(workspace).toHaveClass(/sidebar-collapsed/);
+
+    // Manually reopen Uploads (sets userTouchedSidebarRef → suppresses
+    // collapse-on-select for the rest of the session).
+    const showUpload = page
+      .locator(".working-mode-bar")
+      .getByRole("button", { name: "Show upload panel" });
+    await expect(showUpload).toBeVisible();
+    await showUpload.click();
+    await expect(workspace).not.toHaveClass(/sidebar-collapsed/);
+
+    // The SAME control is now a "Hide upload panel" toggle (aria-expanded flips
+    // to true). It must be reachable and re-collapse the workspace despite the
+    // sticky userTouchedSidebarRef.
+    const hideUpload = page
+      .locator(".working-mode-bar")
+      .getByRole("button", { name: "Hide upload panel" });
+    await expect(hideUpload).toBeVisible();
+    await expect(hideUpload).toHaveAttribute("aria-expanded", "true");
+    await expectHorizontallyInViewport(hideUpload, page);
+    await hideUpload.click();
+
+    // Back to the collapsed full-screen reading view — no dead-end.
+    await expect(workspace).toHaveClass(/sidebar-collapsed/);
+    await expect(
+      page
+        .locator(".working-mode-bar")
+        .getByRole("button", { name: "Show upload panel" }),
+    ).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+  });
+
   test("desktop viewport: the collapse rail still renders when the sidebar is collapsed (AC-P2b)", async ({
     page,
     isMobile,
