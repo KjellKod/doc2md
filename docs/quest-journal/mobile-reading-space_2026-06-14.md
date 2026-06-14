@@ -181,7 +181,7 @@ This journal embeds the celebration payload used by `/celebrate`.
     {
       "icon": "[SHIP]",
       "title": "Ship It",
-      "desc": "PR #176 created"
+      "desc": "PR #185 created"
     },
     {
       "icon": "[PLAN]",

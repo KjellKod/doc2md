@@ -59,7 +59,7 @@ Implement the 4 mobile reading-space recommendations for the hosted (web) mobile
 
 - [BUG] **Gremlin Slayer** — Tackled 24 review findings
 - [TEST] **Battle Tested** — Survived 6 reviews
-- [SHIP] **Ship It** — PR #176 created
+- [SHIP] **Ship It** — PR #185 created
 - [PLAN] **Plan Perfectionist** — Iterated plan 2 times
 - [WIN] **Quest Complete** — All phases finished successfully
 
@@ -69,7 +69,7 @@ Implement the 4 mobile reading-space recommendations for the hosted (web) mobile
 - Review rounds completed: **6**
 - Plan iterations: **2**
 - Fix iterations: **1**
-- PR: **#176**
+- PR: **#185**
 
 ## Handoff & Reliability
 
