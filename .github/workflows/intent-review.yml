@@ -33,7 +33,7 @@ jobs:
       # Check out the BASE ref so the helper script comes from trusted code,
       # not from the PR's HEAD. See SECURITY note in codex-ci-review.yml and
       # the matching gate in scripts/security_ci_guard.py.
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: ${{ github.event.pull_request.base.sha }}
 
