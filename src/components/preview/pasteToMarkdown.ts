@@ -50,13 +50,17 @@ const MEANINGFUL_HTML_SELECTOR = [
   "a[href]",
 ].join(",");
 
+// Only inline-style properties that markdown can actually represent count
+// as "meaningful" rich formatting. `color`, `background`, and `font-size`
+// produce no markdown markup (Turndown drops them), so treating them as
+// meaningful served no purpose except to defeat the trivial-wrapper
+// heuristic — routing styled-span-wrapped markdown (common on mobile
+// clipboards) through Turndown, which then escapes every markdown
+// character in the text nodes (`- ` -> `\- `, `**` -> `\*\*`).
 const MEANINGFUL_INLINE_STYLE_KEYS = new Set([
   "font-weight",
   "font-style",
   "text-decoration",
-  "color",
-  "background",
-  "font-size",
 ]);
 const VISIBLE_TEXT_BLOCK_TAGS = new Set([
   "address",
@@ -191,9 +195,10 @@ function inlineStyleHasMeaningfulFormatting(element: Element): boolean {
       if (Number.isFinite(numeric) && numeric >= BOLD_FONT_WEIGHT_THRESHOLD) {
         return true;
       }
-      if (MEANINGFUL_INLINE_STYLE_KEYS.has(property) && value !== "normal") {
-        return true;
-      }
+      // Anything below the bold threshold (e.g. the ubiquitous
+      // `font-weight:400` mobile clipboards attach to plain text) is NOT
+      // emphasis. Do not fall through to the generic meaningful-style
+      // check, which would misread it as rich formatting.
       continue;
     }
 
