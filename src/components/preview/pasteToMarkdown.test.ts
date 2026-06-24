@@ -840,4 +840,68 @@ describe("convertClipboardPasteToMarkdown", () => {
       source: "plainText",
     });
   });
+
+  it("treats span-wrapped markdown carrying benign mobile inline styles as a trivial wrapper", () => {
+    // Reported from mobile web: pasting a markdown bullet list got
+    // corrupted with backslashes (`- **Tests.**` -> `\- \*\*Tests.\*\*`).
+    // Mobile clipboards wrap every line in a <span> carrying benign
+    // inline styles — a numeric `font-weight:400` (normal weight, not
+    // bold), plus `color` and `font-size`, none of which markdown can
+    // represent. These must NOT count as meaningful formatting; otherwise
+    // the paste routes through Turndown, which escapes every markdown
+    // character in the text nodes.
+    const plainText = [
+      "- **Tests.** Your engines are pure, so they're easy to test.",
+      "- **An end-to-end test** on the main flow with something like Playwright.",
+      "- **CI.** Wire those to run on every push with GitHub Actions.",
+      "- **A license.** Without one it's technically all rights reserved.",
+    ].join("\n");
+
+    const html = plainText
+      .split("\n")
+      .map(
+        (line) =>
+          `<div><span style="font-weight:400;color:rgb(0,0,0);font-size:16px;font-family:-apple-system">${line}</span></div>`,
+      )
+      .join("");
+
+    const result = convertClipboardPasteToMarkdown({ html, plainText });
+
+    expect(result).toEqual({ markdown: plainText, source: "plainText" });
+    expect(result.markdown).not.toContain("\\-");
+    expect(result.markdown).not.toContain("\\*");
+  });
+
+  it("does not treat a numeric font-weight below the bold threshold as meaningful", () => {
+    // `font-weight:400` (and any value below 600) is normal weight, not
+    // emphasis. Only the explicit bold keywords or a numeric weight at or
+    // above the threshold should keep the HTML on the Turndown path.
+    const plainText = "## Plan\n\n- one item\n- two item";
+    const html = plainText
+      .split("\n")
+      .map((line) =>
+        line.length === 0
+          ? "<div><br></div>"
+          : `<div><span style="font-weight:400">${line}</span></div>`,
+      )
+      .join("");
+
+    expect(convertClipboardPasteToMarkdown({ html, plainText })).toEqual({
+      markdown: plainText,
+      source: "plainText",
+    });
+  });
+
+  it("still routes through Turndown when a span carries genuine bold weight", () => {
+    // Guard against over-correction: a numeric font-weight at or above
+    // the bold threshold is real emphasis and must keep the HTML path so
+    // the bold is preserved as `**...**`.
+    const result = convertClipboardPasteToMarkdown({
+      html: '<div>Plain line</div><div><span style="font-weight:700">Bold line</span></div>',
+      plainText: "Plain line\nBold line",
+    });
+
+    expect(result.source).toBe("html");
+    expect(result.markdown).toContain("**Bold line**");
+  });
 });
