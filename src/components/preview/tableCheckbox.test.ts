@@ -111,4 +111,49 @@ describe("convertTableCellCheckboxes", () => {
     const markdown = "# Title\n\nJust prose.";
     expect(convertTableCellCheckboxes(markdown)).toBe(markdown);
   });
+
+  it("does not convert incidental [x] in cell prose (needs a bullet or whole cell)", () => {
+    const markdown = [
+      "| Key | Action |",
+      "| --- | --- |",
+      "| Esc | press [x] to close |",
+    ].join("\n");
+    expect(convertTableCellCheckboxes(markdown)).toBe(markdown);
+  });
+
+  it("does not convert a checkbox marker inside an inline code span in a cell", () => {
+    const markdown = [
+      "| Syntax | Note |",
+      "| --- | --- |",
+      "| `- [ ]` | literal example |",
+    ].join("\n");
+    expect(convertTableCellCheckboxes(markdown)).toBe(markdown);
+  });
+
+  it("does not treat a 4-space indented code block as a table", () => {
+    const markdown = [
+      "    | Done |",
+      "    | --- |",
+      "    | - [ ] |",
+    ].join("\n");
+    expect(convertTableCellCheckboxes(markdown)).toBe(markdown);
+  });
+
+  it("does not treat a bare --- thematic break as a table delimiter", () => {
+    const markdown = ["| not a table |", "---", "| - [ ] |"].join("\n");
+    expect(convertTableCellCheckboxes(markdown)).toBe(markdown);
+  });
+
+  it("does not close a longer fence with a shorter backtick run", () => {
+    // The inner ``` is content of the ```` fence, so the table stays code.
+    const markdown = [
+      "````",
+      "```",
+      "| Done |",
+      "| --- |",
+      "| - [ ] |",
+      "````",
+    ].join("\n");
+    expect(convertTableCellCheckboxes(markdown)).toBe(markdown);
+  });
 });
