@@ -8,6 +8,7 @@ import {
   normalizePasteHtmlForMarkdown,
   restorePasteMarkdownPlaceholders,
 } from "./pasteHtmlNormalizer";
+import { convertTableCellCheckboxes } from "./tableCheckbox";
 
 type PasteSource = "html" | "plainText" | "empty";
 
@@ -321,23 +322,32 @@ function restorePlainTextHorizontalRuleMarkers(
     .join("\n");
 }
 
+function pasteConversion(
+  markdown: string,
+  source: PasteSource,
+): ClipboardPasteConversion {
+  // Checkbox markers inside table cells never render as checkboxes, so the
+  // last step before the Markdown lands in the editor turns them into glyphs.
+  return { markdown: convertTableCellCheckboxes(markdown), source };
+}
+
 export function convertClipboardPasteToMarkdown({
   html,
   plainText,
 }: ClipboardPasteInput): ClipboardPasteConversion {
   if (html.trim().length > 0) {
     if (htmlIsClearlyIncompleteComparedToPlainText(html, plainText)) {
-      return {
-        markdown: convertLinkedInUnicodeToMarkdown(plainText),
-        source: "plainText",
-      };
+      return pasteConversion(
+        convertLinkedInUnicodeToMarkdown(plainText),
+        "plainText",
+      );
     }
 
     if (htmlIsTrivialPasteWrapper(html, plainText)) {
-      return {
-        markdown: convertLinkedInUnicodeToMarkdown(plainText),
-        source: "plainText",
-      };
+      return pasteConversion(
+        convertLinkedInUnicodeToMarkdown(plainText),
+        "plainText",
+      );
     }
 
     const htmlMarkdown = restorePlainTextHorizontalRuleMarkers(
@@ -350,22 +360,19 @@ export function convertClipboardPasteToMarkdown({
     );
 
     if (htmlMarkdown.trim().length > 0) {
-      return {
-        markdown: convertLinkedInUnicodeInMarkdown(htmlMarkdown),
-        source: "html",
-      };
+      return pasteConversion(
+        convertLinkedInUnicodeInMarkdown(htmlMarkdown),
+        "html",
+      );
     }
   }
 
   if (plainText.length === 0) {
-    return {
-      markdown: "",
-      source: "empty",
-    };
+    return { markdown: "", source: "empty" };
   }
 
-  return {
-    markdown: convertLinkedInUnicodeToMarkdown(plainText),
-    source: "plainText",
-  };
+  return pasteConversion(
+    convertLinkedInUnicodeToMarkdown(plainText),
+    "plainText",
+  );
 }

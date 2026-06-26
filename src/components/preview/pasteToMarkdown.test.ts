@@ -904,4 +904,37 @@ describe("convertClipboardPasteToMarkdown", () => {
     expect(result.source).toBe("html");
     expect(result.markdown).toContain("**Bold line**");
   });
+
+  it("converts task-list checkbox markers inside table cells to unicode glyphs", () => {
+    // GFM task-list syntax (`- [ ]`) only renders as a checkbox at the start
+    // of a list item. Inside a table cell it stays literal text, so a pasted
+    // table that uses it shows raw `- [ ]` instead of a checkbox. The cell
+    // marker must become a checkbox GLYPH that renders inside the cell.
+    const plainText = [
+      "| MARKED | Name | Email | Role |",
+      "| --- | --- | --- | --- |",
+      "| - [ ] | Kjell Hedstrom | kjell@onfleet.com | Primary Owner |",
+      "| - [x] | Jane Doe | jane@example.com | Admin |",
+    ].join("\n");
+
+    const result = convertClipboardPasteToMarkdown({ html: "", plainText });
+
+    expect(result.source).toBe("plainText");
+    // Unchecked -> ☐ (U+2610 BALLOT BOX), checked -> ☑ (U+2611 BALLOT BOX WITH CHECK).
+    expect(result.markdown).toContain("| ☐ | Kjell Hedstrom |");
+    expect(result.markdown).toContain("| ☑ | Jane Doe |");
+    // The non-rendering task-list markers must be gone from the table.
+    expect(result.markdown).not.toContain("[ ]");
+    expect(result.markdown).not.toContain("[x]");
+  });
+
+  it("leaves a genuine task list (outside any table) untouched", () => {
+    // Only table cells get the glyph treatment. A real task list still
+    // renders its checkboxes, so its `- [ ]` markers must survive verbatim.
+    const plainText = ["- [ ] first", "- [x] second"].join("\n");
+
+    const result = convertClipboardPasteToMarkdown({ html: "", plainText });
+
+    expect(result.markdown).toBe(plainText);
+  });
 });
