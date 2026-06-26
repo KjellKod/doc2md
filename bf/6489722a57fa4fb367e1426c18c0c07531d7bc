@@ -1,0 +1,23 @@
+src/components/preview/tableCheckbox.test.ts
+  s_91de8ddd5f619b::t_77f53ee10e2b62 142-146
+  s_91de8ddd5f619b::t_423217c043c110 114-141,147-158
+src/components/preview/tableCheckbox.ts
+  s_91de8ddd5f619b::t_97851373699b1a 30-32,34
+  s_91de8ddd5f619b::t_860a9e06e6d643 9-16,21-27,33,35-38,40-44,46-67,70-83,96-97,106-109,114-125,128,131
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "bf6489722a57fa4fb367e1426c18c0c07531d7bc",
+  "prompts": {},
+  "sessions": {
+    "s_91de8ddd5f619b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ab2d454a-2fd2-4240-833d-b7bb50dc1dc9",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
