@@ -133,6 +133,70 @@ function taskCheckboxLabel(element: Element, sourceLine: number) {
   return label ? `Toggle task: ${label}` : `Toggle task on line ${sourceLine}`;
 }
 
+// Build the accessible name for a synthesized table-cell checkbox. When the
+// cell has trailing label text, use it so the control is distinguishable;
+// otherwise fall back to a form carrying both the source line and the marker
+// index so bare-marker cells in the same row stay individually targetable
+// (finding arb-it1-5a).
+function tableCheckboxLabel(
+  cell: Element,
+  checkbox: Element,
+  sourceLine: number,
+  markerIndex: string,
+): string {
+  const label = cell.children
+    .filter((child) => child !== checkbox)
+    .map(textContent)
+    .join("")
+    .replace(/\s+/gu, " ")
+    .trim();
+
+  return label
+    ? `Toggle task: ${label}`
+    : `Toggle task on line ${sourceLine} (checkbox ${markerIndex})`;
+}
+
+// Stamp synthesized table-cell checkbox inputs within a table ROW. We anchor on
+// the row's position (mapped FORMATTED -> ORIGINAL source line) and stamp each
+// cell that the synthesis plugin converted. Walking from the row keeps the
+// position lookup on the element that reliably carries it (verified: tr/td/th
+// all carry position.start.line, plan §R3).
+function stampTableRowCheckboxes(row: Element, originalLineFor: number[]) {
+  const sourceLine = originalSourceLineFor(row, originalLineFor);
+  if (sourceLine === null) {
+    return;
+  }
+
+  for (const cell of row.children) {
+    if (
+      cell.type !== "element" ||
+      (cell.tagName !== "td" && cell.tagName !== "th")
+    ) {
+      continue;
+    }
+
+    const checkbox = cell.children.find(
+      (child): child is Element =>
+        child.type === "element" &&
+        isCheckboxInput(child) &&
+        typeof child.properties?.["data-task-marker-index"] === "string",
+    );
+    if (!checkbox) {
+      continue;
+    }
+
+    const markerIndex = checkbox.properties?.["data-task-marker-index"];
+    checkbox.properties = checkbox.properties ?? {};
+    checkbox.properties["data-task-source-line"] = String(sourceLine);
+    checkbox.properties["aria-label"] = tableCheckboxLabel(
+      cell,
+      checkbox,
+      sourceLine,
+      typeof markerIndex === "string" ? markerIndex : "0",
+    );
+  }
+}
+
 function stampTaskCheckboxes(element: Element, originalLineFor: number[]) {
   if (element.tagName === "li" && hasClass(element, "task-list-item")) {
     const sourceLine = originalSourceLineFor(element, originalLineFor);
@@ -142,6 +206,10 @@ function stampTaskCheckboxes(element: Element, originalLineFor: number[]) {
       checkbox.properties["data-task-source-line"] = String(sourceLine);
       checkbox.properties["aria-label"] = taskCheckboxLabel(element, sourceLine);
     }
+  }
+
+  if (element.tagName === "tr") {
+    stampTableRowCheckboxes(element, originalLineFor);
   }
 
   for (const child of element.children) {

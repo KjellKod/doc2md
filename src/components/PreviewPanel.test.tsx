@@ -407,6 +407,98 @@ describe("PreviewPanel", () => {
     ).toBeInTheDocument();
   });
 
+  it("renders interactive table-cell checkboxes in the large-document fallback path", async () => {
+    // A large, table-heavy doc that trips useFallbackPreview AND carries
+    // checkbox markers. The fallback renders the table manually (not via
+    // ReactMarkdown), so this proves the synthesis + write-back were wired into
+    // that path too (finding arb-large-doc-table-checkbox-doc-gap-1).
+    function buildCheckboxFallbackTable() {
+      const rows = ["# Tasks", "", "| Done | Name |", "| --- | --- |"];
+      for (let index = 0; index < 1_100; index += 1) {
+        const state = index === 0 ? "[ ]" : index === 1 ? "[x]" : "[ ]";
+        rows.push(`| - ${state} | item-${index} |`);
+      }
+      return rows.join("\n");
+    }
+
+    const observed: string[] = [];
+    function Harness() {
+      const [markdown, setMarkdown] = useState(buildCheckboxFallbackTable());
+      return (
+        <PreviewPanel
+          entry={createEntry({
+            format: "md",
+            name: "tasks.md",
+            markdown,
+            editedMarkdown: markdown,
+          })}
+          onMarkdownChange={(next) => {
+            observed.push(next);
+            setMarkdown(next);
+          }}
+        />
+      );
+    }
+
+    render(<Harness />);
+
+    // Fallback path is active.
+    expect(screen.getByText("Large report")).toBeInTheDocument();
+    const checkboxes = screen.getAllByRole("checkbox");
+    // No literal "- [ ]" text leaks into the cells for the first row.
+    expect(screen.queryByText("- [ ]")).not.toBeInTheDocument();
+    expect(checkboxes.length).toBeGreaterThan(1);
+
+    // Row 0 is unchecked, row 1 is checked — synthesis reflects source state.
+    const firstUnchecked = checkboxes.find((box) => !(box as HTMLInputElement).checked);
+    const firstChecked = checkboxes.find((box) => (box as HTMLInputElement).checked);
+    expect(firstUnchecked).toBeDefined();
+    expect(firstChecked).toBeDefined();
+    expect(firstUnchecked).toBeEnabled();
+
+    // Toggling row 0 writes `[x]` back to the exact source marker, leaving the
+    // label and the rest of the document intact.
+    fireEvent.click(firstUnchecked as HTMLInputElement);
+    await waitFor(() => {
+      expect(observed.length).toBeGreaterThan(0);
+    });
+    const next = observed[observed.length - 1];
+    // Byte-for-byte: only row 0's marker flipped to `[x]`; the label and every
+    // other line are untouched.
+    expect(next).toContain("| - [x] | item-0 |");
+    expect(next).toContain("| - [x] | item-1 |");
+    expect(next).toContain("| - [ ] | item-2 |");
+    expect(next).toContain("# Tasks");
+  });
+
+  it("leaves escaped brackets literal in the large-document fallback path", async () => {
+    // Escaped `\[ \]` must stay literal end-to-end, even in the fallback path.
+    function buildEscapedFallbackTable() {
+      const rows = ["# Tasks", "", "| Done | Name |", "| --- | --- |"];
+      for (let index = 0; index < 1_100; index += 1) {
+        const state = index === 0 ? "\\[ \\]" : "- [ ]";
+        rows.push(`| ${state} | item-${index} |`);
+      }
+      return rows.join("\n");
+    }
+
+    render(
+      <PreviewPanel
+        entry={createEntry({
+          format: "md",
+          name: "tasks.md",
+          markdown: buildEscapedFallbackTable(),
+        })}
+      />,
+    );
+
+    expect(screen.getByText("Large report")).toBeInTheDocument();
+    // The escaped row 0 renders its bracket text, not a checkbox.
+    expect(screen.getByText("[ ]")).toBeInTheDocument();
+    // Real markers on later rows still synthesize checkboxes.
+    expect(screen.getAllByRole("checkbox").length).toBeGreaterThan(0);
+  });
+
   it("does not render toggle when entry is null", () => {
     render(<PreviewPanel entry={null} />);
 
@@ -749,6 +841,134 @@ describe("PreviewPanel", () => {
         "- [x] Task after formatted contact block",
       ].join("\n"),
     );
+  });
+
+  it("renders table-cell markers as real checkboxes and toggles the source through onMarkdownChange", () => {
+    const onChange = vi.fn();
+    const markdown = [
+      "| MARKED | Name |",
+      "| --- | --- |",
+      "| - [ ] | Kjell Hedstrom |",
+      "| - [x] | Jane Doe |",
+    ].join("\n");
+
+    const { container } = render(
+      <PreviewPanel
+        entry={createEntry({ markdown, editedMarkdown: markdown })}
+        onMarkdownChange={onChange}
+      />,
+    );
+
+    // Real checkboxes inside the table, interactive in Preview, no literal text.
+    const cellCheckboxes = container.querySelectorAll<HTMLInputElement>(
+      ".markdown-surface td input[type=\"checkbox\"]",
+    );
+    expect(cellCheckboxes).toHaveLength(2);
+    expect(cellCheckboxes[0]).not.toBeChecked();
+    expect(cellCheckboxes[0]).toBeEnabled();
+    expect(cellCheckboxes[1]).toBeChecked();
+    const surface = container.querySelector(".markdown-surface")!;
+    expect(surface).not.toHaveTextContent("[ ]");
+    expect(surface).not.toHaveTextContent("[x]");
+
+    // Toggling the first cell checkbox flips exactly that source marker.
+    fireEvent.click(cellCheckboxes[0]);
+    expect(onChange).toHaveBeenCalledWith(
+      [
+        "| MARKED | Name |",
+        "| --- | --- |",
+        "| - [x] | Kjell Hedstrom |",
+        "| - [x] | Jane Doe |",
+      ].join("\n"),
+    );
+  });
+
+  it("toggles independent table checkboxes in one row without disturbing the others", () => {
+    const onChange = vi.fn();
+    const markdown = [
+      "| A | B | C |",
+      "| --- | --- | --- |",
+      "| - [ ] | - [x] | - [ ] |",
+    ].join("\n");
+
+    const { container } = render(
+      <PreviewPanel
+        entry={createEntry({ markdown, editedMarkdown: markdown })}
+        onMarkdownChange={onChange}
+      />,
+    );
+
+    const cellCheckboxes = container.querySelectorAll<HTMLInputElement>(
+      ".markdown-surface td input[type=\"checkbox\"]",
+    );
+    expect(cellCheckboxes).toHaveLength(3);
+
+    // Toggle the middle checkbox off -> only the middle marker changes.
+    fireEvent.click(cellCheckboxes[1]);
+    expect(onChange).toHaveBeenLastCalledWith(
+      [
+        "| A | B | C |",
+        "| --- | --- | --- |",
+        "| - [ ] | - [ ] | - [ ] |",
+      ].join("\n"),
+    );
+  });
+
+  it("resolves the correct original source line for a table after preview formatting collapses spacing", () => {
+    const onChange = vi.fn();
+    const markdown = [
+      "Contact",
+      "Location: Denver, CO",
+      "Email: team@example.com",
+      "",
+      "| MARKED | Name |",
+      "| --- | --- |",
+      "| - [ ] | Kjell Hedstrom |",
+    ].join("\n");
+
+    const { container } = render(
+      <PreviewPanel
+        entry={createEntry({ markdown, editedMarkdown: markdown })}
+        onMarkdownChange={onChange}
+      />,
+    );
+
+    const checkbox = container.querySelector<HTMLInputElement>(
+      ".markdown-surface td input[type=\"checkbox\"]",
+    )!;
+    fireEvent.click(checkbox);
+
+    expect(onChange).toHaveBeenCalledWith(
+      [
+        "Contact",
+        "Location: Denver, CO",
+        "Email: team@example.com",
+        "",
+        "| MARKED | Name |",
+        "| --- | --- |",
+        "| - [x] | Kjell Hedstrom |",
+      ].join("\n"),
+    );
+  });
+
+  it("leaves an escaped table-cell marker literal with no checkbox", () => {
+    const markdown = [
+      "| MARKED | Name |",
+      "| --- | --- |",
+      "| \\[ \\] | Kjell Hedstrom |",
+    ].join("\n");
+
+    const { container } = render(
+      <PreviewPanel
+        entry={createEntry({ markdown, editedMarkdown: markdown })}
+        onMarkdownChange={vi.fn()}
+      />,
+    );
+
+    expect(
+      container.querySelectorAll(".markdown-surface td input[type=\"checkbox\"]"),
+    ).toHaveLength(0);
+    expect(container.querySelector(".markdown-surface")).toHaveTextContent("[ ]");
   });
 
   it("renders nested GFM task lists as nested checkbox list items", () => {

@@ -155,6 +155,12 @@ export const HTML_EXPORT_STYLES = `
     vertical-align: middle;
   }
 
+  td > input[type="checkbox"],
+  th > input[type="checkbox"] {
+    margin: 0 0.5em 0 0;
+    vertical-align: middle;
+  }
+
   blockquote {
     margin: 0 0 1em;
     padding: 0 1em;

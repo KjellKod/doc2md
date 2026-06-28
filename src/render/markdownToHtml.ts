@@ -33,6 +33,7 @@ import { visit } from "unist-util-visit";
 import { formatPreviewMarkdown } from "./previewMarkdown";
 import { classifyMarkdownHref } from "./markdownLinks";
 import { HTML_EXPORT_STYLES } from "./htmlExportStyles";
+import { tableTaskCheckboxRehype } from "./tableTaskCheckboxRehype";
 
 export interface MarkdownToHtmlOptions {
   /** true (default) wraps in a self-contained document; false returns a fragment. */
@@ -143,6 +144,16 @@ function escapeHtml(value: string): string {
 }
 
 function renderFragment(normalizedMarkdown: string): string {
+  // The export pipeline parses the already-normalized markdown, so a table
+  // row's HAST start line indexes THAT normalized string. Export is static and
+  // never writes back, so resolving against the normalized lines is correct
+  // here (do NOT reuse this resolver for preview write-back — plan §4.1).
+  const normalizedLines = normalizedMarkdown.split(/\r\n|\n|\r/u);
+  const resolveRowSourceLine = (rowStartLine: number): string | null => {
+    const line = normalizedLines[rowStartLine - 1];
+    return line === undefined ? null : line;
+  };
+
   const file = unified()
     .use(remarkParse)
     .use(remarkGfm)
@@ -160,6 +171,7 @@ function renderFragment(normalizedMarkdown: string): string {
         },
       },
     })
+    .use(tableTaskCheckboxRehype({ resolveRowSourceLine }))
     .use(rehypeSlug)
     .use(exportLinkPolicy)
     .use(stripImages)

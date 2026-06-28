@@ -2896,6 +2896,18 @@ body.is-height-resizing * {
   margin-left: 0;
 }
 
+/* Table-cell task checkboxes share the task-list size/alignment tokens but omit
+   the negative left margin (there is no list bullet to offset). Selectors target
+   real <input type="checkbox"> children of cells, not a guessed class
+   (plan §4.4, ux-guidebook§2). */
+.markdown-surface td > input[type="checkbox"],
+.markdown-surface th > input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  margin: 0 0.4rem 0 0;
+  vertical-align: -0.12em;
+}
+
 .markdown-surface li > p {
   margin-bottom: 0;
 }
