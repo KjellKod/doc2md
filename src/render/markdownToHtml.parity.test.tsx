@@ -35,10 +35,10 @@ A paragraph with **bold**, _italic_, and \`inline code\`.
 - [ ] open task
 - [x] done task
 
-| Name | Score |
-| ---- | ----- |
-| Ada  | 10    |
-| Bob  | 7     |
+| Name | Score | Done |
+| ---- | ----- | ---- |
+| Ada  | 10    | - [x] |
+| Bob  | 7     | - [ ] |
 
 > Quoted line.
 
@@ -170,7 +170,8 @@ describe("export/Preview parity guard", () => {
     // Sanity: the fixture is non-trivial, so the comparison is load-bearing
     // rather than a tautology over empty collections.
     expect(preview.headings.length).toBeGreaterThanOrEqual(2);
-    expect(preview.checkboxes.length).toBe(2);
+    // 2 list-item task checkboxes + 2 synthesized table-cell checkboxes.
+    expect(preview.checkboxes.length).toBe(4);
     expect(preview.links.length).toBe(3);
 
     expect(exported.headings).toEqual(preview.headings);

@@ -217,6 +217,47 @@ test("checks and unchecks a task checkbox directly in View", async ({ page }) =>
   );
 });
 
+test("toggles a table-cell checkbox in View and writes the flipped marker back to source", async ({
+  page,
+}) => {
+  await openHostedApp(page);
+
+  await page.getByRole("button", { name: "Start writing", exact: true }).click();
+  const tableMarkdown = [
+    "| MARKED | Name |",
+    "| --- | --- |",
+    "| - [ ] | Kjell Hedstrom |",
+    "| - [x] | Jane Doe |",
+  ].join("\n");
+  await page.getByLabel("Edit markdown").fill(tableMarkdown);
+
+  await page.getByRole("button", { name: "View" }).click();
+
+  // Real checkboxes synthesized inside the table cells, not literal text.
+  const cellCheckboxes = page.locator(
+    '.markdown-surface td input[type="checkbox"]',
+  );
+  await expect(cellCheckboxes).toHaveCount(2);
+  await expect(page.locator(".markdown-surface")).not.toContainText("[ ]");
+  await expect(page.locator(".markdown-surface")).not.toContainText("[x]");
+  await expect(cellCheckboxes.first()).not.toBeChecked();
+  await expect(cellCheckboxes.nth(1)).toBeChecked();
+
+  // Toggle the first table checkbox on; only that source marker must flip.
+  await cellCheckboxes.first().check();
+  await expect(cellCheckboxes.first()).toBeChecked();
+
+  await page.getByRole("button", { name: "Edit" }).click();
+  await expect(page.getByLabel("Edit markdown")).toHaveValue(
+    [
+      "| MARKED | Name |",
+      "| --- | --- |",
+      "| - [x] | Kjell Hedstrom |",
+      "| - [x] | Jane Doe |",
+    ].join("\n"),
+  );
+});
+
 test("checks and unchecks task checkboxes for an opened markdown file in View", async ({
   page,
 }) => {

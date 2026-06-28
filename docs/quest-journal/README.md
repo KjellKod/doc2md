@@ -2,6 +2,7 @@
 
 | Date | Quest | Outcome |
 |------|-------|---------|
+| 2026-06-28 | [table-cell-checkboxes](table-cell-checkboxes_2026-06-28.md) | Implement render-time, source-backed task checkboxes inside GFM table cells so a cell containing a leading marker suc... |
 | 2026-06-14 | [mobile-reading-space](mobile-reading-space_2026-06-14.md) | **Problem.** On hosted (web) phones the document reading area is squeezed by three chrome problems: (P0) once the use... |
 | 2026-06-07 | [mobile-edit-view-optimize](mobile-edit-view-optimize_2026-06-07.md) | - **Agent:** Planner (Jean-Claude) - **Model:** Opus 4.8 (1M) - **Date:** 2026-06-07 - **Quest ID:** mobile-edit-view... |
 | 2026-06-06 | [json-responsiveness](json-responsiveness_2026-06-06.md) | `$quest in a new worktree branch, 1 make a symlink to our ~/ws/extra/doc2md/.quest/ so we can keep our artifacts in t... |

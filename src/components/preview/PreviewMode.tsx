@@ -25,7 +25,15 @@ import {
   useRenderedActiveMatchCentering,
   useRenderedAnchorApply,
 } from "./renderedSurfaceEffects";
-import { replaceTaskMarkerAtSourceLine } from "./taskCheckboxSource";
+import {
+  replaceTaskMarkerAtSourceLine,
+  replaceTaskMarkerByIndex,
+} from "./taskCheckboxSource";
+import { tableTaskCheckboxRehype } from "../../render/tableTaskCheckboxRehype";
+import {
+  enumerateRowMarkers,
+  type CellMarker,
+} from "./tableCellCheckbox";
 import { LargeJsonPreviewView } from "./LargeJsonPreviewView";
 import { getLargeJsonPreview } from "./largeJsonPreview";
 
@@ -110,7 +118,11 @@ const previewMarkdownComponents: Components = {
 };
 
 function previewMarkdownComponentsFor(
-  onTaskCheckboxToggle?: (sourceLine: number, checked: boolean) => void,
+  onTaskCheckboxToggle?: (
+    sourceLine: number,
+    checked: boolean,
+    markerIndex: number | null,
+  ) => void,
 ): Components {
   if (!onTaskCheckboxToggle) {
     return previewMarkdownComponents;
@@ -139,6 +151,20 @@ function previewMarkdownComponentsFor(
         );
       }
 
+      // Table-cell inputs carry data-task-marker-index; list inputs do not.
+      // Defensive int parse: anything that does not parse routes to the legacy
+      // list path (review finding arb-it1-2).
+      const markerIndexValue = (props as Record<string, unknown>)[
+        "data-task-marker-index"
+      ];
+      const parsedMarkerIndex =
+        typeof markerIndexValue === "string"
+          ? Number.parseInt(markerIndexValue, 10)
+          : Number.NaN;
+      const markerIndex = Number.isInteger(parsedMarkerIndex)
+        ? parsedMarkerIndex
+        : null;
+
       return (
         <input
           {...props}
@@ -146,7 +172,11 @@ function previewMarkdownComponentsFor(
           checked={Boolean(checked)}
           disabled={false}
           onChange={(event: ChangeEvent<HTMLInputElement>) =>
-            onTaskCheckboxToggle(taskSourceLine, event.currentTarget.checked)
+            onTaskCheckboxToggle(
+              taskSourceLine,
+              event.currentTarget.checked,
+              markerIndex,
+            )
           }
         />
       );
@@ -228,12 +258,23 @@ function RichPreviewMode({
     () =>
       previewMarkdownComponentsFor(
         onMarkdownChange
-          ? (sourceLine, checked) => {
-              const nextMarkdown = replaceTaskMarkerAtSourceLine(
-                effectiveMarkdown,
-                sourceLine,
-                checked,
-              );
+          ? (sourceLine, checked, markerIndex) => {
+              // Dispatch by attribute presence: table-cell inputs carry a valid
+              // markerIndex and route to the index-aware path; list inputs have
+              // no index and route to the unchanged legacy path (plan §4.2).
+              const nextMarkdown =
+                markerIndex === null
+                  ? replaceTaskMarkerAtSourceLine(
+                      effectiveMarkdown,
+                      sourceLine,
+                      checked,
+                    )
+                  : replaceTaskMarkerByIndex(
+                      effectiveMarkdown,
+                      sourceLine,
+                      markerIndex,
+                      checked,
+                    );
               if (nextMarkdown !== effectiveMarkdown) {
                 onMarkdownChange(nextMarkdown);
               }
@@ -250,10 +291,25 @@ function RichPreviewMode({
           // rehype-slug runs first so heading ids are in place before the
           // source-line tagger or find-highlighter touch the tree.
           rehypeSlug,
+          // Synthesize static table-cell checkbox inputs (same plugin as
+          // export, parity by construction). The resolver maps a row's
+          // FORMATTED start line back to the ORIGINAL source line via the line
+          // map, then reads the original line — the same string write-back
+          // edits, so render index and edited span stay consistent (plan §4.1).
+          tableTaskCheckboxRehype({
+            resolveRowSourceLine: (formattedLine) => {
+              const originalLine =
+                previewWithLineMap.originalLineFor[formattedLine - 1] ??
+                formattedLine;
+              const lines = effectiveMarkdown.split(/\r\n|\n|\r/u);
+              const line = lines[originalLine - 1];
+              return line === undefined ? null : line;
+            },
+          }),
           sourceLineRehype(previewWithLineMap.originalLineFor),
           findHighlight,
         ],
-    [findHighlight, previewWithLineMap],
+    [effectiveMarkdown, findHighlight, previewWithLineMap],
   );
   const { applyAnchorLine } = useViewportAnchor(
     renderedViewRef,
@@ -346,6 +402,45 @@ function LargeMarkdownPreviewMode({
   const table = useMemo(
     () => parseDominantMarkdownTable(effectiveMarkdown),
     [effectiveMarkdown],
+  );
+
+  // Wire interactive table-cell checkboxes into the large-document fallback
+  // path so behavior matches RichPreviewMode (finding
+  // arb-large-doc-table-checkbox-doc-gap-1). The fallback renders the table
+  // manually (not via ReactMarkdown), so the tableTaskCheckboxRehype plugin
+  // never runs here. Instead we reuse the SAME canonical enumerator
+  // (enumerateRowMarkers) on the row's ORIGINAL raw source line — the exact
+  // string write-back edits — so render-side marker indices and the write-back
+  // span cannot drift. row.sourceLine is the original 1-based source line
+  // (parseDominantMarkdownTable indexes the original markdown, not a formatted
+  // copy), so no formatted->original mapping is required and the source line is
+  // always accurate. Write-back routes through the same replaceTaskMarkerByIndex
+  // used by the rich path; replaceTaskMarkerAtSourceLine stays byte-for-byte
+  // untouched.
+  // Split the SAME way parseDominantMarkdownTable does (/\r?\n/) so the line we
+  // read for marker enumeration matches the row.sourceLine it assigned. The
+  // marker offsets are only ever used relative to this line; write-back then
+  // re-derives the line from row.sourceLine inside replaceTaskMarkerByIndex.
+  const rawSourceLines = useMemo(
+    () => effectiveMarkdown.split(/\r?\n/u),
+    [effectiveMarkdown],
+  );
+  const handleTableCheckboxToggle = useMemo(
+    () =>
+      onMarkdownChange
+        ? (sourceLine: number, markerIndex: number, checked: boolean) => {
+            const nextMarkdown = replaceTaskMarkerByIndex(
+              effectiveMarkdown,
+              sourceLine,
+              markerIndex,
+              checked,
+            );
+            if (nextMarkdown !== effectiveMarkdown) {
+              onMarkdownChange(nextMarkdown);
+            }
+          }
+        : undefined,
+    [effectiveMarkdown, onMarkdownChange],
   );
 
   function updateScrollMetrics(element: HTMLDivElement) {
@@ -470,15 +565,26 @@ function LargeMarkdownPreviewMode({
       <MarkdownDocumentFragment markdown={table.beforeMarkdown} />
       <table className="large-markdown-table">
         <thead>
-          <tr>
-            {table.header.map((cell, index) => (
-              <th
-                key={`${index}-${cell}`}
-                style={{ textAlign: table.alignments[index] ?? undefined }}
-              >
-                <MarkdownTableCell markdown={cell} />
-              </th>
-            ))}
+          <tr data-source-line={table.tableStartLine}>
+            {(() => {
+              const headerMarkers = rowCellMarkers(
+                rawSourceLines[table.tableStartLine - 1],
+                table.header.length,
+              );
+              return table.header.map((cell, index) => (
+                <th
+                  key={`${index}-${cell}`}
+                  style={{ textAlign: table.alignments[index] ?? undefined }}
+                >
+                  <FallbackTableCell
+                    markdown={cell}
+                    marker={headerMarkers.get(index)}
+                    sourceLine={table.tableStartLine}
+                    onToggle={handleTableCheckboxToggle}
+                  />
+                </th>
+              ));
+            })()}
           </tr>
         </thead>
         <tbody ref={tableBodyRef}>
@@ -491,21 +597,29 @@ function LargeMarkdownPreviewMode({
               />
             </tr>
           ) : null}
-          {visibleRows.map((row) => (
-            <tr
-              key={row.sourceLine}
-              data-source-line={row.sourceLine}
-            >
-              {Array.from({ length: columnCount }, (_, index) => (
-                <td
-                  key={index}
-                  style={{ textAlign: table.alignments[index] ?? undefined }}
-                >
-                  <MarkdownTableCell markdown={row.cells[index] ?? ""} />
-                </td>
-              ))}
-            </tr>
-          ))}
+          {visibleRows.map((row) => {
+            const markers = rowCellMarkers(
+              rawSourceLines[row.sourceLine - 1],
+              row.cells.length,
+            );
+            return (
+              <tr key={row.sourceLine} data-source-line={row.sourceLine}>
+                {Array.from({ length: columnCount }, (_, index) => (
+                  <td
+                    key={index}
+                    style={{ textAlign: table.alignments[index] ?? undefined }}
+                  >
+                    <FallbackTableCell
+                      markdown={row.cells[index] ?? ""}
+                      marker={markers.get(index)}
+                      sourceLine={row.sourceLine}
+                      onToggle={handleTableCheckboxToggle}
+                    />
+                  </td>
+                ))}
+              </tr>
+            );
+          })}
           {afterHeight > 0 ? (
             <tr aria-hidden="true">
               <td
@@ -519,6 +633,94 @@ function LargeMarkdownPreviewMode({
       </table>
       <MarkdownDocumentFragment markdown={table.afterMarkdown} />
     </div>
+  );
+}
+
+// Resolve the synthesizable checkbox markers for one fallback-path table row.
+// Runs the canonical enumerator on the row's raw source line, then applies a
+// raw-cell-count vs rendered-cell-count fail-safe: if the canonical splitter
+// disagrees with the fallback's own cell split, the cell<->marker mapping is
+// untrustworthy and the row is left fully literal. Returns a map keyed by
+// cellIndex.
+//
+// NOTE on the fail-safe's reach in this path: unlike the rich path — where the
+// fail-safe compares the raw split against remark-gfm's authoritative <td>
+// boundaries — the fallback has no remark-gfm row parse. Both the rendered
+// cells (parseDominantMarkdownTable) and the markers (enumerateRowMarkers) come
+// from naive unescaped-pipe splitters that agree even on a pipe-in-inline-code
+// row, so this guard will not skip that case the way the rich path does. This
+// is still SAFE for write-back: replaceTaskMarkerByIndex re-runs the SAME
+// enumerator on the SAME raw line, so the toggled span is always a genuine
+// `[ ]`/`[x]` marker offset — never a wrong-byte mutation. The only residual
+// effect is a possible checkbox where GFM would render differently; the byte
+// edited is always a real marker. Correctness (no wrong-byte write-back) is
+// preserved; completeness against exotic inline-code rows is not guaranteed.
+function rowCellMarkers(
+  rawSourceLine: string | undefined,
+  renderedCellCount: number,
+): Map<number, CellMarker> {
+  const result = new Map<number, CellMarker>();
+  if (rawSourceLine === undefined) {
+    return result;
+  }
+  const { markers, rawCellCount } = enumerateRowMarkers(rawSourceLine);
+  if (markers.length === 0 || rawCellCount !== renderedCellCount) {
+    return result;
+  }
+  for (const marker of markers) {
+    result.set(marker.cellIndex, marker);
+  }
+  return result;
+}
+
+// Render one fallback-path table cell. When a synthesized checkbox marker
+// applies to this cell, render a real <input type="checkbox"> followed by the
+// preserved trailing label (mirroring the rich path), wired to write-back when
+// interactive. Otherwise render the cell content unchanged via MarkdownTableCell.
+function FallbackTableCell({
+  markdown,
+  marker,
+  sourceLine,
+  onToggle,
+}: {
+  markdown: string;
+  marker: CellMarker | undefined;
+  sourceLine: number;
+  onToggle?: (sourceLine: number, markerIndex: number, checked: boolean) => void;
+}) {
+  if (!marker) {
+    return <MarkdownTableCell markdown={markdown} />;
+  }
+
+  // Strip the leading marker from the (already trimmed) cell text to recover the
+  // trailing label, mirroring tableTaskCheckboxRehype.convertCell. The canonical
+  // enumerator already approved this cell, so the leading form is present.
+  const trimmed = markdown.trimStart();
+  const markerMatch = /^(?:[-*+][ \t]+)?\[(?: |x|X)\]/u.exec(trimmed);
+  const remainder = markerMatch ? trimmed.slice(markerMatch[0].length).trim() : "";
+  const checked = marker.state === "checked";
+  const ariaLabel = remainder
+    ? `Toggle task: ${remainder.replace(/\s+/gu, " ")}`
+    : `Toggle task on line ${sourceLine} (checkbox ${marker.markerIndex})`;
+
+  return (
+    <>
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={!onToggle}
+        aria-label={ariaLabel}
+        data-task-source-line={String(sourceLine)}
+        data-task-marker-index={String(marker.markerIndex)}
+        onChange={
+          onToggle
+            ? (event: ChangeEvent<HTMLInputElement>) =>
+                onToggle(sourceLine, marker.markerIndex, event.currentTarget.checked)
+            : undefined
+        }
+      />
+      {remainder ? <MarkdownTableCell markdown={remainder} /> : null}
+    </>
   );
 }
 
