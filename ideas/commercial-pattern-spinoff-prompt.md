@@ -22,3 +22,14 @@ You are working in the doc2md repo on Phase 7b (commercial distribution + licens
 6. **No accounts, no SSO** for doc2md v1 (per the issuer spec's explicit rejection). If accounts are ever wanted later, the sketch2md Worker's better-auth instance can act as the OAuth 2.1/OIDC provider (system-browser PKCE + loopback redirect) — do not build a second auth system.
 
 Deliverable: an amended decision record + an implementation-ready phase plan for 7b in this repo's `docs/implementation/`, mirroring the phase/acceptance-criteria/test rigor of sketch2md's `ideas/commercial-roadmap.md`. Ask the maintainer before any irreversible or paid-account action.
+
+## Transferable lessons from the sketch2md sharpen (2026-07-06)
+
+1. **Entitlement liveness, checked at use time.** Model entitlement as one state enum (e.g. `trial | licensed | grace | expired-reminder`) and evaluate "is this allowed?" at the moment of use against the cached/validated license state — never with scheduled cleanup jobs. Expiry then "just happens" with zero moving parts.
+2. **Recoverability ↔ secrecy dial.** Re-enterable secrets (license keys, API keys) may use strict cryptography where loss = harmless re-entry. Irreplaceable user data must never be hostage to crypto the user can forget. And never derive encryption keys from an email address — it's security theater.
+3. **Honest security copy.** Only claim "we cannot read/decrypt X" when it is cryptographically true (user-held secret). For server/issuer-held keys the honest claim is "encrypted at rest". Keep the two phrasings straight in all user-facing copy.
+4. **Graceful degradation is the brand.** Expired license → reminders and read-only-ish nudges, never blocked work or data loss (this repo's own stance — sketch2md's sharpen converged on the same rule independently; treat it as the family-wide invariant).
+
+## Sharpen prompt (run this before planning 7b)
+
+> /sharpen the doc2md commercialization decisions — `docs/implementation/mac-commercial-distribution-decision-record.md` + the Phase 7b section of `ideas/mac-desktop-app-roadmap.md` + `docs/implementation/mac-private-license-issuer-spec.md`. Pressure-test at least: (1) Lemon Squeezy → Polar.sh amendment — does Polar's license-key API (activation limits, expiry, auto-revoke) replace the custom Ed25519 issuer for v1, postpone it, or complement it? (2) pricing shape — $20/yr subscription vs perpetual-until-next-major vs both, and how each maps onto license-token claims; (3) trial/reminder mechanics — is the current "10 saves then every 25" reminder cadence the trial, or is a time-boxed trial cleaner? (4) offline grace duration and clock-rollback handling; (5) what the free web app may say about the paid desktop app without violating the strict free/paid decoupling rule. Come with a recommendation per question.
