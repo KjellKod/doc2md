@@ -1,10 +1,24 @@
 # Mac Private License Issuer Spec
 
-Status: Planned
+Status: Deferred, v2 contingency (amended 2026-07-07; v1 uses Polar's license-key API as the interim issuer, see below)
 Owner: KjellKod <kjell@candidtalentedge.com>
 Date: 2026-05-06
 Roadmap: `ideas/mac-desktop-app-roadmap.md` Phase 7b
 Related: [Mac commercial distribution decision record](mac-commercial-distribution-decision-record.md), [Mac commercial distribution and licensing research](mac-commercial-distribution-and-licensing.md), [Mac desktop app roadmap](../../ideas/mac-desktop-app-roadmap.md)
+
+## V1 Interim Issuer: Polar License-Key API (Amended 2026-07-07)
+
+The 2026-07-07 amendment to the [decision record](mac-commercial-distribution-decision-record.md) defers the custom private issuer. For v1, Polar (the selected merchant of record) acts as the issuer through its built-in license keys:
+
+- Purchase on Polar issues a license key with activation limits, `expires_at` tracking, and automatic revocation when the subscription is cancelled (effective at paid-period end).
+- The Mac app performs a **one-time online activation** when the user enters the key (`/v1/customer-portal/license-keys/activate`), then caches the validated state locally (Keychain, with the existing Application Support fallback).
+- **Revalidation happens only inside a 14-day window around `expires_at`**: silent background attempts start 7 days before expiry and continue until 7 days after. A renewed subscription picks up a new expiry invisibly. Validation uses `/v1/customer-portal/license-keys/validate`.
+- These customer-portal endpoints are designed for client-side calls keyed by the license key itself. The app must embed **no merchant secret, organization token, or API credential**. The integration quest must verify this property against current Polar documentation before shipping.
+- **Every licensing network call is non-blocking for document operations.** Launch, open, edit, convert, save, and export never wait on, or fail because of, licensing traffic. This is the one narrow exception to this spec's original no-online-validation rule, and it extends no further.
+- Degradation ladder when revalidation cannot succeed: `licensed` → `grace` (calm banner, everything works) → `expired-reminder` (evaluation reminders resume, licensed conveniences pause, core document operations untouched, all user data readable and exportable).
+- License recovery remains email support via `support@doc2md.dev`, plus Polar's own purchase-email key re-delivery.
+
+Everything below this section is the **v2 contingency**: the custom Ed25519 issuer contract, kept current as the exit plan if Polar's terms, API, or ownership change unacceptably. The Ed25519 verifier already shipped in the app (PR #110) stays in place, dormant but tested, so switching issuers later does not require inventing a new token model.
 
 ## Purpose
 
@@ -18,7 +32,7 @@ The [Phase 7b decision record](mac-commercial-distribution-decision-record.md) r
 
 - direct signed and notarized DMG distribution first;
 - `doc2md.dev` as the Mac commercial surface;
-- Lemon Squeezy preferred, Paddle fallback only;
+- Polar preferred, Paddle fallback only (amended 2026-07-07 from Lemon Squeezy);
 - Mac app source-visible shareware under `LicenseRef-doc2md-Desktop`;
 - hosted web, npm package surfaces, shared converters, and MIT-marked files remain MIT/free;
 - purchases are disabled until explicit commercial go-live approval;
@@ -167,10 +181,11 @@ Online support/admin lookup is normal private issuer behavior. It is not the sam
 
 For this contract:
 
-- the Mac app entitlement check is offline-first local signature verification;
+- the Mac app entitlement check is offline-first local verification against cached license state;
 - normal launch, open, edit, convert, save, and export behavior must not require network or issuer availability;
 - customer-facing recovery is email support through `support@doc2md.dev`;
-- self-service lookup, online validation, activation seats, revocation polling, and app-to-issuer recovery APIs are future explicit decisions;
+- the v1 interim issuer section above grants the only approved online calls: one-time activation at license entry and revalidation inside the 14-day expiry window, both non-blocking;
+- further self-service lookup, always-on validation, activation seats, revocation polling, and app-to-issuer recovery APIs remain future explicit decisions;
 - future online app calls, if approved later, must be non-blocking for document operations and must not expose merchant credentials, signing keys, customer database access, or private issuer authority to the public app.
 
 This is honest-user licensing, not anti-tamper DRM. A source-visible app can be modified, but that does not allow forging official licenses without compromising the private signing key or issuer environment. The commercial trust boundary is verified purchases, private token signing, official signed/notarized builds, Sparkle updates, support, and customer trust.
