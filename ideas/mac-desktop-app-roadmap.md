@@ -38,7 +38,7 @@ Commercial boundary:
 | 5d. Production Sparkle Update UX | planned | [roadmap](../docs/implementation/mac-sparkle-update-roadmap.md) | Point installed apps at a production appcast feed, define startup update prompts, preserve Sparkle skip/download/install-restart behavior, and document Cloudflare `updates.doc2md.dev` setup. | Mac public launch |
 | 6. Editor and UI Refresh (cross-surface) | done (MVP scope) | Phase 6a PR #86; Phase 6b PR #88; Phase 6c PR #87; Phase 6d PR #89; shortcut reference PR #146 | App icon, persistent mode switcher, explicit save control, find/replace, and bounded shortcut discoverability all shipped. Broader accessibility work is closed beyond the current accessibility notes contract. | MVP polish |
 | 7a. Desktop License Boundary | done | PR #103 (`dual-licensing-boundary_2026-05-01__2036`, `desktop-license-boundary_2026-05-03__0954`); license storage/cadence fixes in PR #105; license/notice surfacing in PR #106; verifier in PR #110 | Keep `@doc2md/core`, hosted web, shared converters, and MIT-marked files MIT while making the Mac app and desktop-specific UI/bridge code source-visible shareware under `LicenseRef-doc2md-Desktop`. | Phase 7b |
-| 7b. Mac Commercial Distribution And License UX | **blocked: operational setup** | Decision record PR #108; private issuer spec PR #109; Mac verifier PR #110; [decision record](../docs/implementation/mac-commercial-distribution-decision-record.md); [issuer spec](../docs/implementation/mac-private-license-issuer-spec.md) | In-repo deliverables (decision record, private issuer spec, in-app verifier, license boundary) all shipped. Remaining work is **outside this repo**: human operational setup of Cloudflare Worker issuer, Lemon Squeezy merchant account, `doc2md.dev` DNS + support email, and explicit go-live approval. No further in-repo changes can land productive purchase/registration UX until that setup completes. | Paid app launch |
+| 7b. Mac Commercial Distribution And License UX | **in progress: amended 2026-07-07, in-repo work unblocked** | Decision record PR #108; private issuer spec PR #109; Mac verifier PR #110; [decision record](../docs/implementation/mac-commercial-distribution-decision-record.md); [issuer spec](../docs/implementation/mac-private-license-issuer-spec.md) | Decision record amended 2026-07-07 (Polar merchant path, Polar license-key interim issuer, licensed-conveniences boundary); see [Phase 7b plan](../docs/implementation/mac-commercial-phase-7b-plan.md). The custom Worker issuer is deferred (v2 contingency), unblocking substantial in-repo work: license state machine, Polar activation client, Document Library. Human setup still required before go-live: Polar merchant account, `doc2md.dev` DNS + support email, explicit go-live approval. | Paid app launch |
 
 ## Next Work Candidates
 
@@ -455,14 +455,15 @@ In-repo deliverables that have already shipped:
 - **In-app license verifier** — `apps/macos/doc2md/Licensing/` + License menu wiring (PR #110, with earlier storage/cadence fixes in PR #105 and license/notice surfacing in PR #106).
 - **License boundary** — `LicenseRef-doc2md-Desktop` separation (PR #103). See Phase 7a.
 
-What blocks paid-app launch (none of these are in-repo work):
+Amended 2026-07-07: the custom Cloudflare Worker issuer is **no longer a launch blocker**. Polar's license-key API serves as the v1 interim issuer per the amended [issuer spec](../docs/implementation/mac-private-license-issuer-spec.md), so no private issuer infrastructure is required before go-live.
 
-- Cloudflare Worker issuer deployed against the contract in `mac-private-license-issuer-spec.md`. Code lives in a private repo per the spec; nothing further in this public repo.
-- Lemon Squeezy merchant-of-record account created, products configured, webhook into the issuer wired.
-- `doc2md.dev` DNS pointed at the issuer's Worker, plus `support@doc2md.dev` (or chosen support alias) operational.
+What blocks paid-app launch (human, out-of-repo steps):
+
+- Polar merchant-of-record account created, the $20/yr subscription product configured with license keys enabled (sandbox first).
+- `doc2md.dev` DNS and hosting for the commercial pages, plus `support@doc2md.dev` (or chosen support alias) operational.
 - Maintainer go-live approval (tax/refund/customer-records ownership confirmed per the decision record).
 
-Until those land, in-repo work intentionally cannot ship purchase or registration UX: per the decision record, Mac-only purchase affordances must stay omitted or visibly unavailable until explicit commercial go-live approval.
+In-repo work that can proceed now is sequenced in the [Phase 7b implementation plan](../docs/implementation/mac-commercial-phase-7b-plan.md). Per the decision record, Mac-only purchase affordances must stay omitted or visibly unavailable until explicit commercial go-live approval.
 
 ### Goal
 
@@ -475,20 +476,21 @@ Distribution assumptions:
 - Do not put a Mac app upsell, pricing page, registration link, purchase link, or download CTA on the hosted web app until explicit commercial go-live approval.
 - `doc2md.dev` has been purchased and should become the canonical public domain for the Mac app's commercial distribution surface. Keep the hosted web app separate unless a later phase intentionally changes that boundary.
 - Use direct signed/notarized DMG distribution first. Defer Mac App Store distribution unless future constraints justify the operational cost; a hybrid direct-DMG plus App Store path remains a future option.
-- Use Lemon Squeezy as the first-choice merchant of record and Paddle as fallback only. Do not build both for the MVP.
+- Use Polar as the first-choice merchant of record and Paddle as fallback only (amended 2026-07-07 from Lemon Squeezy). Do not build both for the MVP.
 - Purchases are not live in the MVP. Mac-only purchase affordances must be omitted or disabled, visibly unavailable, non-promotional, and unable to navigate or collect payment/license data until a later enabling change.
 - Before taking money, `KjellKod <kjell@candidtalentedge.com>` owns merchant account setup, tax/sales responsibility through the selected merchant path, refund/support workflow, license delivery, issuer secrets, customer/license records, and explicit go-live approval. `support@doc2md.dev` is the intended public customer-facing go-live support/contact alias.
 - Prefer a merchant-of-record style sales platform or store channel that handles tax collection/remittance, VAT/GST/sales-tax paperwork, invoices/receipts, and customer purchase records.
-- Keep pricing easy to understand. Working hypothesis, not a commitment: a low annual price around `$20/year`, plus an optional perpetual license that lasts until the next major paid upgrade.
+- Keep pricing easy to understand. Locked 2026-07-07: a single SKU at `$20/year` as an auto-renewing subscription with transparent renewal copy, cancel anytime, access until the paid period ends. A perpetual-until-next-major option is deferred; the license claim contract already supports adding it later. Price stays configurable in the merchant dashboard, never hardcoded.
 - Keep license enforcement offline-friendly. The app should not require network access to open, edit, convert, save, or export documents.
 
 Expected changes:
 
-- Add a lightweight licensing model for the Mac app only:
-  - `Licensed`, `Unlicensed`, `Invalid`, and `License Check Failed` states. The MVP has no time-limited access state.
-  - A local signed license token stored in non-syncing Keychain, with non-syncing Application Support fallback.
-  - Offline token parsing and signature verification happen in the Mac app with public verification keys only; issuer code, signing keys, merchant credentials, customer/license records, and network entitlement checks stay outside this public repo.
-  - Occasional reminder for unlicensed users after successful save number 10 in a startup session, then every 25 successful saves in that same session.
+- Add a lightweight licensing model for the Mac app only (amended 2026-07-07):
+  - `Licensed`, `Grace`, `Expired-Reminder`, `Unlicensed`, `Invalid`, and `License Check Failed` states, evaluated at moment of use from cached license state, never via scheduled jobs.
+  - A local license record (Polar key plus cached validation state) stored in non-syncing Keychain, with non-syncing Application Support fallback.
+  - One-time online activation at license entry against Polar's customer-portal API; revalidation only inside the 14-day window around `expires_at` (7 before, 7 after); no merchant secrets in the app; every licensing call non-blocking for document operations. The dormant Ed25519 verifier stays as the v2 contingency.
+  - Occasional reminder for unlicensed users after successful save number 10 in a startup session, then every 25 successful saves in that same session. This cadence is the trial; there is no time-boxed trial.
+  - Licensed conveniences: the Document Library (unlimited searchable history of opened documents) ships with go-live, desktop-only code. The free tier keeps the shipped recents and session restore. On expiry the library stays browsable but stops recording.
   - A license entry window reachable from the app menu.
 - Add release-channel wording:
   - `doc2md.dev` is the canonical Mac app distribution/support/licensing domain.
