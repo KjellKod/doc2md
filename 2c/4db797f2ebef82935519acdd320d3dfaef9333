@@ -1,0 +1,22 @@
+docs/implementation/mac-private-license-issuer-spec.md
+  s_9b93aa9fb98724::t_03c4f813802576 184,187-188
+  s_9b93aa9fb98724::t_017dd6fa49f2e9 3
+  s_9b93aa9fb98724::t_a47dacc99d44ba 9-22
+  s_9b93aa9fb98724::t_c8b4f3065f7252 35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "2c4db797f2ebef82935519acdd320d3dfaef9333",
+  "prompts": {},
+  "sessions": {
+    "s_9b93aa9fb98724": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d4d5f2db-842e-4a86-9b3c-66516be0161a",
+        "model": "claude-fable-5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
