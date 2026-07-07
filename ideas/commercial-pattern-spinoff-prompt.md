@@ -1,6 +1,6 @@
 # Spin-off prompt: commercial distribution via the shared cross-app pattern
 
-Status: ready-to-run prompt (paste into an agent session in this repo when starting Phase 7b commercial work)
+Status: executed 2026-07-07. The sharpen ran (solo pass 2026-07-06, joint session 2026-07-07; see `docs/diary/`), the decision record and issuer spec are amended, and the Phase 7b plan exists at `docs/implementation/mac-commercial-phase-7b-plan.md`. Kept for the research trail and the transferable lessons below.
 Date: 2026-07-06
 Origin: the shared "get paid" pattern was designed and locked in the sketch2md repo (private), `ideas/commercial-roadmap.md` §6 "Cross-product pattern". doc2md is the second app to adopt it.
 
