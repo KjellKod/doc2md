@@ -1,8 +1,9 @@
 # Mac Commercial Distribution Decision Record
 
-Status: Accepted
+Status: Accepted (amended 2026-07-07)
 Owner: KjellKod <kjell@candidtalentedge.com>
 Date: 2026-05-06
+Amended: 2026-07-07, joint sharpen with maintainer; see the Amendment Log at the bottom for what changed and why.
 Roadmap: `ideas/mac-desktop-app-roadmap.md` Phase 7b
 Related: [Mac commercial distribution and licensing research](mac-commercial-distribution-and-licensing.md), [Mac private license issuer spec](mac-private-license-issuer-spec.md), [Mac desktop app roadmap](../../ideas/mac-desktop-app-roadmap.md)
 
@@ -12,7 +13,7 @@ The first paid Mac launch path is direct signed and notarized DMG distribution f
 
 `doc2md.dev` is the public Mac commercial surface for product information, downloads, support, licensing, pricing, privacy, and terms. The hosted web app remains separate at `https://kjellkod.github.io/doc2md/` and must not expose Mac purchase, download, or registration links until explicit commercial go-live approval.
 
-Lemon Squeezy is the preferred merchant-of-record path. Paddle is the fallback if Lemon Squeezy approval, live-mode readiness, or operational fit blocks launch. The MVP must choose one merchant path; it must not build Lemon Squeezy and Paddle integrations in parallel.
+Polar (polar.sh) is the preferred merchant-of-record path (amended 2026-07-07; originally Lemon Squeezy). Paddle is the fallback if Polar approval, live-mode readiness, or operational fit blocks launch. Stripe Managed Payments is not a fallback while it remains short of proven general availability maturity. The MVP must choose one merchant path; it must not build two merchant integrations in parallel.
 
 ## Scope And Boundaries
 
@@ -23,11 +24,12 @@ The Mac app remains source-visible shareware under `LicenseRef-doc2md-Desktop`. 
 The Official App remains evaluation-friendly when unregistered:
 
 - no fixed trial period,
-- no feature lockout,
+- no lockout of core document operations (open, edit, convert, save, export); licensed-only additive conveniences are permitted (amended 2026-07-07),
+- nothing that ever shipped free may later be moved behind the license,
 - no document lock-in,
-- no data hostage behavior,
+- no data hostage behavior: anything created with a licensed feature stays readable and exportable after expiry,
 - occasional reminders only,
-- a paid license removes reminders.
+- a paid license removes reminders and enables licensed conveniences.
 
 ## Public Surfaces
 
@@ -43,9 +45,21 @@ The Official App remains evaluation-friendly when unregistered:
 
 ## Merchant Path
 
-Use Lemon Squeezy first because the commercial preference is a merchant-of-record path. Use Paddle only as the fallback if Lemon Squeezy blocks launch operationally.
+Use Polar first because the commercial preference is a merchant-of-record path and Polar additionally provides first-class license keys (activation limits, expiry, automatic revocation on subscription cancellation) that serve as the v1 interim issuer. Use Paddle only as the fallback if Polar blocks launch operationally.
 
-This record intentionally does not restate detailed vendor claims. Vendor-specific implementation details can change and belong in the later payment/issuer integration work, where the current vendor documentation should be verified again before live integration.
+This record intentionally does not restate detailed vendor claims. Vendor-specific implementation details can change and belong in the later payment integration work, where the current vendor documentation must be verified again before live integration.
+
+## Licensing Mechanics (Amended 2026-07-07)
+
+Locked in the 2026-07-07 sharpen:
+
+- **Billing shape:** single SKU, $20/yr auto-renewing subscription, cancel anytime, access lasts until the paid period ends, then a graceful return to the free tier. Price stays configurable in the merchant dashboard, never hardcoded.
+- **Interim issuer:** Polar's license-key API. One-time online activation at license entry; revalidation attempts only inside a 14-day window around `expires_at` (7 days before through 7 days after); cached license state otherwise. All licensing network calls are non-blocking for document operations. The custom Ed25519 issuer is deferred; see the [issuer spec](mac-private-license-issuer-spec.md).
+- **Degradation ladder:** `licensed` → `grace` (calm banner, everything works) → `expired-reminder` (evaluation reminders resume at the shipped cadence, licensed conveniences pause, core document operations untouched).
+- **Trial:** the shipped reminder cadence (save 10, then every 25 saves, session scoped) is the trial. No time-boxed trial.
+- **First licensed convenience:** the Document Library, an unlimited searchable history of opened/converted documents, shipping with go-live. The free tier keeps the already-shipped recents list and session restore unchanged. An expired license leaves the library browsable but stops recording new entries.
+- **Boundary:** licensed conveniences live in desktop-licensed code (`apps/macos/`, `src/desktop/`) only. MIT core, hosted web, and npm surfaces stay license-free. Gated features must never be conversion features, keeping the wording of `LICENSES/LicenseRef-doc2md-Desktop.txt` §6 true as written.
+- **Clock rollback:** no hardening beyond the existing future-`issued_at` check; honest-user licensing, not anti-tamper DRM.
 
 ## Purchase Go-Live Gate
 
@@ -80,7 +94,7 @@ Use the full name `Kjell Hedstrom` only if a person/legal name is required by a 
 ## Implementation Sequence
 
 1. Land this decision record as the binding Phase 7b reference.
-2. Define the private issuer outside this public repo using the [Mac private license issuer spec](mac-private-license-issuer-spec.md): merchant webhook verification, license-token signing, customer/license support records, email/support license recovery, key rotation, and secret ownership.
+2. ~~Define the private issuer outside this public repo~~ (amended 2026-07-07): use Polar's license-key API as the v1 interim issuer per the [issuer spec](mac-private-license-issuer-spec.md). The custom private issuer is deferred to a v2 contingency; no private Worker is required before go-live.
 3. Add Mac-only purchase/registration UX. Disabled scaffolding may land before go-live only when it visibly reads as unavailable and remains inert. Live navigation or purchase behavior waits for go-live approval.
 4. Publish commercial docs on `doc2md.dev`: privacy, terms, refund, support, restore, and license-delivery pages.
 5. Coordinate release go-live: public download/update links, release-pinned notices, merchant readiness, issuer readiness, and support readiness. Do not add ad hoc manual release edits.
@@ -110,10 +124,12 @@ Purchase and registration UX follow-up acceptance criteria:
 Evaluation-shareware follow-up acceptance criteria:
 
 - Unregistered evaluation has no hard trial period.
-- Unregistered evaluation has no feature lockout.
+- Unregistered evaluation has no lockout of core document operations; conversion features are never disabled for unregistered users.
+- Licensed-only additive conveniences are permitted, but nothing that ever shipped free may be moved behind the license.
 - Unregistered evaluation uses occasional reminders only.
-- A paid license removes reminders.
+- A paid license removes reminders and enables licensed conveniences.
 - License checks do not block opening, editing, converting, saving, or exporting local documents.
+- Data created with licensed features remains readable and exportable after license expiry.
 
 Commercial docs follow-up acceptance criteria:
 
@@ -127,7 +143,7 @@ This quest is documentation-only. Validation should confirm:
 
 - `git diff --check origin/main...HEAD` exits 0.
 - New internal documentation links resolve.
-- The decision record covers direct DMG first, `doc2md.dev`, Lemon Squeezy preferred/Paddle fallback, disabled purchase affordances, hosted-web no-link gate, operational ownership, follow-up sequence, MIT boundary, and evaluation-only shareware behavior.
+- The decision record covers direct DMG first, `doc2md.dev`, Polar preferred/Paddle fallback (amended from Lemon Squeezy), disabled purchase affordances, hosted-web no-link gate, operational ownership, follow-up sequence, MIT boundary, and evaluation-friendly shareware behavior with the licensed-conveniences boundary.
 - The diff is limited to the new decision record and small pointer edits in roadmap/idea/research docs.
 
 ## Out Of Scope
@@ -140,3 +156,17 @@ This quest is documentation-only. Validation should confirm:
 - Final price.
 - Public privacy, terms, refund, support, or restore page copy.
 - Manual release-step requirements.
+
+## Amendment Log
+
+### 2026-07-07 — Polar merchant path, interim issuer, licensed-feature boundary
+
+Amended after a two-round sharpen (solo pass, then joint session with the maintainer; both logged in `docs/diary/2026-07-06.md` and `docs/diary/2026-07-07.md`). Changes:
+
+1. **Merchant of record: Lemon Squeezy → Polar, Paddle stays fallback.** Due-diligence outcome (2026-07): Lemon Squeezy is in post-acquisition transition under Stripe, with Stripe steering Lemon Squeezy merchants toward migration to Stripe Managed Payments. Stripe Managed Payments reached availability in roughly 35 to 39 countries by mid-2026 but is still young as a merchant-of-record offering, so it is not an acceptable fallback yet. Polar is an open-source merchant of record with first-class license keys (activation limits, expiry, automatic revocation on subscription cancellation) whose customer-portal activate/validate endpoints are designed for client-side calls without embedding merchant secrets. Polar's 2026 pricing on the free tier is 5% + 50¢ per transaction (roughly $1.50 on a $20 sale), with paid platform plans available at higher volume; international card surcharge 1.5%, chargebacks $15. Acceptable at this price point. Verify current vendor terms again before live integration.
+2. **Interim issuer: Polar license-key API replaces the custom Ed25519 issuer for v1.** The issuer spec's online-lookup boundary gains one narrow exception: one-time activation at license entry and revalidation only inside the 14-day window around `expires_at` (7 before, 7 after), all non-blocking for document work. The Ed25519 contract and the shipped verifier remain as the v2 contingency and Polar exit plan.
+3. **Billing shape locked:** single SKU, $20/yr auto-renewing subscription with transparent renewal copy, cancel anytime, access until the paid period ends.
+4. **Evaluation boundary reworded:** "no feature lockout" became "no lockout of core document operations; licensed-only additive conveniences permitted." Nothing that ever shipped free may later be gated. First licensed convenience: the Document Library.
+5. **Degradation ladder defined:** `licensed` → `grace` → `expired-reminder`; reminders resume and licensed conveniences pause; core document operations are never touched; no data hostage.
+
+Due-diligence sources (checked 2026-07-07): [Polar merchant-of-record docs](https://polar.sh/docs/merchant-of-record/introduction), [Polar license-keys docs](https://polar.sh/docs/features/benefits/license-keys), [Stripe Managed Payments docs](https://docs.stripe.com/payments/managed-payments), [Lemon Squeezy 2026 update on Stripe Managed Payments](https://www.lemonsqueezy.com/blog/2026-update), third-party 2026 pricing reviews ([Dodo Payments on Polar](https://dodopayments.com/blogs/polar-sh-review), [Fungies on Polar](https://fungies.io/polar-sh-review-2026-2/)).
