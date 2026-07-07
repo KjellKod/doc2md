@@ -1,0 +1,25 @@
+docs/implementation/mac-commercial-phase-7b-plan.md
+  s_9b93aa9fb98724::t_d326af00932858 1-128
+ideas/mac-desktop-app-roadmap.md
+  s_9b93aa9fb98724::t_a1349c93b3df21 41
+  s_9b93aa9fb98724::t_dbd7d9739f4977 479
+  s_9b93aa9fb98724::t_d358f9f1252f81 483
+  s_9b93aa9fb98724::t_9cfd6a0400a54d 488-493
+  s_9b93aa9fb98724::t_9a31ea8f9fb847 458,460-463,466
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "fe4e01087f126b532ec67b1a169349569167a95c",
+  "prompts": {},
+  "sessions": {
+    "s_9b93aa9fb98724": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d4d5f2db-842e-4a86-9b3c-66516be0161a",
+        "model": "claude-fable-5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
