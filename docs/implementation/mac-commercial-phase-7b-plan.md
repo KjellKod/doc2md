@@ -39,6 +39,7 @@ In scope:
 - A cached `revoked` or `disabled` status (a definitive answer, unlike a network failure) preserves `licensed` through `expires_at` (cancellation keeps access until the paid period ends) but skips `grace` entirely: at `expires_at` the state goes straight to `expiredReminder`, so a revoked key can never remain licensed indefinitely.
 - `expiredReminder` re-enables the shipped reminder cadence (`LicenseReminderController.swift`) and exposes a "licensed conveniences paused" signal for later phases.
 - No scheduled timers or background jobs; expiry "happens" when state is next read.
+- `expiredReminder` is not terminal: a later successful revalidation (Phase 2) refreshes the cached snapshot and the next state read returns `licensed`. Only a definitive `revoked`/`disabled` answer, or the user removing the license, ends the retry path.
 
 Acceptance criteria:
 
@@ -55,7 +56,7 @@ Add the Polar customer-portal client and wire it to the license entry window.
 In scope:
 
 - License entry accepts a Polar license key; on entry the app calls `POST /v1/customer-portal/license-keys/activate` once, then stores the key + **the returned activation ID** in the non-syncing Keychain **only**. The Application Support fallback holds only non-secret cached validation metadata (key status, expiry, last-validated timestamp), never the raw key or activation ID: a Polar key is a reusable bearer credential, and the fallback file is exposed to backups and ordinary filesystem access. If the Keychain is unavailable, the app degrades to asking the user to re-enter the key (a re-enterable secret; loss is harmless re-entry). The activation ID is required for later validation of activation-limited keys.
-- Revalidation calls (`/validate`) send key + activation ID, fire only inside the 14-day window, silently, when the app is open and online; success refreshes the cached snapshot (including key status).
+- Revalidation calls (`/validate`) send key + activation ID and fire silently when the app is open and online: inside the 14-day window, and **also whenever the cached entitlement is already expired without a definitive answer** (throttled, once per launch or per day). The state stays `expiredReminder` until a validation succeeds; success refreshes the snapshot and the next state read returns `licensed`. Without this, a renewed customer who does not open the app during the window would stay expired forever.
 - Timeout, offline, and 5xx failures are indistinguishable from "no network" to the user: no modal errors during document work, state degrades per Phase 1 ladder.
 - No merchant secret, org token, or API credential in the app or repo. Confirm against live Polar docs during implementation; if the endpoints turn out to require any org credential, stop and re-plan (that would break the boundary).
 
