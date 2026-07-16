@@ -57,7 +57,7 @@ Add the Polar customer-portal client and wire it to the license entry window.
 
 In scope:
 
-- License entry accepts a Polar license key; on entry the app calls `POST /v1/customer-portal/license-keys/activate` once, then stores the key + **the returned activation ID** in the non-syncing Keychain **only**. The Application Support fallback holds only non-secret cached validation metadata (key status, expiry, last-validated timestamp), never the raw key or activation ID: a Polar key is a reusable bearer credential, and the fallback file is exposed to backups and ordinary filesystem access. If the Keychain is unavailable, the app degrades to asking the user to re-enter the key (a re-enterable secret; loss is harmless re-entry). The activation ID is required for later validation of activation-limited keys.
+- License entry accepts a Polar license key; on entry the app calls `POST /v1/customer-portal/license-keys/activate` once, then stores the key + **the returned activation ID** in the non-syncing Keychain **only**. The Application Support fallback holds only non-secret cached validation metadata (key status, expiry, last-validated timestamp), never the raw key or activation ID: a Polar key is a reusable bearer credential, and the fallback file is exposed to backups and ordinary filesystem access. If the Keychain is unavailable, the app degrades to asking the user to re-enter the key. Re-entry is not automatically free: the lost activation ID may still occupy an activation slot, so a fresh `/activate` can fail on the activation limit. That failure must surface a clear recovery message pointing at Polar's customer portal (self-service deactivation of old instances) and `support@doc2md.dev` (support-assisted slot reset via the Polar dashboard), never a silent failure. The product's activation limit is configured with headroom (e.g. 3 devices for a personal license) so one lost slot never locks out a paid user immediately. The activation ID is required for later validation of activation-limited keys.
 - Revalidation calls (`/validate`) send key + activation ID and fire silently when the app is open and online: inside the 14-day window, and **also whenever the cached entitlement is already expired without a definitive answer** (throttled, once per launch or per day). The state stays `expiredReminder` until a validation succeeds; success refreshes the snapshot and the next state read returns `licensed`. Without this, a renewed customer who does not open the app during the window would stay expired forever.
 - Timeout, offline, and 5xx failures are indistinguishable from "no network" to the user: no modal errors during document work, state degrades per Phase 1 ladder.
 - No merchant secret, org token, or API credential in the app or repo. Confirm against live Polar docs during implementation; if the endpoints turn out to require any org credential, stop and re-plan (that would break the boundary).
@@ -65,11 +65,12 @@ In scope:
 Acceptance criteria:
 
 - Activation, revalidation, and failure paths covered by tests against a mocked API; no test talks to live Polar.
+- Keychain-loss recovery is tested: key re-entry after simulated Keychain loss, and the activation-limit failure path shows the recovery guidance (Polar customer portal plus `support@doc2md.dev`) instead of a bare error.
 - A licensed user can enter/restore a license without editing config files; key, activation ID, and validation snapshot all survive relaunch (existing acceptance carried forward, extended with the activation ID).
 - Offline launch and all document operations work with the network cable pulled, in every license state.
 - Security guard passes: `python3 scripts/security_ci_guard.py`.
 
-Validation: mocked-API unit tests gate the Phase 2 merge. Sandbox end-to-end is deferred validation, run once the human prerequisite lands and required before Phase 4 purchase UX goes live: activate, relaunch, simulated expiry (crafted snapshot), renewal pickup, cancellation revoke.
+Validation: mocked-API unit tests gate the Phase 2 merge. Sandbox end-to-end is deferred validation, run once the human prerequisite lands and required before Phase 4 purchase UX goes live: activate, relaunch, simulated expiry (crafted snapshot), renewal pickup, cancellation revoke, Keychain-loss re-entry, and activation-limit exhaustion with slot recovery through the Polar portal.
 
 ## Phase 3: Document Library
 
