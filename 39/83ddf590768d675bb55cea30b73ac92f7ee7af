@@ -1,0 +1,19 @@
+docs/diary/2026-06-12.md
+  s_d1835221747b54::t_34f6226c5dc47f 1-56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "3983ddf590768d675bb55cea30b73ac92f7ee7af",
+  "prompts": {},
+  "sessions": {
+    "s_d1835221747b54": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f8137111-79af-46de-b6a6-d1c89bad5469",
+        "model": "claude-fable-5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
