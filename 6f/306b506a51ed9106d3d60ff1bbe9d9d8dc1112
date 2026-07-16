@@ -1,0 +1,26 @@
+docs/implementation/mac-commercial-distribution-decision-record.md
+  s_9b93aa9fb98724::t_c6fd76e3fdf18a 57
+ideas/mac-desktop-app-roadmap.md
+  s_9b93aa9fb98724::t_66ed040c2ef64e 491
+docs/implementation/mac-commercial-phase-7b-plan.md
+  s_9b93aa9fb98724::t_2436001b25717f 42
+  s_9b93aa9fb98724::t_31678425fda7da 59
+docs/implementation/mac-private-license-issuer-spec.md
+  s_9b93aa9fb98724::t_f4a6f02c060a74 15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "6f306b506a51ed9106d3d60ff1bbe9d9d8dc1112",
+  "prompts": {},
+  "sessions": {
+    "s_9b93aa9fb98724": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d4d5f2db-842e-4a86-9b3c-66516be0161a",
+        "model": "claude-fable-5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
