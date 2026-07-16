@@ -35,13 +35,14 @@ Extend `apps/macos/doc2md/Licensing/` from the shipped `Licensed / Unlicensed / 
 
 In scope:
 
-- State evaluation derives from cached claims: inside 7 days before `expires_at` through 7 days after → `grace` unless revalidated; past the window without revalidation → `expiredReminder`.
+- State evaluation derives from cached claims **including Polar's key status** (`granted`, `revoked`, `disabled`): inside 7 days before `expires_at` through 7 days after → `grace` unless revalidated; past the window without revalidation → `expiredReminder`.
+- A cached `revoked` or `disabled` status (a definitive answer, unlike a network failure) preserves `licensed` through `expires_at` (cancellation keeps access until the paid period ends) but skips `grace` entirely: at `expires_at` the state goes straight to `expiredReminder`, so a revoked key can never remain licensed indefinitely.
 - `expiredReminder` re-enables the shipped reminder cadence (`LicenseReminderController.swift`) and exposes a "licensed conveniences paused" signal for later phases.
 - No scheduled timers or background jobs; expiry "happens" when state is next read.
 
 Acceptance criteria:
 
-- State transitions are pure functions of (claims, now, lastValidatedAt) and are unit-tested for boundary times: 8/7/1 days before expiry, expiry instant, 1/7/8 days after, plus the existing 5-minute clock-skew behavior.
+- State transitions are pure functions of (claims, keyStatus, now, lastValidatedAt) and are unit-tested for boundary times: 8/7/1 days before expiry, expiry instant, 1/7/8 days after, plus the existing 5-minute clock-skew behavior, plus revoked-before-expiry and revoked-after-expiry cases.
 - `grace` and `expiredReminder` never block or delay open, edit, convert, save, or export.
 - Existing verifier tests stay green; the dormant Ed25519 path is untouched.
 
@@ -53,15 +54,15 @@ Add the Polar customer-portal client and wire it to the license entry window.
 
 In scope:
 
-- License entry accepts a Polar license key; on entry the app calls `POST /v1/customer-portal/license-keys/activate` once, then stores key + validation snapshot (expiry, status) in Keychain with the Application Support fallback.
-- Revalidation calls (`/validate`) fire only inside the 14-day window, silently, when the app is open and online; success refreshes the cached snapshot.
+- License entry accepts a Polar license key; on entry the app calls `POST /v1/customer-portal/license-keys/activate` once, then stores key + **the returned activation ID** + validation snapshot (expiry, key status) in Keychain with the Application Support fallback. The activation ID is required for later validation of activation-limited keys; losing it would make revalidation unverifiable.
+- Revalidation calls (`/validate`) send key + activation ID, fire only inside the 14-day window, silently, when the app is open and online; success refreshes the cached snapshot (including key status).
 - Timeout, offline, and 5xx failures are indistinguishable from "no network" to the user: no modal errors during document work, state degrades per Phase 1 ladder.
 - No merchant secret, org token, or API credential in the app or repo. Confirm against live Polar docs during implementation; if the endpoints turn out to require any org credential, stop and re-plan (that would break the boundary).
 
 Acceptance criteria:
 
 - Activation, revalidation, and failure paths covered by tests against a mocked API; no test talks to live Polar.
-- A licensed user can enter/restore a license without editing config files; state survives relaunch (existing acceptance carried forward).
+- A licensed user can enter/restore a license without editing config files; key, activation ID, and validation snapshot all survive relaunch (existing acceptance carried forward, extended with the activation ID).
 - Offline launch and all document operations work with the network cable pulled, in every license state.
 - Security guard passes: `python3 scripts/security_ci_guard.py`.
 
@@ -75,7 +76,7 @@ In scope:
 
 - Unlimited history of opened/converted documents: name, path, last-touched timestamp, searchable, one click to reopen; persists across sessions.
 - Free tier keeps the shipped short recents list and session restore, byte-for-byte unchanged behavior.
-- Gating: recording and browsing require `licensed` or `grace`; in `expiredReminder` the library stays fully browsable and reopenable but stops recording new entries. Nothing is ever deleted by a license state change.
+- Gating: recording new entries requires `licensed` or `grace`; browsing and reopening always work in every license state. In `expiredReminder` the library stays fully browsable and reopenable but stops recording new entries. Nothing is ever deleted by a license state change.
 - MIT boundary: no license awareness enters shared `src/` code, `@doc2md/core`, or hosted-web behavior. New files carry `SPDX-License-Identifier: LicenseRef-doc2md-Desktop`.
 
 Acceptance criteria:
