@@ -1,0 +1,26 @@
+docs/implementation/mac-commercial-distribution-decision-record.md
+  s_9b93aa9fb98724::t_c33b43739cdc12 146
+  s_9b93aa9fb98724::t_f7be53bb521213 127-128,130,132
+  s_9b93aa9fb98724::t_b643f82dc88f7a 16
+  s_9b93aa9fb98724::t_41d8992d37291f 97
+  s_9b93aa9fb98724::t_a05bac4362808e 3,6
+  s_9b93aa9fb98724::t_6a7b070d5c2b75 27-28,30,32
+  s_9b93aa9fb98724::t_2f9029ba5a3c91 48,50-62
+  s_9b93aa9fb98724::t_318a15e97ba9a8 159-172
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "82b08973d6ee1bf6c3674e3e34c2aec8970bace4",
+  "prompts": {},
+  "sessions": {
+    "s_9b93aa9fb98724": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d4d5f2db-842e-4a86-9b3c-66516be0161a",
+        "model": "claude-fable-5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}

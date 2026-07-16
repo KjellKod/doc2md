@@ -1,0 +1,19 @@
+ideas/commercial-pattern-spinoff-prompt.md
+  s_49575c9f0017ac::t_b2cb63a1515e61 25-35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "84e2d39e920afedeea56fc17f0a4dda203cdade4",
+  "prompts": {},
+  "sessions": {
+    "s_49575c9f0017ac": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41b9e351-af3d-4f66-9b02-c1a896d78c6e",
+        "model": "claude-fable-5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
