@@ -487,7 +487,7 @@ Expected changes:
 
 - Add a lightweight licensing model for the Mac app only (amended 2026-07-07):
   - `Licensed`, `Grace`, `Expired-Reminder`, `Unlicensed`, `Invalid`, and `License Check Failed` states, evaluated at moment of use from cached license state, never via scheduled jobs.
-  - A local license record (Polar key plus cached validation state) stored in non-syncing Keychain, with non-syncing Application Support fallback.
+  - A local license record: the Polar key and activation ID live in the non-syncing Keychain only; the non-syncing Application Support fallback holds only non-secret cached validation metadata, never the raw key.
   - One-time online activation at license entry against Polar's customer-portal API; revalidation only inside the 14-day window around `expires_at` (7 before, 7 after); no merchant secrets in the app; every licensing call non-blocking for document operations. The dormant Ed25519 verifier stays as the v2 contingency.
   - Occasional reminder for unlicensed users after successful save number 10 in a startup session, then every 25 successful saves in that same session. This cadence is the trial; there is no time-boxed trial.
   - Licensed conveniences: the Document Library (unlimited searchable history of opened documents) ships with go-live, desktop-only code. The free tier keeps the shipped recents and session restore. On expiry the library stays browsable but stops recording.
