@@ -35,7 +35,9 @@ Extend `apps/macos/doc2md/Licensing/` from the shipped `Licensed / Unlicensed / 
 
 In scope:
 
-- State evaluation derives from cached claims **including Polar's key status** (`granted`, `revoked`, `disabled`): inside 7 days before `expires_at` through 7 days after → `grace` unless revalidated; past the window without revalidation → `expiredReminder`.
+- State evaluation derives from cached claims **including Polar's key status** (`granted`, `revoked`, `disabled`), and the cached `expires_at` is authoritative: a successful validation affects state only through the snapshot it writes (a new `expires_at`, a new status). "Revalidated" never extends a license past its cached expiry.
+- Before `expires_at` → `licensed`; the attempts in the 7 days before expiry are opportunistic renewal pickup, nothing more.
+- After `expires_at`, never `licensed` from a stale snapshot: within 7 days after expiry with no post-expiry definitive answer → `grace` (a renewal may exist that we could not reach). A definitive post-expiry answer showing no renewal (`granted` with an unchanged past expiry, `revoked`, or `disabled`), or the end of those 7 days → `expiredReminder`.
 - A cached `revoked` or `disabled` status (a definitive answer, unlike a network failure) preserves `licensed` through `expires_at` (cancellation keeps access until the paid period ends) but skips `grace` entirely: at `expires_at` the state goes straight to `expiredReminder`, so a revoked key can never remain licensed indefinitely.
 - `expiredReminder` re-enables the shipped reminder cadence (`LicenseReminderController.swift`) and exposes a "licensed conveniences paused" signal for later phases.
 - No scheduled timers or background jobs; expiry "happens" when state is next read.
@@ -43,7 +45,7 @@ In scope:
 
 Acceptance criteria:
 
-- State transitions are pure functions of (claims, keyStatus, now, lastValidatedAt) and are unit-tested for boundary times: 8/7/1 days before expiry, expiry instant, 1/7/8 days after, plus the existing 5-minute clock-skew behavior, plus revoked-before-expiry and revoked-after-expiry cases.
+- State transitions are pure functions of (claims, keyStatus, now, lastValidatedAt) and are unit-tested for boundary times: 8/7/1 days before expiry, expiry instant, 1/7/8 days after, plus the existing 5-minute clock-skew behavior, plus revoked-before-expiry and revoked-after-expiry cases, plus the two validation-recency traps: a pre-expiry validation with an unchanged `expires_at` must not extend `licensed` past expiry, and a post-expiry validation returning an unchanged past expiry must land in `expiredReminder`, not `grace`.
 - `grace` and `expiredReminder` never block or delay open, edit, convert, save, or export.
 - Existing verifier tests stay green; the dormant Ed25519 path is untouched.
 
