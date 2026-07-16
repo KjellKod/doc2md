@@ -446,7 +446,7 @@ Remaining human validation:
 
 ## Phase 7b: Mac Commercial Distribution And License UX
 
-### Current status (2026-05-14): blocked on out-of-repo operational setup
+### Current status (2026-07-07): amended, in-repo work unblocked
 
 In-repo deliverables that have already shipped:
 
