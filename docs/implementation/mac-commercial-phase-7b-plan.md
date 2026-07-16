@@ -21,7 +21,7 @@ This plan sequences the in-repo work to make the Mac app sellable through Polar,
 
 | Step | Needed before | Notes |
 |---|---|---|
-| Polar account + org, sandbox mode | Phase 3 end-to-end testing | Configure $20/yr subscription product with license keys enabled (activation limit, expiry from subscription period, revoke on cancellation). |
+| Polar account + org, sandbox mode | Phase 2 sandbox e2e (deferred validation, does not gate the Phase 2 merge) | Configure $20/yr subscription product with license keys enabled (activation limit, expiry from subscription period, revoke on cancellation). |
 | Polar due-diligence sign-off | Phase 3 merge | Re-verify current Polar terms, fees, and customer-portal endpoint auth model against live docs. Findings go in the decision record Amendment Log. |
 | `doc2md.dev` DNS + hosting | Phase 5 | Commercial pages surface. Cloudflare deploy-prep quest (`whats-next.md`) builds the rails. |
 | `support@doc2md.dev` | go-live | Must exist before taking money. |
@@ -66,7 +66,7 @@ Acceptance criteria:
 - Offline launch and all document operations work with the network cable pulled, in every license state.
 - Security guard passes: `python3 scripts/security_ci_guard.py`.
 
-Validation: mocked-API unit tests, then end-to-end against a Polar sandbox key once the human prerequisite lands: activate, relaunch, simulated expiry (crafted snapshot), renewal pickup, cancellation revoke.
+Validation: mocked-API unit tests gate the Phase 2 merge. Sandbox end-to-end is deferred validation, run once the human prerequisite lands and required before Phase 4 purchase UX goes live: activate, relaunch, simulated expiry (crafted snapshot), renewal pickup, cancellation revoke.
 
 ## Phase 3: Document Library
 
