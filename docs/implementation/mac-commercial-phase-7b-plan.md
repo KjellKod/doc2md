@@ -22,8 +22,8 @@ This plan sequences the in-repo work to make the Mac app sellable through Polar,
 | Step | Needed before | Notes |
 |---|---|---|
 | Polar account + org, sandbox mode | Phase 2 sandbox e2e (deferred validation, does not gate the Phase 2 merge) | Configure $20/yr subscription product with license keys enabled (activation limit, expiry from subscription period, revoke on cancellation). |
-| Polar due-diligence sign-off | Phase 3 merge | Re-verify current Polar terms, fees, and customer-portal endpoint auth model against live docs. Findings go in the decision record Amendment Log. |
-| `doc2md.dev` DNS + hosting | Phase 5 | Commercial pages surface. Cloudflare deploy-prep quest (`whats-next.md`) builds the rails. |
+| Polar due-diligence sign-off | go-live | Business check: re-verify current Polar terms and fees. Findings go in the decision record Amendment Log. (The technical re-verification of the customer-portal endpoint auth model is in-repo work, already part of Phase 2's scope.) |
+| `doc2md.dev` DNS + hosting | Phase 5 | Commercial pages surface. The Cloudflare Workers deploy-prep work builds the rails; see [Cloudflare Workers deployment](cloudflare-workers-deployment.md). |
 | `support@doc2md.dev` | go-live | Must exist before taking money. |
 | Go-live approval | Phase 6 | Explicit, recorded, per decision record. |
 
@@ -115,7 +115,7 @@ Maintainer-owned. Storefront live-mode readiness, support workflow documented, r
 Phase 1 (state machine)  ──► Phase 2 (Polar client) ──► Phase 4 (UX scaffolding) ──► Phase 6 (go-live)
                           └─► Phase 3 (Document Library, needs Phase 1 states) ──┘
 Phase 5 (docs pages) runs parallel, gated on doc2md.dev DNS + Cloudflare rails
-Polar sandbox account needed for Phase 2 e2e and Phase 3 full validation
+Polar sandbox account needed only for Phase 2's deferred e2e (gates no merge)
 ```
 
 Phases 1 through 3 are individually small, reviewable PRs and can land without any human prerequisite. Each phase is a separate quest/PR; do not batch them.
