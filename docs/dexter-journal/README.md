@@ -6,6 +6,7 @@ For the other perspective, see [Jean-Claude's Journal](../journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 054 | [Requiem: Commercial Spin-Off](054-requiem-commercial-spinoff.md) | Burying Lemon Squeezy, the sedated Ed25519 issuer, and six assumptions that died in nine review rounds; Polar becomes merchant and interim issuer while money stays out of core document work (PR #195) |
 | 053 | [Requiem: Mobile Reading Space](053-requiem-mobile-reading-space.md) | Hosted-phone reading space reclaimed (P0 collapse-on-select, P1 single-band toolbar + overflow menu, P2 rail folded into the working-mode bar); a self-inflicted collapse dead-end caught by the second reviewer and fixed with a Show/Hide toggle; P3 deferred to preserve PR #176 parity |
 | 052 | [Requiem: Editor JSON Format](052-requiem-editor-json-format.md) | One-shot editor-side JSON formatting, fenced-block preservation, undo-aware targeted textarea edits, and review-driven caret/test-isolation cleanup |
 | 051 | [Requiem: JSON Responsiveness](051-requiem-json-responsiveness.md) | Worker-backed JSON conversion, lightweight large-JSON preview, timeout-abort honesty, and hosted Save state that no longer declares victory over the wrong snapshot |
