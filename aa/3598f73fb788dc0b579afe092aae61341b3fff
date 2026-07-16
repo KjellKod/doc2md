@@ -1,0 +1,23 @@
+ideas/mac-desktop-app-roadmap.md
+  s_9b93aa9fb98724::t_b396512ab01f29 490
+docs/implementation/mac-private-license-issuer-spec.md
+  s_9b93aa9fb98724::t_e38f65eb4972f7 14
+docs/implementation/mac-commercial-phase-7b-plan.md
+  s_9b93aa9fb98724::t_b66ceba4316f45 57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "aa3598f73fb788dc0b579afe092aae61341b3fff",
+  "prompts": {},
+  "sessions": {
+    "s_9b93aa9fb98724": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d4d5f2db-842e-4a86-9b3c-66516be0161a",
+        "model": "claude-fable-5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
