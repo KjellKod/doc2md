@@ -1,0 +1,21 @@
+docs/implementation/mac-private-license-issuer-spec.md
+  s_9b93aa9fb98724::t_5c073fc0891bcc 16
+docs/implementation/mac-commercial-phase-7b-plan.md
+  s_9b93aa9fb98724::t_df5ba3015198a7 60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "1e0edab8cdcf1c625730bdad7f5c4ee5d2dc1c24",
+  "prompts": {},
+  "sessions": {
+    "s_9b93aa9fb98724": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d4d5f2db-842e-4a86-9b3c-66516be0161a",
+        "model": "claude-fable-5"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
