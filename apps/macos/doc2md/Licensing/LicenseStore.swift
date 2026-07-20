@@ -146,7 +146,7 @@ final class LicenseStore {
         case .unavailable(let reason):
             return .unavailable(reason)
         case .available(let token):
-            switch verifier.verify(token) {
+            switch verifier.verifyStoredToken(token) {
             case .success(let verified):
                 return .valid(verified)
             case .failure(let error):
