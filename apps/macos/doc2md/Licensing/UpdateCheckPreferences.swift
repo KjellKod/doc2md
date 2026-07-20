@@ -44,7 +44,7 @@ struct UpdateCheckPolicy {
 
     func shouldRunAutomaticCheck(for state: LicenseState) -> Bool {
         switch state {
-        case .licensed:
+        case .licensed, .grace:
             guard preferences.licensedMonthlyChecksEnabled else {
                 return true
             }
@@ -52,15 +52,20 @@ struct UpdateCheckPolicy {
                 return true
             }
             return now().timeIntervalSince(lastCheck) >= Self.monthlyInterval
-        case .unlicensed, .invalid, .licenseCheckFailed:
+        case .expiredReminder, .unlicensed, .invalid, .licenseCheckFailed:
             return true
         }
     }
 
     func recordAutomaticCheck(for state: LicenseState) {
-        if case .licensed = state,
-           preferences.licensedMonthlyChecksEnabled {
+        switch state {
+        case .licensed, .grace:
+            guard preferences.licensedMonthlyChecksEnabled else {
+                return
+            }
             preferences.lastLicensedMonthlyCheck = now()
+        case .expiredReminder, .unlicensed, .invalid, .licenseCheckFailed:
+            break
         }
     }
 }

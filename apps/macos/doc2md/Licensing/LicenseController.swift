@@ -2,38 +2,64 @@ import Combine
 import Foundation
 
 final class LicenseController: ObservableObject {
-    @Published private(set) var state: LicenseState
+    @Published private var fallbackState: LicenseState
+    @Published private var cachedSnapshot: CachedLicenseSnapshot?
 
     private let store: LicenseStore
+    private let now: () -> Date
 
-    init(store: LicenseStore = LicenseStore()) {
+    var state: LicenseState {
+        guard let cachedSnapshot else {
+            return fallbackState
+        }
+        return LicenseState.evaluate(
+            claims: cachedSnapshot.claims,
+            keyStatus: cachedSnapshot.keyStatus,
+            now: now(),
+            lastValidatedAt: cachedSnapshot.lastValidatedAt
+        )
+    }
+
+    init(
+        store: LicenseStore = LicenseStore(),
+        now: @escaping () -> Date = Date.init
+    ) {
         self.store = store
-        state = store.loadToken().state
+        self.now = now
+        fallbackState = store.loadToken().state
+        cachedSnapshot = nil
     }
 
     func reload() {
-        state = store.loadToken().state
+        cachedSnapshot = nil
+        fallbackState = store.loadToken().state
+    }
+
+    func applyCachedLicenseSnapshot(_ snapshot: CachedLicenseSnapshot) {
+        cachedSnapshot = snapshot
     }
 
     @discardableResult
     func enterLicense(_ token: String) -> LicenseState {
+        cachedSnapshot = nil
         do {
             let verified = try store.saveToken(token)
-            state = .licensed(verified)
+            fallbackState = .licensed(verified.claims)
         } catch let error as LicenseVerificationError {
-            state = .invalid(reason: error.localizedDescription)
+            fallbackState = .invalid(reason: error.localizedDescription)
         } catch {
-            state = .licenseCheckFailed(reason: "The license could not be saved locally.")
+            fallbackState = .licenseCheckFailed(reason: "The license could not be saved locally.")
         }
         return state
     }
 
     func clearLicense() {
+        cachedSnapshot = nil
         do {
             try store.clearToken()
-            state = .unlicensed
+            fallbackState = .unlicensed
         } catch {
-            state = .licenseCheckFailed(reason: "The license could not be cleared locally.")
+            fallbackState = .licenseCheckFailed(reason: "The license could not be cleared locally.")
         }
     }
 }
