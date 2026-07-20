@@ -1,0 +1,26 @@
+apps/macos/doc2mdTests/Licensing/LicenseVerifierTests.swift
+  s_6438a7c8791255::t_eee03cb0fd0aba 132-153
+apps/macos/doc2md/Licensing/LicenseVerifier.swift
+  s_6438a7c8791255::t_0739f990bfed42 47
+  s_6438a7c8791255::t_eee03cb0fd0aba 48-51,61-71,101-102
+apps/macos/doc2md/Licensing/LicenseStore.swift
+  s_6438a7c8791255::t_eee03cb0fd0aba 149
+apps/macos/doc2mdTests/Licensing/LicenseStateTests.swift
+  s_6438a7c8791255::t_eee03cb0fd0aba 178-179
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "8b6f42f0673e7f528186d8bf7fb4c16434dc3dba",
+  "prompts": {},
+  "sessions": {
+    "s_6438a7c8791255": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f6b53-aca7-7b80-bc18-34c1eb89e268",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
