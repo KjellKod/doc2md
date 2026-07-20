@@ -44,6 +44,11 @@ struct VerifiedLicense: Equatable {
 final class LicenseVerifier {
     private static let clockSkewSeconds: TimeInterval = 5 * 60
 
+    private enum ExpirationPolicy: Equatable {
+        case enforce
+        case allowExpiredClaims
+    }
+
     private let publicKeysByID: [String: LicensePublicKey]
     private let now: () -> Date
 
@@ -53,6 +58,17 @@ final class LicenseVerifier {
     }
 
     func verify(_ rawToken: String) -> Result<VerifiedLicense, LicenseVerificationError> {
+        verify(rawToken, expirationPolicy: .enforce)
+    }
+
+    func verifyStoredToken(_ rawToken: String) -> Result<VerifiedLicense, LicenseVerificationError> {
+        verify(rawToken, expirationPolicy: .allowExpiredClaims)
+    }
+
+    private func verify(
+        _ rawToken: String,
+        expirationPolicy: ExpirationPolicy
+    ) -> Result<VerifiedLicense, LicenseVerificationError> {
         do {
             let token = try LicenseToken(rawValue: rawToken)
             guard let publicKey = publicKeysByID[token.claims.keyID] else {
@@ -82,7 +98,8 @@ final class LicenseVerifier {
                 return .failure(.notYetValid)
             }
 
-            if let expiresAt = token.claims.expiresAt,
+            if expirationPolicy == .enforce,
+               let expiresAt = token.claims.expiresAt,
                expiresAt < currentDate.addingTimeInterval(-Self.clockSkewSeconds) {
                 return .failure(.expired)
             }
@@ -95,4 +112,3 @@ final class LicenseVerifier {
         }
     }
 }
-

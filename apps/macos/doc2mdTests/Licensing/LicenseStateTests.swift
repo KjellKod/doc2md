@@ -175,8 +175,8 @@ final class LicenseStateTests: XCTestCase {
         XCTAssertEqual(controller.state, .expiredReminder(claims))
     }
 
-    func testControllerEvaluatesStoredLicenseWheneverStateIsRead() throws {
-        let initialNow = expiry.addingTimeInterval(-day)
+    func testControllerEvaluatesExpiredStoredLicenseWheneverStateIsRead() throws {
+        let initialNow = expiry.addingTimeInterval(day)
         let fixture = LicenseFixtureFactory(now: initialNow)
         let token = try fixture.token(
             issuedAt: expiry.addingTimeInterval(-30 * day),
@@ -195,9 +195,6 @@ final class LicenseStateTests: XCTestCase {
             now: { now }
         )
 
-        XCTAssertEqual(controller.state, .licensed(claims))
-
-        now = expiry
         XCTAssertEqual(controller.state, .grace(claims))
 
         now = expiry.addingTimeInterval(7 * day)

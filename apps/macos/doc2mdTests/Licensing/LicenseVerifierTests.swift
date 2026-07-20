@@ -129,6 +129,28 @@ final class LicenseVerifierTests: XCTestCase {
         }
     }
 
+    func testStoredTokenVerificationAuthenticatesExpiredClaimsForLifecycleEvaluation() throws {
+        let fixture = LicenseFixtureFactory()
+        let expired = try fixture.token(
+            issuedAt: fixture.now.addingTimeInterval(-86_400),
+            expiresAt: fixture.now.addingTimeInterval(-3_600)
+        )
+        let future = try fixture.token(issuedAt: fixture.now.addingTimeInterval(301))
+        let segments = expired.split(separator: ".").map(String.init)
+        let invalidSignature = LicenseToken.base64URLEncode(Data(repeating: 0, count: 64))
+        let tampered = "\(segments[0]).\(segments[1]).\(invalidSignature)"
+
+        XCTAssertEqual(fixture.verifier().verify(expired), .failure(.expired))
+
+        guard case .success(let verified) = fixture.verifier().verifyStoredToken(expired) else {
+            XCTFail("expected authenticated expired claims")
+            return
+        }
+        XCTAssertEqual(verified.claims.expiresAt, fixture.now.addingTimeInterval(-3_600))
+        XCTAssertEqual(fixture.verifier().verifyStoredToken(future), .failure(.notYetValid))
+        XCTAssertEqual(fixture.verifier().verifyStoredToken(tampered), .failure(.invalidSignature))
+    }
+
     func testOptionalLifecycleFieldsAreAccepted() throws {
         let fixture = LicenseFixtureFactory()
         let token = try fixture.token(
