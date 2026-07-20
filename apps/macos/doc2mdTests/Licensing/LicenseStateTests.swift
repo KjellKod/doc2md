@@ -175,6 +175,64 @@ final class LicenseStateTests: XCTestCase {
         XCTAssertEqual(controller.state, .expiredReminder(claims))
     }
 
+    func testControllerEvaluatesStoredLicenseWheneverStateIsRead() throws {
+        let initialNow = expiry.addingTimeInterval(-day)
+        let fixture = LicenseFixtureFactory(now: initialNow)
+        let token = try fixture.token(
+            issuedAt: expiry.addingTimeInterval(-30 * day),
+            expiresAt: expiry,
+            entitlement: "subscription",
+            merchantProvider: "polar"
+        )
+        let claims = try LicenseToken(rawValue: token).claims
+        var now = initialNow
+        let controller = LicenseController(
+            store: LicenseStore(
+                keychainStore: InMemoryLicenseTokenStorage(candidate: .available(token)),
+                fallbackStore: InMemoryLicenseTokenStorage(),
+                verifier: fixture.verifier()
+            ),
+            now: { now }
+        )
+
+        XCTAssertEqual(controller.state, .licensed(claims))
+
+        now = expiry
+        XCTAssertEqual(controller.state, .grace(claims))
+
+        now = expiry.addingTimeInterval(7 * day)
+        XCTAssertEqual(controller.state, .expiredReminder(claims))
+    }
+
+    func testControllerEvaluatesEnteredLicenseWheneverStateIsRead() throws {
+        let initialNow = expiry.addingTimeInterval(-day)
+        let fixture = LicenseFixtureFactory(now: initialNow)
+        let token = try fixture.token(
+            issuedAt: expiry.addingTimeInterval(-30 * day),
+            expiresAt: expiry,
+            entitlement: "subscription",
+            merchantProvider: "polar"
+        )
+        let claims = try LicenseToken(rawValue: token).claims
+        var now = initialNow
+        let controller = LicenseController(
+            store: LicenseStore(
+                keychainStore: InMemoryLicenseTokenStorage(),
+                fallbackStore: InMemoryLicenseTokenStorage(),
+                verifier: fixture.verifier()
+            ),
+            now: { now }
+        )
+
+        XCTAssertEqual(controller.enterLicense(token), .licensed(claims))
+
+        now = expiry
+        XCTAssertEqual(controller.state, .grace(claims))
+
+        now = expiry.addingTimeInterval(7 * day)
+        XCTAssertEqual(controller.state, .expiredReminder(claims))
+    }
+
     func testApplyingRefreshedSnapshotPublishesAndRecoversLicensedState() {
         let now = expiry.addingTimeInterval(8 * day)
         let controller = makeUnlicensedController(now: { now })
