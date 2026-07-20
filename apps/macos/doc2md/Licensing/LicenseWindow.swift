@@ -38,8 +38,13 @@ struct LicenseWindow: View {
 
     private var stateDetails: String {
         switch licenseController.state {
-        case .licensed(let license):
-            return "Licensed to \(licensedDisplayName(for: license)) for \(license.claims.tier)."
+        case .licensed(let claims):
+            return "Licensed to \(licensedDisplayName(for: claims)) for \(claims.tier)."
+        // Phase 1 wording is provisional; Phase 4 owns final cross-surface copy alignment.
+        case .grace(let claims):
+            return "Licensed to \(licensedDisplayName(for: claims)) for \(claims.tier). The app remains fully usable during the grace period."
+        case .expiredReminder:
+            return "Licensed conveniences are paused. The app remains usable for opening, editing, converting, saving, and exporting documents."
         case .unlicensed:
             return "Enter your license token below. The app remains usable without a license."
         case .invalid(let reason):
@@ -49,8 +54,8 @@ struct LicenseWindow: View {
         }
     }
 
-    private func licensedDisplayName(for license: VerifiedLicense) -> String {
-        let purchaser = license.claims.purchaser
+    private func licensedDisplayName(for claims: LicenseClaims) -> String {
+        let purchaser = claims.purchaser
         guard let displayName = purchaser.displayName?.trimmingCharacters(in: .whitespacesAndNewlines),
               !displayName.isEmpty else {
             return purchaser.email

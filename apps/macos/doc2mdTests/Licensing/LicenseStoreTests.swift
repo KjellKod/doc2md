@@ -20,6 +20,8 @@ final class LicenseStoreTests: XCTestCase {
         let result = store.loadToken()
 
         XCTAssertEqual(result.token, validToken)
+        XCTAssertEqual(result.snapshot?.keyStatus, .granted)
+        XCTAssertNil(result.snapshot?.lastValidatedAt)
         XCTAssertEqual(fallback.clearCount, 1)
     }
 
