@@ -50,20 +50,20 @@ final class LicenseStore {
                fallbackVerified.token != verified.token {
                 try? fallbackStore.clearToken()
             }
-            return LicenseStoreLoadResult(state: .licensed(verified), token: verified.token)
+            return LicenseStoreLoadResult(state: .licensed(verified.claims), token: verified.token)
         }
 
         if case .valid(let verified) = fallbackClassification {
             do {
                 try keychainStore.saveToken(verified.token)
             } catch {
-                return LicenseStoreLoadResult(state: .licensed(verified), token: verified.token)
+                return LicenseStoreLoadResult(state: .licensed(verified.claims), token: verified.token)
             }
             if let repaired = verifiedKeychainRepair(matching: verified.token) {
                 try? fallbackStore.clearToken()
-                return LicenseStoreLoadResult(state: .licensed(repaired), token: repaired.token)
+                return LicenseStoreLoadResult(state: .licensed(repaired.claims), token: repaired.token)
             }
-            return LicenseStoreLoadResult(state: .licensed(verified), token: verified.token)
+            return LicenseStoreLoadResult(state: .licensed(verified.claims), token: verified.token)
         }
 
         if keychainClassification.isUnavailable || fallbackClassification.isUnavailable {
