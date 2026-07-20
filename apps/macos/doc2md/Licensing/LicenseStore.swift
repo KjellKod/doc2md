@@ -20,6 +20,7 @@ protocol LicenseTokenStorage {
 struct LicenseStoreLoadResult: Equatable {
     let state: LicenseState
     let token: String?
+    let snapshot: CachedLicenseSnapshot?
 }
 
 final class LicenseStore {
@@ -50,37 +51,39 @@ final class LicenseStore {
                fallbackVerified.token != verified.token {
                 try? fallbackStore.clearToken()
             }
-            return LicenseStoreLoadResult(state: .licensed(verified.claims), token: verified.token)
+            return loadResult(for: verified)
         }
 
         if case .valid(let verified) = fallbackClassification {
             do {
                 try keychainStore.saveToken(verified.token)
             } catch {
-                return LicenseStoreLoadResult(state: .licensed(verified.claims), token: verified.token)
+                return loadResult(for: verified)
             }
             if let repaired = verifiedKeychainRepair(matching: verified.token) {
                 try? fallbackStore.clearToken()
-                return LicenseStoreLoadResult(state: .licensed(repaired.claims), token: repaired.token)
+                return loadResult(for: repaired)
             }
-            return LicenseStoreLoadResult(state: .licensed(verified.claims), token: verified.token)
+            return loadResult(for: verified)
         }
 
         if keychainClassification.isUnavailable || fallbackClassification.isUnavailable {
             return LicenseStoreLoadResult(
                 state: .licenseCheckFailed(reason: "Local license storage could not be checked."),
-                token: nil
+                token: nil,
+                snapshot: nil
             )
         }
 
         if keychainClassification.isInvalid || fallbackClassification.isInvalid {
             return LicenseStoreLoadResult(
                 state: .invalid(reason: "Stored license data could not be verified."),
-                token: nil
+                token: nil,
+                snapshot: nil
             )
         }
 
-        return LicenseStoreLoadResult(state: .unlicensed, token: nil)
+        return LicenseStoreLoadResult(state: .unlicensed, token: nil, snapshot: nil)
     }
 
     func saveToken(_ token: String) throws -> VerifiedLicense {
@@ -122,6 +125,18 @@ final class LicenseStore {
         } catch {
             return .unavailable(error.localizedDescription)
         }
+    }
+
+    private func loadResult(for verified: VerifiedLicense) -> LicenseStoreLoadResult {
+        LicenseStoreLoadResult(
+            state: .licensed(verified.claims),
+            token: verified.token,
+            snapshot: CachedLicenseSnapshot(
+                claims: verified.claims,
+                keyStatus: .granted,
+                lastValidatedAt: nil
+            )
+        )
     }
 
     private func classify(_ candidate: StoredLicenseCandidate) -> CandidateClassification {

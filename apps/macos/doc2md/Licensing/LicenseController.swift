@@ -26,13 +26,15 @@ final class LicenseController: ObservableObject {
     ) {
         self.store = store
         self.now = now
-        fallbackState = store.loadToken().state
-        cachedSnapshot = nil
+        let loaded = store.loadToken()
+        fallbackState = loaded.state
+        cachedSnapshot = loaded.snapshot
     }
 
     func reload() {
-        cachedSnapshot = nil
-        fallbackState = store.loadToken().state
+        let loaded = store.loadToken()
+        fallbackState = loaded.state
+        cachedSnapshot = loaded.snapshot
     }
 
     func applyCachedLicenseSnapshot(_ snapshot: CachedLicenseSnapshot) {
@@ -45,6 +47,11 @@ final class LicenseController: ObservableObject {
         do {
             let verified = try store.saveToken(token)
             fallbackState = .licensed(verified.claims)
+            cachedSnapshot = CachedLicenseSnapshot(
+                claims: verified.claims,
+                keyStatus: .granted,
+                lastValidatedAt: nil
+            )
         } catch let error as LicenseVerificationError {
             fallbackState = .invalid(reason: error.localizedDescription)
         } catch {
