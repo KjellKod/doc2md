@@ -1,0 +1,53 @@
+docs/diary/2026-07-20.md
+  s_6438a7c8791255::t_9672478d0ff6ea 1-36
+apps/macos/doc2md/Licensing/LicenseStore.swift
+  s_6438a7c8791255::t_adc32a7f6a80ea 53,60,64,66
+apps/macos/doc2md.xcodeproj/project.pbxproj
+  s_6438a7c8791255::t_674ec0089489d0 68,138,275,495
+apps/macos/doc2mdTests/Licensing/LicenseStateTests.swift
+  s_6438a7c8791255::t_674ec0089489d0 1-57,67-272
+  s_6438a7c8791255::t_6c9ac8ea57e864 58-66
+apps/macos/doc2mdTests/Licensing/LicenseReminderControllerTests.swift
+  s_6438a7c8791255::t_7c633a0d1e2f67 5,21,24-25,48-121
+docs/dexter-journal/055-requiem-mac-license-grace-states.md
+  s_6438a7c8791255::t_792ab04deffba9 1-4,6-135,137,139-142
+  s_6438a7c8791255::t_2f38337c8320b7 5,136,138
+.quest-last-check
+  s_6438a7c8791255::t_15df75ca992d46 1
+apps/macos/doc2md/Licensing/LicenseState.swift
+  s_6438a7c8791255::t_adc32a7f6a80ea 3-14,17-19,23-61,64,66,71-77,82-85
+apps/macos/doc2md/Licensing/LicenseWindow.swift
+  s_6438a7c8791255::t_adc32a7f6a80ea 41-47,57-58
+apps/macos/doc2md/Licensing/UpdateCheckPreferences.swift
+  s_6438a7c8791255::t_adc32a7f6a80ea 47,55,61,68
+  s_6438a7c8791255::t_396ce3c77cd7a6 62-65,67
+apps/macos/doc2mdTests/Licensing/SparkleUpdatePreferenceTests.swift
+  s_6438a7c8791255::t_7c633a0d1e2f67 31,48,59,79,93,98-115,153-169
+  s_6438a7c8791255::t_1ac07a1988ab27 116-131,170
+docs/dexter-journal/README.md
+  s_6438a7c8791255::t_792ab04deffba9 9
+apps/macos/doc2md/Licensing/LicenseController.swift
+  s_6438a7c8791255::t_adc32a7f6a80ea 5-6,9,11-26,28-30,34-39,44,47,49,51,57,60,62
+docs/quest-journal/README.md
+  s_6438a7c8791255::t_5d1e4de84621c3 5
+docs/quest-journal/celebrations/mac-license-grace-states_2026-07-20.md
+  s_6438a7c8791255::t_33cf40e1c978a1 1-92
+docs/quest-journal/mac-license-grace-states_2026-07-20.md
+  s_6438a7c8791255::t_70deb38aa389a0 1-166
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "6f64ae9efe1efdadae2970b7d9ccedd6d5b72960",
+  "prompts": {},
+  "sessions": {
+    "s_6438a7c8791255": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f6b53-aca7-7b80-bc18-34c1eb89e268",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
