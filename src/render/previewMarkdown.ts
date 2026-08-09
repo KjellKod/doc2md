@@ -19,10 +19,6 @@ function isCompactLine(line: string) {
   return trimmed.length > 0 && trimmed.length <= 88;
 }
 
-function endsLikeSentence(line: string) {
-  return /[.!?]["')\]]?$/.test(line.trim());
-}
-
 function looksLikeMetadataLine(line: string) {
   const trimmed = line.trim();
 
@@ -61,10 +57,6 @@ function normalizeMetadataLine(line: string) {
 
   const [, label, value] = match;
   return `- **${label.trim()}:** ${value.trim()}`;
-}
-
-function normalizeCompactListLine(line: string) {
-  return `- ${line.trim()}`;
 }
 
 function formatDenseBlockWithSources(block: SourceLine[]): SourceLine[] {
@@ -109,20 +101,10 @@ function formatDenseBlockWithSources(block: SourceLine[]): SourceLine[] {
   const metadataCount = content.filter((entry) =>
     looksLikeMetadataLine(entry.text),
   ).length;
-  const compactCount = content.filter((entry) =>
-    isCompactLine(entry.text),
-  ).length;
-  const sentenceCount = content.filter((entry) =>
-    endsLikeSentence(entry.text),
-  ).length;
   const metadataHeavy =
     metadataCount >= Math.max(2, Math.ceil(content.length * 0.5));
-  const compactCluster =
-    content.length >= 4 &&
-    compactCount === content.length &&
-    sentenceCount <= 1;
 
-  if (!metadataHeavy && !compactCluster) {
+  if (!metadataHeavy) {
     return block;
   }
 
@@ -134,12 +116,11 @@ function formatDenseBlockWithSources(block: SourceLine[]): SourceLine[] {
     rendered.push({ text: "", source: heading.source });
   }
 
-  const formatter = metadataHeavy
-    ? normalizeMetadataLine
-    : normalizeCompactListLine;
-
   for (const entry of content) {
-    rendered.push({ text: formatter(entry.text), source: entry.source });
+    rendered.push({
+      text: normalizeMetadataLine(entry.text),
+      source: entry.source,
+    });
   }
 
   return rendered;

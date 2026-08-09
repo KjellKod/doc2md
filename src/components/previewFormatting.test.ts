@@ -21,7 +21,7 @@ describe("formatPreviewMarkdown", () => {
     );
   });
 
-  it("converts compact non-prose clusters into bullets", () => {
+  it("preserves compact lines without explicit list markers", () => {
     const markdown = [
       "Strong SwiftUI delivery",
       "UIKit migration ownership",
@@ -29,14 +29,7 @@ describe("formatPreviewMarkdown", () => {
       "Team collaboration across design and backend"
     ].join("\n");
 
-    expect(formatPreviewMarkdown(markdown)).toBe(
-      [
-        "- Strong SwiftUI delivery",
-        "- UIKit migration ownership",
-        "- Binary deployment workflow",
-        "- Team collaboration across design and backend"
-      ].join("\n")
-    );
+    expect(formatPreviewMarkdown(markdown)).toBe(markdown);
   });
 
   it("preserves tilde-fenced code blocks", () => {
@@ -176,6 +169,20 @@ describe("formatPreviewMarkdown", () => {
     const markdown = [
       "This is a normal paragraph with enough context to read like prose rather than a compact",
       "metadata or checklist block, so the preview formatter should leave it alone."
+    ].join("\n");
+
+    expect(formatPreviewMarkdown(markdown)).toBe(markdown);
+  });
+
+  it("preserves hard-wrapped prose with several compact lines", () => {
+    const markdown = [
+      "With the maintainer, use supported Polar sandbox controls through the packaged",
+      "app for checkout/key delivery, activation without trial consumption, refresh,",
+      "authorized synthetic AI use, offline launch, licensed/grace/expired behavior,",
+      "expired local/read-only access, portal, deactivate/reactivate, three accepted",
+      "devices and a rejected fourth, mid-batch denial before disallowed AI, in-session",
+      "resume, reload guidance, support recovery, and cleanup. Unsupported required",
+      "states are `NOT VERIFIED`; never add a production bypass.",
     ].join("\n");
 
     expect(formatPreviewMarkdown(markdown)).toBe(markdown);
