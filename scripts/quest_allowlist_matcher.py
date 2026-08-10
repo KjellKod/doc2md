@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import json
 import shlex
+import shutil
 import sys
 from pathlib import Path
 
@@ -72,7 +73,10 @@ def executable_token_matches(command_token: str, entry_token: str) -> bool:
         return False
     command_path = Path(command_token)
     if command_path.is_absolute():
-        return command_path.name == entry_token
+        resolved_entry = shutil.which(entry_token)
+        if resolved_entry is None:
+            return False
+        return command_path.resolve() == Path(resolved_entry).resolve()
     return False
 
 
@@ -111,7 +115,9 @@ def token_prefix_matches(command_tokens: list[str], entry: str) -> bool:
     return command_tokens[1 : len(entry_tokens)] == entry_tokens[1:]
 
 
-def is_bash_command_allowed(command: str, allowed_entries: list[str]) -> tuple[bool, str]:
+def is_bash_command_allowed(
+    command: str, allowed_entries: list[str]
+) -> tuple[bool, str]:
     if command in allowed_entries:
         return True, "exact_match"
 
@@ -137,7 +143,9 @@ def is_bash_command_allowed(command: str, allowed_entries: list[str]) -> tuple[b
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Quest bash allowlist matcher")
-    parser.add_argument("--command", required=True, help="Raw command string to evaluate")
+    parser.add_argument(
+        "--command", required=True, help="Raw command string to evaluate"
+    )
     parser.add_argument(
         "--allow",
         required=True,

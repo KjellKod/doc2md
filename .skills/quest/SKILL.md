@@ -22,10 +22,10 @@ When starting, say: "Now I understand the Quest." Then proceed.
 ### Step 1: Resume Check
 
 If the user provides a quest ID matching either supported Quest ID format (`<slug>_YYYY-MM-DD__HHMM` or `YYYY-MM-DD_HHMM__<slug>`):
-1. Read `.quest/<id>/state.json` and resume from the recorded phase
+1. Read `.quest/<id>/state.json` and resume from the recorded phase. If that file does not exist but `.quest/archive/<id>/` does, the quest is complete and archived — tell the user so (pointing at the journal entry in `docs/quest-journal/`) instead of failing; archived quests are not resumable.
 1a. **Orchestration config migration.** On resume, run `quest_runtime.orchestration.migrate_from_snapshot` before dispatch (it is tested; keep the behavior in one place):
    - **Missing `orchestration.json`** → it is written from `.quest/<id>/logs/allowlist_snapshot.json` (`models`). Only explicitly legacy-compatible newly-introduced roles (`LEGACY_COMPAT_BACKFILL_ROLES`, currently `review-arbiter`) are backfilled from `DEFAULT_MODELS`; a snapshot missing any **other** canonical role (e.g. `builder`) is **malformed** — fail closed, never invent a default (that would bypass the saved per-quest model contract). A structurally invalid snapshot (unreadable, not valid JSON, or no `models` object) is also malformed.
-   - **Existing `orchestration.json`** → it is backfilled in place with any newly-introduced canonical roles at their default, preserving every existing value/metadata field, and left byte-identical when nothing is missing — so an in-flight quest that predates a new required role does not fail validation/dispatch on resume.
+   - **Existing `orchestration.json`** → it is backfilled in place with any newly-introduced canonical roles at their default and with the Claude transport keys (`claude_role_transport: "auto"`, `claude_transport_resolved: null`, `claude_transport_downgraded: false`) when missing, preserving every existing value/metadata field, and left byte-identical when nothing is missing — so an in-flight quest that predates a new required role or the transport keys does not fail validation/dispatch on resume.
    - **Never prompt the chooser on resume.**
 2. Delegate to `delegation/workflow.md`
 
@@ -58,10 +58,14 @@ The script is at the **repository root** (`scripts/quest_preflight.sh`), NOT ins
 
      Options:
        1. Fix it now and rerun preflight (recommended)
-       2. Continue with a single-model quest for this run
-       3. Cancel
+       2. Use the Claude bridge for this run (API-metered) — Codex-led sessions only
+       3. Continue with a single-model quest for this run
+       4. Cancel
      ```
+   - **Option 2 applies only to Codex-led sessions.** There, `available: false` means the Claude background-agent transport could not be proven, and the bridge is the alternate (API-metered) Claude transport. In a Claude-led session, `available: false` instead means Codex MCP is unavailable — the bridge is irrelevant, so omit option 2, renumber the remaining choices, and route the user to Codex MCP remediation (fix), single-model, or cancel.
    - If the user selects "fix it now", do not create the quest folder yet. Let them complete the remediation, then rerun Step 2b.
+   - If this is a Codex-led session with `claude_role_transport` unset or `auto`, the common remediation is: `claude --dangerously-skip-permissions`; accept the prompt; exit Claude; return here and rerun preflight.
+   - If the user selects "Use the Claude bridge" (Codex-led sessions only), make the bridge opt-in explicit for this run before creating the quest folder: rerun preflight with `QUEST_CLAUDE_ROLE_TRANSPORT=bridge ./scripts/quest_preflight.sh --orchestrator codex`, show the API-metering warning, and carry that bridge preflight result into orchestration writing (`claude_role_transport: "bridge"`, `claude_transport_resolved: "bridge"`). If that bridge probe fails too, return to these options.
    - For Codex-led sessions, prefer `claude auth login` as the default interactive fix when Claude CLI auth is missing. If the warning indicates a restricted sandbox may be hiding auth state, rerun the preflight with whatever permissions are needed to read the real Claude CLI auth state.
    - For Claude-led sessions, use the warning lines to guide Codex MCP install/auth remediation before rerunning Step 2b.
    - Append "(Claude-only)" or "(Codex-only)" to solo/full quest option labels.
@@ -219,41 +223,48 @@ Before creating the quest folder, present the routing classification to the user
      review-arbiter    <model>  (unused in this mode)   [solo only]
      fixer             <model>
 
-   Customize for this quest only? [y/N]
+   Use these defaults? [Y/n]
    ```
 
-   **On N (default; single Enter):** before writing, validate every active-role model from the expanded default block against the Step 2b preflight result using the same availability rules as overrides below. If Step 2b was healthy, reject any unavailable active-role model as malformed config and stop before dispatch. If the user explicitly chose the single-model continuation after Step 2b failed, remap unavailable active-role models to this orchestrator's native runtime (`claude` for Claude-led sessions, `gpt-5.5` for Codex-led sessions) before writing so `orchestration.json` only contains runnable active-role assignments. Then write `.quest/<id>/orchestration.json` with:
+   **On Y (default; single Enter):** before writing, validate every active-role model from the expanded default block against the Step 2b preflight result using the same availability rules as overrides below. If Step 2b was healthy, reject any unavailable active-role model as malformed config and stop before dispatch. If the user explicitly chose the single-model continuation after Step 2b failed, remap unavailable active-role models to this orchestrator's native runtime (`claude` for Claude-led sessions, `gpt-5.6-sol` for Codex-led sessions) before writing so `orchestration.json` only contains runnable active-role assignments. Then write `.quest/<id>/orchestration.json` with:
    - `version: 1`
-   - `models`: `.ai/allowlist.json` `.models` expanded to all 9 canonical keys; omitted keys use the documented defaults (`planner=claude`, `plan-reviewer-a=claude`, `plan-reviewer-b=gpt-5.5`, `arbiter=claude`, `builder=gpt-5.5`, `code-reviewer-a=claude`, `code-reviewer-b=gpt-5.5`, `review-arbiter=claude`, `fixer=gpt-5.5`)
+   - `models`: `.ai/allowlist.json` `.models` expanded to all 9 canonical keys by `quest_runtime.orchestration.build_default_models`; omitted keys use the shipped `DEFAULT_MODELS` fallback from that module. The allowlist is the repo-configured startup default; do not restate the literal fallback matrix in this procedural skill.
+   - `claude_role_transport`: the transport policy selected in Step 2b — `"bridge"` when the user explicitly chose the bridge option (including a per-run `QUEST_CLAUDE_ROLE_TRANSPORT=bridge` selection that was not written to `.ai/allowlist.json`), otherwise from `.ai/allowlist.json` (default `"auto"`). Persist the resolved opt-in so a bridge choice survives resume; never record `"auto"` alongside `claude_transport_resolved: "bridge"`.
+   - `claude_transport_resolved`: the `transport` field from the Step 2b preflight result (Codex-led sessions; `null` otherwise)
+   - `claude_transport_downgraded`: compatibility field; write `false` for new runs (Codex-led preflight also emits `false`)
    - `source: "default"`
    - `overridden_roles: []`
    - `preflight_validated_at: <ISO8601 now>`
 
-   **On Y:** present the shorthand override prompt:
+   **On N:** present the shorthand override prompt:
 
    ```
-   Enter overrides as comma-separated role=model pairs.
+   Enter overrides as comma- or newline-separated role=model pairs or a JSON models object.
    Roles: planner, plan-reviewer-a, plan-reviewer-b, arbiter, builder, code-reviewer-a, code-reviewer-b, review-arbiter, fixer
-   Models: any model name your preflight reports as available (e.g., claude, codex, gpt-5.5)
-   Example: planner=claude, builder=claude
-   (empty input = no overrides, equivalent to N)
+   Models: any model name your preflight reports as available (e.g., claude, gpt-5.6-sol, gpt-5.6-terra)
+   Pair example: planner=gpt-5.6-sol, builder=claude-opus-5
+   JSON example: {"models":{"planner":"gpt-5.6-sol","builder":"claude-opus-5"}}
+   (empty input = no overrides, equivalent to Y)
 
    Overrides:
    ```
 
-   **Parse contract (each full override-line submission is one attempt; cap re-prompts at 3, abort on the 4th rejection):**
+   If the override submission is empty after trimming, follow the **On Y** default writer above. Do not write `source: "overridden"`, do not add `overridden_roles`, and do not count the empty submission as a rejected attempt.
 
-   1. **Tokenize.** Split the outer input on `,`. Trim each resulting piece. Empty pieces are silently skipped (so a trailing comma is fine).
-   2. **One `=` per piece.** Each non-empty piece must contain exactly one `=` character. Reject pieces with zero `=` or two or more `=` characters using `Override syntax error: '<piece>' (expected role=model). Re-enter overrides.`
-   3. **Role name (LHS of `=`).** Trim, normalize to lowercase, then exact-match against the canonical role list (`planner`, `plan-reviewer-a`, `plan-reviewer-b`, `arbiter`, `builder`, `code-reviewer-a`, `code-reviewer-b`, `review-arbiter`, `fixer`). Reject unknown names with `Unknown role: <input> (valid: planner, plan-reviewer-a, plan-reviewer-b, arbiter, builder, code-reviewer-a, code-reviewer-b, review-arbiter, fixer)` and re-prompt.
-   4. **Model name (RHS of `=`).** Trim. Lexeme is `[^,=]+` non-empty. No further character constraints — `gpt-5.5`, `claude-opus-4.7`, `o1-mini` and similar tokens are all accepted at the parser level.
+   **Parse contract (each full override submission is one attempt; cap re-prompts at 3, abort on the 4th rejection):** Run `python3 scripts/quest_parse_overrides.py`, send the complete submission unchanged on stdin, and consume its JSON envelope. Exit `0` returns `{"ok": true, "overrides": [...]}`; exit `2` returns `{"ok": false, "error": "..."}` on stderr and counts as one rejected attempt. Do not manually parse or rewrite JSON into pairs. `quest_runtime.orchestration.parse_override_input` is the canonical API; `parse_override_line` remains a compatibility wrapper.
+
+   1. **Detect format.** Input beginning with `{` is JSON. A copied `"models": {...}` fragment without outer braces is also accepted. JSON may be either `{"models": {<role>: <model>}}` or a direct `{<role>: <model>}` map. All JSON role keys and model values must be strings; model values must be non-empty. A `models` wrapper cannot have sibling top-level keys. Other input uses the pair format below.
+   2. **Tokenize pairs.** Split pair input on commas, LF newlines, or CRLF newlines and trim each piece. Empty pieces are silently skipped, so trailing separators and blank lines are allowed. Each non-empty piece must contain exactly one `=` character. Reject pieces with zero or multiple `=` characters using `Override syntax error: '<piece>' (expected role=model). Re-enter overrides.`
+   3. **Role name.** Trim, normalize to lowercase, then exact-match against the canonical role list (`planner`, `plan-reviewer-a`, `plan-reviewer-b`, `arbiter`, `builder`, `code-reviewer-a`, `code-reviewer-b`, `review-arbiter`, `fixer`). Reject unknown names with `Unknown role: <input> (valid: planner, plan-reviewer-a, plan-reviewer-b, arbiter, builder, code-reviewer-a, code-reviewer-b, review-arbiter, fixer)`. Reject duplicate normalized roles in either syntax with `Duplicate role: <role>. Re-enter overrides.` rather than silently choosing the last value.
+   4. **Model name.** Trim the pair RHS or JSON string value. It must be non-empty and cannot contain commas, `=`, or line breaks in either syntax, so JSON and pair inputs accept the same model tokens. Example: `gpt-5.6-sol`, `claude-fake-model`, `o1-mini` and similar tokens are accepted at the parser level.
    5. **Unused-in-mode roles** (`plan-reviewer-b`, `arbiter`, `code-reviewer-b`, and `review-arbiter` in solo). Warn `Role <name> is unused in <mode> mode — override ignored.` and skip the override; do not record it in `overridden_roles`.
-   6. **Availability check.** Classify Claude-family model names as `claude` and `claude-*` (for example `claude-opus-4.7`); every other model name is Codex-backed. In Claude-led sessions, Claude-family models are available and Codex-backed models require Codex MCP availability from the Step 2b preflight result. In Codex-led sessions, Codex-backed models are available and Claude-family models require the top-level `available` boolean from the Step 2b preflight result, which represents Claude bridge availability. If the relevant cache/result is missing or stale (older than the preflight TTL), rerun `scripts/quest_preflight.sh --orchestrator <self>` once and reuse the fresh result. Reject unavailable models with the preflight `warning` text and re-prompt the override line.
-   7. **Re-prompt cap.** An "attempt" is one full override-line submission, not one role=model pair. Three rejected attempts in a row abort startup with `Override validation failed after 3 attempts — quest startup cancelled.`
+   6. **Availability check.** Classify Claude-family model names as `claude` and `claude-*` (for example `claude-opus-5`); Gemini-family model names (`gemini`, `gemini-*`) as Antigravity-backed; every other model name is Codex-backed. Antigravity-backed models require `antigravity_available` from `scripts/quest_preflight.sh --probe antigravity` (see the workflow's Antigravity preflight section) in either session type. In Claude-led sessions, Claude-family models are available and Codex-backed models require Codex MCP availability from the Step 2b preflight result. In Codex-led sessions, Codex-backed models are available and Claude-family models require the top-level `available` boolean from the Step 2b preflight result, which represents Claude transport availability (background-agent or bridge — the `transport` field says which). If the relevant cache/result is missing or stale (older than the preflight TTL), rerun the matching preflight once and reuse the fresh result: `scripts/quest_preflight.sh --orchestrator <self>` for Claude/Codex availability, `scripts/quest_preflight.sh --probe antigravity` for `antigravity_available` (they are separate modes and cannot be combined). Reject unavailable models with the preflight `warning` text and re-prompt the override submission.
+   7. **Re-prompt cap.** An "attempt" is one full override submission, not one role=model pair. Three rejected attempts in a row abort startup with `Override validation failed after 3 attempts — quest startup cancelled.`
 
-   Once all overrides pass validation, build the merged `models` block (defaults from `.ai/allowlist.json`, with omitted role keys filled from the documented defaults above, overlaid with the validated overrides — `overridden_roles` excludes ignored-because-unused entries) and write `.quest/<id>/orchestration.json` with:
+   Once all overrides pass validation, build the merged `models` block (the expanded startup block returned by `build_default_models`, overlaid with the validated overrides — `overridden_roles` excludes ignored-because-unused entries) and write `.quest/<id>/orchestration.json` with:
    - `version: 1`
    - `models`: merged block (all 9 keys present; unused-in-mode roles still carry the default value)
+   - `claude_role_transport` / `claude_transport_resolved`: same sourcing as the Y path above; `claude_transport_downgraded: false` for compatibility
    - `source: "overridden"`
    - `overridden_roles`: list of role names that were actually overridden
    - `preflight_validated_at: <ISO8601 now>`
@@ -277,7 +288,7 @@ Before creating the quest folder, present the routing classification to the user
      "updated_at": "<timestamp>"
    }
    ```
-   Set `quest_mode` to the user's final selection: `"workflow"` (default) or `"solo"`. This field is read by `workflow.md` to determine agent dispatch and by `validate-quest-state.sh` for artifact checks.
+   Set `quest_mode` to the user's final selection: `"workflow"` (default) or `"solo"`. This field is read by `workflow.md` to determine agent dispatch and by `quest_validate-quest-state.sh` for artifact checks.
    `vcs_available` must be copied directly from `scripts/quest_startup_branch.py` output. Do not infer it from `branch_mode`.
    `branch_mode` records the actual startup mode used for this quest run after no-op handling. If Quest starts on an existing feature branch, set `branch_mode` to `"none"` and record that branch in `branch`.
    `quest_symlink` must be copied directly from `scripts/quest_startup_branch.py` output. Do not infer it from `branch_mode` or `worktree_path`.

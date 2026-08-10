@@ -17,7 +17,6 @@ import subprocess
 import sys
 from typing import Any
 
-
 STRATEGIES = ("rebase", "merge")
 STATUS_UP_TO_DATE = "up_to_date"
 STATUS_CLEAN = "clean"
@@ -64,7 +63,12 @@ def _parse_remote_head(output: str) -> str:
     prefix = "refs/heads/"
     for raw_line in output.splitlines():
         parts = raw_line.strip().split()
-        if len(parts) == 3 and parts[0] == "ref:" and parts[2] == "HEAD" and parts[1].startswith(prefix):
+        if (
+            len(parts) == 3
+            and parts[0] == "ref:"
+            and parts[2] == "HEAD"
+            and parts[1].startswith(prefix)
+        ):
             return parts[1][len(prefix) :]
     return ""
 
@@ -83,7 +87,17 @@ def detect_default_branch() -> tuple[str, str]:
         if ref.startswith(prefix) and len(ref) > len(prefix):
             return ref[len(prefix) :], "symbolic-ref"
 
-    gh = _run(["gh", "repo", "view", "--json", "defaultBranchRef", "--jq", ".defaultBranchRef.name"])
+    gh = _run(
+        [
+            "gh",
+            "repo",
+            "view",
+            "--json",
+            "defaultBranchRef",
+            "--jq",
+            ".defaultBranchRef.name",
+        ]
+    )
     if gh.returncode == 0 and gh.stdout.strip():
         return gh.stdout.strip(), "gh"
 
@@ -185,7 +199,9 @@ def _pre_apply_error() -> tuple[str, str]:
 
 
 def _pre_rebase_lease_error() -> tuple[str, str]:
-    upstream = _run(["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"])
+    upstream = _run(
+        ["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"]
+    )
     if upstream.returncode == 0 and upstream.stdout.strip():
         return _branch_contains(upstream.stdout.strip())
 
@@ -211,7 +227,9 @@ def _branch_contains(ref: str) -> tuple[str, str]:
     return "upstream_check_failed", _message(contains)
 
 
-def sync(strategy: str = "rebase", *, apply: bool = False) -> tuple[int, dict[str, Any]]:
+def sync(
+    strategy: str = "rebase", *, apply: bool = False
+) -> tuple[int, dict[str, Any]]:
     payload = _base_payload(strategy)
 
     fetch = _run(["git", "fetch", "origin"])
@@ -236,32 +254,32 @@ def sync(strategy: str = "rebase", *, apply: bool = False) -> tuple[int, dict[st
         )
         return 0, payload
 
-    probe_status, conflict_files, message = probe_merge(default_ref)
-    if probe_status == STATUS_ERROR:
-        payload.update(
-            {
-                "status": STATUS_ERROR,
-                "reason": "merge_tree_failed",
-            }
-        )
-        if message:
-            payload["message"] = message
-        return 1, payload
-
-    if probe_status == STATUS_CONFLICT:
-        payload.update(
-            {
-                "status": STATUS_CONFLICT,
-                "conflict_files": conflict_files,
-                "reason": "merge_tree_conflict",
-            }
-        )
-        if message:
-            payload["message"] = message
-        return 1, payload
-
-    action = "would_rebase" if strategy == "rebase" else "would_merge"
     if not apply:
+        probe_status, conflict_files, message = probe_merge(default_ref)
+        if probe_status == STATUS_ERROR:
+            payload.update(
+                {
+                    "status": STATUS_ERROR,
+                    "reason": "merge_tree_failed",
+                }
+            )
+            if message:
+                payload["message"] = message
+            return 1, payload
+
+        if probe_status == STATUS_CONFLICT:
+            payload.update(
+                {
+                    "status": STATUS_CONFLICT,
+                    "conflict_files": conflict_files,
+                    "reason": "merge_tree_conflict",
+                }
+            )
+            if message:
+                payload["message"] = message
+            return 1, payload
+
+        action = "would_rebase" if strategy == "rebase" else "would_merge"
         payload.update(
             {
                 "ok": True,

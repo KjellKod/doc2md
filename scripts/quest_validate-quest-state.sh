@@ -200,6 +200,15 @@ validate_orchestration_json() {
     *) fail "orchestration.json source must be 'default' or 'overridden' (got '$source')"; return ;;
   esac
 
+  # claude_role_transport is optional (backfilled on resume for older quests)
+  # but must be a known value when present.
+  local transport
+  transport=$(jq -r '.claude_role_transport // empty' "$orch_file" 2>/dev/null)
+  case "$transport" in
+    ""|auto|background-agent|bridge) ;;
+    *) fail "orchestration.json claude_role_transport must be auto|background-agent|bridge (got '$transport')"; return ;;
+  esac
+
   # Required roles depend on quest_mode.
   # Keep this list in sync with workflow.md dispatch sites
   # (planner, plan-reviewer-a, plan-reviewer-b, arbiter, builder,
@@ -236,6 +245,9 @@ validate_transition() {
   case "${current}->${target}" in
     "plan->plan_reviewed") valid=true ;;
     "plan->plan")          valid=true ;;
+    "plan_reviewed->plan") valid=true ;;
+    "presenting->plan") valid=true ;;
+    "presentation_complete->plan") valid=true ;;
     "plan_reviewed->presenting") valid=true ;;
     "presenting->presentation_complete") valid=true ;;
     "presentation_complete->building") valid=true ;;
@@ -311,6 +323,70 @@ validate_artifacts() {
       check_file "$quest_dir/phase_03_review/review_fix_feedback_discussion.md"
       ;;
   esac
+}
+
+validate_human_replan() {
+  local quest_dir="$1"
+  local current="$2"
+  local output
+  output=$(PYTHONPATH="$REPO_ROOT/scripts${PYTHONPATH:+:$PYTHONPATH}" python3 - "$quest_dir" "$current" <<'PY'
+import sys
+from quest_runtime.state import validate_pending_replan
+
+try:
+    validate_pending_replan(sys.argv[1], sys.argv[2])
+except Exception as exc:
+    print(exc)
+    raise SystemExit(1)
+PY
+)
+  if [ "$?" -eq 0 ]; then
+    pass "Human replan feedback belongs to the current request"
+  else
+    fail "Human replan feedback invalid: $output"
+  fi
+}
+
+validate_current_replan_handoffs() {
+  local quest_dir="$1"
+  local required_lifecycle="$2"
+  local generation iteration lifecycle request_type
+  request_type=$(jq -r '.user_replan | type' "$quest_dir/state.json" 2>/dev/null)
+  if [ "$request_type" = "null" ]; then
+    return
+  fi
+  if [ "$request_type" != "object" ]; then
+    fail "Current replan request is malformed"
+    return
+  fi
+  generation=$(jq -r '.user_replan.generation // empty' "$quest_dir/state.json")
+  iteration=$(jq -r '.plan_iteration // empty' "$quest_dir/state.json")
+  lifecycle=$(jq -r '.user_replan.lifecycle // empty' "$quest_dir/state.json")
+  if [ "$lifecycle" != "$required_lifecycle" ]; then
+    fail "Current replan lifecycle is '$lifecycle', expected '$required_lifecycle'"
+    return
+  fi
+
+  local handoffs=(
+    "$quest_dir/phase_01_plan/handoff.json"
+    "$quest_dir/phase_01_plan/handoff_plan-reviewer-a.json"
+  )
+  if [ "$QUEST_MODE" != "solo" ]; then
+    handoffs+=(
+      "$quest_dir/phase_01_plan/handoff_plan-reviewer-b.json"
+      "$quest_dir/phase_01_plan/handoff_arbiter.json"
+    )
+  fi
+  local handoff
+  for handoff in "${handoffs[@]}"; do
+    if jq -e --argjson iteration "$iteration" --argjson generation "$generation" \
+      '.plan_iteration == $iteration and .user_replan_generation == $generation' \
+      "$handoff" >/dev/null 2>&1; then
+      pass "Current replan handoff identity valid: $handoff"
+    else
+      fail "Current replan handoff is missing or stale: $handoff"
+    fi
+  done
 }
 
 check_file() {
@@ -568,9 +644,12 @@ validate_semantic_content() {
           fail "Semantic check: handoff_plan-reviewer-a.json not found at $reviewer_a_file"
           return
         fi
-        local next_val
+        local next_val status_val
         next_val=$(jq -r '.next' "$reviewer_a_file" 2>/dev/null)
-        if [ "$next_val" = "builder" ] || [ "$next_val" = "arbiter" ]; then
+        status_val=$(jq -r '.status' "$reviewer_a_file" 2>/dev/null)
+        if [ "$status_val" != "complete" ]; then
+          fail "Semantic check: reviewer A handoff status is '$status_val', not 'complete' — partial handoff must not unblock build"
+        elif [ "$next_val" = "builder" ] || [ "$next_val" = "arbiter" ]; then
           pass "Semantic check: reviewer A approved for building (next=$next_val, solo mode)"
         else
           fail "Semantic check: reviewer A did not approve for building (next=$next_val, expected builder or arbiter)"
@@ -581,9 +660,12 @@ validate_semantic_content() {
           fail "Semantic check: handoff_arbiter.json not found at $arbiter_file"
           return
         fi
-        local next_val
+        local next_val status_val
         next_val=$(jq -r '.next' "$arbiter_file" 2>/dev/null)
-        if [ "$next_val" = "builder" ]; then
+        status_val=$(jq -r '.status' "$arbiter_file" 2>/dev/null)
+        if [ "$status_val" != "complete" ]; then
+          fail "Semantic check: arbiter handoff status is '$status_val', not 'complete' — partial handoff must not unblock build"
+        elif [ "$next_val" = "builder" ]; then
           pass "Semantic check: arbiter approved (next=builder)"
         else
           fail "Semantic check: arbiter did not approve for building (next=$next_val, expected builder)"
@@ -855,6 +937,24 @@ main() {
     validate_transition "$CURRENT_PHASE" "$target_phase"
     validate_artifacts "$quest_dir" "$CURRENT_PHASE" "$target_phase"
     validate_semantic_content "$quest_dir" "$CURRENT_PHASE" "$target_phase"
+    case "$CURRENT_PHASE->$target_phase" in
+      "plan_reviewed->plan"|"presenting->plan"|"presentation_complete->plan")
+        validate_human_replan "$quest_dir" "$CURRENT_PHASE"
+        ;;
+      "plan->plan")
+        if jq -e '.user_replan.lifecycle == "recorded"' "$quest_dir/state.json" >/dev/null 2>&1; then
+          validate_human_replan "$quest_dir" "$CURRENT_PHASE"
+        fi
+        ;;
+    esac
+    case "$CURRENT_PHASE->$target_phase" in
+      "plan->plan_reviewed")
+        validate_current_replan_handoffs "$quest_dir" planning
+        ;;
+      "presentation_complete->building")
+        validate_current_replan_handoffs "$quest_dir" presentation_approved
+        ;;
+    esac
   fi
   validate_iteration_bounds "$target_phase" "$PLAN_ITERATION" "$FIX_ITERATION"
 
