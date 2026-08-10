@@ -35,15 +35,15 @@ CANONICAL_ROLES: tuple[str, ...] = (
 )
 
 DEFAULT_MODELS: dict[str, str] = {
-    "planner": "claude",
-    "plan-reviewer-a": "claude",
-    "plan-reviewer-b": "gpt-5.5",
-    "arbiter": "claude",
-    "builder": "gpt-5.5",
-    "code-reviewer-a": "claude",
-    "code-reviewer-b": "gpt-5.5",
-    "review-arbiter": "claude",
-    "fixer": "gpt-5.5",
+    "planner": "gpt-5.6-sol",
+    "plan-reviewer-a": "claude-opus-5",
+    "plan-reviewer-b": "gpt-5.6-terra",
+    "arbiter": "claude-opus-5",
+    "builder": "gpt-5.6-sol",
+    "code-reviewer-a": "claude-opus-5",
+    "code-reviewer-b": "gpt-5.6-terra",
+    "review-arbiter": "claude-opus-5",
+    "fixer": "gpt-5.6-terra",
 }
 
 # Roles added after early snapshots/existing orchestration files were already
@@ -56,7 +56,13 @@ SOLO_UNUSED_ROLES: frozenset[str] = frozenset(
 )
 
 ORCHESTRATION_VERSION = 1
-CODEX_NATIVE_FALLBACK_MODEL = "gpt-5.5"
+CODEX_NATIVE_FALLBACK_MODEL = "gpt-5.6-sol"
+
+# Transport for Codex-led Claude roles (.ai/allowlist.json claude_role_transport).
+# "auto" resolves to background-agent when the preflight bg probe succeeds.
+# If it fails, Quest asks the user; bridge is an explicit API-metered opt-in.
+CLAUDE_ROLE_TRANSPORTS: tuple[str, ...] = ("auto", "background-agent", "bridge")
+DEFAULT_CLAUDE_ROLE_TRANSPORT = "auto"
 
 
 class OverrideParseError(ValueError):
@@ -76,22 +82,106 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def parse_override_line(line: str) -> list[Override]:
-    """Parse a comma-separated `role=model` line.
+class _JsonObjectPairs(list[tuple[str, object]]):
+    """Preserve JSON object order and duplicate keys at the input boundary."""
+
+
+def _validated_override(raw_role: object, raw_model: object) -> Override:
+    """Validate one role/model pair shared by both accepted syntaxes."""
+    if not isinstance(raw_role, str):
+        raise OverrideParseError(
+            "Override role names must be strings. Re-enter overrides."
+        )
+    role = raw_role.strip().lower()
+    if role not in CANONICAL_ROLES:
+        valid_list = ", ".join(CANONICAL_ROLES)
+        raise OverrideParseError(
+            f"Unknown role: {raw_role.strip()} (valid: {valid_list})"
+        )
+    if not isinstance(raw_model, str) or not raw_model.strip():
+        raise OverrideParseError(
+            f"Override model for {role} must be a non-empty string. "
+            "Re-enter overrides."
+        )
+    model = raw_model.strip()
+    if "," in model or "=" in model or "\n" in model or "\r" in model:
+        raise OverrideParseError(
+            f"Override model for {role} cannot contain ',', '=', or line breaks. "
+            "Re-enter overrides."
+        )
+    return Override(role=role, model=model)
+
+
+def _append_unique_override(
+    parsed: list[Override], seen_roles: set[str], override: Override
+) -> None:
+    """Append one override, rejecting ambiguous case-normalized duplicates."""
+    if override.role in seen_roles:
+        raise OverrideParseError(
+            f"Duplicate role: {override.role}. Re-enter overrides."
+        )
+    seen_roles.add(override.role)
+    parsed.append(override)
+
+
+def parse_override_input(text: str) -> list[Override]:
+    """Parse JSON or comma- or newline-separated `role=model` overrides.
 
     Contract (mirrors SKILL.md §8.5):
-    - Split on commas, trim each piece. Empty pieces are silently skipped
-      (a trailing comma is fine).
+    - JSON input may be a direct role map, a top-level `models` object, or the
+      copied `"models": {...}` fragment without outer braces.
+    - JSON role names and model values use the same validation as pairs.
+    - Split pair input on commas, LF, or CRLF; trim each piece. Empty pieces
+      are silently skipped (trailing separators and blank lines are fine).
     - Each non-empty piece must contain exactly one `=`. Zero or two-or-more
       `=` characters raise OverrideParseError.
     - Role names are trimmed, lowercased, and matched against CANONICAL_ROLES.
       Unknown roles raise OverrideParseError.
-    - Model names are trimmed. Lexeme is `[^,=]+` non-empty. No further
-      character constraints (so `gpt-5.5`, `claude-opus-4.7`, `o1-mini`
-      all pass parsing).
+    - Model names are trimmed and cannot contain commas, equals signs, or line
+      breaks (so `gpt-5.5`, `claude-opus-4.7`, `o1-mini` all pass parsing).
     """
-    pieces = [piece.strip() for piece in line.split(",")]
+    stripped = text.strip()
+    if stripped.startswith("{") or stripped.startswith('"models"'):
+        candidate = (
+            "{" + stripped + "}" if stripped.startswith('"models"') else stripped
+        )
+        try:
+            data = json.loads(candidate, object_pairs_hook=_JsonObjectPairs)
+        except json.JSONDecodeError as exc:
+            raise OverrideParseError(
+                f"Override JSON syntax error: {exc.msg}. Re-enter overrides."
+            ) from exc
+        if not isinstance(data, _JsonObjectPairs):
+            raise OverrideParseError(
+                "Override JSON must be an object. Re-enter overrides."
+            )
+        models_values = [value for key, value in data if key == "models"]
+        if models_values:
+            if len(data) != 1:
+                raise OverrideParseError(
+                    "Override JSON with a models block cannot contain other top-level keys. "
+                    "Re-enter overrides."
+                )
+            data = models_values[0]
+            if not isinstance(data, _JsonObjectPairs):
+                raise OverrideParseError(
+                    "Override JSON models value must be an object. Re-enter overrides."
+                )
+
+        parsed_json: list[Override] = []
+        seen_json_roles: set[str] = set()
+        for raw_role, raw_model in data:
+            _append_unique_override(
+                parsed_json,
+                seen_json_roles,
+                _validated_override(raw_role, raw_model),
+            )
+        return parsed_json
+
+    lines = text.replace("\r\n", "\n").split("\n")
+    pieces = [piece.strip() for line in lines for piece in line.split(",")]
     parsed: list[Override] = []
+    seen_roles: set[str] = set()
     for piece in pieces:
         if not piece:
             # Empty piece — silently skip (trailing comma case).
@@ -103,20 +193,17 @@ def parse_override_line(line: str) -> list[Override]:
                 "Re-enter overrides."
             )
         raw_role, raw_model = piece.split("=", 1)
-        role = raw_role.strip().lower()
-        model = raw_model.strip()
-        if role not in CANONICAL_ROLES:
-            valid_list = ", ".join(CANONICAL_ROLES)
-            raise OverrideParseError(
-                f"Unknown role: {raw_role.strip()} (valid: {valid_list})"
-            )
-        if not model:
-            raise OverrideParseError(
-                f"Override syntax error: {piece!r} (expected role=model). "
-                "Re-enter overrides."
-            )
-        parsed.append(Override(role=role, model=model))
+        _append_unique_override(
+            parsed,
+            seen_roles,
+            _validated_override(raw_role, raw_model),
+        )
     return parsed
+
+
+def parse_override_line(line: str) -> list[Override]:
+    """Compatibility wrapper for callers using the original parser name."""
+    return parse_override_input(line)
 
 
 def is_claude_model(model: str) -> bool:
@@ -124,7 +211,46 @@ def is_claude_model(model: str) -> bool:
     return model == "claude" or model.startswith("claude-")
 
 
-def is_model_available(model: str, *, codex_available: bool) -> bool:
+def is_antigravity_model(model: str) -> bool:
+    """Return True for model names that run on the Antigravity runtime.
+
+    Mirrors `is_claude_model`. The bare `gemini` sentinel means "use the
+    Antigravity CLI's own default model" (the runner omits `--model`);
+    concrete slugs such as `gemini-3.6-flash-high` pass through verbatim, so
+    a newly released slug works without a Quest change.
+    """
+    return model == "gemini" or model.startswith("gemini-")
+
+
+def runtime_for_model(model: str) -> str:
+    """Map a persisted `models.<role>` model ID to its runtime family.
+
+    `models.*` stores model IDs (for example `claude`, `claude-opus-4-6`,
+    `gemini-3.6-flash-high`, `gpt-5.5`), not runtime names. Claude-family IDs
+    run on the Claude runtime, Gemini-family IDs run on the Antigravity
+    runtime (the `agy` CLI), and every other ID runs on Codex tooling.
+    Provider-qualified IDs (for example `opencode/claude-opus-4-6`) are
+    classified on the segment after the final `/`.
+    """
+    normalized = model.strip().lower()
+    if not normalized:
+        raise ValueError("model must be a non-empty string")
+    unqualified = normalized.rsplit("/", 1)[-1]
+    if not unqualified:
+        raise ValueError(f"model ID has no name after provider prefix: {model!r}")
+    if is_claude_model(unqualified):
+        return "claude"
+    if is_antigravity_model(unqualified):
+        return "antigravity"
+    return "codex"
+
+
+def is_model_available(
+    model: str,
+    *,
+    codex_available: bool,
+    antigravity_available: bool = False,
+) -> bool:
     """Return True if the requested model can run with the current preflight.
 
     Backward-compatible wrapper for Claude-led availability checks.
@@ -134,6 +260,7 @@ def is_model_available(model: str, *, codex_available: bool) -> bool:
         orchestrator="claude",
         codex_available=codex_available,
         claude_available=True,
+        antigravity_available=antigravity_available,
     )
 
 
@@ -143,14 +270,27 @@ def is_model_available_for_orchestrator(
     orchestrator: str,
     codex_available: bool,
     claude_available: bool,
+    antigravity_available: bool = False,
 ) -> bool:
-    """Return True if the model can run in the active orchestrator session."""
+    """Return True if the model can run in the active orchestrator session.
+
+    `antigravity_available` defaults to False so that a caller predating the
+    Antigravity runtime rejects Gemini-backed roles at chooser time rather
+    than persisting config that could only fail later at dispatch.
+    """
     normalized_orchestrator = orchestrator.strip().lower()
     if normalized_orchestrator not in {"claude", "codex"}:
         raise ValueError(f"Unknown orchestrator: {orchestrator!r}")
+    # Classify through the same canonical mapping dispatch uses, so
+    # provider-qualified IDs (opencode/claude-*) gate consistently.
+    model_runtime = runtime_for_model(model)
+    if model_runtime == "antigravity":
+        # Antigravity is never an orchestrator, only ever a dispatched
+        # runtime, so the probe result gates it for either orchestrator.
+        return antigravity_available
     if normalized_orchestrator == "claude":
-        return True if is_claude_model(model) else codex_available
-    return claude_available if is_claude_model(model) else True
+        return True if model_runtime == "claude" else codex_available
+    return claude_available if model_runtime == "claude" else True
 
 
 def active_roles_for_mode(quest_mode: str) -> tuple[str, ...]:
@@ -168,6 +308,7 @@ def validate_or_remap_models_for_orchestrator(
     claude_available: bool,
     quest_mode: str,
     remap_unavailable: bool = False,
+    antigravity_available: bool = False,
 ) -> tuple[dict[str, str | None], list[str]]:
     """Validate active role models against the preflight result.
 
@@ -190,12 +331,21 @@ def validate_or_remap_models_for_orchestrator(
     for role in active_roles_for_mode(quest_mode):
         model = result.get(role)
         if not isinstance(model, str) or not model:
+            # An unset/empty model on an ACTIVE role is unavailable by
+            # definition — remap or reject now instead of persisting config
+            # that can only fail later at dispatch time.
+            if remap_unavailable:
+                result[role] = fallback_model
+                remapped_roles.append(role)
+            else:
+                unavailable_roles.append(role)
             continue
         if is_model_available_for_orchestrator(
             model,
             orchestrator=normalized_orchestrator,
             codex_available=codex_available,
             claude_available=claude_available,
+            antigravity_available=antigravity_available,
         ):
             continue
         if remap_unavailable:
@@ -235,7 +385,9 @@ def load_codex_available_from_cache(cache_path: Path) -> bool:
     return False
 
 
-def build_default_models(allowlist_models: dict[str, str | None]) -> dict[str, str | None]:
+def build_default_models(
+    allowlist_models: dict[str, str | None],
+) -> dict[str, str | None]:
     """Return a fresh copy of an allowlist `models` block with all 9 keys.
 
     Missing keys are filled from the documented workflow defaults so older or
@@ -243,7 +395,9 @@ def build_default_models(allowlist_models: dict[str, str | None]) -> dict[str, s
     Explicit null values are preserved for compatibility with legacy snapshots.
     """
     return {
-        role: allowlist_models[role] if role in allowlist_models else DEFAULT_MODELS[role]
+        role: (
+            allowlist_models[role] if role in allowlist_models else DEFAULT_MODELS[role]
+        )
         for role in CANONICAL_ROLES
     }
 
@@ -263,7 +417,9 @@ def _backfill_legacy_compatible_roles(
     return merged, backfilled
 
 
-def build_snapshot_models(snapshot_models: dict[str, str | None]) -> dict[str, str | None]:
+def build_snapshot_models(
+    snapshot_models: dict[str, str | None],
+) -> dict[str, str | None]:
     """Return a shape-stable model block from a saved snapshot.
 
     Unlike fresh allowlist defaults, resume migration stays fail-closed for
@@ -311,15 +467,25 @@ def write_orchestration_json(
     source: str,
     overridden_roles: list[str],
     preflight_validated_at: str | None = None,
+    claude_role_transport: str = DEFAULT_CLAUDE_ROLE_TRANSPORT,
+    claude_transport_resolved: str | None = None,
 ) -> None:
     """Write the orchestration.json artifact with canonical key order."""
     if source not in {"default", "overridden"}:
+        raise ValueError(f"source must be 'default' or 'overridden' (got {source!r})")
+    if claude_role_transport not in CLAUDE_ROLE_TRANSPORTS:
         raise ValueError(
-            f"source must be 'default' or 'overridden' (got {source!r})"
+            f"claude_role_transport must be one of {CLAUDE_ROLE_TRANSPORTS} "
+            f"(got {claude_role_transport!r})"
         )
     payload = {
         "version": ORCHESTRATION_VERSION,
         "models": {role: models.get(role) for role in CANONICAL_ROLES},
+        "claude_role_transport": claude_role_transport,
+        "claude_transport_resolved": claude_transport_resolved,
+        # Compatibility field for consumers created during the downgrade era.
+        # New auto runs block for user choice instead of downgrading.
+        "claude_transport_downgraded": False,
         "source": source,
         "overridden_roles": list(overridden_roles),
         "preflight_validated_at": preflight_validated_at or _now_iso(),
@@ -338,10 +504,18 @@ def write_default_from_allowlist(
     orchestrator: str | None = None,
     codex_available: bool = True,
     claude_available: bool = True,
+    antigravity_available: bool = False,
     quest_mode: str = "workflow",
     remap_unavailable: bool = False,
+    claude_role_transport: str = DEFAULT_CLAUDE_ROLE_TRANSPORT,
+    claude_transport_resolved: str | None = None,
 ) -> None:
-    """Default-path writer: copy allowlist models into orchestration.json."""
+    """Default-path writer: copy allowlist models into orchestration.json.
+
+    `antigravity_available` must be forwarded from the preflight probe result.
+    Without it the validation below rejects every Gemini-backed role, so a
+    repo that configured one in its allowlist could never persist it.
+    """
     defaults = build_default_models(allowlist_models)
     if orchestrator is not None:
         defaults, _ = validate_or_remap_models_for_orchestrator(
@@ -349,6 +523,7 @@ def write_default_from_allowlist(
             orchestrator=orchestrator,
             codex_available=codex_available,
             claude_available=claude_available,
+            antigravity_available=antigravity_available,
             quest_mode=quest_mode,
             remap_unavailable=remap_unavailable,
         )
@@ -358,6 +533,8 @@ def write_default_from_allowlist(
         source="default",
         overridden_roles=[],
         preflight_validated_at=preflight_validated_at,
+        claude_role_transport=claude_role_transport,
+        claude_transport_resolved=claude_transport_resolved,
     )
 
 
@@ -385,14 +562,47 @@ def migrate_from_snapshot(
         if not isinstance(existing_models, dict):
             return False
         merged_models, backfilled = _backfill_legacy_compatible_roles(existing_models)
-        if not backfilled:
+        # Transport keys were introduced after early quests; backfill in place
+        # (same legacy-compat contract as newly-introduced roles).
+        transport_backfilled = False
+        if "claude_role_transport" not in existing:
+            # Absent: legacy file predating the transport key — backfill the default.
+            existing["claude_role_transport"] = DEFAULT_CLAUDE_ROLE_TRANSPORT
+            transport_backfilled = True
+        elif existing["claude_role_transport"] not in CLAUDE_ROLE_TRANSPORTS:
+            # Present but invalid: a mistyped/forced transport must fail closed,
+            # never be silently coerced to "auto" (that would resume under a
+            # different transport than the per-quest config demanded).
+            raise ValueError(
+                "orchestration.json has an invalid claude_role_transport "
+                f"{existing['claude_role_transport']!r}; expected one of "
+                f"{CLAUDE_ROLE_TRANSPORTS}. Fix or remove the key — resume will "
+                "not coerce a forced transport."
+            )
+        if "claude_transport_resolved" not in existing:
+            existing["claude_transport_resolved"] = None
+            transport_backfilled = True
+        if "claude_transport_downgraded" not in existing:
+            existing["claude_transport_downgraded"] = False
+            transport_backfilled = True
+        if not backfilled and not transport_backfilled:
             return False
-        existing["models"] = {
-            role: merged_models.get(role) for role in CANONICAL_ROLES
-        }
-        if not isinstance(existing.get("preflight_validated_at"), str) or not existing.get(
-            "preflight_validated_at"
-        ):
+        # Fail closed BEFORE writing: a role missing from the merged models
+        # would be written as null and rejected by the very validation this
+        # migration feeds — never persist a file we know is invalid.
+        missing_roles = [
+            role for role in CANONICAL_ROLES if not merged_models.get(role)
+        ]
+        if missing_roles:
+            raise ValueError(
+                "orchestration.json migration would write null model(s) for "
+                f"role(s) {missing_roles}; the existing file is malformed — "
+                "fix models.<role> entries before resuming."
+            )
+        existing["models"] = {role: merged_models.get(role) for role in CANONICAL_ROLES}
+        if not isinstance(
+            existing.get("preflight_validated_at"), str
+        ) or not existing.get("preflight_validated_at"):
             existing["preflight_validated_at"] = preflight_validated_at or _now_iso()
         with orch_path.open("w", encoding="utf-8") as handle:
             json.dump(existing, handle, indent=2)

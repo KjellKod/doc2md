@@ -19,16 +19,17 @@
     "code_review": true,
     "fix_loop": true
   },
+  "claude_role_transport": "auto",
   "models": {
-    "planner": "gpt-5.5",
-    "plan-reviewer-a": "claude",
-    "plan-reviewer-b": "gpt-5.5",
-    "arbiter": "claude",
-    "builder": "gpt-5.5",
-    "code-reviewer-a": "claude",
-    "code-reviewer-b": "gpt-5.5",
-    "review-arbiter": "claude",
-    "fixer": "gpt-5.5"
+    "planner": "gpt-5.6-sol",
+    "plan-reviewer-a": "claude-opus-5",
+    "plan-reviewer-b": "gpt-5.6-terra",
+    "arbiter": "claude-opus-5",
+    "builder": "gpt-5.6-sol",
+    "code-reviewer-a": "claude-opus-5",
+    "code-reviewer-b": "gpt-5.6-terra",
+    "review-arbiter": "claude-opus-5",
+    "fixer": "gpt-5.6-terra"
   },
   "quest_startup": {
     "branch_mode": "branch",

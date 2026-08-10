@@ -86,7 +86,9 @@ def detect_default_branch(repo_root: Path, current_branch: str) -> str:
         return remote_head.rsplit("/", 1)[-1]
 
     for candidate in ("main", "master"):
-        if git_success(repo_root, "show-ref", "--verify", "--quiet", f"refs/heads/{candidate}"):
+        if git_success(
+            repo_root, "show-ref", "--verify", "--quiet", f"refs/heads/{candidate}"
+        ):
             return candidate
 
     # Cannot determine default branch — assume current branch is it.
@@ -105,7 +107,9 @@ def safe_is_git_repo(repo_root: Path) -> bool:
 
 
 def branch_exists(repo_root: Path, branch_name: str) -> bool:
-    return git_success(repo_root, "show-ref", "--verify", "--quiet", f"refs/heads/{branch_name}")
+    return git_success(
+        repo_root, "show-ref", "--verify", "--quiet", f"refs/heads/{branch_name}"
+    )
 
 
 def repo_dirty(repo_root: Path) -> bool:
@@ -185,6 +189,9 @@ def apply_quest_symlink(worktree_quest: Path, shared_quest: Path) -> str:
     """Ensure a worktree .quest symlink with migration and no data loss."""
     if worktree_quest.is_symlink():
         if _symlink_points_to(worktree_quest, shared_quest):
+            # The target may have been deleted since the symlink was made —
+            # recreate it so "present" never means "present but dangling".
+            shared_quest.mkdir(parents=True, exist_ok=True)
             return "present"
         shared_quest.mkdir(parents=True, exist_ok=True)
         conflict_dir = _conflict_dir_for(worktree_quest, shared_quest)
@@ -214,7 +221,9 @@ def apply_quest_symlink(worktree_quest: Path, shared_quest: Path) -> str:
             destination = shared_quest / entry.name
             if destination.exists() or destination.is_symlink():
                 conflict_dir.mkdir(parents=True, exist_ok=True)
-                shutil.move(str(entry), str(_unique_destination(conflict_dir / entry.name)))
+                shutil.move(
+                    str(entry), str(_unique_destination(conflict_dir / entry.name))
+                )
                 had_conflict = True
                 continue
 
@@ -225,7 +234,9 @@ def apply_quest_symlink(worktree_quest: Path, shared_quest: Path) -> str:
         worktree_quest.rmdir()
         worktree_quest.symlink_to(shared_quest)
     except Exception as exc:
-        raise RuntimeError(f"Unable to replace {worktree_quest} with shared symlink") from exc
+        raise RuntimeError(
+            f"Unable to replace {worktree_quest} with shared symlink"
+        ) from exc
 
     if had_conflict:
         return "conflict"
@@ -315,7 +326,9 @@ def main() -> int:
     try:
         allowlist = load_allowlist(allowlist_path)
         startup = allowlist.get("quest_startup") or {}
-        requested_branch_mode = args.mode or startup.get("branch_mode", DEFAULT_BRANCH_MODE)
+        requested_branch_mode = args.mode or startup.get(
+            "branch_mode", DEFAULT_BRANCH_MODE
+        )
         branch_prefix = startup.get("branch_prefix", DEFAULT_BRANCH_PREFIX)
         worktree_root = startup.get("worktree_root", DEFAULT_WORKTREE_ROOT)
 

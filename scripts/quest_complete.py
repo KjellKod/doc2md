@@ -18,6 +18,7 @@ import argparse
 import json
 import re
 import shutil
+import subprocess
 import sys
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -31,7 +32,9 @@ from quest_celebrate.quest_data import (
     load_quest_data,
 )
 from quest_celebrate.persist import CelebrationWriteResult, write_celebration_file
+from quest_runtime.claude_runner import sweep_left_survivor
 from quest_runtime.quest_ids import parse_quest_id
+from quest_runtime.state import StateError, load_state
 
 
 def _today() -> date:
@@ -40,21 +43,33 @@ def _today() -> date:
 
 def _build_celebration_json(data: QuestData) -> dict:
     """Build the celebration_data JSON block from QuestData."""
+    metrics = [
+        {"icon": "📊", "label": f"Plan iterations: {data.plan_iterations}"},
+        {"icon": "🔧", "label": f"Fix iterations: {data.fix_iterations}"},
+        {"icon": "📝", "label": f"Review rounds: {data.review_count}"},
+    ]
+    if data.claude_transport_counts:
+        # Only when Codex called Claude — silent empty state otherwise.
+        breakdown = ", ".join(
+            f"{transport} ×{count}"
+            for transport, count in sorted(data.claude_transport_counts.items())
+        )
+        metrics.append({"icon": "🚌", "label": f"Claude transport: {breakdown}"})
     return {
         "quest_mode": data.quest_mode or "unknown",
         "agents": [
-            {"name": a.name, "model": a.model, "role": a.role_title}
+            (
+                {"name": a.name, "model": a.model, "role": a.role_title}
+                | ({"transport": a.transport} if a.transport else {})
+            )
             for a in data.agents
         ],
+        "claude_transport_counts": data.claude_transport_counts,
         "achievements": [
             {"icon": a.icon, "title": a.title, "desc": a.description}
             for a in data.achievements
         ],
-        "metrics": [
-            {"icon": "📊", "label": f"Plan iterations: {data.plan_iterations}"},
-            {"icon": "🔧", "label": f"Fix iterations: {data.fix_iterations}"},
-            {"icon": "📝", "label": f"Review findings: {data.review_count}"},
-        ],
+        "metrics": metrics,
         "quality": {
             "tier": data.quality_tier,
             "grade": data.quality_tier[0] if data.quality_tier else "?",
@@ -103,7 +118,8 @@ def _journal_outcome(data: QuestData) -> str:
     plan_summary = data.plan_summary.strip()
     preferred = (
         plan_summary
-        if plan_summary and not re.match(r"^\*{0,2}problem\*{0,2}:", plan_summary, re.IGNORECASE)
+        if plan_summary
+        and not re.match(r"^\*{0,2}problem\*{0,2}:", plan_summary, re.IGNORECASE)
         else (data.brief_summary or "Completed successfully.")
     )
     collapsed = re.sub(r"(?m)^\s*>\s?", "", preferred)
@@ -156,7 +172,9 @@ def build_celebration_section(
     return "\n".join(lines)
 
 
-def _build_carryover_journal_section(title: str, count: int, summaries: list[str]) -> str:
+def _build_carryover_journal_section(
+    title: str, count: int, summaries: list[str]
+) -> str:
     """Build one reader-facing carry-over findings section."""
     if count <= 0:
         return ""
@@ -297,7 +315,9 @@ def build_journal_entry(
     return "\n".join(lines)
 
 
-def _update_readme_index(journal_dir: Path, slug: str, completion_date: date, outcome: str) -> None:
+def _update_readme_index(
+    journal_dir: Path, slug: str, completion_date: date, outcome: str
+) -> None:
     """Insert a row at the top of the journal README index table."""
     readme = journal_dir / "README.md"
     if not readme.exists():
@@ -320,15 +340,98 @@ def _update_readme_index(journal_dir: Path, slug: str, completion_date: date, ou
     readme.write_text(content)
 
 
+def _handoff_status_stats(archive_root: Path) -> dict:
+    """Aggregate status= fields across archived quests' context_health logs.
+
+    Counting contract: only lines that explicitly carry status= participate —
+    legacy lines (which predate the field) are excluded from both numerator
+    and denominator, never inferred as complete or needs_human.
+    """
+    status_counts: dict[str, int] = {}
+    instrumented_quests = 0
+    archived_quests = 0
+    if archive_root.is_dir():
+        for quest in sorted(archive_root.iterdir()):
+            if not quest.is_dir():
+                continue
+            archived_quests += 1
+            try:
+                lines = (
+                    (quest / "logs" / "context_health.log")
+                    .read_text(encoding="utf-8")
+                    .splitlines()
+                )
+            except (OSError, UnicodeDecodeError):
+                # A malformed (non-UTF-8) archived log must not crash this
+                # optional rollup; skip it, matching the graceful-degradation
+                # contract used for celebration metadata.
+                continue
+            quest_has_status = False
+            for line in lines:
+                match = re.search(r"\bstatus=(\S+)", line)
+                if not match:
+                    continue
+                quest_has_status = True
+                status_counts[match.group(1)] = status_counts.get(match.group(1), 0) + 1
+            if quest_has_status:
+                instrumented_quests += 1
+    return {
+        "archived_quests": archived_quests,
+        "status_instrumented_quests": instrumented_quests,
+        "status_counts": status_counts,
+        "needs_human": status_counts.get("needs_human", 0),
+    }
+
+
 def _archive_quest(quest_dir: Path) -> Path:
     """Move quest directory to archive. Returns archive path."""
     archive_root = quest_dir.parent / "archive"
     archive_root.mkdir(exist_ok=True)
     dest = archive_root / quest_dir.name
     if dest.exists():
-        raise FileExistsError(f"Archive already exists: {dest}. Remove it manually to re-archive.")
+        raise FileExistsError(
+            f"Archive already exists: {dest}. Remove it manually to re-archive."
+        )
     shutil.move(str(quest_dir), str(dest))
     return dest
+
+
+def _sweep_parked_bg_sessions(quest_dir: Path) -> subprocess.CompletedProcess | None:
+    """Best-effort cleanup for parked Claude background sessions before archive."""
+    runner = Path(__file__).resolve().parent / "quest_claude_bg_run.py"
+    if not runner.exists():
+        print(f"Claude bg sweep skipped: runner not found at {runner}", file=sys.stderr)
+        return None
+    prefix = f"quest-{quest_dir.name}-"
+    try:
+        result = subprocess.run(
+            [sys.executable, str(runner), "--sweep", prefix],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+    except OSError as exc:
+        print(f"Claude bg sweep failed before archive: {exc}", file=sys.stderr)
+        return None
+    if sweep_left_survivor(result.returncode, result.stdout):
+        # Prominent, actionable, on STDOUT: after archive nothing ever
+        # re-sweeps this quest's sessions, so an unverified cleanup leaks
+        # until the human runs the command themselves.
+        print(
+            f"WARNING: Claude bg sweep before archive incomplete (exit {result.returncode}); "
+            "session(s) may remain live and will NOT be cleaned up automatically. "
+            f"If they are this quest's own leftovers, run: "
+            f"python3 {runner} --sweep {prefix} --sweep-include-active"
+        )
+        if result.stdout.strip():
+            print(result.stdout.strip())
+        if result.stderr.strip():
+            print(result.stderr.strip(), file=sys.stderr)
+    else:
+        print(f"Claude bg sweep before archive complete: {prefix}")
+        if result.stdout.strip():
+            print(result.stdout.strip())
+    return result
 
 
 def _slug_from_quest_dir(quest_dir: Path) -> str:
@@ -341,9 +444,15 @@ def _slug_from_quest_dir(quest_dir: Path) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Complete a quest: journal + archive")
     parser.add_argument("--quest-dir", required=True, help="Path to quest directory")
-    parser.add_argument("--skip-archive", action="store_true", help="Skip archival step")
-    parser.add_argument("--skip-journal", action="store_true", help="Skip journal creation")
-    parser.add_argument("--date", default=None, help="Override completion date (YYYY-MM-DD)")
+    parser.add_argument(
+        "--skip-archive", action="store_true", help="Skip archival step"
+    )
+    parser.add_argument(
+        "--skip-journal", action="store_true", help="Skip journal creation"
+    )
+    parser.add_argument(
+        "--date", default=None, help="Override completion date (YYYY-MM-DD)"
+    )
     args = parser.parse_args()
 
     quest_dir = Path(args.quest_dir)
@@ -356,10 +465,17 @@ def main() -> int:
         print(f"Error: no state.json in {quest_dir}", file=sys.stderr)
         return 1
 
-    state = json.loads(state_file.read_text())
+    try:
+        state = load_state(quest_dir)
+    except StateError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
     if state.get("status") != "complete":
-        print(f"Error: quest status is '{state.get('status')}', not 'complete'. "
-              "Transition to complete or abandoned first.", file=sys.stderr)
+        print(
+            f"Error: quest status is '{state.get('status')}', not 'complete'. "
+            "Transition to complete or abandoned first.",
+            file=sys.stderr,
+        )
         return 1
 
     # Load quest data
@@ -377,7 +493,10 @@ def main() -> int:
     slug = data.slug or state.get("slug", _slug_from_quest_dir(quest_dir))
     data.slug = slug
     if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", slug):
-        print(f"Error: invalid slug '{slug}'. Must match [a-z0-9][a-z0-9-]*", file=sys.stderr)
+        print(
+            f"Error: invalid slug '{slug}'. Must match [a-z0-9][a-z0-9-]*",
+            file=sys.stderr,
+        )
         return 1
     outcome = _journal_outcome(data)
     # Sanitize outcome for README markdown table: collapse newlines, escape pipes
@@ -400,7 +519,10 @@ def main() -> int:
                 break
             repo_root = parent
         if not found:
-            print(f"Error: could not find docs/quest-journal/ above {quest_dir}", file=sys.stderr)
+            print(
+                f"Error: could not find docs/quest-journal/ above {quest_dir}",
+                file=sys.stderr,
+            )
             return 1
         journal_dir = repo_root / "docs" / "quest-journal"
         journal_dir.mkdir(parents=True, exist_ok=True)
@@ -416,7 +538,9 @@ def main() -> int:
                 completion_date,
                 journal_rel_path,
             )
-            celebration_rel_path = _celebration_link_for_result(celebration_result, data)
+            celebration_rel_path = _celebration_link_for_result(
+                celebration_result, data
+            )
             if celebration_rel_path is not None:
                 celebration_path = str(celebration_result.path)
             elif celebration_result.path.exists() and not celebration_result.created:
@@ -439,17 +563,34 @@ def main() -> int:
             print(f"README index updated")
         journal_path = str(journal_file)
 
+    archive_root = quest_dir.parent / "archive"
     if not args.skip_archive:
+        _sweep_parked_bg_sessions(quest_dir)
         archive_path = _archive_quest(quest_dir)
         print(f"Quest archived: {archive_path}")
 
-    print(json.dumps({
-        "slug": slug,
-        "journal": journal_path,
-        "celebration": celebration_path,
-        "archived": not args.skip_archive,
-        "quality_tier": data.quality_tier,
-    }))
+    # Historical needs_human rollup (runs after archival so this quest counts).
+    # Feeds the measurement gate in ideas/2026-07-05-bg-claude-ask-policy-relaxation.md.
+    status_stats = _handoff_status_stats(archive_root)
+    print(
+        f"needs_human across archive: {status_stats['needs_human']} occurrence(s) "
+        f"in {status_stats['status_instrumented_quests']} status-instrumented "
+        f"quest(s) of {status_stats['archived_quests']} archived "
+        "(lines without status= are not counted)"
+    )
+
+    print(
+        json.dumps(
+            {
+                "slug": slug,
+                "journal": journal_path,
+                "celebration": celebration_path,
+                "archived": not args.skip_archive,
+                "quality_tier": data.quality_tier,
+                "needs_human_stats": status_stats,
+            }
+        )
+    )
 
     return 0
 

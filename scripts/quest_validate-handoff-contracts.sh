@@ -69,9 +69,14 @@ else
 fi
 
 echo ""
-echo "4. Checking workflow documents Claude bridge probe and runtime dispatch..."
+echo "4. Checking workflow documents Claude transport probe and runtime dispatch..."
 BRIDGE_SCRIPT_COUNT=$(grep -c "scripts/quest_claude_bridge.py" .skills/quest/delegation/workflow.md || true)
-BRIDGE_PROBE_COUNT=$(grep -c "claude_bridge_available" .skills/quest/delegation/workflow.md || true)
+BG_RUNNER_SCRIPT_COUNT=$(grep -c "scripts/quest_claude_bg_run.py" .skills/quest/delegation/workflow.md || true)
+TRANSPORT_CONFIG_COUNT=$(grep -c "claude_role_transport" .skills/quest/delegation/workflow.md || true)
+TRANSPORT_AVAILABLE_COUNT=$(grep -c "claude_transport_available" .skills/quest/delegation/workflow.md || true)
+TRANSPORT_RESOLVED_COUNT=$(grep -c "claude_transport_resolved" .skills/quest/delegation/workflow.md || true)
+TRANSPORT_LOG_FIELD_COUNT=$(grep -c "transport=background-agent|bridge" .skills/quest/delegation/workflow.md || true)
+STATUS_LOG_FIELD_COUNT=$(grep -c "status=complete|needs_human|blocked" .skills/quest/delegation/workflow.md || true)
 BRIDGE_PROBE_HELPER_COUNT=$(grep -c "scripts/quest_claude_probe.py" .skills/quest/delegation/workflow.md || true)
 RUNTIME_SELECTION_COUNT=$(grep -c "selected model/runtime" .skills/quest/delegation/workflow.md || true)
 BRIDGE_RUNNER_COUNT=$(grep -c "scripts/quest_claude_runner.py" .skills/quest/delegation/workflow.md || true)
@@ -79,12 +84,17 @@ BYPASS_PERMS_COUNT=$(grep -c "bypassPermissions" .skills/quest/delegation/workfl
 STATE_HELPER_COUNT=$(grep -c "scripts/quest_state.py" .skills/quest/delegation/workflow.md || true)
 NATIVE_TASK_COUNT=$(grep -c 'native `Task(...)\` is available\|native `Task(...)` when available' .skills/quest/delegation/workflow.md || true)
 CODEX_HOST_COUNT=$(grep -c "orchestrator is Codex" .skills/quest/delegation/workflow.md || true)
-if [ "$BRIDGE_SCRIPT_COUNT" -gt 0 ] && [ "$BRIDGE_PROBE_COUNT" -gt 0 ] && [ "$BRIDGE_PROBE_HELPER_COUNT" -gt 0 ] && [ "$RUNTIME_SELECTION_COUNT" -gt 0 ] && [ "$BRIDGE_RUNNER_COUNT" -gt 0 ] && [ "$BYPASS_PERMS_COUNT" -gt 0 ] && [ "$STATE_HELPER_COUNT" -gt 0 ] && [ "$NATIVE_TASK_COUNT" -gt 0 ] && [ "$CODEX_HOST_COUNT" -gt 0 ]; then
-  echo "   ✅ Workflow documents bridge probing and runtime-based dispatch"
+if [ "$BRIDGE_SCRIPT_COUNT" -gt 0 ] && [ "$BG_RUNNER_SCRIPT_COUNT" -gt 0 ] && [ "$TRANSPORT_CONFIG_COUNT" -gt 0 ] && [ "$TRANSPORT_AVAILABLE_COUNT" -gt 0 ] && [ "$TRANSPORT_RESOLVED_COUNT" -gt 0 ] && [ "$TRANSPORT_LOG_FIELD_COUNT" -gt 0 ] && [ "$STATUS_LOG_FIELD_COUNT" -gt 0 ] && [ "$BRIDGE_PROBE_HELPER_COUNT" -gt 0 ] && [ "$RUNTIME_SELECTION_COUNT" -gt 0 ] && [ "$BRIDGE_RUNNER_COUNT" -gt 0 ] && [ "$BYPASS_PERMS_COUNT" -gt 0 ] && [ "$STATE_HELPER_COUNT" -gt 0 ] && [ "$NATIVE_TASK_COUNT" -gt 0 ] && [ "$CODEX_HOST_COUNT" -gt 0 ]; then
+  echo "   ✅ Workflow documents transport probing (bg preferred, explicit bridge) and runtime-based dispatch"
 else
-  echo "   ❌ Workflow is missing bridge probing or runtime-selection guidance"
+  echo "   ❌ Workflow is missing transport probing or runtime-selection guidance"
   echo "      scripts/quest_claude_bridge.py refs: $BRIDGE_SCRIPT_COUNT"
-  echo "      claude_bridge_available refs: $BRIDGE_PROBE_COUNT"
+  echo "      scripts/quest_claude_bg_run.py refs: $BG_RUNNER_SCRIPT_COUNT"
+  echo "      claude_role_transport refs: $TRANSPORT_CONFIG_COUNT"
+  echo "      claude_transport_available refs: $TRANSPORT_AVAILABLE_COUNT"
+  echo "      claude_transport_resolved refs: $TRANSPORT_RESOLVED_COUNT"
+  echo "      transport= log-field refs: $TRANSPORT_LOG_FIELD_COUNT"
+  echo "      status= log-field refs: $STATUS_LOG_FIELD_COUNT"
   echo "      scripts/quest_claude_probe.py refs: $BRIDGE_PROBE_HELPER_COUNT"
   echo "      selected model/runtime refs: $RUNTIME_SELECTION_COUNT"
   echo "      scripts/quest_claude_runner.py refs: $BRIDGE_RUNNER_COUNT"
@@ -108,6 +118,7 @@ echo ""
 echo "6. Checking helper scripts referenced in workflow.md exist on disk..."
 HELPER_SCRIPTS=(
   "scripts/quest_state.py"
+  "scripts/quest_plan_iteration.py"
   "scripts/quest_claude_bridge.py"
   "scripts/quest_claude_runner.py"
   "scripts/quest_claude_probe.py"
@@ -124,6 +135,30 @@ if [ "$MISSING_HELPERS" -eq 0 ]; then
   echo "   ✅ All ${#HELPER_SCRIPTS[@]} referenced helper scripts exist"
 else
   echo "   ❌ $MISSING_HELPERS helper script(s) missing"
+  ERRORS=$((ERRORS + 1))
+fi
+
+echo ""
+echo "7. Checking plan roles document typed iteration identity..."
+PLAN_ROLE_FILES=(
+  ".skills/quest/agents/planner.md"
+  ".skills/quest/agents/plan-reviewer.md"
+  ".skills/quest/agents/arbiter.md"
+)
+TYPED_ROLE_COUNT=0
+for role_file in "${PLAN_ROLE_FILES[@]}"; do
+  if grep -q '"plan_iteration"' "$role_file" &&
+     grep -q '"user_replan_generation"' "$role_file" &&
+     grep -q 'Set `plan_iteration` to the current `state.json.plan_iteration` integer' "$role_file" &&
+     grep -q 'Do not copy the literal example values below' "$role_file"; then
+    TYPED_ROLE_COUNT=$((TYPED_ROLE_COUNT + 1))
+  else
+    echo "   ❌ Missing dynamic typed plan identity instructions: $role_file"
+  fi
+done
+if [ "$TYPED_ROLE_COUNT" -eq "${#PLAN_ROLE_FILES[@]}" ]; then
+  echo "   ✅ All plan roles derive typed iteration identity from current state"
+else
   ERRORS=$((ERRORS + 1))
 fi
 

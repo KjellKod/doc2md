@@ -3,16 +3,51 @@
 
 This script shells out to Claude CLI and returns either plain text or
 structured JSON for non-interactive orchestration flows.
+
+Role in the transport pair: explicit API path. The default Quest
+transport for Codex-led Claude roles is the background-agent runner
+(scripts/quest_claude_bg_run.py, `claude --bg`, subscription billing); this bridge
+remains the path for daemonless contexts (CI, containers), `ANTHROPIC_API_KEY`
+billing, and explicit user/config opt-ins. `claude --print` bills to the
+metered API pool after June 15, 2026. Selection lives in
+`.ai/allowlist.json` `claude_role_transport` + scripts/quest_preflight.sh.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
 from typing import Any
+
+EXIT_MODEL_REJECTED = 9
+_MODEL_REJECTION_STDOUT_TAIL_CHARS = 4096
+_MODEL_REJECTED_RE = re.compile(
+    r"(?:(?:there(?:'s| is)\s+an\s+)?(?:issue|problem)\s+with\s+the\s+selected\s+model"
+    r"|(?:invalid|unknown|unsupported)\s+selected\s+model)"
+    r"(?:\s*(?:\(|:)\s*([A-Za-z0-9._:/-]+))?",
+    re.IGNORECASE,
+)
+
+
+def _classify_model_rejection(stdout: str, stderr: str) -> str | None:
+    """Return the rejected model parsed from narrow CLI evidence, or "".
+
+    Stderr is CLI-owned. Stdout is the full agent response, so only its bounded
+    tail is eligible: scanning earlier prose would misclassify an agent that
+    merely discussed model-selection errors before failing for another reason.
+    None means no rejection; an empty string means rejection with no model name.
+    """
+    evidence = "\n".join(
+        part for part in (stderr, stdout[-_MODEL_REJECTION_STDOUT_TAIL_CHARS:]) if part
+    )
+    match = _MODEL_REJECTED_RE.search(evidence)
+    if match is None:
+        return None
+    return (match.group(1) or "").strip(").,;: ")
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -31,8 +66,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default="json",
         help="Claude output format (default: json)",
     )
-    # NOTE: This default is duplicated in scripts/quest_claude_runner.py.
-    # If you change it here, update it there too.
     parser.add_argument(
         "--timeout",
         type=float,
@@ -110,8 +143,7 @@ def read_prompt(args: argparse.Namespace) -> str:
             raise ValueError("No prompt provided. Use --prompt/--prompt-file or stdin.")
         prompt = sys.stdin.read()
 
-    prompt = prompt.strip()
-    if not prompt:
+    if not prompt.strip():
         raise ValueError("Prompt is empty.")
     return prompt
 
@@ -130,7 +162,10 @@ def run_claude(
     disallowed_tools: str,
 ) -> dict[str, Any]:
     cmd = ["claude", "--print", prompt, "--output-format", output_format]
-    if model:
+    # `claude` is the runtime-family sentinel meaning account-default model —
+    # never a CLI model name (defense-in-depth mirroring the bg runner; the
+    # quest layer normalizes it away, but direct callers reach here unfiltered).
+    if model and model != "claude":
         cmd.extend(["--model", model])
     if system_prompt:
         cmd.extend(["--system-prompt", system_prompt])
@@ -155,13 +190,24 @@ def run_claude(
             timeout=timeout,
             check=False,
         )
-        return {
+        result = {
             "status": "ok" if cp.returncode == 0 else "error",
             "exit_code": cp.returncode,
             "stdout": cp.stdout,
             "stderr": cp.stderr,
             "command": cmd,
         }
+        # Only a completed, non-zero Claude process is eligible. CLI-missing
+        # and TimeoutExpired have their own stable 127/124 contracts below.
+        if cp.returncode != 0:
+            parsed_rejected_model = _classify_model_rejection(cp.stdout, cp.stderr)
+            if parsed_rejected_model is not None:
+                result["status"] = "model_rejected"
+                if model == "claude":
+                    result["rejected_model"] = None
+                else:
+                    result["rejected_model"] = model or parsed_rejected_model or None
+        return result
     except FileNotFoundError:
         return {
             "status": "error",
@@ -218,7 +264,11 @@ def main(argv: list[str] | None = None) -> int:
             msg = result["stderr"].strip() or f"claude exited {result['exit_code']}"
             print(msg, file=sys.stderr)
 
-    return 0 if result["status"] == "ok" else 1
+    if result["status"] == "ok":
+        return 0
+    if result["status"] == "model_rejected":
+        return EXIT_MODEL_REJECTED
+    return 1
 
 
 if __name__ == "__main__":

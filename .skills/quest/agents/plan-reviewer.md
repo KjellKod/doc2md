@@ -8,15 +8,19 @@ There are **two** Plan Review Agent invocations on every plan iteration. They ru
 ## Instances
 
 ### Plan Reviewer A
-- **Tool:** Claude runtime dispatched by orchestrator (native `Task(...)` when available, `scripts/quest_claude_runner.py` in Codex-led runs)
+- **Tool:** Runtime is derived from `models.plan-reviewer-a` in `.quest/<id>/orchestration.json`; the entrypoint follows the canonical dispatch matrix in `.skills/quest/delegation/workflow.md` (Runtime And Entrypoint Selection).
 - **Artifact path:** `.quest/<id>/phase_01_plan/review_plan-reviewer-a.md`
 - **Perspective:** Independent first pass on the plan.
 
 ### Plan Reviewer B
-- **Tool:** Dispatched by orchestrator (model per config)
+- **Tool:** Runtime is derived from `models.plan-reviewer-b` in `.quest/<id>/orchestration.json`; the entrypoint follows the canonical dispatch matrix in `.skills/quest/delegation/workflow.md` (Runtime And Entrypoint Selection).
 - **Artifact path:** `.quest/<id>/phase_01_plan/review_plan-reviewer-b.md`
 - **Perspective:** Independent second pass on the same plan (different model family for diversity).
-- **Non-interactive rule:** Do not ask questions and do not return `needs_human`. Use explicit assumptions; if unsafe, return `blocked`.
+
+### Non-Interactive Rule (Runtime-Based)
+Whether a slot may ask questions depends on its **selected runtime** (`models.plan-reviewer-a` / `models.plan-reviewer-b` in `.quest/<id>/orchestration.json`), not the slot label:
+- **Codex runtime:** non-interactive. Do not ask questions and do not return `needs_human`. Use explicit assumptions; if unsafe, return `blocked`.
+- **Claude runtime:** `needs_human` is allowed — Claude runtime may enter the human Q&A loop whether it runs natively or through the bridge.
 
 ## Context Required (both instances)
 - `.skills/BOOTSTRAP.md` (project bootstrapping)
@@ -29,6 +33,9 @@ There are **two** Plan Review Agent invocations on every plan iteration. They ru
 - **If the quest brief router classification has `ui_work: true`:**
   - `.skills/ux-review/SKILL.md` — run the plan-phase UX intent pass, not the rendered-UI stress test. Check that the plan has a complete `## UX Defaults` section when required, a mobile relevance/divergence decision, a concrete empty/loading/error state plan, and explicit handling for destructive actions. **Embed UX findings inline in the markdown review** using the standard `[N]` format with severity (P0/P1/P2/P3) and a `principle_id` citation (e.g. `ux-guidebook§4.9`). Plan-reviewers do not write a separate findings JSON — the arbiter synthesizes findings from the markdown plan reviews.
   - `.skills/ux-context/SKILL.md` — for principle references when interpreting findings.
+
+## Scope and Value Gate
+Apply the `AGENTS.md` principles: KISS, YAGNI, SRP, and DRY. Keep only work or feedback with clear, concrete value required for the quest acceptance criteria, correctness, security, or meaningful maintainability. Do not expand scope for nitpicks, preferences, speculative future-proofing, or nice-to-haves. If the value is unclear or optional, leave it out.
 
 ## Responsibilities (both instances)
 1. Read the plan artifact
@@ -53,6 +60,8 @@ Review findings in markdown must use `[N]` format in current-review order, for e
 
 ## Output Contract
 
+Before writing the handoff, read `.quest/<id>/state.json`. Set `plan_iteration` to the current `state.json.plan_iteration` integer and set `user_replan_generation` to `state.json.user_replan.generation`, or JSON `null` when `user_replan` is absent. The orchestrator also injects these resolved values into the dispatch prompt. Do not copy the literal example values below.
+
 **Step 1 — Write handoff.json** to your slot's path:
 - Reviewer A: `.quest/<id>/phase_01_plan/handoff_plan-reviewer-a.json`
 - Reviewer B: `.quest/<id>/phase_01_plan/handoff_plan-reviewer-b.json`
@@ -62,7 +71,9 @@ Review findings in markdown must use `[N]` format in current-review order, for e
   "status": "complete | needs_human | blocked",
   "artifacts": [".quest/<id>/phase_01_plan/review_plan-reviewer-a.md or review_plan-reviewer-b.md"],
   "next": "arbiter",
-  "summary": "One line describing what you accomplished"
+  "summary": "One line describing what you accomplished",
+  "plan_iteration": 2,
+  "user_replan_generation": null
 }
 ```
 
@@ -83,8 +94,7 @@ SUMMARY: <one line>
 Both steps are required. The JSON file lets the orchestrator read your result without ingesting your full response. The text block is the backward-compatible fallback.
 
 If `STATUS: needs_human`, list required clarifications in plain text above `---HANDOFF---`.
-For Reviewer B, `STATUS: needs_human` is non-compliant with Quest runtime policy.
-For Reviewer A, `STATUS: needs_human` remains valid because Claude runtime may still enter the human Q&A loop whether it ran natively or through the bridge.
+`STATUS: needs_human` is only valid when your slot's selected runtime is Claude (it may enter the human Q&A loop natively or through the bridge). On the Codex runtime, `needs_human` is non-compliant with Quest runtime policy regardless of slot label — make explicit assumptions or return `blocked`.
 
 ## Allowed Actions
 - Read any file in the repo

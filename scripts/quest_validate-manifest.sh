@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 #
-# Validates that .quest-manifest includes all installer-managed Quest files
-# Fails if shipped Quest files are missing from the manifest
+# Validates Quest's declared installer inventory. Source-distribution
+# completeness is an explicit maintainer check, never inferred from repo files.
 #
 
 set -e
 
 MANIFEST=".quest-manifest"
 ERRORS=0
-STRICT_MODE="${QUEST_MANIFEST_STRICT:-auto}"
+STRICT_MODE="${QUEST_MANIFEST_STRICT:-0}"
 
 case "${1:-}" in
   "")
@@ -26,11 +26,12 @@ Usage: scripts/quest_validate-manifest.sh [--strict|--installed]
 Validates .quest-manifest.
 
 Modes:
-  --strict     Also scan Quest source paths for files missing from the manifest.
-  --installed  Validate only manifest entries; allow repo-local custom files.
+  --strict     Source-maintainer mode: scan canonical Quest source paths.
+  --installed  Consumer mode: validate declared inventory only.
 
-Default mode is auto: strict when scripts/quest_installer.sh exists, installed
-otherwise. Set QUEST_MANIFEST_STRICT=1 or 0 to override auto mode.
+Default mode is consumer-safe and equivalent to --installed. Shared namespaces
+may contain host-owned files that do not belong in .quest-manifest. Set
+QUEST_MANIFEST_STRICT=1 or 0 to explicitly select a mode without a flag.
 EOF
     exit 0
     ;;
@@ -40,14 +41,6 @@ EOF
     exit 2
     ;;
 esac
-
-if [ "$STRICT_MODE" = "auto" ]; then
-  if [ -f "scripts/quest_installer.sh" ]; then
-    STRICT_MODE=1
-  else
-    STRICT_MODE=0
-  fi
-fi
 
 # Colors
 RED=$'\033[0;31m'
@@ -101,13 +94,21 @@ EXPECTED_PATTERNS=(
   ".claude/agents/*.md"
   ".claude/hooks/*.sh"
   ".claude/skills/*/*.md"
+  "docs/guides/quest_setup.md"
   "scripts/quest_allowlist_matcher.py"
+  "scripts/quest_claude_bg_run.py"
   "scripts/quest_claude_bridge.py"
   "scripts/quest_claude_probe.py"
   "scripts/quest_claude_runner.py"
   "scripts/quest_backfill_journal.py"
   "scripts/quest_complete.py"
   "scripts/quest_preflight.sh"
+  "scripts/quest_pr_shepherd_annotate_scope.py"
+  "scripts/quest_pr_shepherd_checkout.py"
+  "scripts/quest_pr_shepherd_collect_intake.py"
+  "scripts/quest_pr_shepherd_fetch_failed_logs.py"
+  "scripts/quest_pr_shepherd_post_reply.py"
+  "scripts/quest_pr_sync_default_branch.py"
   "scripts/quest_review_intelligence.py"
   "scripts/quest_select_tests.py"
   "scripts/quest_startup_branch.py"
@@ -122,25 +123,23 @@ EXPECTED_PATTERNS=(
   "scripts/quest_runtime/*.py"
 )
 
-# Find all files matching our patterns
-# Prune nested git worktrees so their files do not masquerade as repo content.
-FOUND_FILES=""
-for pattern in "${EXPECTED_PATTERNS[@]}"; do
-  # Use find with -path to handle glob patterns
-  matches=$(find . \
-    -type d \( -path './.claude/worktrees' -o -path './.worktrees' -o -path './.git' \) -prune -o \
-    -path "./$pattern" -type f -print 2>/dev/null | sed 's|^\./||' || true)
-  if [ -n "$matches" ]; then
-    FOUND_FILES="$FOUND_FILES"$'\n'"$matches"
-  fi
-done
-
-# Clean up and sort
-FOUND_FILES=$(echo "$FOUND_FILES" | grep -v '^$' | sort | uniq)
-
 if [ "$STRICT_MODE" = "1" ]; then
+  # Find canonical Quest source files only when a maintainer explicitly asks
+  # for distribution completeness. Prune nested git worktrees so their files
+  # do not masquerade as source-repository content.
+  FOUND_FILES=""
+  for pattern in "${EXPECTED_PATTERNS[@]}"; do
+    matches=$(find . \
+      -type d \( -path './.claude/worktrees' -o -path './.worktrees' -o -path './.git' \) -prune -o \
+      -path "./$pattern" -type f -print 2>/dev/null | sed 's|^\./||' || true)
+    if [ -n "$matches" ]; then
+      FOUND_FILES="$FOUND_FILES"$'\n'"$matches"
+    fi
+  done
+  FOUND_FILES=$(echo "$FOUND_FILES" | grep -v '^$' | sort | uniq)
+
   # Check each found file is in the manifest
-  echo "Checking Quest files are listed in $MANIFEST..."
+  echo "Quest source-maintainer mode: checking shipped files are listed in $MANIFEST..."
   echo ""
 
   MISSING_FILES=""
@@ -161,7 +160,8 @@ if [ "$STRICT_MODE" = "1" ]; then
       echo "  - $f"
     done
     echo ""
-    echo "Please add these files to the appropriate section in .quest-manifest"
+    echo "Quest maintainers should add only Quest-owned files intended for distribution."
+    echo "Consumers must not add host-owned files to .quest-manifest; use the default or --installed mode."
     echo ""
     echo "Sections:"
     echo "  [copy-as-is]       - Files replaced with upstream (most files)"
@@ -171,20 +171,25 @@ if [ "$STRICT_MODE" = "1" ]; then
     exit 1
   fi
 
-  log_ok "All Quest files are listed in .quest-manifest"
+  log_ok "All Quest-owned shipped files are listed in .quest-manifest"
 else
-  log_ok "Installed repo mode: allowing repo-local files outside .quest-manifest"
+  log_ok "Installed repo mode: validating declared inventory and allowing host-owned files outside .quest-manifest"
 fi
 
 # Also check for stale entries (files in manifest that don't exist)
 echo ""
 echo "Checking for stale manifest entries..."
 
-# Get only files (not directories) from manifest
+# Get only files (not directories) from manifest.
+# NOTE: an awk range like /^\[section\]/,/^\[/ terminates on its OWN header
+# line (both patterns match the same record), silently emitting nothing —
+# a flag-based scan actually reads the sections.
 get_manifest_files_only() {
-  awk '/^\[copy-as-is\]/,/^\[/' "$MANIFEST" | grep -v '^\[' | grep -v '^#' | grep -v '^[[:space:]]*$'
-  awk '/^\[user-customized\]/,/^\[/' "$MANIFEST" | grep -v '^\[' | grep -v '^#' | grep -v '^[[:space:]]*$'
-  awk '/^\[merge-carefully\]/,/^\[/' "$MANIFEST" | grep -v '^\[' | grep -v '^#' | grep -v '^[[:space:]]*$'
+  awk '
+    /^\[(copy-as-is|user-customized|merge-carefully)\]$/ { in_section = 1; next }
+    /^\[/ { in_section = 0; next }
+    in_section { print }
+  ' "$MANIFEST" | grep -v '^#' | grep -v '^[[:space:]]*$'
 }
 
 STALE_COUNT=0
