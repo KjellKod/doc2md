@@ -1,0 +1,21 @@
+apps/macos/doc2md/Licensing/LicenseController.swift
+  s_9f569f9d28829d::t_c902a8c992c06a 482,485-489
+apps/macos/doc2mdTests/Licensing/PolarLicenseControllerTests.swift
+  s_9f569f9d28829d::t_c902a8c992c06a 801-832
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "26eba357faff7655cc2cacb37060f57e0621b6fb",
+  "prompts": {},
+  "sessions": {
+    "s_9f569f9d28829d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fe9ad-2a69-76e1-b2ba-4d4f07aef6d0",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
