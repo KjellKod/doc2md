@@ -8,6 +8,7 @@ NOTICE_SOURCE_PATH="apps/macos/THIRD_PARTY_NOTICES.md"
 NOTICE_STAGE_DIR=""
 NOTICE_BACKUP_PATH=""
 NOTICE_STAGED_PATH=""
+POLAR_ORGANIZATION_ID=""
 NATIVE_API_ALLOWLIST=(
   "FileManager :: stat/read/temp-file creation/atomic replacement staging for user-selected Markdown files"
   "NSOpenPanel :: user-selected supported-document open panel"
@@ -21,6 +22,7 @@ NATIVE_API_ALLOWLIST=(
   "removeItem :: cleanup for failed temp-file, placeholder writes, or disabled Application Support settings"
   "Application Support settings :: metadata-only settings-file read/write/delete/atomic replacement"
   "Application Support license token :: license-token file read/write/delete under doc2md Application Support"
+  "Application Support Polar license metadata :: non-secret metadata read/write/delete/atomic replacement"
 )
 WATCHED_NATIVE_API_PATTERN='FileManager|NSOpenPanel|NSSavePanel|NSWorkspace|FileHandle|replaceItemAt|replaceItem\(|replacingItem|startAccessingSecurityScopedResource|stopAccessingSecurityScopedResource|createFile|removeItem|moveItem|copyItem|\.write\(to:'
 ALLOWED_NATIVE_API_PATTERN='FileManager|NSOpenPanel|NSSavePanel|NSWorkspace|replaceItemAt|startAccessingSecurityScopedResource|stopAccessingSecurityScopedResource|createFile|removeItem'
@@ -83,6 +85,9 @@ collect_persistence_swift_sources() {
 
 is_allowed_native_api_match() {
   local match="$1"
+  local source_path=""
+  local line_number=""
+  local source_content=""
 
   if printf '%s\n' "$match" | grep -Eq "$ALLOWED_NATIVE_API_PATTERN"; then
     return 0
@@ -94,7 +99,22 @@ is_allowed_native_api_match() {
       ;;
   esac
 
+  IFS=: read -r source_path line_number source_content <<< "$match"
+  if [[ "$source_path" == "apps/macos/doc2md/Licensing/PolarLicensePersistence.swift" &&
+        "$line_number" =~ ^[0-9]+$ &&
+        "$source_content" == '        try encoded.write(to: metadataURL, options: [.atomic])' ]]; then
+    return 0
+  fi
+
   return 1
+}
+
+validated_polar_organization_id() {
+  local value="$1"
+
+  if [[ "$value" =~ ^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$ ]]; then
+    printf '%s' "$value"
+  fi
 }
 
 absolute_path() {
@@ -124,6 +144,16 @@ absolute_path() {
 
 display_build_version() {
   node --input-type=module -e "import { getDisplayVersionInfo } from './packages/core/scripts/release-version.mjs'; console.log(getDisplayVersionInfo().version);"
+}
+
+sanitize_xcodebuild_output() {
+  if [[ -n "$POLAR_ORGANIZATION_ID" ]]; then
+    sed \
+      -e "s/$POLAR_ORGANIZATION_ID/[public organization ID]/g" \
+      -e "s/^\\*\\* BUILD SUCCEEDED \\*\\*$/** $BUILD_VERSION BUILD SUCCEEDED **/"
+    return
+  fi
+  sed "s/^\\*\\* BUILD SUCCEEDED \\*\\*$/** $BUILD_VERSION BUILD SUCCEEDED **/"
 }
 
 bundle_version_for() {
@@ -272,15 +302,21 @@ done < <(grep_matches_or_fail "$WATCHED_NATIVE_API_PATTERN" "${persistence_swift
 prepare_notice_resource
 npm run build:desktop
 
+POLAR_ORGANIZATION_ID="$(validated_polar_organization_id "${DOC2MD_POLAR_ORGANIZATION_ID:-}")"
+XCODE_BUILD_SETTINGS=(
+  "MARKETING_VERSION=$MARKETING_VERSION_OVERRIDE"
+  "CURRENT_PROJECT_VERSION=$BUNDLE_VERSION_OVERRIDE"
+  "DOC2MD_POLAR_ORGANIZATION_ID=$POLAR_ORGANIZATION_ID"
+)
+
 set +e
 "$XCODEBUILD_BIN" \
   -project apps/macos/doc2md.xcodeproj \
   -scheme doc2md \
   -configuration "$CONFIGURATION" \
   -derivedDataPath .build/mac \
-  MARKETING_VERSION="$MARKETING_VERSION_OVERRIDE" \
-  CURRENT_PROJECT_VERSION="$BUNDLE_VERSION_OVERRIDE" \
-  build 2>&1 | sed "s/^\\*\\* BUILD SUCCEEDED \\*\\*$/** $BUILD_VERSION BUILD SUCCEEDED **/"
+  "${XCODE_BUILD_SETTINGS[@]}" \
+  build 2>&1 | sanitize_xcodebuild_output
 pipeline_status=("${PIPESTATUS[@]}")
 set -e
 

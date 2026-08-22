@@ -129,10 +129,10 @@ final class LicenseStore {
 
     private func loadResult(for verified: VerifiedLicense) -> LicenseStoreLoadResult {
         LicenseStoreLoadResult(
-            state: .licensed(verified.claims),
+            state: .licensed(LicenseEntitlement(legacyClaims: verified.claims)),
             token: verified.token,
             snapshot: CachedLicenseSnapshot(
-                claims: verified.claims,
+                entitlement: LicenseEntitlement(legacyClaims: verified.claims),
                 keyStatus: .granted,
                 lastValidatedAt: nil
             )

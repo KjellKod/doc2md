@@ -1,6 +1,7 @@
 import Foundation
 import XCTest
 
+@MainActor
 final class LicenseReminderControllerTests: XCTestCase {
     func testReminderUsesShippedCadenceForUnlicensedState() {
         let licenseController = LicenseController(

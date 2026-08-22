@@ -20,6 +20,8 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>DOC2MDPolarOrganizationID</key>
+	<string>$(DOC2MD_POLAR_ORGANIZATION_ID)</string>
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>
