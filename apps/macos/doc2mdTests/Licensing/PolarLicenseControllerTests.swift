@@ -798,6 +798,38 @@ final class PolarLicenseControllerTests: XCTestCase {
         XCTAssertEqual(controller.recoveryNotice, .occupiedSlot)
     }
 
+    func testPolarRemovalClearsLegacyTokenSoRelaunchStaysUnlicensed() async throws {
+        let fixture = LicenseFixtureFactory(now: now)
+        let legacyToken = try fixture.token()
+        let legacyKeychain = InMemoryLicenseTokenStorage(candidate: .available(legacyToken))
+        let legacyFallback = InMemoryLicenseTokenStorage(candidate: .available(legacyToken))
+        let store = LicenseStore(
+            keychainStore: legacyKeychain,
+            fallbackStore: legacyFallback,
+            verifier: fixture.verifier()
+        )
+        let repository = activeRepository(
+            expiresAt: now.addingTimeInterval(day),
+            lastValidatedAt: now
+        )
+        let controller = makeController(
+            client: ScriptedPolarClient(),
+            repository: repository,
+            store: store
+        )
+
+        await controller.removeLicense()
+
+        XCTAssertEqual(legacyKeychain.candidate, .missing)
+        XCTAssertEqual(legacyFallback.candidate, .missing)
+        let relaunched = makeController(
+            client: ScriptedPolarClient(),
+            repository: repository,
+            store: store
+        )
+        XCTAssertEqual(relaunched.state, .unlicensed)
+    }
+
     func testReplacementPreservesOccupiedSlotNoticeAndActivatesNewKeyAfterClear() async {
         let log = OperationLog()
         let client = ScriptedPolarClient(log: log)

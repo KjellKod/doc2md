@@ -479,10 +479,14 @@ final class LicenseController: ObservableObject {
             remoteFailed = true
         }
 
-        let localFailed: Bool
+        var localFailed = false
         do {
             try polarRepository.clearEntitlement()
-            localFailed = false
+        } catch {
+            localFailed = true
+        }
+        do {
+            try store.clearToken()
         } catch {
             localFailed = true
         }
