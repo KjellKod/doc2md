@@ -2,7 +2,7 @@ import Combine
 import Foundation
 
 struct PolarLicenseConfiguration: Equatable {
-    static let bundleKey = "DOC2MDPolarOrganizationID"
+    static let organizationIDInfoPlistName = "DOC2MDPolarOrganizationID"
     static let recoveryURL = URL(string: "https://polar.sh/purchases")!
     static let supportURL = URL(string: "mailto:support@doc2md.dev")!
 
@@ -19,7 +19,11 @@ struct PolarLicenseConfiguration: Equatable {
     }
 
     init(bundle: Bundle = .main) {
-        self.init(rawValue: bundle.object(forInfoDictionaryKey: Self.bundleKey) as? String)
+        self.init(
+            rawValue: bundle.object(
+                forInfoDictionaryKey: Self.organizationIDInfoPlistName
+            ) as? String
+        )
     }
 }
 
