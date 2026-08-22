@@ -81,6 +81,33 @@ final class PolarLicensePersistenceTests: XCTestCase {
         XCTAssertEqual(try repository.installationSuffix(), "7Q2F")
     }
 
+    func testActivationMetadataFailureRollsBackKeychainCredentials() throws {
+        let credentials = MemoryPolarCredentialStore()
+        let metadata = MemoryPolarMetadataStore()
+        metadata.failSave = true
+        let repository = PolarLicenseRepository(
+            credentialStore: credentials,
+            metadataStore: metadata,
+            suffixGenerator: FixedSuffixGenerator(value: "7Q2F")
+        )
+
+        XCTAssertThrowsError(
+            try repository.saveActivation(
+                credentials: PolarLicenseCredentials(
+                    key: "polar-secret-key",
+                    activationID: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"
+                ),
+                snapshot: PolarLicenseSnapshot(keyStatus: .granted, expiresAt: expiry),
+                suffix: "7Q2F",
+                validatedAt: expiry.addingTimeInterval(-60)
+            )
+        )
+
+        XCTAssertNil(credentials.value)
+        XCTAssertEqual(credentials.clearCount, 1)
+        XCTAssertNil(repository.load().credentials)
+    }
+
     func testMetadataNeverContainsSecretsAcrossValidationRemovalAndReplacement() throws {
         let credentials = MemoryPolarCredentialStore()
         let metadata = MemoryPolarMetadataStore()

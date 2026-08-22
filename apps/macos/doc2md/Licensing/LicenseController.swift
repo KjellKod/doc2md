@@ -487,21 +487,23 @@ final class LicenseController: ObservableObject {
             localFailed = true
         }
 
-        polarCredentials = nil
-        polarMetadata = polarMetadata.map {
-            PolarLicenseMetadata(installationSuffix: $0.installationSuffix)
-        }
         cachedSnapshot = nil
-        credentialsNeedReentry = false
-        fallbackState = localFailed
-            ? .licenseCheckFailed(reason: "The Polar license could not be cleared locally.")
-            : .unlicensed
 
         if localFailed {
+            fallbackState = .licenseCheckFailed(
+                reason: "The Polar license could not be cleared locally."
+            )
             return PolarRecoveryNotice.localStorage.preserving(
                 remoteFailed ? .occupiedSlot : nil
             )
         }
+
+        polarCredentials = nil
+        polarMetadata = polarMetadata.map {
+            PolarLicenseMetadata(installationSuffix: $0.installationSuffix)
+        }
+        credentialsNeedReentry = false
+        fallbackState = .unlicensed
         return remoteFailed ? .occupiedSlot : nil
     }
 

@@ -844,7 +844,7 @@ final class PolarLicenseControllerTests: XCTestCase {
         XCTAssertTrue(controller.recoveryNotice?.message.contains("could not validate") == true)
     }
 
-    func testPartialLocalClearFailureIsSanitizedAndStillClearsInMemoryState() async {
+    func testPartialLocalClearFailureIsSanitizedAndKeepsCleanupRetryAvailable() async {
         let client = ScriptedPolarClient()
         let repository = activeRepository(
             expiresAt: now.addingTimeInterval(day),
@@ -862,7 +862,15 @@ final class PolarLicenseControllerTests: XCTestCase {
         }
         XCTAssertEqual(reason, "The Polar license could not be cleared locally.")
         XCTAssertFalse(reason.contains("polar-secret-key"))
+        XCTAssertEqual(repository.credentials, testCredentials)
+        XCTAssertTrue(controller.canRemovePolarLicense)
+
+        repository.failClear = false
+        await controller.removeLicense()
+
         XCTAssertNil(repository.credentials)
+        XCTAssertFalse(controller.canRemovePolarLicense)
+        XCTAssertEqual(controller.state, .unlicensed)
     }
 
     func testControllerReconstructionLoadsPersistedActivationWithoutNetwork() async {
@@ -1086,12 +1094,12 @@ private final class InMemoryPolarRepository: PolarLicenseRepositoryProtocol {
     func clearEntitlement() throws {
         clearCount += 1
         log.values.append("clear")
+        if failClear {
+            throw LicenseStorageError.failed(failClearReason)
+        }
         credentials = nil
         if let suffix = metadata?.installationSuffix {
             metadata = PolarLicenseMetadata(installationSuffix: suffix)
-        }
-        if failClear {
-            throw LicenseStorageError.failed(failClearReason)
         }
         storageUnavailable = false
     }

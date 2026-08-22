@@ -304,14 +304,19 @@ final class PolarLicenseRepository: PolarLicenseRepositoryProtocol {
         validatedAt: Date
     ) throws {
         try credentialStore.saveCredentials(credentials)
-        try metadataStore.saveMetadata(
-            PolarLicenseMetadata(
-                keyStatus: snapshot.keyStatus,
-                expiresAt: snapshot.expiresAt,
-                lastValidatedAt: validatedAt,
-                installationSuffix: suffix
+        do {
+            try metadataStore.saveMetadata(
+                PolarLicenseMetadata(
+                    keyStatus: snapshot.keyStatus,
+                    expiresAt: snapshot.expiresAt,
+                    lastValidatedAt: validatedAt,
+                    installationSuffix: suffix
+                )
             )
-        )
+        } catch {
+            try? credentialStore.clearCredentials()
+            throw error
+        }
     }
 
     func saveValidation(snapshot: PolarLicenseSnapshot, validatedAt: Date) throws {
