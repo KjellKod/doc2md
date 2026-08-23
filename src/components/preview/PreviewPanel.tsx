@@ -83,6 +83,7 @@ export default function PreviewPanel({
   compactToolbar,
 }: PreviewPanelProps) {
   const [mode, setMode] = useState<"edit" | "preview" | "linkedin">("preview");
+  const [showLineNumbers, setShowLineNumbers] = useState(false);
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
   const [justFinishedConverting, setJustFinishedConverting] = useState(false);
   const prevEntryStatusRef = useRef<ConversionStatus | undefined>(undefined);
@@ -283,6 +284,11 @@ export default function PreviewPanel({
   }
 
   const effectiveMarkdown = entry?.editedMarkdown ?? entry?.markdown ?? "";
+  const lineNumbersSupported = useMemo(
+    () => getLargeJsonPreview(effectiveMarkdown) === null,
+    [effectiveMarkdown],
+  );
+  const lineNumbersVisible = showLineNumbers && lineNumbersSupported;
   const largeMarkdownAnalysis = useMemo(() => {
     if (!entry || mode !== "preview" || entry.format.toLowerCase() !== "md") {
       return null;
@@ -493,6 +499,9 @@ export default function PreviewPanel({
         copyState={copyState}
         showToggle={showToggle}
         showCopyButton={showCopyButton}
+        lineNumbersSupported={lineNumbersSupported && mode !== "linkedin"}
+        showLineNumbers={lineNumbersVisible}
+        onToggleLineNumbers={() => setShowLineNumbers((visible) => !visible)}
         onSave={onSave}
         onDownloadMarkdown={onDownloadMarkdown}
         downloadMarkdownDisabled={downloadMarkdownDisabled}
@@ -562,6 +571,7 @@ export default function PreviewPanel({
           findHighlightRef={findHighlightRef}
           autoFocusOnMount={autoFocusEditorOnMount}
           anchorMirrorEnabled={!usesLargeJsonLightweightPreview}
+          showLineNumbers={lineNumbersVisible}
           pendingEditorRestoreRef={pendingEditorRestoreRef}
           onReportView={reportView}
           onMarkdownChange={onMarkdownChange}
@@ -584,6 +594,7 @@ export default function PreviewPanel({
           {...commonModeProps}
           effectiveMarkdown={effectiveMarkdown}
           largeMarkdownAnalysis={largeMarkdownAnalysis}
+          showLineNumbers={lineNumbersVisible}
           previewRef={previewRef}
           renderedViewRef={renderedViewRef}
           renderedViewText={renderedViewText}
