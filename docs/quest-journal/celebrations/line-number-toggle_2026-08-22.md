@@ -65,7 +65,7 @@ Add optional line numbers to Edit and rendered View.
 
 ## Findings Left For Future Quests
 
-- Count: **6**
+- Count: **3**
 - Fragment offset map uses a magic zero branch and a divergent line splitter
 - Fixed 3rem View column ignores the document it is numbering
 - Generated-content markers fail closed on engines that do not parse the alt-text form
@@ -79,7 +79,7 @@ QUALITY SCORE
 
 ## Quest Quote
 
-> "Verdict: 🟡 Ready after fixes**"
+> "Verdict: 🟡 Ready after fixes"
 >
 > Review finding
 

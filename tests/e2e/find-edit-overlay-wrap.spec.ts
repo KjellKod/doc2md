@@ -47,14 +47,16 @@ async function openEditor(page: Page, lineNumbers: boolean) {
     await showUpload.click();
   }
   if (lineNumbers) {
-    const desktopControl = page.getByRole("button", { name: "Line numbers" });
+    const desktopControl = page.getByRole("checkbox", { name: "Line numbers" });
     if (await desktopControl.isVisible().catch(() => false)) {
       await desktopControl.click();
     } else {
       await page.getByRole("button", { name: "More actions" }).click();
-      await page
-        .getByRole("menuitemcheckbox", { name: "Line numbers" })
-        .click();
+      const menuItem = page.getByRole("menuitemcheckbox", {
+        name: "Line numbers",
+      });
+      await expect(menuItem).toHaveAttribute("aria-checked", "false");
+      await menuItem.click();
     }
   }
   await page.getByRole("button", { name: "Edit", exact: true }).click();

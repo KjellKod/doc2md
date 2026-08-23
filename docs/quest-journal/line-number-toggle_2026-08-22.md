@@ -6,13 +6,13 @@
 - Mode: workflow
 - Quality: Tin
 - Celebration: [`celebrations/line-number-toggle_2026-08-22.md`](celebrations/line-number-toggle_2026-08-22.md)
-- Outcome: Add optional line numbers to Edit and rendered View. ### Goal Users can toggle line numbers on and off while editing Markdown and while reading the rendered View. ### Read First - `AGENTS.md` - `do...
+- Outcome: Added optional, session-scoped line numbers to Edit and rendered View without changing copied, saved, or exported content.
 
 ## What Shipped
 
 **Problem:** Edit and rendered View do not expose stable source coordinates. Users need optional source line numbers without replacing the native textarea or changing document content.
 
-**Impact:** One default-off control lets users orient themselves in Edit and View. Edit shows every original Ma...
+**Impact:** One default-off control lets users orient themselves in Edit and View. Edit numbers every original Markdown source line, while View labels rendered blocks with their original source start line. LinkedIn and lightweight large JSON remain unchanged.
 
 ## Files Changed
 
