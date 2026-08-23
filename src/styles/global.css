@@ -2572,13 +2572,29 @@ body.is-height-resizing * {
   color: #ffffff;
 }
 
-.line-numbers-toggle.is-active {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  color: var(--accent);
+.line-numbers-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding-inline: 2px;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.line-numbers-checkbox input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
 }
 
 .markdown-edit-shell {
+  --markdown-editor-line-height: 1.375rem;
   position: relative;
   flex: 1;
   min-height: 0;
@@ -2611,7 +2627,7 @@ body.is-height-resizing * {
   border-radius: 22px;
   font-family: "SFMono-Regular", "Menlo", "Consolas", monospace;
   font-size: 0.92em;
-  line-height: 1.5;
+  line-height: var(--markdown-editor-line-height);
   white-space: pre-wrap;
   overflow-wrap: break-word;
   scrollbar-gutter: stable;
@@ -2624,7 +2640,7 @@ body.is-height-resizing * {
 .markdown-line-number-row {
   display: grid;
   grid-template-columns: var(--line-number-column-width) minmax(0, 1fr);
-  min-height: 1.5em;
+  min-height: var(--markdown-editor-line-height);
 }
 
 .markdown-line-number-value {
@@ -2647,7 +2663,7 @@ body.is-height-resizing * {
   border-radius: 22px;
   font-family: "SFMono-Regular", "Menlo", "Consolas", monospace;
   font-size: 0.92em;
-  line-height: 1.5;
+  line-height: var(--markdown-editor-line-height);
   white-space: pre-wrap;
   overflow-wrap: break-word;
   /* Always reserve scrollbar gutter so the textarea and the find-overlay
@@ -3512,14 +3528,6 @@ body.is-height-resizing * {
   border-color: rgba(137, 199, 229, 0.3);
   background: rgba(29, 34, 41, 0.96);
   color: #edf3f8;
-}
-
-:root[data-theme="dark"] .line-numbers-toggle.is-active,
-:root[data-theme="dark"] .line-numbers-toggle.is-active:hover,
-:root[data-theme="dark"] .line-numbers-toggle.is-active:focus-visible {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
-  color: var(--accent);
 }
 
 :root[data-theme="dark"] .format-download-badge {

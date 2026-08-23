@@ -168,17 +168,19 @@ describe("PreviewPanel", () => {
       />,
     );
 
-    const lineNumbersControl = screen.getByRole("button", {
+    const lineNumbersControl = screen.getByRole("checkbox", {
       name: "Line numbers",
     });
-    expect(lineNumbersControl).toHaveAttribute("aria-pressed", "false");
-    expect(lineNumbersControl).toHaveTextContent("Numbers");
+    expect(lineNumbersControl).not.toBeChecked();
+    expect(lineNumbersControl.closest("label")).toHaveTextContent(
+      "Line numbers",
+    );
     expect(container.querySelector("[data-source-line-number]")).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Line numbers" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Line numbers" }));
     expect(
-      screen.getByRole("button", { name: "Line numbers" }),
-    ).toHaveAttribute("aria-pressed", "true");
+      screen.getByRole("checkbox", { name: "Line numbers" }),
+    ).toBeChecked();
     expect(container.querySelector('[data-source-line-number="1"]')).not.toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
@@ -192,16 +194,14 @@ describe("PreviewPanel", () => {
     const { rerender, container } = render(
       <PreviewPanel entry={createEntry({ id: "doc-a", markdown: "# A" })} />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Line numbers" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Line numbers" }));
     fireEvent.click(screen.getByRole("button", { name: "LinkedIn" }));
-    expect(screen.queryByRole("button", { name: /line numbers/i })).toBeNull();
+    expect(screen.queryByRole("checkbox", { name: /line numbers/i })).toBeNull();
 
     rerender(
       <PreviewPanel entry={createEntry({ id: "doc-b", markdown: "# B" })} />,
     );
-    expect(
-      screen.getByRole("button", { name: "Line numbers" }),
-    ).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("checkbox", { name: "Line numbers" })).toBeChecked();
     expect(container.querySelector('[data-source-line-number="1"]')).not.toBeNull();
   });
 
@@ -210,7 +210,7 @@ describe("PreviewPanel", () => {
     const { rerender, container } = render(
       <PreviewPanel entry={createEntry({ format: "md", markdown: "# Supported" })} />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Line numbers" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Line numbers" }));
 
     rerender(
       <PreviewPanel
@@ -218,7 +218,7 @@ describe("PreviewPanel", () => {
       />,
     );
     expect(screen.getByTestId("large-json-preview")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /line numbers/i })).toBeNull();
+    expect(screen.queryByRole("checkbox", { name: /line numbers/i })).toBeNull();
     expect(container.querySelector("[data-source-line-number]")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
@@ -248,7 +248,7 @@ describe("PreviewPanel", () => {
       <PreviewPanel entry={createEntry({ format: "md", markdown })} />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Line numbers" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Line numbers" }));
 
     expect(screen.getByRole("heading", { name: "Heading" })).toHaveAttribute(
       "data-source-line-number",
@@ -302,7 +302,7 @@ describe("PreviewPanel", () => {
       );
     const anchorsOff = anchorSnapshot();
 
-    fireEvent.click(screen.getByRole("button", { name: "Line numbers" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Line numbers" }));
 
     expect(screen.getByRole("heading", { name: "Report" })).toHaveAttribute(
       "data-source-line-number",
@@ -343,7 +343,7 @@ describe("PreviewPanel", () => {
         onMarkdownChange={onMarkdownChange}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Line numbers" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Line numbers" }));
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
 
     const textarea = screen.getByRole("textbox", {
@@ -370,7 +370,7 @@ describe("PreviewPanel", () => {
       <PreviewPanel entry={createEntry({ format: "md", markdown })} />,
     );
 
-    const control = screen.getByRole("button", { name: "Line numbers" });
+    const control = screen.getByRole("checkbox", { name: "Line numbers" });
     fireEvent.click(control);
     expect(container.querySelector('[data-source-line-number="1"]')).not.toBeNull();
     expect(
@@ -666,7 +666,7 @@ describe("PreviewPanel", () => {
 
     // Fallback path is active.
     expect(screen.getByText("Large report")).toBeInTheDocument();
-    const checkboxes = screen.getAllByRole("checkbox");
+    const checkboxes = screen.getAllByRole("checkbox", { name: /Toggle task/ });
     // No literal "- [ ]" text leaks into the cells for the first row.
     expect(screen.queryByText("- [ ]")).not.toBeInTheDocument();
     expect(checkboxes.length).toBeGreaterThan(1);
@@ -718,7 +718,9 @@ describe("PreviewPanel", () => {
     // The escaped row 0 renders its bracket text, not a checkbox.
     expect(screen.getByText("[ ]")).toBeInTheDocument();
     // Real markers on later rows still synthesize checkboxes.
-    expect(screen.getAllByRole("checkbox").length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByRole("checkbox", { name: /Toggle task/ }).length,
+    ).toBeGreaterThan(0);
   });
 
   it("does not render toggle when entry is null", () => {
@@ -927,7 +929,7 @@ describe("PreviewPanel", () => {
     expect(surface).not.toHaveTextContent("[ ]");
     expect(surface.querySelectorAll("li:not(.task-list-item)")).toHaveLength(0);
 
-    const checkboxes = screen.getAllByRole("checkbox");
+    const checkboxes = screen.getAllByRole("checkbox", { name: /Toggle task:/ });
     expect(checkboxes).toHaveLength(2);
     expect(screen.getByRole("checkbox", { name: "Toggle task: Ship fix" })).toBe(
       checkboxes[0],
@@ -1012,7 +1014,9 @@ describe("PreviewPanel", () => {
       />,
     );
 
-    fireEvent.click(screen.getAllByRole("checkbox")[1]);
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: "Toggle task: Nested task" }),
+    );
     expect(onChange).toHaveBeenLastCalledWith(
       [
         "- [ ] Top task",
@@ -1022,7 +1026,9 @@ describe("PreviewPanel", () => {
       ].join("\n"),
     );
 
-    fireEvent.click(screen.getAllByRole("checkbox")[2]);
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: /^Toggle task: Uppercase checked/ }),
+    );
     expect(onChange).toHaveBeenLastCalledWith(
       [
         "- [ ] Top task",
@@ -1051,7 +1057,11 @@ describe("PreviewPanel", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(
+      screen.getByRole("checkbox", {
+        name: "Toggle task: Task after formatted contact block",
+      }),
+    );
 
     expect(onChange).toHaveBeenCalledWith(
       [
@@ -1225,7 +1235,9 @@ describe("PreviewPanel", () => {
     expect(
       nestedList?.querySelectorAll(":scope > li.task-list-item"),
     ).toHaveLength(1);
-    expect(screen.getAllByRole("checkbox")).toHaveLength(3);
+    expect(
+      screen.getAllByRole("checkbox", { name: /Toggle task:/ }),
+    ).toHaveLength(3);
   });
 
   it("stamps nested task checkboxes with their own source lines", () => {
@@ -1253,7 +1265,7 @@ describe("PreviewPanel", () => {
     async (showLineNumbers) => {
       const { container } = render(<PreviewPanel entry={createEntry()} />);
       if (showLineNumbers) {
-        fireEvent.click(screen.getByRole("button", { name: "Line numbers" }));
+        fireEvent.click(screen.getByRole("checkbox", { name: "Line numbers" }));
       }
       const previewSurface = container.querySelector(".markdown-surface");
 

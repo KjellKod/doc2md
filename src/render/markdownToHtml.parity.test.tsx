@@ -160,7 +160,7 @@ describe("export/Preview parity guard", () => {
     (showLineNumbers) => {
       const { container } = render(<PreviewPanel entry={createEntry()} />);
       if (showLineNumbers) {
-        fireEvent.click(screen.getByRole("button", { name: "Line numbers" }));
+        fireEvent.click(screen.getByRole("checkbox", { name: "Line numbers" }));
       }
       const previewSurface = container.querySelector(".markdown-surface");
       expect(previewSurface).not.toBeNull();

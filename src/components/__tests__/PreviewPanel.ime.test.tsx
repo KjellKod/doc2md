@@ -31,7 +31,7 @@ describe("PreviewPanel auto-continue + IME guard", () => {
       );
 
       if (showLineNumbers) {
-        fireEvent.click(screen.getByRole("button", { name: "Line numbers" }));
+        fireEvent.click(screen.getByRole("checkbox", { name: "Line numbers" }));
       }
 
       const textarea = screen.getByRole("textbox", {

@@ -69,7 +69,7 @@ async function openMarkdownFiles(
 }
 
 async function showLineNumbers(page: Page) {
-  const desktopControl = page.getByRole("button", {
+  const desktopControl = page.getByRole("checkbox", {
     name: "Line numbers",
   });
   if (await desktopControl.isVisible().catch(() => false)) {
@@ -290,48 +290,19 @@ test("View renders original source markers without changing the accessibility tr
   expect(await surface.ariaSnapshot()).toBe(before);
 });
 
-test("desktop toggle has visible pressed styling in both themes", async ({
+test("desktop checkbox toggles in both themes", async ({
   page,
 }, testInfo) => {
   test.skip(
     testInfo.project.name !== "chromium",
-    "Desktop toolbar styling runs once in desktop Chromium.",
+    "Desktop checkbox semantics run once in desktop Chromium.",
   );
   await openMarkdown(page, "toggle.md", "# Toggle");
-  const control = page.getByRole("button", { name: "Line numbers" });
-  const style = () =>
-    control.evaluate((element) => {
-      const computed = getComputedStyle(element);
-      return {
-        background: computed.backgroundColor,
-        border: computed.borderColor,
-      };
-    });
-  const waitForControlTransitions = () =>
-    control.evaluate(async (element) => {
-      await new Promise<void>((resolve) => {
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-      });
-      let animations = element.getAnimations();
-      while (animations.length > 0) {
-        await Promise.all(
-          animations.map((animation) => animation.finished.catch(() => undefined)),
-        );
-        animations = element.getAnimations();
-      }
-    });
-  const setPressed = async (pressed: boolean) => {
-    await control.click();
-    await expect(control).toHaveAttribute("aria-pressed", String(pressed));
-    await page.mouse.move(0, 0);
-    await waitForControlTransitions();
-    return style();
-  };
-
-  const darkOff = await style();
-  const darkOn = await setPressed(true);
-  expect(darkOn.background).not.toBe(darkOff.background);
-  expect(darkOn.border).not.toBe(darkOff.border);
+  const control = page.getByRole("checkbox", { name: "Line numbers" });
+  await expect(control).toBeVisible();
+  await expect(control).not.toBeChecked();
+  await control.click();
+  await expect(control).toBeChecked();
 
   await page.getByRole("button", { name: "Day mode" }).click();
   await expect
@@ -339,14 +310,10 @@ test("desktop toggle has visible pressed styling in both themes", async ({
       page.evaluate(() => document.documentElement.dataset.theme ?? "light"),
     )
     .toBe("light");
-  await waitForControlTransitions();
-  const lightOn = await style();
-  const lightOff = await setPressed(false);
-  expect(lightOff.background).not.toBe(lightOn.background);
-  expect(lightOff.border).not.toBe(lightOn.border);
-  const lightOnAgain = await setPressed(true);
-  expect(lightOnAgain.background).not.toBe(lightOff.background);
-  expect(lightOnAgain.border).not.toBe(lightOff.border);
+  await expect(control).toBeVisible();
+  await expect(control).toBeChecked();
+  await control.click();
+  await expect(control).not.toBeChecked();
 });
 
 test("5000-line Edit gutter aligns, scrolls, and preserves native input", async ({
@@ -420,6 +387,63 @@ test("5000-line Edit gutter aligns, scrolls, and preserves native input", async 
   });
   await textarea.pressSequentially("\ntyped at end");
   await expect(textarea).toHaveValue(`${markdown}\ntyped at end`);
+});
+
+test("Edit gutter keeps deep numerals on the textarea line pitch", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "mobile-safari",
+    "WebKit regression matches the macOS app rendering engine.",
+  );
+  await page.setViewportSize({ width: 1280, height: 800 });
+  const markdown = Array.from({ length: 220 }, (_, index) => {
+    if (index === 166 || index === 168) return "";
+    if (index === 167) return "---";
+    if (index === 169) return "# Apple Purchases";
+    if (index % 11 === 0) return `wrapped ${"content ".repeat(30)}`;
+    return `line ${index + 1}`;
+  }).join("\n");
+  await openMarkdown(page, "deep-lines.md", markdown);
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await showLineNumbers(page);
+
+  const geometry = await page.evaluate(() => {
+    const textarea = document.querySelector(
+      ".markdown-edit-area",
+    ) as HTMLTextAreaElement;
+    const gutter = document.querySelector(
+      ".markdown-line-number-gutter",
+    ) as HTMLElement;
+    const numberTexts = gutter.querySelectorAll(
+      ".markdown-line-number-value",
+    );
+    const metricTexts = gutter.querySelectorAll(
+      ".markdown-line-number-metric",
+    );
+    const textTop = (texts: NodeListOf<Element>, lineIndex: number) => {
+      const text = texts[lineIndex]?.firstChild as Text;
+      const range = document.createRange();
+      range.setStart(text, 0);
+      range.setEnd(text, text.length);
+      return range.getBoundingClientRect().top;
+    };
+    const deepIndex = 169;
+    return {
+      integralLinePitchDelta: Math.abs(
+        parseFloat(getComputedStyle(textarea).lineHeight) -
+          Math.round(parseFloat(getComputedStyle(textarea).lineHeight)),
+      ),
+      visibleNumberDelta: Math.abs(
+        textTop(numberTexts, deepIndex) - textTop(metricTexts, deepIndex),
+      ),
+      scrollHeightDelta: Math.abs(gutter.scrollHeight - textarea.scrollHeight),
+    };
+  });
+
+  expect(geometry.integralLinePitchDelta).toBeLessThanOrEqual(0.001);
+  expect(geometry.scrollHeightDelta).toBeLessThanOrEqual(1);
+  expect(geometry.visibleNumberDelta).toBeLessThanOrEqual(1);
 });
 
 test("Edit gutter stays aligned across 99 to 100 lines, scrolling, and resize", async ({
@@ -519,7 +543,7 @@ test("large fenced JSON exposes no line-number control or markers", async ({
       timeout: 30_000,
     });
     await expect(
-      page.getByRole("button", { name: "Line numbers" }),
+      page.getByRole("checkbox", { name: "Line numbers" }),
     ).toHaveCount(0);
     await expect(page.locator("[data-source-line-number]")).toHaveCount(0);
     await page.getByRole("button", { name: "Edit", exact: true }).click();
@@ -545,10 +569,10 @@ test("line-number preference follows modes and document switches", async ({
   await expect(page.locator('[data-source-line-number="1"]')).toBeVisible();
 
   await page.getByRole("button", { name: "LinkedIn", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Line numbers" })).toHaveCount(0);
+  await expect(page.getByRole("checkbox", { name: "Line numbers" })).toHaveCount(0);
   await page.getByRole("button", { name: "Open bravo.md" }).click();
-  const control = page.getByRole("button", { name: "Line numbers" });
-  await expect(control).toHaveAttribute("aria-pressed", "true");
+  const control = page.getByRole("checkbox", { name: "Line numbers" });
+  await expect(control).toBeChecked();
   await expect(page.locator('[data-source-line-number="1"]')).toBeVisible();
   await page.getByRole("button", { name: "Edit", exact: true }).click();
   await expect(page.locator(".markdown-line-number-gutter")).toBeVisible();
