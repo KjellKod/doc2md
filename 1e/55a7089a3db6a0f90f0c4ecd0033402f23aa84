@@ -1,0 +1,27 @@
+docs/quest-journal/line-number-toggle_2026-08-22.md
+  s_277852159f0bcd::t_d7bd2155058e82 9,15
+src/components/preview/previewCopy.ts
+  s_277852159f0bcd::t_d7bd2155058e82 21-25
+tests/e2e/find-edit-overlay-wrap.spec.ts
+  s_277852159f0bcd::t_d7bd2155058e82 50,55-59
+src/components/PreviewPanel.test.tsx
+  s_277852159f0bcd::t_d3c38fb1d8b2e5 1298
+docs/quest-journal/celebrations/line-number-toggle_2026-08-22.md
+  s_277852159f0bcd::t_d7bd2155058e82 68,82
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "1e55a7089a3db6a0f90f0c4ecd0033402f23aa84",
+  "prompts": {},
+  "sessions": {
+    "s_277852159f0bcd": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ffe30-f51f-7d62-9616-e2f83ebe99ae",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
