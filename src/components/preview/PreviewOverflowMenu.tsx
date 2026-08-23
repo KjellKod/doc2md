@@ -1,4 +1,4 @@
-import { MoreHorizontal } from "lucide-react";
+import { Check, MoreHorizontal } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import type {
   KeyboardEvent,
@@ -20,6 +20,7 @@ export interface PreviewOverflowMenuItem {
   label: string;
   onSelect: () => void | Promise<void>;
   disabled?: boolean;
+  checked?: boolean;
 }
 
 interface PreviewOverflowMenuProps {
@@ -167,13 +168,19 @@ export default function PreviewOverflowMenu({
                 itemRefs.current[index] = element;
               }}
               type="button"
-              role="menuitem"
+              role={item.checked === undefined ? "menuitem" : "menuitemcheckbox"}
               className="preview-overflow-item"
               disabled={item.disabled}
               aria-disabled={item.disabled}
+              aria-checked={item.checked}
               onClick={() => runAndClose(item)}
             >
-              {item.label}
+              {item.checked === undefined ? null : (
+                <span className="preview-overflow-check-slot" aria-hidden="true">
+                  {item.checked ? <Check /> : null}
+                </span>
+              )}
+              <span>{item.label}</span>
             </button>
           ))}
         </div>

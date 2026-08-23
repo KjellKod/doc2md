@@ -2,6 +2,7 @@
 
 | Date | Quest | Outcome |
 |------|-------|---------|
+| 2026-08-22 | [line-number-toggle](line-number-toggle_2026-08-22.md) | Add optional line numbers to Edit and rendered View. ### Goal Users can toggle line numbers on and off while editing ... |
 | 2026-07-20 | [mac-license-grace-states](mac-license-grace-states_2026-07-20.md) | Extend the Mac license state machine with grace and expired-reminder states. Goal: Implement Phase 1 of docs/implemen... |
 | 2026-06-28 | [table-cell-checkboxes](table-cell-checkboxes_2026-06-28.md) | Implement render-time, source-backed task checkboxes inside GFM table cells so a cell containing a leading marker suc... |
 | 2026-06-14 | [mobile-reading-space](mobile-reading-space_2026-06-14.md) | **Problem.** On hosted (web) phones the document reading area is squeezed by three chrome problems: (P0) once the use... |

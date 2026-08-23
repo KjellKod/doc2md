@@ -158,6 +158,226 @@ afterEach(() => {
 });
 
 describe("PreviewPanel", () => {
+  it("defaults line numbers off and applies one preference to Edit and View", () => {
+    const { container } = render(
+      <PreviewPanel
+        entry={createEntry({
+          format: "md",
+          markdown: "# Title\n\nParagraph\n- Item",
+        })}
+      />,
+    );
+
+    const lineNumbersControl = screen.getByRole("button", {
+      name: "Line numbers",
+    });
+    expect(lineNumbersControl).toHaveAttribute("aria-pressed", "false");
+    expect(lineNumbersControl).toHaveTextContent("Numbers");
+    expect(container.querySelector("[data-source-line-number]")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Line numbers" }));
+    expect(
+      screen.getByRole("button", { name: "Line numbers" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(container.querySelector('[data-source-line-number="1"]')).not.toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    const gutter = container.querySelector(".markdown-line-number-gutter");
+    expect(gutter).toHaveAttribute("aria-hidden", "true");
+    expect(gutter?.querySelectorAll(".markdown-line-number-row")).toHaveLength(4);
+    expect(screen.getAllByRole("textbox")).toHaveLength(1);
+  });
+
+  it("retains line-number preference across modes and document switches", () => {
+    const { rerender, container } = render(
+      <PreviewPanel entry={createEntry({ id: "doc-a", markdown: "# A" })} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Line numbers" }));
+    fireEvent.click(screen.getByRole("button", { name: "LinkedIn" }));
+    expect(screen.queryByRole("button", { name: /line numbers/i })).toBeNull();
+
+    rerender(
+      <PreviewPanel entry={createEntry({ id: "doc-b", markdown: "# B" })} />,
+    );
+    expect(
+      screen.getByRole("button", { name: "Line numbers" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(container.querySelector('[data-source-line-number="1"]')).not.toBeNull();
+  });
+
+  it("suppresses line numbers for content using the lightweight JSON renderer", () => {
+    const largeJson = createLargeJsonMarkdown();
+    const { rerender, container } = render(
+      <PreviewPanel entry={createEntry({ format: "md", markdown: "# Supported" })} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Line numbers" }));
+
+    rerender(
+      <PreviewPanel
+        entry={createEntry({ id: "json-shaped-md", format: "md", markdown: largeJson })}
+      />,
+    );
+    expect(screen.getByTestId("large-json-preview")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /line numbers/i })).toBeNull();
+    expect(container.querySelector("[data-source-line-number]")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    expect(container.querySelector(".markdown-line-number-gutter")).toBeNull();
+    expect(container.querySelector(".markdown-line-number-metric")).toBeNull();
+  });
+
+  it("maps rich View block markers to original Markdown source lines", () => {
+    const markdown = [
+      "# Heading",
+      "",
+      "Paragraph",
+      "",
+      "> Quote",
+      "",
+      "- Item",
+      "",
+      "```ts",
+      "const value = true;",
+      "```",
+      "",
+      "| Name | Score |",
+      "| --- | --- |",
+      "| Ada | 10 |",
+    ].join("\n");
+    const { container } = render(
+      <PreviewPanel entry={createEntry({ format: "md", markdown })} />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Line numbers" }));
+
+    expect(screen.getByRole("heading", { name: "Heading" })).toHaveAttribute(
+      "data-source-line-number",
+      "1",
+    );
+    expect(screen.getByText("Paragraph")).toHaveAttribute(
+      "data-source-line-number",
+      "3",
+    );
+    expect(screen.getByText("Quote").closest("blockquote")).toHaveAttribute(
+      "data-source-line-number",
+      "5",
+    );
+    expect(screen.getByRole("listitem")).toHaveAttribute(
+      "data-source-line-number",
+      "7",
+    );
+    expect(container.querySelector("pre")).toHaveAttribute(
+      "data-source-line-number",
+      "9",
+    );
+    expect(screen.getByRole("columnheader", { name: "Name" })).toHaveAttribute(
+      "data-source-line-number",
+      "13",
+    );
+    expect(screen.getByRole("cell", { name: "Ada" })).toHaveAttribute(
+      "data-source-line-number",
+      "15",
+    );
+  });
+
+  it("maps every large-Markdown fallback region without changing anchors", () => {
+    const markdown = [
+      createLargeMarkdownTable(),
+      "",
+      "## Coverage Gaps",
+      "",
+      "Trailing paragraph",
+    ].join("\n");
+    const { container } = render(
+      <PreviewPanel
+        entry={createEntry({ format: "md", name: "report.md", markdown })}
+      />,
+    );
+    const anchorSnapshot = () =>
+      Array.from(container.querySelectorAll("[data-source-line]")).map(
+        (element) => [
+          element.tagName,
+          element.getAttribute("data-source-line"),
+        ],
+      );
+    const anchorsOff = anchorSnapshot();
+
+    fireEvent.click(screen.getByRole("button", { name: "Line numbers" }));
+
+    expect(screen.getByRole("heading", { name: "Report" })).toHaveAttribute(
+      "data-source-line-number",
+      "1",
+    );
+    expect(screen.getByRole("columnheader", { name: "Package" })).toHaveAttribute(
+      "data-source-line-number",
+      "3",
+    );
+    expect(screen.getByRole("cell", { name: "package-0" })).toHaveAttribute(
+      "data-source-line-number",
+      "5",
+    );
+    expect(screen.getByRole("heading", { name: "Coverage Gaps" })).toHaveAttribute(
+      "data-source-line-number",
+      "1106",
+    );
+    expect(screen.getByText("Trailing paragraph")).toHaveAttribute(
+      "data-source-line-number",
+      "1108",
+    );
+    expect(
+      Array.from(container.querySelectorAll(".large-markdown-table-spacer")).every(
+        (spacer) => !spacer.hasAttribute("data-source-line-number"),
+      ),
+    ).toBe(true);
+    expect(anchorSnapshot()).toEqual(anchorsOff);
+  });
+
+  it("supports a 5000-line Edit gutter and synchronizes its vertical scroll", () => {
+    const markdown = Array.from({ length: 5_001 }, (_, index) => `line ${index + 1}`).join(
+      "\n",
+    );
+    const onMarkdownChange = vi.fn();
+    const { container } = render(
+      <PreviewPanel
+        entry={createEntry({ format: "md", markdown })}
+        onMarkdownChange={onMarkdownChange}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Line numbers" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+    const textarea = screen.getByRole("textbox", {
+      name: "Edit markdown",
+    }) as HTMLTextAreaElement;
+    const gutter = container.querySelector(
+      ".markdown-line-number-gutter",
+    ) as HTMLDivElement;
+    expect(gutter.querySelectorAll(".markdown-line-number-row")).toHaveLength(5_001);
+    expect(
+      container.querySelector(".markdown-edit-shell")?.getAttribute("style"),
+    ).toContain("--line-number-digits: 4");
+
+    textarea.scrollTop = 420;
+    fireEvent.scroll(textarea);
+    expect(gutter.scrollTop).toBe(420);
+    fireEvent.change(textarea, { target: { value: `${markdown}\ntyped` } });
+    expect(onMarkdownChange).toHaveBeenCalledWith(`${markdown}\ntyped`);
+  });
+
+  it("keeps line numbers available for supported Markdown above 10000 lines", () => {
+    const markdown = `# First\n${"\n".repeat(10_000)}# Last`;
+    const { container } = render(
+      <PreviewPanel entry={createEntry({ format: "md", markdown })} />,
+    );
+
+    const control = screen.getByRole("button", { name: "Line numbers" });
+    fireEvent.click(control);
+    expect(container.querySelector('[data-source-line-number="1"]')).not.toBeNull();
+    expect(
+      container.querySelector('[data-source-line-number="10002"]'),
+    ).not.toBeNull();
+  });
+
   it("detects only large generated JSON fenced Markdown for lightweight preview", () => {
     const largeJson = createLargeJsonMarkdown();
 
@@ -262,9 +482,11 @@ describe("PreviewPanel", () => {
       "aria-describedby",
       "linkedin-toggle-tooltip",
     );
-    expect(screen.getByRole("tooltip")).toHaveTextContent(
-      "Unicode formatting for easy LinkedIn posting",
-    );
+    expect(
+      screen.getByRole("tooltip", {
+        name: "Unicode formatting for easy LinkedIn posting",
+      }),
+    ).toBeInTheDocument();
   });
 
   it("shows only verified editor shortcuts in the compact reference", () => {
@@ -1026,36 +1248,45 @@ describe("PreviewPanel", () => {
     );
   });
 
-  it("copies the rendered preview as html and plain text in preview mode", async () => {
-    const { container } = render(<PreviewPanel entry={createEntry()} />);
-    const previewSurface = container.querySelector(".markdown-surface");
+  it.each([false, true])(
+    "copies the rendered preview as html and plain text with line numbers %s",
+    async (showLineNumbers) => {
+      const { container } = render(<PreviewPanel entry={createEntry()} />);
+      if (showLineNumbers) {
+        fireEvent.click(screen.getByRole("button", { name: "Line numbers" }));
+      }
+      const previewSurface = container.querySelector(".markdown-surface");
 
-    expect(previewSurface).not.toBeNull();
-    Object.defineProperty(previewSurface!, "innerText", {
-      configurable: true,
-      value: "Hello World",
-    });
-    Object.defineProperty(globalThis, "Blob", {
-      configurable: true,
-      value: MockBlob,
-    });
+      expect(previewSurface).not.toBeNull();
+      Object.defineProperty(previewSurface!, "innerText", {
+        configurable: true,
+        value: "Hello World",
+      });
+      Object.defineProperty(globalThis, "Blob", {
+        configurable: true,
+        value: MockBlob,
+      });
 
-    fireEvent.click(screen.getByRole("button", { name: "Copy formatted text" }));
+      fireEvent.click(screen.getByRole("button", { name: "Copy formatted text" }));
 
-    await waitFor(() => {
-      expect(clipboardWrite).toHaveBeenCalledTimes(1);
-    });
+      await waitFor(() => {
+        expect(clipboardWrite).toHaveBeenCalledTimes(1);
+      });
 
-    const [items] = clipboardWrite.mock.calls[0] as [MockClipboardItem[]];
-    const clipboardItem = items[0];
-    const htmlBlob = await clipboardItem.getType("text/html");
-    const plainBlob = await clipboardItem.getType("text/plain");
+      const [items] = clipboardWrite.mock.calls[0] as [MockClipboardItem[]];
+      const clipboardItem = items[0];
+      const htmlBlob = await clipboardItem.getType("text/html");
+      const plainBlob = await clipboardItem.getType("text/plain");
 
-    expect(clipboardItem.types).toEqual(["text/html", "text/plain"]);
-    await expect(htmlBlob.text()).resolves.toContain("Hello World</h1>");
-    await expect(plainBlob.text()).resolves.toBe("Hello World");
-    expect(screen.getByText("Copied")).toBeInTheDocument();
-  });
+      expect(clipboardItem.types).toEqual(["text/html", "text/plain"]);
+      await expect(htmlBlob.text()).resolves.toContain("Hello World</h1>");
+      await expect(htmlBlob.text()).resolves.not.toContain(
+        "data-source-line-number",
+      );
+      await expect(plainBlob.text()).resolves.toBe("Hello World");
+      expect(screen.getByText("Copied")).toBeInTheDocument();
+    },
+  );
 
   it("falls back to writeText with rendered plain text when rich clipboard is unavailable", async () => {
     Object.defineProperty(navigator, "clipboard", {

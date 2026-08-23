@@ -28,6 +28,7 @@
   --text-primary: #18222c;
   --text-secondary: #55616c;
   --text-muted: #6f7a84;
+  --line-number-color: #5f6871;
   --accent: #17384c;
   --accent-soft: #ebf2f7;
   --accent-strong: #102c3d;
@@ -69,6 +70,7 @@
   --text-primary: #e6e4e0;
   --text-secondary: #b6c0ca;
   --text-muted: #87929c;
+  --line-number-color: #87929c;
   --accent: #89c7e5;
   --accent-soft: rgba(137, 199, 229, 0.14);
   --accent-strong: #c4e2f0;
@@ -1898,6 +1900,25 @@ body.is-height-resizing * {
   background: rgba(23, 56, 76, 0.08);
 }
 
+.preview-overflow-item[role="menuitemcheckbox"][aria-checked="true"] {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+}
+
+.preview-overflow-check-slot {
+  display: inline-flex;
+  flex: 0 0 1rem;
+  width: 1rem;
+  height: 1rem;
+  margin-inline-end: 8px;
+}
+
+.preview-overflow-check-slot svg {
+  width: 1rem;
+  height: 1rem;
+  stroke-width: 3;
+}
+
 .preview-overflow-item:disabled,
 .preview-overflow-item[aria-disabled="true"] {
   opacity: 0.5;
@@ -1913,6 +1934,16 @@ body.is-height-resizing * {
 :root[data-theme="dark"] .preview-overflow-item:hover,
 :root[data-theme="dark"] .preview-overflow-item:focus-visible {
   background: rgba(204, 214, 223, 0.12);
+}
+
+:root[data-theme="dark"]
+  .preview-overflow-item[role="menuitemcheckbox"][aria-checked="true"],
+:root[data-theme="dark"]
+  .preview-overflow-item[role="menuitemcheckbox"][aria-checked="true"]:hover,
+:root[data-theme="dark"]
+  .preview-overflow-item[role="menuitemcheckbox"][aria-checked="true"]:focus-visible {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
 }
 
 .find-entry-button,
@@ -2541,12 +2572,70 @@ body.is-height-resizing * {
   color: #ffffff;
 }
 
+.line-numbers-toggle.is-active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+}
+
 .markdown-edit-shell {
   position: relative;
   flex: 1;
   min-height: 0;
   min-width: 0;
   width: 100%;
+}
+
+.markdown-edit-shell.has-line-numbers {
+  --line-number-column-width: calc(var(--line-number-digits) * 1ch + 1rem);
+}
+
+.markdown-edit-shell.has-line-numbers .markdown-edit-area,
+.markdown-edit-shell.has-line-numbers .markdown-find-overlay {
+  /* Keep the line-number inset in computed textarea padding so the viewport
+     anchor shadow mirror inherits the same wrap width. */
+  padding-inline-start: calc(
+    clamp(18px, 2vw, 26px) + var(--line-number-column-width)
+  );
+}
+
+.markdown-line-number-gutter {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: clamp(18px, 2vw, 26px);
+  border: 1px solid transparent;
+  border-radius: 22px;
+  font-family: "SFMono-Regular", "Menlo", "Consolas", monospace;
+  font-size: 0.92em;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  scrollbar-gutter: stable;
+  overflow: hidden;
+  color: var(--line-number-color);
+  pointer-events: none;
+  user-select: none;
+}
+
+.markdown-line-number-row {
+  display: grid;
+  grid-template-columns: var(--line-number-column-width) minmax(0, 1fr);
+  min-height: 1.5em;
+}
+
+.markdown-line-number-value {
+  padding-inline-end: 1rem;
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+.markdown-line-number-metric {
+  min-width: 0;
+  color: transparent;
 }
 
 .markdown-edit-area,
@@ -2688,6 +2777,47 @@ body.is-height-resizing * {
   overflow: auto;
 }
 
+.markdown-surface-with-line-numbers {
+  --view-line-number-inset: clamp(18px, 2vw, 28px);
+  --view-line-number-width: 3rem;
+  position: relative;
+  padding-inline-start: calc(
+    var(--view-line-number-inset) + var(--view-line-number-width)
+  );
+}
+
+.markdown-surface-with-line-numbers [data-source-line-number]::before {
+  position: absolute;
+  inset-inline-start: var(--view-line-number-inset);
+  width: calc(var(--view-line-number-width) - 0.65rem);
+  color: var(--line-number-color);
+  /* Empty speech alternatives require Safari 17.4 or newer. Older engines
+   * fail closed rather than exposing marker digits to assistive technology. */
+  content: attr(data-source-line-number) / "";
+  font-family: "SFMono-Regular", "Menlo", "Consolas", monospace;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  line-height: inherit;
+  text-align: end;
+  pointer-events: none;
+  user-select: none;
+}
+
+.markdown-surface-with-line-numbers pre[data-source-line-number] {
+  overflow: visible;
+}
+
+.markdown-surface-with-line-numbers pre[data-source-line-number] code {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.markdown-surface.markdown-surface-with-line-numbers table {
+  overflow: visible;
+}
+
 .large-markdown-notice {
   display: flex;
   flex-wrap: wrap;
@@ -2712,11 +2842,23 @@ body.is-height-resizing * {
   table-layout: auto;
 }
 
-.markdown-surface-large-document .large-markdown-table th {
+.markdown-surface-large-document .large-markdown-table thead {
   position: sticky;
   top: 0;
   z-index: 1;
+}
+
+.markdown-surface-large-document .large-markdown-table th {
   white-space: nowrap;
+}
+
+/* Keep the marker in the surface gutter while its thead containing block
+ * remains sticky (ux-guidebook §4.3 #4). */
+.markdown-surface-with-line-numbers
+  .large-markdown-table
+  thead
+  th[data-source-line-number]::before {
+  inset-inline-start: calc(-1 * var(--view-line-number-width));
 }
 
 .markdown-surface-large-document .large-markdown-table th,
@@ -2745,6 +2887,23 @@ body.is-height-resizing * {
 .page.is-working-mode .markdown-find-overlay {
   padding: 16px;
   border-radius: 16px;
+}
+
+.page.is-working-mode .markdown-edit-shell.has-line-numbers .markdown-edit-area,
+.page.is-working-mode .markdown-edit-shell.has-line-numbers .markdown-find-overlay {
+  padding-inline-start: calc(16px + var(--line-number-column-width));
+}
+
+.page.is-working-mode .markdown-line-number-gutter {
+  padding: 16px;
+  border-radius: 16px;
+}
+
+.page.is-working-mode .markdown-surface-with-line-numbers {
+  --view-line-number-inset: 16px;
+  padding-inline-start: calc(
+    var(--view-line-number-inset) + var(--view-line-number-width)
+  );
 }
 
 .linkedin-surface {
@@ -3353,6 +3512,14 @@ body.is-height-resizing * {
   border-color: rgba(137, 199, 229, 0.3);
   background: rgba(29, 34, 41, 0.96);
   color: #edf3f8;
+}
+
+:root[data-theme="dark"] .line-numbers-toggle.is-active,
+:root[data-theme="dark"] .line-numbers-toggle.is-active:hover,
+:root[data-theme="dark"] .line-numbers-toggle.is-active:focus-visible {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
 }
 
 :root[data-theme="dark"] .format-download-badge {

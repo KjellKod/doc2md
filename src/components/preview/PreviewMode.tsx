@@ -198,6 +198,7 @@ interface PreviewModeProps {
   suppressMatchCenteringForModeSwitchRef: MutableElementRef<boolean>;
   renderedViewText: string;
   largeMarkdownAnalysis?: LargeMarkdownAnalysis | null;
+  showLineNumbers?: boolean;
   viewportTopFloor: () => number;
   onReportView?: () => void;
   onMarkdownChange?: (markdown: string) => void;
@@ -229,6 +230,7 @@ function RichPreviewMode({
   pendingAnchorLineRef,
   suppressMatchCenteringForModeSwitchRef,
   renderedViewText,
+  showLineNumbers = false,
   viewportTopFloor,
   onReportView,
   onMarkdownChange,
@@ -306,10 +308,12 @@ function RichPreviewMode({
               return line === undefined ? null : line;
             },
           }),
-          sourceLineRehype(previewWithLineMap.originalLineFor),
+          sourceLineRehype(previewWithLineMap.originalLineFor, {
+            displayLineNumbers: showLineNumbers,
+          }),
           findHighlight,
         ],
-    [effectiveMarkdown, findHighlight, previewWithLineMap],
+    [effectiveMarkdown, findHighlight, previewWithLineMap, showLineNumbers],
   );
   const { applyAnchorLine } = useViewportAnchor(
     renderedViewRef,
@@ -350,7 +354,7 @@ function RichPreviewMode({
 
   return (
     <div
-      className="markdown-surface"
+      className={`markdown-surface${showLineNumbers && largeJsonPreview === null ? " markdown-surface-with-line-numbers" : ""}`}
       ref={(element) => {
         previewRef.current = element;
         renderedViewRef.current = element;
@@ -388,6 +392,7 @@ function LargeMarkdownPreviewMode({
   pendingAnchorLineRef,
   suppressMatchCenteringForModeSwitchRef,
   renderedViewText,
+  showLineNumbers = false,
   largeMarkdownAnalysis,
   viewportTopFloor,
   onReportView,
@@ -533,6 +538,7 @@ function LargeMarkdownPreviewMode({
           suppressMatchCenteringForModeSwitchRef
         }
         renderedViewText={renderedViewText}
+        showLineNumbers={showLineNumbers}
         largeMarkdownAnalysis={null}
         viewportTopFloor={viewportTopFloor}
         onReportView={onReportView}
@@ -544,7 +550,7 @@ function LargeMarkdownPreviewMode({
 
   return (
     <div
-      className="markdown-surface markdown-surface-large-document"
+      className={`markdown-surface markdown-surface-large-document${showLineNumbers ? " markdown-surface-with-line-numbers" : ""}`}
       ref={(element) => {
         surfaceRef.current = element;
         previewRef.current = element;
@@ -562,7 +568,11 @@ function LargeMarkdownPreviewMode({
           {tableLineLabel}.
         </span>
       </div>
-      <MarkdownDocumentFragment markdown={table.beforeMarkdown} />
+      <MarkdownDocumentFragment
+        markdown={table.beforeMarkdown}
+        showLineNumbers={showLineNumbers}
+        sourceLineOffset={0}
+      />
       <table className="large-markdown-table">
         <thead>
           <tr data-source-line={table.tableStartLine}>
@@ -575,6 +585,11 @@ function LargeMarkdownPreviewMode({
                 <th
                   key={`${index}-${cell}`}
                   style={{ textAlign: table.alignments[index] ?? undefined }}
+                  data-source-line-number={
+                    showLineNumbers && index === 0
+                      ? table.tableStartLine
+                      : undefined
+                  }
                 >
                   <FallbackTableCell
                     markdown={cell}
@@ -608,6 +623,9 @@ function LargeMarkdownPreviewMode({
                   <td
                     key={index}
                     style={{ textAlign: table.alignments[index] ?? undefined }}
+                    data-source-line-number={
+                      showLineNumbers && index === 0 ? row.sourceLine : undefined
+                    }
                   >
                     <FallbackTableCell
                       markdown={row.cells[index] ?? ""}
@@ -631,7 +649,11 @@ function LargeMarkdownPreviewMode({
           ) : null}
         </tbody>
       </table>
-      <MarkdownDocumentFragment markdown={table.afterMarkdown} />
+      <MarkdownDocumentFragment
+        markdown={table.afterMarkdown}
+        showLineNumbers={showLineNumbers}
+        sourceLineOffset={table.tableStartLine + table.tableLineCount}
+      />
     </div>
   );
 }
@@ -724,7 +746,15 @@ function FallbackTableCell({
   );
 }
 
-function MarkdownDocumentFragment({ markdown }: { markdown: string }) {
+function MarkdownDocumentFragment({
+  markdown,
+  showLineNumbers = false,
+  sourceLineOffset = 0,
+}: {
+  markdown: string;
+  showLineNumbers?: boolean;
+  sourceLineOffset?: number;
+}) {
   if (markdown.trim().length === 0) {
     return null;
   }
@@ -732,7 +762,23 @@ function MarkdownDocumentFragment({ markdown }: { markdown: string }) {
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
-      rehypePlugins={[rehypeSlug]}
+      rehypePlugins={[
+        rehypeSlug,
+        ...(showLineNumbers
+          ? [
+              sourceLineRehype(
+                markdown
+                  .split(/\r\n|\n|\r/u)
+                  .map((_, index) =>
+                    sourceLineOffset === 0
+                      ? index + 1
+                      : sourceLineOffset + index,
+                  ),
+                { displayOnly: true },
+              ),
+            ]
+          : []),
+      ]}
       components={previewMarkdownComponents}
     >
       {markdown}

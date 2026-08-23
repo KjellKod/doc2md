@@ -28,7 +28,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { openFindBar } from "./helpers/findBar";
 import { Buffer } from "node:buffer";
 
-async function openEditor(page: Page) {
+async function openEditor(page: Page, lineNumbers: boolean) {
   await page.goto("./");
   const fcPromise = page.waitForEvent("filechooser");
   await page
@@ -46,62 +46,75 @@ async function openEditor(page: Page) {
   if (await showUpload.isVisible().catch(() => false)) {
     await showUpload.click();
   }
+  if (lineNumbers) {
+    const desktopControl = page.getByRole("button", { name: "Line numbers" });
+    if (await desktopControl.isVisible().catch(() => false)) {
+      await desktopControl.click();
+    } else {
+      await page.getByRole("button", { name: "More actions" }).click();
+      await page
+        .getByRole("menuitemcheckbox", { name: "Line numbers" })
+        .click();
+    }
+  }
   await page.getByRole("button", { name: "Edit", exact: true }).click();
   await expect(page.locator(".markdown-edit-area")).toBeVisible();
   await expect(page.locator(".markdown-find-overlay")).toBeAttached();
 }
 
-test("editor textarea and find overlay both reserve a stable scrollbar gutter", async ({
-  page,
-}) => {
-  await openEditor(page);
+for (const lineNumbers of [false, true]) {
+  test(`editor textarea and find overlay both reserve a stable scrollbar gutter with line numbers ${lineNumbers}`, async ({
+    page,
+  }) => {
+    await openEditor(page, lineNumbers);
 
-  const gutters = await page.evaluate(() => {
-    const ta = document.querySelector(
-      ".markdown-edit-area",
-    ) as HTMLTextAreaElement;
-    const ov = document.querySelector(
-      ".markdown-find-overlay",
-    ) as HTMLPreElement;
-    return {
-      taGutter: window.getComputedStyle(ta).scrollbarGutter,
-      ovGutter: window.getComputedStyle(ov).scrollbarGutter,
-    };
+    const gutters = await page.evaluate(() => {
+      const ta = document.querySelector(
+        ".markdown-edit-area",
+      ) as HTMLTextAreaElement;
+      const ov = document.querySelector(
+        ".markdown-find-overlay",
+      ) as HTMLPreElement;
+      return {
+        taGutter: window.getComputedStyle(ta).scrollbarGutter,
+        ovGutter: window.getComputedStyle(ov).scrollbarGutter,
+      };
+    });
+
+    // Both must be `stable`. Without this, macOS users with classic
+    // scrollbars see the find overlay <mark> drift above the matched
+    // word in the textarea by N lines per wrapped paragraph.
+    expect(gutters.taGutter).toBe("stable");
+    expect(gutters.ovGutter).toBe("stable");
   });
 
-  // Both must be `stable`. Without this, macOS users with classic
-  // scrollbars see the find overlay <mark> drift above the matched
-  // word in the textarea by N lines per wrapped paragraph.
-  expect(gutters.taGutter).toBe("stable");
-  expect(gutters.ovGutter).toBe("stable");
-});
+  test(`editor textarea and find overlay have identical clientWidth and scrollHeight with line numbers ${lineNumbers}`, async ({
+    page,
+  }) => {
+    await openEditor(page, lineNumbers);
 
-test("editor textarea and find overlay have identical clientWidth and scrollHeight", async ({
-  page,
-}) => {
-  await openEditor(page);
+    const widths = await page.evaluate(() => {
+      const ta = document.querySelector(
+        ".markdown-edit-area",
+      ) as HTMLTextAreaElement;
+      const ov = document.querySelector(
+        ".markdown-find-overlay",
+      ) as HTMLPreElement;
+      return {
+        taClientWidth: ta.clientWidth,
+        ovClientWidth: ov.clientWidth,
+        taScrollHeight: ta.scrollHeight,
+        ovScrollHeight: ov.scrollHeight,
+      };
+    });
 
-  const widths = await page.evaluate(() => {
-    const ta = document.querySelector(
-      ".markdown-edit-area",
-    ) as HTMLTextAreaElement;
-    const ov = document.querySelector(
-      ".markdown-find-overlay",
-    ) as HTMLPreElement;
-    return {
-      taClientWidth: ta.clientWidth,
-      ovClientWidth: ov.clientWidth,
-      taScrollHeight: ta.scrollHeight,
-      ovScrollHeight: ov.scrollHeight,
-    };
+    // Identical inner widths → identical wrap layout. Without
+    // `scrollbar-gutter: stable` on both, this can diverge under
+    // classic-scrollbar OS settings and the find <mark> drifts.
+    expect(widths.taClientWidth).toBe(widths.ovClientWidth);
+    expect(widths.taScrollHeight).toBe(widths.ovScrollHeight);
   });
-
-  // Identical inner widths → identical wrap layout. Without
-  // `scrollbar-gutter: stable` on both, this can diverge under
-  // classic-scrollbar OS settings and the find <mark> drifts.
-  expect(widths.taClientWidth).toBe(widths.ovClientWidth);
-  expect(widths.taScrollHeight).toBe(widths.ovScrollHeight);
-});
+}
 
 test("editor find scrolls long unbroken wrapped text to the active match", async ({
   page,

@@ -188,4 +188,44 @@ describe("PreviewOverflowMenu (P1 a11y)", () => {
     fireEvent.click(exportItem);
     expect(onExport).not.toHaveBeenCalled();
   });
+
+  it("renders and activates a checkable item with its checked state", () => {
+    const onToggle = vi.fn();
+    render(
+      <PreviewOverflowMenu
+        items={[
+          {
+            key: "line-numbers",
+            label: "Line numbers",
+            onSelect: onToggle,
+            checked: true,
+          },
+          {
+            key: "other-toggle",
+            label: "Other toggle",
+            onSelect: vi.fn(),
+            checked: false,
+          },
+        ]}
+      />,
+    );
+    const trigger = screen.getByRole("button", { name: "More actions" });
+    fireEvent.click(trigger);
+
+    const item = screen.getByRole("menuitemcheckbox", {
+      name: "Line numbers",
+    });
+    expect(item).toHaveAttribute("aria-checked", "true");
+    expect(item.querySelector(".preview-overflow-check-slot svg")).not.toBeNull();
+    expect(
+      screen
+        .getByRole("menuitemcheckbox", { name: "Other toggle" })
+        .querySelector(".preview-overflow-check-slot"),
+    ).toBeEmptyDOMElement();
+    fireEvent.keyDown(item, { key: "Enter" });
+
+    expect(onToggle).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+  });
 });

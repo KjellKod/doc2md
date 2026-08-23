@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import type { FindMatch } from "../useFindReplace";
 import {
   insertLink,
@@ -46,6 +54,7 @@ interface EditModeProps {
   viewportTopFloor: () => number;
   autoFocusOnMount?: boolean;
   anchorMirrorEnabled?: boolean;
+  showLineNumbers?: boolean;
   pendingEditorRestoreRef?: MutableElementRef<EditorViewState>;
   onReportView?: () => void;
   onMarkdownChange?: (markdown: string) => void;
@@ -92,6 +101,7 @@ export default function EditMode({
   viewportTopFloor,
   autoFocusOnMount = false,
   anchorMirrorEnabled = true,
+  showLineNumbers = false,
   pendingEditorRestoreRef,
   onReportView,
   onMarkdownChange,
@@ -104,14 +114,20 @@ export default function EditMode({
   const pasteConversionFrameRef = useRef<number | null>(null);
   const pasteConversionTimerRef = useRef<number | null>(null);
   const allowPasteCommitChangeRef = useRef(false);
+  const lineNumberGutterRef = useRef<HTMLDivElement | null>(null);
   const [isPasteConverting, setIsPasteConverting] = useState(false);
   const syncFindHighlightScroll = useCallback(() => {
-    if (!textareaRef.current || !findHighlightRef.current) {
+    if (!textareaRef.current) {
       return;
     }
 
-    findHighlightRef.current.scrollTop = textareaRef.current.scrollTop;
-    findHighlightRef.current.scrollLeft = textareaRef.current.scrollLeft;
+    if (findHighlightRef.current) {
+      findHighlightRef.current.scrollTop = textareaRef.current.scrollTop;
+      findHighlightRef.current.scrollLeft = textareaRef.current.scrollLeft;
+    }
+    if (lineNumberGutterRef.current) {
+      lineNumberGutterRef.current.scrollTop = textareaRef.current.scrollTop;
+    }
   }, [findHighlightRef, textareaRef]);
   const { applyAnchorLine } = useViewportAnchor(textareaRef, "textarea", {
     mirrorRef: anchorMirrorEnabled ? findHighlightRef : undefined,
@@ -121,6 +137,14 @@ export default function EditMode({
   });
   const findOverlaySource =
     anchorMirrorEnabled || isFindOpen ? effectiveMarkdown : "";
+  const sourceLines = useMemo(
+    () =>
+      showLineNumbers ? effectiveMarkdown.split(/\r\n|\n|\r/u) : [],
+    [effectiveMarkdown, showLineNumbers],
+  );
+  const gutterStyle = {
+    "--line-number-digits": Math.max(2, String(sourceLines.length).length),
+  } as CSSProperties;
 
   useLayoutEffect(() => {
     const anchorLine = pendingAnchorLineRef.current;
@@ -205,6 +229,12 @@ export default function EditMode({
     }
     syncFindHighlightScroll();
   }, [effectiveMarkdown, pendingEditorRestoreRef, textareaRef, syncFindHighlightScroll]);
+
+  useLayoutEffect(() => {
+    if (showLineNumbers) {
+      syncFindHighlightScroll();
+    }
+  }, [showLineNumbers, syncFindHighlightScroll]);
 
   // Report the initial selection once the textarea is mounted so toolbar
   // formatter availability is correct before the user moves the caret. This
@@ -513,7 +543,10 @@ export default function EditMode({
   }
 
   return (
-    <div className="markdown-edit-shell">
+    <div
+      className={`markdown-edit-shell${showLineNumbers ? " has-line-numbers" : ""}`}
+      style={showLineNumbers ? gutterStyle : undefined}
+    >
       {isPasteConverting ? (
         <div
           className="markdown-paste-status"
@@ -522,6 +555,22 @@ export default function EditMode({
         >
           <span className="markdown-paste-spinner" aria-hidden="true" />
           Converting paste...
+        </div>
+      ) : null}
+      {showLineNumbers ? (
+        <div
+          ref={lineNumberGutterRef}
+          className="markdown-line-number-gutter"
+          aria-hidden="true"
+        >
+          {sourceLines.map((line, index) => (
+            <div className="markdown-line-number-row" key={index}>
+              <span className="markdown-line-number-value">{index + 1}</span>
+              <span className="markdown-line-number-metric">
+                {line.length === 0 ? " " : line}
+              </span>
+            </div>
+          ))}
         </div>
       ) : null}
       <pre
