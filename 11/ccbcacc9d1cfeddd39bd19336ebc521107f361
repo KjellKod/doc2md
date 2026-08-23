@@ -1,0 +1,41 @@
+src/render/markdownToHtml.parity.test.tsx
+  s_277852159f0bcd::t_c9bb1c6f00c963 163
+src/styles/global.css
+  s_277852159f0bcd::t_b53189d0e25efe 2575-2593,2597,2630,2643,2666
+src/components/__tests__/PreviewPanel.ime.test.tsx
+  s_277852159f0bcd::t_c9bb1c6f00c963 34
+src/components/preview/PreviewToolbar.compact.test.tsx
+  s_277852159f0bcd::t_8f528079ab192b 39,47,49,58
+src/components/PreviewPanel.test.tsx
+  s_277852159f0bcd::t_c9bb1c6f00c963 171,174,180,197,199,204,213,221,251,305,346,373,1268
+  s_277852159f0bcd::t_d2fde203957309 175-177,182-183
+  s_277852159f0bcd::t_7e77515d05571f 721,723,932,1017-1019,1029,1031,1060-1064,1238-1240
+  s_277852159f0bcd::t_73d267cdafb9db 669,722,1030
+tests/e2e/line-numbers.spec.ts
+  s_277852159f0bcd::t_8f528079ab192b 392-395,398,400-403,405-420,426-432,441-443,447-448
+  s_277852159f0bcd::t_0b7ba11dafd966 396,399
+  s_277852159f0bcd::t_d76ee543fac3ee 421-425,437-439,446
+  s_277852159f0bcd::t_ee3807cacb1c30 433-436,444
+  s_277852159f0bcd::t_c9bb1c6f00c963 72,293,301-305,313-316,546,572,574-575
+  s_277852159f0bcd::t_deb5bd2a7e0b19 404,440,445
+  s_277852159f0bcd::t_d2fde203957309 298
+  s_277852159f0bcd::t_41482b936702d6 397
+src/components/preview/PreviewToolbar.tsx
+  s_277852159f0bcd::t_b53189d0e25efe 471-480
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "11ccbcacc9d1cfeddd39bd19336ebc521107f361",
+  "prompts": {},
+  "sessions": {
+    "s_277852159f0bcd": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ffe30-f51f-7d62-9616-e2f83ebe99ae",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
