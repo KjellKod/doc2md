@@ -1295,6 +1295,7 @@ describe("PreviewPanel", () => {
       await expect(htmlBlob.text()).resolves.not.toContain(
         "data-source-line-number",
       );
+      await expect(htmlBlob.text()).resolves.not.toContain("data-source-line=");
       await expect(plainBlob.text()).resolves.toBe("Hello World");
       expect(screen.getByText("Copied")).toBeInTheDocument();
     },

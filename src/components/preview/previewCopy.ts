@@ -18,8 +18,11 @@ export async function copyRenderedContent(previewElement: HTMLElement | null) {
   const clone = previewElement.cloneNode(true) as HTMLElement;
   clone.classList.remove("markdown-surface-with-line-numbers");
   clone
-    .querySelectorAll("[data-source-line-number]")
-    .forEach((element) => element.removeAttribute("data-source-line-number"));
+    .querySelectorAll("[data-source-line-number], [data-source-line]")
+    .forEach((element) => {
+      element.removeAttribute("data-source-line-number");
+      element.removeAttribute("data-source-line");
+    });
   const html = clone.innerHTML;
   const plain = previewElement.innerText;
 
