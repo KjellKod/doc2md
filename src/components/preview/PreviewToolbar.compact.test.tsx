@@ -36,7 +36,7 @@ describe("PreviewToolbar render paths (P1)", () => {
   });
 
   describe("non-compact (desktop / bare shells, AC-P1c)", () => {
-    it("renders the pressed line-number control outside the View mode group", () => {
+    it("renders the line-number checkbox outside the View mode group", () => {
       const onToggleLineNumbers = vi.fn();
       render(
         <PreviewToolbar
@@ -44,9 +44,9 @@ describe("PreviewToolbar render paths (P1)", () => {
         />,
       );
 
-      const control = screen.getByRole("button", { name: "Line numbers" });
+      const control = screen.getByRole("checkbox", { name: "Line numbers" });
       const modeGroup = screen.getByRole("group", { name: "View mode" });
-      expect(control).toHaveAttribute("aria-pressed", "true");
+      expect(control).toBeChecked();
       expect(modeGroup).not.toContainElement(control);
       fireEvent.click(control);
       expect(onToggleLineNumbers).toHaveBeenCalledTimes(1);
@@ -55,7 +55,7 @@ describe("PreviewToolbar render paths (P1)", () => {
     it("omits the line-number control when the active content is unsupported", () => {
       render(<PreviewToolbar {...baseProps({ lineNumbersSupported: false })} />);
       expect(
-        screen.queryByRole("button", { name: /line numbers/i }),
+        screen.queryByRole("checkbox", { name: /line numbers/i }),
       ).not.toBeInTheDocument();
     });
 

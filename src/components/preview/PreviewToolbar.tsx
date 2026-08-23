@@ -3,7 +3,6 @@ import {
   FilePlus,
   FileText,
   Keyboard,
-  ListOrdered,
   Search,
   WandSparkles,
 } from "lucide-react";
@@ -113,7 +112,6 @@ export default function PreviewToolbar({
   const downloadMarkdownTooltipId = useId();
   const downloadHtmlTooltipId = useId();
   const adjustFormattingTooltipId = useId();
-  const lineNumbersTooltipId = useId();
   const shortcutsButtonRef = useRef<HTMLButtonElement | null>(null);
   // Compact mode has no dedicated shortcuts trigger — the popover opens from the
   // overflow menu's "Keyboard shortcuts" item. Hold a ref to the overflow
@@ -470,6 +468,16 @@ export default function PreviewToolbar({
             </div>
           </div>
         ) : null}
+        {lineNumbersSupported && onToggleLineNumbers ? (
+          <label className="line-numbers-checkbox">
+            <input
+              type="checkbox"
+              checked={showLineNumbers}
+              onChange={onToggleLineNumbers}
+            />
+            <span>Line numbers</span>
+          </label>
+        ) : null}
         {adjustFormattingControl}
       </div>
       <div className="preview-toolbar-actions">
@@ -483,28 +491,6 @@ export default function PreviewToolbar({
             <FilePlus className="find-entry-icon" aria-hidden="true" />
             <span className="find-entry-label">New</span>
           </button>
-        ) : null}
-        {lineNumbersSupported && onToggleLineNumbers ? (
-          <span className="instant-tooltip-anchor">
-            <button
-              type="button"
-              className={`ghost-button find-entry-button line-numbers-toggle${showLineNumbers ? " is-active" : ""}`}
-              onClick={onToggleLineNumbers}
-              aria-label="Line numbers"
-              aria-pressed={showLineNumbers}
-              aria-describedby={lineNumbersTooltipId}
-            >
-              <ListOrdered className="find-entry-icon" aria-hidden="true" />
-              <span className="find-entry-label">Numbers</span>
-            </button>
-            <span
-              id={lineNumbersTooltipId}
-              role="tooltip"
-              className="instant-tooltip"
-            >
-              {showLineNumbers ? "Hide line numbers" : "Show line numbers"}
-            </span>
-          </span>
         ) : null}
         {showToggle ? (
           <button
