@@ -79,7 +79,7 @@ struct LicenseWindow: View {
                 .textSelection(.enabled)
 
             if licenseController.credentialStorageUnavailable {
-                Text("The cached license is available, but its Keychain credentials could not be checked. Reopen doc2md and try again before entering a license key.")
+                Text("Polar Keychain credentials could not be checked. Reopen doc2md and try again before entering a license key.")
                     .foregroundStyle(.secondary)
             } else if licenseController.credentialsNeedReentry {
                 Text("The cached license is available, but its Keychain credentials are missing. Re-enter the key to restore online validation.")
