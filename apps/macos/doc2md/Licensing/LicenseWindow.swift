@@ -78,14 +78,17 @@ struct LicenseWindow: View {
                 .foregroundStyle(.secondary)
                 .textSelection(.enabled)
 
-            if licenseController.credentialsNeedReentry {
+            if licenseController.credentialStorageUnavailable {
+                Text("The cached license is available, but its Keychain credentials could not be checked. Reopen doc2md and try again before entering a license key.")
+                    .foregroundStyle(.secondary)
+            } else if licenseController.credentialsNeedReentry {
                 Text("The cached license is available, but its Keychain credentials are missing. Re-enter the key to restore online validation.")
                     .foregroundStyle(.secondary)
             }
 
             SecureField("Polar license key", text: $key)
                 .textFieldStyle(.roundedBorder)
-                .disabled(licenseController.operation.disablesControls)
+                .disabled(licenseEntryDisabled)
 
             if let progressText = licenseController.operation.progressText {
                 HStack(spacing: 8) {
@@ -117,7 +120,7 @@ struct LicenseWindow: View {
                         activate()
                     }
                 }
-                .disabled(trimmedKey.isEmpty || controlsDisabled)
+                .disabled(trimmedKey.isEmpty || licenseEntryDisabled)
 
                 if licenseController.canRemovePolarLicense {
                     Button("Remove License", role: .destructive) {
@@ -167,6 +170,10 @@ struct LicenseWindow: View {
 
     private var controlsDisabled: Bool {
         licenseController.operation.disablesControls
+    }
+
+    private var licenseEntryDisabled: Bool {
+        controlsDisabled || licenseController.credentialStorageUnavailable
     }
 
     private var primaryButtonTitle: String {

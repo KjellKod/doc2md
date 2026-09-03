@@ -77,8 +77,33 @@ final class PolarLicensePersistenceTests: XCTestCase {
         credentials.value = nil
         let keychainLoss = repository.load()
         XCTAssertNil(keychainLoss.credentials)
+        XCTAssertFalse(keychainLoss.credentialsUnavailable)
         XCTAssertEqual(keychainLoss.metadata?.keyStatus, .granted)
         XCTAssertEqual(try repository.installationSuffix(), "7Q2F")
+    }
+
+    func testRepositoryDistinguishesKeychainReadFailureFromMissingCredentials() {
+        let credentials = MemoryPolarCredentialStore()
+        credentials.failLoad = true
+        let metadata = MemoryPolarMetadataStore()
+        metadata.value = PolarLicenseMetadata(
+            keyStatus: .granted,
+            expiresAt: expiry,
+            lastValidatedAt: expiry.addingTimeInterval(-60),
+            installationSuffix: "7Q2F"
+        )
+        let repository = PolarLicenseRepository(
+            credentialStore: credentials,
+            metadataStore: metadata,
+            suffixGenerator: FixedSuffixGenerator(value: "7Q2F")
+        )
+
+        let result = repository.load()
+
+        XCTAssertNil(result.credentials)
+        XCTAssertNotNil(result.metadata)
+        XCTAssertTrue(result.storageUnavailable)
+        XCTAssertTrue(result.credentialsUnavailable)
     }
 
     func testActivationMetadataFailureDoesNotWriteKeychainCredentials() throws {
@@ -330,12 +355,16 @@ final class PolarLicensePersistenceTests: XCTestCase {
 
 private final class MemoryPolarCredentialStore: PolarLicenseCredentialStorage {
     var value: PolarLicenseCredentials?
+    var failLoad = false
     var failSave = false
     var failClear = false
     private(set) var saveCount = 0
     private(set) var clearCount = 0
 
-    func loadCredentials() throws -> PolarLicenseCredentials? { value }
+    func loadCredentials() throws -> PolarLicenseCredentials? {
+        if failLoad { throw LicenseStorageError.failed("load failed") }
+        return value
+    }
     func saveCredentials(_ credentials: PolarLicenseCredentials) throws {
         saveCount += 1
         if failSave { throw LicenseStorageError.failed("save failed") }

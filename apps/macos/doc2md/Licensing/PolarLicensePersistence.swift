@@ -233,6 +233,7 @@ struct PolarLicenseLoadResult {
     let credentials: PolarLicenseCredentials?
     let metadata: PolarLicenseMetadata?
     let storageUnavailable: Bool
+    let credentialsUnavailable: Bool
 }
 
 protocol PolarLicenseRepositoryProtocol {
@@ -266,6 +267,7 @@ final class PolarLicenseRepository: PolarLicenseRepositoryProtocol {
 
     func load() -> PolarLicenseLoadResult {
         var unavailable = false
+        var credentialsUnavailable = false
         let credentials: PolarLicenseCredentials?
         let metadata: PolarLicenseMetadata?
         do {
@@ -273,6 +275,7 @@ final class PolarLicenseRepository: PolarLicenseRepositoryProtocol {
         } catch {
             credentials = nil
             unavailable = true
+            credentialsUnavailable = true
         }
         do {
             metadata = try metadataStore.loadMetadata()
@@ -283,7 +286,8 @@ final class PolarLicenseRepository: PolarLicenseRepositoryProtocol {
         return PolarLicenseLoadResult(
             credentials: credentials,
             metadata: metadata,
-            storageUnavailable: unavailable
+            storageUnavailable: unavailable,
+            credentialsUnavailable: credentialsUnavailable
         )
     }
 

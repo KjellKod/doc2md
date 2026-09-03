@@ -226,6 +226,32 @@ final class PolarLicenseControllerTests: XCTestCase {
         XCTAssertTrue(controller.credentialsNeedReentry)
     }
 
+    func testKeychainReadFailurePreservesCachedStateAndBlocksReactivation() async {
+        let client = ScriptedPolarClient()
+        let repository = InMemoryPolarRepository()
+        repository.metadata = PolarLicenseMetadata(
+            keyStatus: .granted,
+            expiresAt: now.addingTimeInterval(10 * day),
+            lastValidatedAt: now.addingTimeInterval(-day),
+            installationSuffix: "7Q2F"
+        )
+        repository.credentialsUnavailable = true
+        let controller = makeController(client: client, repository: repository)
+
+        XCTAssertEqual(
+            controller.state,
+            .licensed(LicenseEntitlement(expiresAt: now.addingTimeInterval(10 * day)))
+        )
+        XCTAssertTrue(controller.credentialStorageUnavailable)
+        XCTAssertFalse(controller.credentialsNeedReentry)
+
+        let activated = await controller.activate(key: "polar-test-key")
+
+        XCTAssertFalse(activated)
+        XCTAssertEqual(client.activateCount, 0)
+        XCTAssertNil(repository.credentials)
+    }
+
     func testCredentialsWithoutMetadataRequireReplacementBeforeNewActivation() async throws {
         let log = OperationLog()
         let client = ScriptedPolarClient(log: log)
@@ -1059,6 +1085,7 @@ private final class InMemoryPolarRepository: PolarLicenseRepositoryProtocol {
     var credentials: PolarLicenseCredentials?
     var metadata: PolarLicenseMetadata?
     var storageUnavailable = false
+    var credentialsUnavailable = false
     var failSaveActivation = false
     var failClear = false
     var failClearReason = "clear failed"
@@ -1075,7 +1102,8 @@ private final class InMemoryPolarRepository: PolarLicenseRepositoryProtocol {
         PolarLicenseLoadResult(
             credentials: credentials,
             metadata: metadata,
-            storageUnavailable: storageUnavailable
+            storageUnavailable: storageUnavailable || credentialsUnavailable,
+            credentialsUnavailable: credentialsUnavailable
         )
     }
 

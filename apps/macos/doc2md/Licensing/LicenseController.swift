@@ -124,6 +124,7 @@ final class LicenseController: ObservableObject {
     @Published private(set) var operation: PolarLicenseOperation = .idle
     @Published private(set) var recoveryNotice: PolarRecoveryNotice?
     @Published private(set) var credentialsNeedReentry = false
+    @Published private(set) var credentialStorageUnavailable = false
 
     private let store: LicenseStore
     private let polarClient: PolarLicenseClientProtocol
@@ -185,11 +186,12 @@ final class LicenseController: ObservableObject {
         let polar = polarRepository.load()
         polarCredentials = polar.credentials
         polarMetadata = polar.metadata
+        credentialStorageUnavailable = polar.credentialsUnavailable
 
         if let snapshot = Self.snapshot(from: polar.metadata) {
             fallbackState = .unlicensed
             cachedSnapshot = snapshot
-            credentialsNeedReentry = polar.credentials == nil
+            credentialsNeedReentry = polar.credentials == nil && !polar.credentialsUnavailable
         } else {
             let legacy = store.loadToken()
             fallbackState = legacy.state
@@ -207,10 +209,11 @@ final class LicenseController: ObservableObject {
         let polar = polarRepository.load()
         polarCredentials = polar.credentials
         polarMetadata = polar.metadata
+        credentialStorageUnavailable = polar.credentialsUnavailable
         if let snapshot = Self.snapshot(from: polar.metadata) {
             fallbackState = .unlicensed
             cachedSnapshot = snapshot
-            credentialsNeedReentry = polar.credentials == nil
+            credentialsNeedReentry = polar.credentials == nil && !polar.credentialsUnavailable
             return
         }
 
@@ -259,7 +262,10 @@ final class LicenseController: ObservableObject {
 
     @MainActor
     func activate(key rawKey: String) async -> Bool {
-        guard operation == .idle, polarCredentials == nil else {
+        guard operation == .idle,
+              polarCredentials == nil,
+              !credentialStorageUnavailable
+        else {
             return false
         }
         let preserveCachedEntitlementOnFailure = credentialsNeedReentry && cachedSnapshot != nil
@@ -275,7 +281,7 @@ final class LicenseController: ObservableObject {
 
     @MainActor
     func replaceLicense(with rawKey: String) async -> Bool {
-        guard operation == .idle else {
+        guard operation == .idle, !credentialStorageUnavailable else {
             return false
         }
         guard configuration.organizationID != nil else {
@@ -438,6 +444,7 @@ final class LicenseController: ObservableObject {
             polarCredentials = credentials
             polarMetadata = metadata
             credentialsNeedReentry = false
+            credentialStorageUnavailable = false
             fallbackState = .unlicensed
             cachedSnapshot = Self.snapshot(from: metadata)
             recoveryNotice = preservedNotice
@@ -507,6 +514,7 @@ final class LicenseController: ObservableObject {
             PolarLicenseMetadata(installationSuffix: $0.installationSuffix)
         }
         credentialsNeedReentry = false
+        credentialStorageUnavailable = false
         fallbackState = .unlicensed
         return remoteFailed ? .occupiedSlot : nil
     }
