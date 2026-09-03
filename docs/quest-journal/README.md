@@ -2,6 +2,7 @@
 
 | Date | Quest | Outcome |
 |------|-------|---------|
+| 2026-08-22 | [line-number-toggle](line-number-toggle_2026-08-22.md) | Add optional line numbers to Edit and rendered View. ### Goal Users can toggle line numbers on and off while editing ... |
 | 2026-08-14 | [polar-activation-client](polar-activation-client_2026-08-14.md) | Add the Polar activation client and wire it to the Mac license entry window. Goal: Implement Phase 2 of `docs/impleme... |
 | 2026-07-20 | [mac-license-grace-states](mac-license-grace-states_2026-07-20.md) | Extend the Mac license state machine with grace and expired-reminder states. Goal: Implement Phase 1 of docs/implemen... |
 | 2026-06-28 | [table-cell-checkboxes](table-cell-checkboxes_2026-06-28.md) | Implement render-time, source-backed task checkboxes inside GFM table cells so a cell containing a leading marker suc... |

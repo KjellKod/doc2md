@@ -12,6 +12,9 @@ function baseProps(overrides: Partial<ToolbarProps> = {}): ToolbarProps {
     copyState: "idle",
     showToggle: true,
     showCopyButton: true,
+    lineNumbersSupported: true,
+    showLineNumbers: false,
+    onToggleLineNumbers: vi.fn(),
     onSave: vi.fn(),
     onDownloadMarkdown: vi.fn(),
     saveBusy: false,
@@ -33,6 +36,29 @@ describe("PreviewToolbar render paths (P1)", () => {
   });
 
   describe("non-compact (desktop / bare shells, AC-P1c)", () => {
+    it("renders the line-number checkbox outside the View mode group", () => {
+      const onToggleLineNumbers = vi.fn();
+      render(
+        <PreviewToolbar
+          {...baseProps({ showLineNumbers: true, onToggleLineNumbers })}
+        />,
+      );
+
+      const control = screen.getByRole("checkbox", { name: "Line numbers" });
+      const modeGroup = screen.getByRole("group", { name: "View mode" });
+      expect(control).toBeChecked();
+      expect(modeGroup).not.toContainElement(control);
+      fireEvent.click(control);
+      expect(onToggleLineNumbers).toHaveBeenCalledTimes(1);
+    });
+
+    it("omits the line-number control when the active content is unsupported", () => {
+      render(<PreviewToolbar {...baseProps({ lineNumbersSupported: false })} />);
+      expect(
+        screen.queryByRole("checkbox", { name: /line numbers/i }),
+      ).not.toBeInTheDocument();
+    });
+
     it("renders the full second action row with no overflow menu", () => {
       render(<PreviewToolbar {...baseProps({ compactToolbar: false })} />);
 
@@ -74,6 +100,27 @@ describe("PreviewToolbar render paths (P1)", () => {
   });
 
   describe("compact (hosted phones, AC-P1a / F3)", () => {
+    it("exposes the line-number preference as a checked More-menu item", () => {
+      const onToggleLineNumbers = vi.fn();
+      render(
+        <PreviewToolbar
+          {...baseProps({
+            compactToolbar: true,
+            showLineNumbers: true,
+            onToggleLineNumbers,
+          })}
+        />,
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "More actions" }));
+      const item = screen.getByRole("menuitemcheckbox", {
+        name: "Line numbers",
+      });
+      expect(item).toHaveAttribute("aria-checked", "true");
+      fireEvent.click(item);
+      expect(onToggleLineNumbers).toHaveBeenCalledTimes(1);
+    });
+
     it("keeps Edit/View/LinkedIn and Save primary while demoting the rest behind More", () => {
       render(<PreviewToolbar {...baseProps({ compactToolbar: true })} />);
 

@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import type { FileEntry } from "../types";
 import PreviewPanel from "../components/PreviewPanel";
@@ -155,34 +155,40 @@ afterEach(() => {
 });
 
 describe("export/Preview parity guard", () => {
-  it("renders structurally equivalent content from one shared fixture", () => {
-    const { container } = render(<PreviewPanel entry={createEntry()} />);
-    const previewSurface = container.querySelector(".markdown-surface");
-    expect(previewSurface).not.toBeNull();
+  it.each([false, true])(
+    "renders structurally equivalent content with line numbers %s",
+    (showLineNumbers) => {
+      const { container } = render(<PreviewPanel entry={createEntry()} />);
+      if (showLineNumbers) {
+        fireEvent.click(screen.getByRole("checkbox", { name: "Line numbers" }));
+      }
+      const previewSurface = container.querySelector(".markdown-surface");
+      expect(previewSurface).not.toBeNull();
 
-    const exportFragment = markdownToHtml(RAW_FIXTURE, { standalone: false });
-    const exportRoot = document.createElement("div");
-    exportRoot.innerHTML = exportFragment;
+      const exportFragment = markdownToHtml(RAW_FIXTURE, { standalone: false });
+      const exportRoot = document.createElement("div");
+      exportRoot.innerHTML = exportFragment;
 
-    const preview = normalize(previewSurface!);
-    const exported = normalize(exportRoot);
+      const preview = normalize(previewSurface!);
+      const exported = normalize(exportRoot);
 
-    // Sanity: the fixture is non-trivial, so the comparison is load-bearing
-    // rather than a tautology over empty collections.
-    expect(preview.headings.length).toBeGreaterThanOrEqual(2);
-    // 2 list-item task checkboxes + 2 synthesized table-cell checkboxes.
-    expect(preview.checkboxes.length).toBe(4);
-    expect(preview.links.length).toBe(3);
+      // Sanity: the fixture is non-trivial, so the comparison is load-bearing
+      // rather than a tautology over empty collections.
+      expect(preview.headings.length).toBeGreaterThanOrEqual(2);
+      // 2 list-item task checkboxes + 2 synthesized table-cell checkboxes.
+      expect(preview.checkboxes.length).toBe(4);
+      expect(preview.links.length).toBe(3);
 
-    expect(exported.headings).toEqual(preview.headings);
-    expect(exported.tableHeaders).toEqual(preview.tableHeaders);
-    expect(exported.tableCells).toEqual(preview.tableCells);
-    expect(exported.checkboxes).toEqual(preview.checkboxes);
-    expect(exported.codeText).toEqual(preview.codeText);
-    expect(exported.blockquotes).toEqual(preview.blockquotes);
-    expect(exported.links).toEqual(preview.links);
-    expect(exported.text).toEqual(preview.text);
-  });
+      expect(exported.headings).toEqual(preview.headings);
+      expect(exported.tableHeaders).toEqual(preview.tableHeaders);
+      expect(exported.tableCells).toEqual(preview.tableCells);
+      expect(exported.checkboxes).toEqual(preview.checkboxes);
+      expect(exported.codeText).toEqual(preview.codeText);
+      expect(exported.blockquotes).toEqual(preview.blockquotes);
+      expect(exported.links).toEqual(preview.links);
+      expect(exported.text).toEqual(preview.text);
+    },
+  );
 
   it("classifies the disabled repo-relative link the same way in both paths", () => {
     const { container } = render(<PreviewPanel entry={createEntry()} />);

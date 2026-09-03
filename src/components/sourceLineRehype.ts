@@ -17,14 +17,88 @@ import type { Element, ElementContent, Root, RootContent } from "hast";
  * checkboxes also get `data-task-source-line` so rendered View checkboxes can
  * update the exact source marker without polluting the viewport anchor stamps.
  */
-export function sourceLineRehype(originalLineFor: number[]) {
+interface SourceLineRehypeOptions {
+  displayLineNumbers?: boolean;
+  displayOnly?: boolean;
+}
+
+export function sourceLineRehype(
+  originalLineFor: number[],
+  options: SourceLineRehypeOptions = {},
+) {
   return function plugin() {
     return function transformer(tree: Root) {
-      for (const node of tree.children) {
-        stamp(node, originalLineFor);
+      if (!options.displayOnly) {
+        for (const node of tree.children) {
+          stamp(node, originalLineFor);
+        }
+      }
+      if (options.displayLineNumbers || options.displayOnly) {
+        stampDisplayLineNumbers(tree, originalLineFor);
       }
     };
   };
+}
+
+function stampDisplayLineNumbers(tree: Root, originalLineFor: number[]) {
+  for (const node of tree.children) {
+    stampDisplayNode(node, originalLineFor, false);
+  }
+}
+
+function stampDisplayNode(
+  node: RootContent,
+  originalLineFor: number[],
+  suppressParagraph: boolean,
+) {
+  if (node.type !== "element") {
+    return;
+  }
+
+  const element = node as Element;
+  const tag = element.tagName;
+  const isHeading = /^h[1-6]$/u.test(tag);
+  const stampsSelf =
+    isHeading ||
+    tag === "li" ||
+    tag === "pre" ||
+    tag === "blockquote" ||
+    (tag === "p" && !suppressParagraph);
+
+  if (stampsSelf) {
+    stampDisplayElement(element, originalLineFor);
+  } else if (tag === "tr") {
+    const firstCell = element.children.find(
+      (child): child is Element =>
+        child.type === "element" &&
+        (child.tagName === "th" || child.tagName === "td"),
+    );
+    if (firstCell) {
+      const sourceLine = originalSourceLineFor(element, originalLineFor);
+      if (sourceLine !== null) {
+        firstCell.properties = firstCell.properties ?? {};
+        firstCell.properties["data-source-line-number"] = String(sourceLine);
+      }
+    }
+  }
+
+  if (tag === "pre" || tag === "tr") {
+    return;
+  }
+
+  const suppressChildren = suppressParagraph || tag === "li" || tag === "blockquote";
+  for (const child of element.children) {
+    stampDisplayNode(child, originalLineFor, suppressChildren);
+  }
+}
+
+function stampDisplayElement(element: Element, originalLineFor: number[]) {
+  const sourceLine = originalSourceLineFor(element, originalLineFor);
+  if (sourceLine === null) {
+    return;
+  }
+  element.properties = element.properties ?? {};
+  element.properties["data-source-line-number"] = String(sourceLine);
 }
 
 function stamp(node: RootContent, originalLineFor: number[]) {

@@ -21,6 +21,9 @@ interface PreviewToolbarProps {
   copyState: "idle" | "copied";
   showToggle: boolean;
   showCopyButton: boolean;
+  lineNumbersSupported?: boolean;
+  showLineNumbers?: boolean;
+  onToggleLineNumbers?: () => void;
   onSave?: () => void | Promise<void>;
   onDownloadMarkdown?: () => void | Promise<void>;
   downloadMarkdownDisabled?: boolean;
@@ -81,6 +84,9 @@ export default function PreviewToolbar({
   copyState,
   showToggle,
   showCopyButton,
+  lineNumbersSupported = false,
+  showLineNumbers = false,
+  onToggleLineNumbers,
   onSave,
   onDownloadMarkdown,
   downloadMarkdownDisabled = false,
@@ -230,6 +236,14 @@ export default function PreviewToolbar({
       key: "find",
       label: "Find and replace",
       onSelect: onOpenFind,
+    });
+  }
+  if (lineNumbersSupported && onToggleLineNumbers) {
+    overflowItems.push({
+      key: "line-numbers",
+      label: "Line numbers",
+      onSelect: onToggleLineNumbers,
+      checked: showLineNumbers,
     });
   }
   if (onDownloadMarkdown) {
@@ -453,6 +467,16 @@ export default function PreviewToolbar({
               </span>
             </div>
           </div>
+        ) : null}
+        {lineNumbersSupported && onToggleLineNumbers ? (
+          <label className="line-numbers-checkbox">
+            <input
+              type="checkbox"
+              checked={showLineNumbers}
+              onChange={onToggleLineNumbers}
+            />
+            <span>Line numbers</span>
+          </label>
         ) : null}
         {adjustFormattingControl}
       </div>

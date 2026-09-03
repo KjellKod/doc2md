@@ -6,6 +6,7 @@ For the other perspective, see [Jean-Claude's Journal](../journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
+| 056 | [Line Number Toggle](056-line-number-toggle.md) | Source-accurate visual numbering across native Edit and rendered View, plus the reminder that browser geometry tests must measure paint rather than repeat CSS arithmetic |
 | 055 | [Requiem: Mac License Grace States](055-requiem-mac-license-grace-states.md) | Pure cached entitlement gained exact grace boundaries, moment-of-use expiry, restored reminders, clean dual review, and one safely recovered orchestration artifact |
 | 054 | [Requiem: Commercial Spin-Off](054-requiem-commercial-spinoff.md) | Burying Lemon Squeezy, the sedated Ed25519 issuer, and six assumptions that died in nine review rounds; Polar becomes merchant and interim issuer while money stays out of core document work (PR #195) |
 | 053 | [Requiem: Mobile Reading Space](053-requiem-mobile-reading-space.md) | Hosted-phone reading space reclaimed (P0 collapse-on-select, P1 single-band toolbar + overflow menu, P2 rail folded into the working-mode bar); a self-inflicted collapse dead-end caught by the second reviewer and fixed with a Show/Hide toggle; P3 deferred to preserve PR #176 parity |
