@@ -6,21 +6,98 @@ enum LicenseKeyStatus: Equatable {
     case disabled
 }
 
+struct LicenseEntitlement: Equatable {
+    let expiresAt: Date?
+    let legacyClaims: LicenseClaims?
+
+    init(expiresAt: Date?, legacyClaims: LicenseClaims? = nil) {
+        self.expiresAt = expiresAt
+        self.legacyClaims = legacyClaims
+    }
+
+    init(legacyClaims: LicenseClaims) {
+        self.init(expiresAt: legacyClaims.expiresAt, legacyClaims: legacyClaims)
+    }
+}
+
 struct CachedLicenseSnapshot: Equatable {
-    let claims: LicenseClaims
+    let entitlement: LicenseEntitlement
     let keyStatus: LicenseKeyStatus
     let lastValidatedAt: Date?
+
+    init(
+        entitlement: LicenseEntitlement,
+        keyStatus: LicenseKeyStatus,
+        lastValidatedAt: Date?
+    ) {
+        self.entitlement = entitlement
+        self.keyStatus = keyStatus
+        self.lastValidatedAt = lastValidatedAt
+    }
+
+    init(
+        claims: LicenseClaims,
+        keyStatus: LicenseKeyStatus,
+        lastValidatedAt: Date?
+    ) {
+        self.init(
+            entitlement: LicenseEntitlement(legacyClaims: claims),
+            keyStatus: keyStatus,
+            lastValidatedAt: lastValidatedAt
+        )
+    }
+
+    var claims: LicenseClaims? {
+        entitlement.legacyClaims
+    }
 }
 
 enum LicenseState: Equatable {
     case unlicensed
-    case licensed(LicenseClaims)
-    case grace(LicenseClaims)
-    case expiredReminder(LicenseClaims)
+    case licensed(LicenseEntitlement)
+    case grace(LicenseEntitlement)
+    case expiredReminder(LicenseEntitlement)
     case invalid(reason: String)
     case licenseCheckFailed(reason: String)
 
     private static let gracePeriod: TimeInterval = 7 * 24 * 60 * 60
+
+    static func evaluate(
+        entitlement: LicenseEntitlement,
+        keyStatus: LicenseKeyStatus,
+        now: Date,
+        lastValidatedAt: Date?
+    ) -> LicenseState {
+        guard let expiresAt = entitlement.expiresAt else {
+            switch keyStatus {
+            case .granted:
+                return .licensed(entitlement)
+            case .revoked, .disabled:
+                return .expiredReminder(entitlement)
+            }
+        }
+
+        guard now >= expiresAt else {
+            return .licensed(entitlement)
+        }
+
+        switch keyStatus {
+        case .revoked, .disabled:
+            return .expiredReminder(entitlement)
+        case .granted:
+            break
+        }
+
+        if let lastValidatedAt, lastValidatedAt > expiresAt {
+            return .expiredReminder(entitlement)
+        }
+
+        let graceEndsAt = expiresAt.addingTimeInterval(Self.gracePeriod)
+        if now < graceEndsAt {
+            return .grace(entitlement)
+        }
+        return .expiredReminder(entitlement)
+    }
 
     static func evaluate(
         claims: LicenseClaims,
@@ -28,35 +105,24 @@ enum LicenseState: Equatable {
         now: Date,
         lastValidatedAt: Date?
     ) -> LicenseState {
-        guard let expiresAt = claims.expiresAt else {
-            switch keyStatus {
-            case .granted:
-                return .licensed(claims)
-            case .revoked, .disabled:
-                return .expiredReminder(claims)
-            }
-        }
+        evaluate(
+            entitlement: LicenseEntitlement(legacyClaims: claims),
+            keyStatus: keyStatus,
+            now: now,
+            lastValidatedAt: lastValidatedAt
+        )
+    }
 
-        guard now >= expiresAt else {
-            return .licensed(claims)
-        }
+    static func licensed(_ claims: LicenseClaims) -> LicenseState {
+        .licensed(LicenseEntitlement(legacyClaims: claims))
+    }
 
-        switch keyStatus {
-        case .revoked, .disabled:
-            return .expiredReminder(claims)
-        case .granted:
-            break
-        }
+    static func grace(_ claims: LicenseClaims) -> LicenseState {
+        .grace(LicenseEntitlement(legacyClaims: claims))
+    }
 
-        if let lastValidatedAt, lastValidatedAt > expiresAt {
-            return .expiredReminder(claims)
-        }
-
-        let graceEndsAt = expiresAt.addingTimeInterval(Self.gracePeriod)
-        if now < graceEndsAt {
-            return .grace(claims)
-        }
-        return .expiredReminder(claims)
+    static func expiredReminder(_ claims: LicenseClaims) -> LicenseState {
+        .expiredReminder(LicenseEntitlement(legacyClaims: claims))
     }
 
     var allowsReminders: Bool {

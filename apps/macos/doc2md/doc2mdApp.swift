@@ -36,6 +36,10 @@ struct Doc2mdApp: App {
                     // this view appeared into the ShellHost-owned router.
                     appDelegate.configure(shellHost: shellHost)
                     shellHost.presentMarkdownDefaultAppHintIfNeeded()
+                    Task { await licenseController.revalidateIfNeeded() }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+                    Task { await licenseController.revalidateIfNeeded() }
                 }
         }
         .commands {

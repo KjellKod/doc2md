@@ -2,6 +2,7 @@ import Combine
 import Foundation
 import XCTest
 
+@MainActor
 final class LicenseStateTests: XCTestCase {
     private let day: TimeInterval = 24 * 60 * 60
     private let expiry = Date(timeIntervalSince1970: 1_800_000_000)

@@ -143,6 +143,21 @@ Help-menu third-party items have been removed: there is no longer an `Acknowledg
 
 The Help menu now hosts the licensing/status workflow items (relocated from the `doc2md` app menu): `Enter License...`, a `Monthly Update Checks` toggle, and `Check for Updates...`.
 
+Polar activation uses a public organization UUID supplied at build time. It is not a credential. For direct Xcode builds, pass the setting as an assignment:
+
+```bash
+xcodebuild -project apps/macos/doc2md.xcodeproj -scheme doc2md -configuration Release \
+  DOC2MD_POLAR_ORGANIZATION_ID=11111111-2222-3333-4444-555555555555 build
+```
+
+For the one-command build, export the same public value:
+
+```bash
+DOC2MD_POLAR_ORGANIZATION_ID=11111111-2222-3333-4444-555555555555 npm run build:mac
+```
+
+A missing or malformed value disables activation only. It never blocks launch or document work. No merchant secret, organization token, or API credential belongs in the app, repository, or this setting.
+
 Notice inventory maintenance:
 
 - Generate: `npm run generate:notices`
@@ -369,11 +384,13 @@ Open-source PR safety rules:
 
 Phase 7 adds Mac-only honest-user licensing. The app remains free to keep using when unlicensed; a valid paid license removes occasional reminders. Hosted web remains free, stateless, and independent at `https://kjellkod.github.io/doc2md/`.
 
-The MVP license states are `Unlicensed`, `Licensed`, `Invalid`, and `License Check Failed`. There is no time-limited access state. License verification is local Ed25519 public-key verification over `doc2md-license-v1.<base64url-json-claims>`. The private signing key, merchant credentials, webhook secrets, customer records, Apple secrets, and Sparkle private key must not be committed or exposed to PR CI.
+Polar is the active v1 license issuer. Entering a key calls Polar's public customer-portal activation endpoint. Quiet validation starts seven days before expiry and continues through grace and the expired reminder state so a late renewal can restore the license. Network failures retain the cached state and never block opening, editing, converting, saving, or exporting documents. Sandbox end-to-end validation remains deferred and is not performed by local or CI builds.
 
-License storage is local and non-syncing: Keychain is primary and Application Support is fallback. Conflict resolution verifies candidates first, then applies storage priority, so invalid Keychain data never deletes the only valid Application Support fallback. When a valid fallback repairs invalid Keychain data, doc2md deletes the fallback only after verifying Keychain can be read back as the same valid token. If Keychain write or read-back verification fails, including a different valid token after the repair attempt, the app stays licensed from the fallback and keeps it in place.
+The raw Polar key and returned activation ID live together in a separate, non-syncing, device-only Keychain item. Application Support stores only the recognized status, expiry, last validation time, and four-character installation suffix. Removing a license clears credentials and cached entitlement while retaining that non-secret suffix. If remote deactivation cannot complete, the app clears locally and directs the user to Polar's portal to recover the occupied slot.
 
-The `Enter License...` menu item opens local paste-token activation. The Mac-only `Buy License` affordance is disabled and says purchases are not live yet; it must not open `doc2md.dev/buy` or any checkout until a later launch change enables purchases. Before taking money, maintainers must assign merchant account ownership, tax/sales responsibility, refund/support workflow ownership, license delivery ownership, and explicit go-live approval.
+The dormant Ed25519 verifier and legacy token stores remain compiled and tested as the private-issuer contingency. They are not used for new Polar key entry, and their trust behavior is unchanged. The private signing key, merchant credentials, webhook secrets, customer records, Apple secrets, and Sparkle private key must not be committed or exposed to PR CI.
+
+The `Enter License...` menu item opens Polar key activation. Purchase UX remains out of scope and must not open checkout until a later launch change enables purchases. Before taking money, maintainers must assign merchant account ownership, tax/sales responsibility, refund/support workflow ownership, license delivery ownership, and explicit go-live approval.
 
 Unlicensed reminders are save-count based in the current startup session: after successful save 10, then 35, 60, and so on. Failed, cancelled, conflicted, open, edit, import, conversion, and export actions do not count, and reminders are shown only after save completion returns control to the app.
 
