@@ -53,3 +53,26 @@ Expected preview behavior:
 - no bullet marker is visible in addition to the checkbox
 
 The editor Markdown text should remain Markdown. The semantic checkbox behavior belongs to preview rendering and copy/export paths that explicitly render Markdown to HTML.
+
+## Raw HTML and anchors
+
+doc2md targets GFM syntax and GitHub-familiar safe raw HTML behavior. Explicit anchors work with ordinary fragment links:
+
+```markdown
+[Jump](#7-2-prove-the-ci-commercial-dmg-build-path)
+
+<a id="7-2-prove-the-ci-commercial-dmg-build-path"></a>
+
+### 7.2 Prove the CI commercial DMG build path
+```
+
+Preview and HTML export render the empty anchor as an invisible target and keep the jump inside the document.
+
+Deliberate differences from GitHub:
+
+- Raw HTML passes through doc2md's explicit sanitizer. Explicit `<a id>` targets plus raw `h2` and `li` author IDs are rewritten into an internal `user-content:` namespace and matching fragment and ARIA references follow that rewrite. IDs on other raw elements are removed, leaving fragment links that target them inert.
+- Safe non-allowlisted containers are unwrapped, preserving sanitized child content. Executable or content-active elements and their contents are removed.
+- Supported external `http`, `https`, `mailto`, and `tel` links open outside doc2md.
+- Repository-relative links remain disabled because doc2md has no repository context for resolving them.
+- Standalone HTML export strips all image sources so exported documents remain self-contained.
+- The virtualized large-document fallback renders independent passes around large tables. Raw anchors and fragment links resolve within one pass, not across a virtualized table boundary.

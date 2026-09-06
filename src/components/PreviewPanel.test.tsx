@@ -12,6 +12,7 @@ import {
   getLargeJsonPreview,
 } from "./preview/largeJsonPreview";
 import * as viewportAnchor from "./viewportAnchor";
+import { markdownToHtml } from "../render/markdownToHtml";
 
 class MockClipboardItem {
   readonly types: string[];
@@ -1181,6 +1182,44 @@ describe("PreviewPanel", () => {
         "| - [x] | Kjell Hedstrom |",
       ].join("\n"),
     );
+  });
+
+  it("preserves source lines and table checkbox write-back when raw HTML is present", () => {
+    const onChange = vi.fn();
+    const markdown = [
+      "[Jump](#target)",
+      "",
+      '<a id="target"></a>',
+      "",
+      "Before <strong>safe HTML</strong>",
+      "",
+      "| Done | Name |",
+      "| --- | --- |",
+      "| - [ ] | Ship it |",
+    ].join("\n");
+
+    const { container } = render(
+      <PreviewPanel
+        entry={createEntry({ markdown, editedMarkdown: markdown })}
+        onMarkdownChange={onChange}
+      />,
+    );
+
+    const table = container.querySelector(".markdown-surface table");
+    const row = table?.querySelector("tbody tr");
+    const checkbox = row?.querySelector<HTMLInputElement>(
+      'input[type="checkbox"]',
+    );
+    expect(table?.getAttribute("data-source-line")).toBe("7");
+    expect(checkbox?.getAttribute("data-task-source-line")).toBe("9");
+
+    fireEvent.click(checkbox!);
+    expect(onChange).toHaveBeenCalledWith(markdown.replace("| - [ ] |", "| - [x] |"));
+
+    const exported = markdownToHtml(markdown, { standalone: false });
+    expect(exported).toContain('type="checkbox"');
+    expect(exported).not.toContain("data-source-line");
+    expect(exported).not.toContain("data-task-source-line");
   });
 
   it("leaves an escaped table-cell marker literal with no checkbox", () => {

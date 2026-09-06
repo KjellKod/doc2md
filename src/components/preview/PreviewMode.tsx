@@ -7,7 +7,11 @@ import {
   type KeyboardEvent,
   type MouseEvent,
 } from "react";
-import ReactMarkdown, { type Components } from "react-markdown";
+import ReactMarkdown, {
+  defaultUrlTransform,
+  type Components,
+  type UrlTransform,
+} from "react-markdown";
 import rehypeSlug from "rehype-slug";
 import remarkGfm from "remark-gfm";
 import type { FindMatch } from "../useFindReplace";
@@ -36,6 +40,18 @@ import {
 } from "./tableCellCheckbox";
 import { LargeJsonPreviewView } from "./LargeJsonPreviewView";
 import { getLargeJsonPreview } from "./largeJsonPreview";
+import {
+  isExplicitMarkdownTarget,
+  safeMarkdownHtmlAfterSlugPlugins,
+  safeMarkdownHtmlBeforeSlugPlugins,
+} from "../../render/safeMarkdownHtml";
+
+const markdownUrlTransform: UrlTransform = (value, key, node) => {
+  if (key === "href" && node.tagName === "a" && /^tel:/iu.test(value)) {
+    return value;
+  }
+  return defaultUrlTransform(value);
+};
 
 // Link classification (external / anchor / disabled) is shared with the
 // static HTML export renderer via src/render/markdownLinks.ts so the two
@@ -62,7 +78,16 @@ const previewMarkdownComponents: Components = {
   // an unknown DOM attribute. The local lint config does not honor
   // argsIgnorePattern, so use `void` to mark it as intentionally read.
   a({ node, children, className, href, ...props }) {
-    void node;
+    if (node && isExplicitMarkdownTarget(node)) {
+      // An empty inline anchor with no href is naturally invisible while
+      // remaining a real scroll target. display:none and visibility:hidden
+      // would break the landing position (ux-guidebook §2 #1).
+      return (
+        <a {...props} className={className}>
+          {children}
+        </a>
+      );
+    }
     const classification = classifyMarkdownHref(href);
     if (classification.kind === "external") {
       return (
@@ -290,9 +315,9 @@ function RichPreviewMode({
       previewWithLineMap === null
         ? []
         : [
-          // rehype-slug runs first so heading ids are in place before the
-          // source-line tagger or find-highlighter touch the tree.
+          ...safeMarkdownHtmlBeforeSlugPlugins(),
           rehypeSlug,
+          ...safeMarkdownHtmlAfterSlugPlugins(),
           // Synthesize static table-cell checkbox inputs (same plugin as
           // export, parity by construction). The resolver maps a row's
           // FORMATTED start line back to the ORIGINAL source line via the line
@@ -366,8 +391,10 @@ function RichPreviewMode({
       ) : (
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
+          remarkRehypeOptions={{ allowDangerousHtml: true }}
           rehypePlugins={previewRehypePlugins}
           components={previewComponents}
+          urlTransform={markdownUrlTransform}
         >
           {previewMarkdown}
         </ReactMarkdown>
@@ -762,8 +789,11 @@ function MarkdownDocumentFragment({
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
+      remarkRehypeOptions={{ allowDangerousHtml: true }}
       rehypePlugins={[
+        ...safeMarkdownHtmlBeforeSlugPlugins(),
         rehypeSlug,
+        ...safeMarkdownHtmlAfterSlugPlugins(),
         ...(showLineNumbers
           ? [
               sourceLineRehype(
@@ -780,6 +810,7 @@ function MarkdownDocumentFragment({
           : []),
       ]}
       components={previewMarkdownComponents}
+      urlTransform={markdownUrlTransform}
     >
       {markdown}
     </ReactMarkdown>
@@ -792,7 +823,17 @@ function MarkdownTableCell({ markdown }: { markdown: string }) {
   }
 
   return (
-    <ReactMarkdown remarkPlugins={[remarkGfm]} components={previewMarkdownComponents}>
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      remarkRehypeOptions={{ allowDangerousHtml: true }}
+      rehypePlugins={[
+        ...safeMarkdownHtmlBeforeSlugPlugins(),
+        rehypeSlug,
+        ...safeMarkdownHtmlAfterSlugPlugins(),
+      ]}
+      components={previewMarkdownComponents}
+      urlTransform={markdownUrlTransform}
+    >
       {markdown}
     </ReactMarkdown>
   );
