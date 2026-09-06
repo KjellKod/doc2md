@@ -1,0 +1,19 @@
+apps/macos/THIRD_PARTY_NOTICES.md
+  s_e049d9ae0ae402::t_3feecd2fa88b4d 59-60,88,207
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "55b98a204b830c3444737843dd6b9a409dbe09f9",
+  "prompts": {},
+  "sessions": {
+    "s_e049d9ae0ae402": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a068b0-d6a1-73b2-a74a-315efab04d95",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
