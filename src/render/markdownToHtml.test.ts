@@ -148,7 +148,9 @@ describe("markdownToHtml safe raw HTML anchors", () => {
     const root = document.createElement("div");
     root.innerHTML = fragment;
 
-    expect(root.textContent).not.toContain('<a id="7-2');
+    expect(
+      root.querySelector('[id="7-2-prove-the-ci-commercial-dmg-build-path"]'),
+    ).toBeNull();
     const target = root.querySelector(
       '[id="user-content:7-2-prove-the-ci-commercial-dmg-build-path"]',
     );
@@ -331,13 +333,14 @@ describe("markdownToHtml safety guards", () => {
 
   it("removes dangerous raw attributes and URL schemes", () => {
     const fragment = markdownToHtml(
-      '<a href="javascript:alert(1)" onclick="alert(1)" style="color:red" name="legacy">unsafe</a>',
+      '<a href="javascript:alert(1)" onclick="alert(1)" style="color:red" name="legacy" ping="https://tracker.example">unsafe</a>',
       { standalone: false },
     );
     expect(fragment).not.toContain("javascript:");
     expect(fragment).not.toContain("onclick");
     expect(fragment).not.toContain("style=");
     expect(fragment).not.toContain("name=");
+    expect(fragment).not.toContain("ping=");
     expect(fragment).toContain("markdown-disabled-link");
   });
 

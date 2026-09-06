@@ -349,7 +349,7 @@ describe("PreviewMode markdown anchor handling", () => {
 
     it("removes dangerous elements, attributes, and URL schemes", () => {
       const { container } = renderPreview(
-        '<style>.x{color:red}</style><iframe src="https://example.com"></iframe><form><button>Send</button></form><object>Object</object><embed src="x"><a href="javascript:alert(1)" onclick="alert(1)" style="color:red">unsafe</a><picture><source srcset="https://example.com/tracker.png"><img src="https://example.com/fallback.png"></picture>',
+        '<style>.x{color:red}</style><iframe src="https://example.com"></iframe><form><button>Send</button></form><object>Object</object><embed src="x"><a href="javascript:alert(1)" onclick="alert(1)" style="color:red" ping="https://tracker.example">unsafe</a><picture><source srcset="https://example.com/tracker.png"><img src="https://example.com/fallback.png"></picture>',
       );
       expect(container.querySelector("style, iframe, form, object, embed, picture, source")).toBeNull();
       expect(container.textContent).not.toContain("Send");
@@ -359,6 +359,7 @@ describe("PreviewMode markdown anchor handling", () => {
       );
       expect(unsafe?.hasAttribute("onclick")).toBe(false);
       expect(unsafe?.hasAttribute("style")).toBe(false);
+      expect(unsafe?.hasAttribute("ping")).toBe(false);
       expect(unsafe?.getAttribute("href") ?? "").not.toMatch(/^javascript:/iu);
     });
 
