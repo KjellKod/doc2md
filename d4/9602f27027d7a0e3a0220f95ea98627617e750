@@ -1,0 +1,93 @@
+apps/macos/doc2md/Licensing/PolarLicensePersistence.swift
+  s_8cdb7c38b65307::t_9a5b1661d92cf4 81-82,167-170,231-234
+apps/macos/doc2md/Info.plist
+  s_8cdb7c38b65307::t_9a5b1661d92cf4 8,16
+apps/macos/doc2md/Licensing/LicenseController.swift
+  s_8cdb7c38b65307::t_9a5b1661d92cf4 7-18
+  s_8cdb7c38b65307::t_be1c7d04593223 102
+apps/macos/doc2md/Licensing/PolarLicenseClient.swift
+  s_8cdb7c38b65307::t_9a5b1661d92cf4 3-6,48-53,60
+docs/implementation/mac-commercial-distribution-decision-record.md
+  s_8cdb7c38b65307::t_163a4e4b9fbc46 46-47
+tests/unit/test_release_polar_configuration.py
+  s_8cdb7c38b65307::t_438a5e08d4a55a 1-10,12-26,28-39,45-101,114-158,181-185,190-212
+  s_8cdb7c38b65307::t_9c426d67bb506d 40-44,186-189
+  s_8cdb7c38b65307::t_b18b2418710a4d 11,27,102-113,159-180
+docs/dexter-journal/057-requiem-polar-release-basics.md
+  s_8cdb7c38b65307::t_448159f7ef31de 5,94,96
+  s_8cdb7c38b65307::t_21767acd3ed3f7 1-4,6-93,95,97-106
+apps/macos/doc2md.xcodeproj/project.pbxproj
+  s_8cdb7c38b65307::t_9a5b1661d92cf4 559-560,588-589
+docs/dexter-journal/058-polar-release-basics.md
+  s_8cdb7c38b65307::t_21767acd3ed3f7 1-19
+docs/diary/2026-09-05.md
+  s_8cdb7c38b65307::t_448159f7ef31de 5
+  s_8cdb7c38b65307::t_21767acd3ed3f7 1-4,6-12
+apps/macos/doc2mdTests/Licensing/PolarLicenseClientTests.swift
+  s_8cdb7c38b65307::t_438a5e08d4a55a 228-251,261-265
+  s_7ceac805d30d60::t_bb421428f91b60 266
+apps/macos/README.md
+  s_8cdb7c38b65307::t_163a4e4b9fbc46 146-148,155,158-159,162-171,399,403
+  s_e049d9ae0ae402::t_c7d17631872699 404
+apps/macos/doc2mdTests/Licensing/PolarLicenseControllerTests.swift
+  s_8cdb7c38b65307::t_438a5e08d4a55a 171-177,399-403
+scripts/build-mac-app.sh
+  s_8cdb7c38b65307::t_9a5b1661d92cf4 6-7,14,35,120,122-123,217-224,240-252,255-265,351-359,386-393,398-401,406
+  s_8cdb7c38b65307::t_29c1ccec931cc8 253-254,394-397,402-405
+  s_6a6865d94293c0::t_7edd28a0bb7385 407
+docs/implementation/mac-commercial-distribution-and-licensing.md
+  s_8cdb7c38b65307::t_163a4e4b9fbc46 54
+docs/quest-journal/polar-release-basics_2026-09-05.md
+  s_8cdb7c38b65307::t_448159f7ef31de 7,102
+  s_8cdb7c38b65307::t_6b5b28147cfa68 1-6,8-101,103-109
+apps/macos/doc2mdTests/Licensing/PolarLicensePersistenceTests.swift
+  s_8cdb7c38b65307::t_438a5e08d4a55a 16-25,28-39
+.github/workflows/release-mac.yml
+  s_8cdb7c38b65307::t_9a5b1661d92cf4 106,108,110,114,123-128
+tests/unit/test_build_mac_native_api_guard.py
+  s_8cdb7c38b65307::t_438a5e08d4a55a 61,75
+docs/quest-journal/README.md
+  s_8cdb7c38b65307::t_6b5b28147cfa68 5
+docs/dexter-journal/README.md
+  s_8cdb7c38b65307::t_21767acd3ed3f7 9-10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "d49602f27027d7a0e3a0220f95ea98627617e750",
+  "prompts": {},
+  "sessions": {
+    "s_6a6865d94293c0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0736d-862a-7b31-8d77-9ebf26c79472",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_7ceac805d30d60": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fe8fd-3ce1-73d1-aa82-29672101e554",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_8cdb7c38b65307": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0735b-5b1d-7b70-8f60-4a5c89fddab8",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_e049d9ae0ae402": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a068b0-d6a1-73b2-a74a-315efab04d95",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
