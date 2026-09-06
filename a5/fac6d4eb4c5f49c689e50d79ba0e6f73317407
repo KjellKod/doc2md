@@ -1,0 +1,39 @@
+scripts/verify-document-library-smoke-build.sh
+  s_e89f4ea57ba4bc::t_a9f2b818c0e9e3 14-30,36,38
+apps/macos/doc2md/DocumentLibraryWindow.swift
+  s_e89f4ea57ba4bc::t_f16f917b3fd5dc 216-221,287-289,294,311
+src/__tests__/App.desktop.test.tsx
+  s_e89f4ea57ba4bc::t_f16f917b3fd5dc 1908-1915
+apps/macos/doc2mdTests/ShellBridgeDocumentLibraryTests.swift
+  s_e89f4ea57ba4bc::t_f16f917b3fd5dc 100-106,112-136,155-161,168,264-265,267-276
+apps/macos/doc2mdTests/DocumentLibraryStoreTests.swift
+  s_e89f4ea57ba4bc::t_f16f917b3fd5dc 24-26,28,69,88,95
+apps/macos/doc2md/ShellBridge.swift
+  s_e89f4ea57ba4bc::t_f16f917b3fd5dc 54-58,197
+src/types/doc2mdShell.d.ts
+  s_e89f4ea57ba4bc::t_f16f917b3fd5dc 127
+apps/macos/doc2mdTests/ExternalOpenRouterTests.swift
+  s_e89f4ea57ba4bc::t_f16f917b3fd5dc 131-132,138
+.ai/allowlist.json
+  s_e89f4ea57ba4bc::t_16759e14daada4 172-173,176-177,182-208,266-267,270-296
+src/shell/desktopAdapter.tsx
+  s_e89f4ea57ba4bc::t_f16f917b3fd5dc 1529-1532
+docs/quest-journal/mac-document-library_2026-09-06.md
+  s_e89f4ea57ba4bc::t_f16f917b3fd5dc 123
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "a5fac6d4eb4c5f49c689e50d79ba0e6f73317407",
+  "prompts": {},
+  "sessions": {
+    "s_e89f4ea57ba4bc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a068b0-d6a1-73b2-a74a-315efab04d95",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
