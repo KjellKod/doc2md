@@ -58,7 +58,7 @@ class NativeAPIGuardTests(unittest.TestCase):
         )
         self.assertNotEqual(result.returncode, 0)
 
-    def test_malformed_polar_organization_id_is_ignored(self) -> None:
+    def test_malformed_polar_organization_id_is_rejected(self) -> None:
         for value in ("not/a-uuid", "[bad", "11111111-2222-3333-4444-55555555555z"):
             result = subprocess.run(
                 [
@@ -72,7 +72,7 @@ class NativeAPIGuardTests(unittest.TestCase):
                 text=True,
                 capture_output=True,
             )
-            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertNotEqual(result.returncode, 0)
             self.assertEqual(result.stdout, "")
 
     def test_valid_polar_organization_id_is_preserved(self) -> None:

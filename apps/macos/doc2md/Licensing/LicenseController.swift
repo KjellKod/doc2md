@@ -3,8 +3,20 @@ import Foundation
 
 struct PolarLicenseConfiguration: Equatable {
     static let organizationIDInfoPlistName = "DOC2MDPolarOrganizationID"
+    static let supportURL = URL(
+        string: "mailto:support@candidtalentedge.com?subject=doc2md%20support"
+    )!
+#if DOC2MD_POLAR_SANDBOX
+    static let recoveryURL = URL(string: "https://sandbox.polar.sh/purchases")!
+    static let keychainService = "com.kjellkod.doc2md.sandbox.polar-license"
+    static let keychainAccount = "doc2md-sandbox-polar-license-credentials"
+    static let applicationSupportDirectoryName = "doc2md Sandbox"
+#else
     static let recoveryURL = URL(string: "https://polar.sh/purchases")!
-    static let supportURL = URL(string: "mailto:support@doc2md.dev")!
+    static let keychainService = "com.kjellkod.doc2md.polar-license"
+    static let keychainAccount = "doc2md-polar-license-credentials"
+    static let applicationSupportDirectoryName = "doc2md"
+#endif
 
     let organizationID: UUID?
 
@@ -88,7 +100,7 @@ struct PolarRecoveryNotice: Equatable {
         var parts: [String] = []
         switch issue {
         case .activationLimit:
-            parts.append("This key has no available activation slots. Deactivate an old device in Polar, or contact support@doc2md.dev for help.")
+            parts.append("This key has no available activation slots. Deactivate an old device in Polar, or email support and include your purchase email address.")
         case .configurationMissing:
             parts.append("This build is missing its public Polar organization ID. Document features remain available.")
         case .invalidKey:
