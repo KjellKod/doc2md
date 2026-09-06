@@ -1,0 +1,35 @@
+src/desktop/__tests__/macBuildAllowlist.test.ts
+  s_e89f4ea57ba4bc::t_42adec22efe6d2 65-66
+  s_b36eb580d726f7::t_6e0ceae726215a 64
+apps/macos/doc2mdTests/DocumentLibraryStoreTests.swift
+  s_e89f4ea57ba4bc::t_8ea23fb5011325 60-73,86-97
+  s_b36eb580d726f7::t_a3f6fb7eba300e 98
+apps/macos/doc2md/DocumentLibraryStore.swift
+  s_e89f4ea57ba4bc::t_8ea23fb5011325 98-106
+scripts/build-mac-app.sh
+  s_e89f4ea57ba4bc::t_42adec22efe6d2 19,105-110
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "6af555fbf5eff202b10e50356b64fe980b9b2e78",
+  "prompts": {},
+  "sessions": {
+    "s_b36eb580d726f7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a06e91-a224-7d51-a3c2-c4f69eb8ce96",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_e89f4ea57ba4bc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a068b0-d6a1-73b2-a74a-315efab04d95",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
