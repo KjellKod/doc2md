@@ -1,0 +1,21 @@
+src/components/__tests__/markdownExternalLinks.test.tsx
+  s_6a6865d94293c0::t_b997cf6e0dacc4 352,362
+src/render/markdownToHtml.test.ts
+  s_6a6865d94293c0::t_b997cf6e0dacc4 151-153,336,343
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "8371b48a088f825903c3454c5621cc6c5485c058",
+  "prompts": {},
+  "sessions": {
+    "s_6a6865d94293c0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0736d-862a-7b31-8d77-9ebf26c79472",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
