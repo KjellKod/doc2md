@@ -293,6 +293,10 @@ function decodeFragment(href: string): string | null {
   }
 }
 
+function encodeFragment(value: string): string {
+  return encodeURIComponent(value).replace(/%3A/giu, ":");
+}
+
 function rewriteIdReference(
   sourceId: string,
   state: IdentityState,
@@ -334,7 +338,7 @@ export const rewriteMarkdownIdentityReferences: Plugin<[], Root> = () =>
         if (fragment !== null && !state.ids.includes(fragment)) {
           const rewritten = state.sourceToOutputId.get(fragment);
           if (rewritten) {
-            node.properties.href = `#${rewritten}`;
+            node.properties.href = `#${encodeFragment(rewritten)}`;
           }
         }
       }

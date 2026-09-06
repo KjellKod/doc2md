@@ -191,6 +191,20 @@ describe("markdownToHtml safe raw HTML anchors", () => {
     expect(root.querySelector('a[href="#%ZZ"]')?.textContent).toBe("Malformed");
   });
 
+  it("preserves literal percent sequences when rewriting fragment links", () => {
+    const fragment = markdownToHtml(
+      '[Jump](#a%2520b)\n\n<a id="a%20b"></a>',
+      { standalone: false },
+    );
+    const root = document.createElement("div");
+    root.innerHTML = fragment;
+
+    expect(root.querySelector('[id="user-content:a%20b"]')).not.toBeNull();
+    expect(root.querySelector('a[href="#user-content:a%2520b"]')?.textContent).toBe(
+      "Jump",
+    );
+  });
+
   it("preserves real footnotes and rejects forged generated identity", () => {
     const fragment = markdownToHtml(
       'Note[^1]\n\n<a id="user-content-fn-1" data-footnote-ref>Forged</a>\n\n[^1]: Real footnote',
