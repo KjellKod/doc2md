@@ -1,0 +1,124 @@
+docs/quest-journal/celebrations/mac-document-library_2026-09-06.md
+  s_8cdb7c38b65307::t_5b010a050c9e6c 1-108
+docs/quest-journal/README.md
+  s_8cdb7c38b65307::t_5b010a050c9e6c 5
+scripts/build-mac-app.sh
+  s_8cdb7c38b65307::t_5b010a050c9e6c 22,30,108-113,194-205,364,381-382
+  s_b36eb580d726f7::t_43d3b6197166e9 383-384
+docs/dexter-journal/README.md
+  s_8cdb7c38b65307::t_5b010a050c9e6c 9
+docs/dexter-journal/059-requiem-document-library.md
+  s_8cdb7c38b65307::t_5b010a050c9e6c 1-108
+.ai/allowlist.json
+  s_8cdb7c38b65307::t_ec45f904d662e7 148,159-160,162-165,167-168,187-190,194,222-224,258,269-270,272-275,277-278,297-306,331-333
+.quest-last-check
+  s_8cdb7c38b65307::t_2f1b64132dd61c 1
+apps/macos/README.md
+  s_8cdb7c38b65307::t_3e13e10093f163 55-64,83-85
+apps/macos/THIRD_PARTY_NOTICES.md
+  s_8cdb7c38b65307::t_7a28c8d9fd2714 59-60,84,89,93,95-97,100,103,176,188-189,217,227,231
+apps/macos/__tests__/spdxHeaderDrift.test.ts
+  s_8cdb7c38b65307::t_f89e05bee8a92b 9,12-24,28,33-37
+apps/macos/doc2md.xcodeproj/project.pbxproj
+  s_8cdb7c38b65307::t_59668b70d881eb 21-29,125-130,218-220,292-294,469-471,512-517
+apps/macos/doc2md/AppScheme.swift
+  s_8cdb7c38b65307::t_41955c55ba415f 35-36,72-73,99,131,137-140,148-149,153-155
+apps/macos/doc2md/DocumentLibraryStore.swift
+  s_8cdb7c38b65307::t_8ff02112300adb 1-145
+apps/macos/doc2md/DocumentLibraryTestHooks.swift
+  s_8cdb7c38b65307::t_f7a42eed382596 1-30
+apps/macos/doc2md/DocumentLibraryWindow.swift
+  s_8cdb7c38b65307::t_ae34d700fda735 1-314
+apps/macos/doc2md/ExternalOpenRouter.swift
+  s_8cdb7c38b65307::t_8ab3bb84867152 4-6,10-21,23,26,29-30,32,38-39,41-42,48-49,56-57,62-67,69-72,74,85-89,93-112,115-116,120-123,125,127-135
+apps/macos/doc2md/Licensing/LicenseState.swift
+  s_8cdb7c38b65307::t_b5ae1646b64b1a 144-152
+apps/macos/doc2md/MenuController.swift
+  s_8cdb7c38b65307::t_93a1a0f2fedf1b 12-14,47-68
+apps/macos/doc2md/ShellBridge.swift
+  s_8cdb7c38b65307::t_f203cb57bc8490 6-17,54-58,102-103,114-116,122-123,193,197-199,219,238,247,272,279-299,305,309-328,350,390,635-648
+apps/macos/doc2md/WebShellView.swift
+  s_8cdb7c38b65307::t_561651f25c1315 8,18-30,36-37,41,44-49,66,157-162
+apps/macos/doc2md/doc2mdApp.swift
+  s_8cdb7c38b65307::t_9793462d8fee66 63-67
+apps/macos/doc2mdTests/AppSchemeImportRouteTests.swift
+  s_8cdb7c38b65307::t_aab681f373520a 59-107
+apps/macos/doc2mdTests/DocumentLibraryStoreTests.swift
+  s_8cdb7c38b65307::t_1b157e5764c453 1-98
+apps/macos/doc2mdTests/DocumentLibraryWindowTests.swift
+  s_8cdb7c38b65307::t_532f4da7c8b1ba 1-239
+apps/macos/doc2mdTests/ExternalOpenRouterTests.swift
+  s_8cdb7c38b65307::t_afc7cfca9057a8 109-235,257-267
+apps/macos/doc2mdTests/Licensing/LicenseStateTests.swift
+  s_8cdb7c38b65307::t_5d7644c4b9a98d 158-167
+apps/macos/doc2mdTests/ShellBridgeDocumentLibraryTests.swift
+  s_8cdb7c38b65307::t_752d947ed14a0e 1-335
+apps/macos/doc2mdTests/WebShellLinkPolicyTests.swift
+  s_8cdb7c38b65307::t_51f829809b1e8b 18-23,145-151,207-216
+docs/journal/056-celebrate-gfm-safe-html-anchors.md
+  s_8cdb7c38b65307::t_c8a7590268b00a 1-101
+docs/journal/README.md
+  s_8cdb7c38b65307::t_8d965f6d5047e3 9
+docs/markdown-gfm-reference.md
+  s_8cdb7c38b65307::t_556eff186c32c7 56-78
+docs/quest-journal/mac-document-library_2026-09-06.md
+  s_8cdb7c38b65307::t_bd5bbbb0a16274 1-217
+package-lock.json
+  s_8cdb7c38b65307::t_7273e68f3daf3a 24-25,110-112,116,125-127,135-137,141-149,166-168,172-173,183-185,189-190,210-212,220-222,226-227,234-236,240-242,252-254,262-264,272-274,282-284,288-289,296-298,302,322-324,328-330,337-339,343-348,356-358,362-363,699-701,704-706,712-714,718-719,726-735,2010-2012,2130-2132,2158-2160,2167,2171-2173,2191-2195,2205-2207,2470-2472,2779-2781,2899-2918,2932-3008,3059-3077,3104-3120,4731-4733,4763-4765,4767-4770,4998-5000,5018,5162-5164,5199-5227,5736-5738,5867-5869,5927-5940,6135-6144,6308-6309
+package.json
+  s_8cdb7c38b65307::t_44535e40733d92 41-42
+packages/core/package.json
+  s_8cdb7c38b65307::t_4b9dd69c94ee70 54,59-60
+scripts/verify-document-library-smoke-build.sh
+  s_8cdb7c38b65307::t_03460862fcc108 1-42
+src/__tests__/App.desktop.test.tsx
+  s_8cdb7c38b65307::t_67c91a4eccef88 1908-1915
+src/components/PreviewPanel.test.tsx
+  s_8cdb7c38b65307::t_01c5ea44d1fb33 15,1187-1224
+src/components/__tests__/markdownExternalLinks.test.tsx
+  s_8cdb7c38b65307::t_3f480f6327f49a 27-45,67-87,268-379
+src/components/preview/PreviewMode.tsx
+  s_8cdb7c38b65307::t_b3f2de95ce07e8 10-14,43-54,81-90,318,320,394,397,792,794,796,813,826-836
+src/desktop/__tests__/macBuildAllowlist.test.ts
+  s_8cdb7c38b65307::t_22724ef5381d1b 64-66,79-81
+src/render/markdownToHtml.parity.test.tsx
+  s_8cdb7c38b65307::t_0f0399542fba40 35-46,62-63,80,157,196-200,202
+src/render/markdownToHtml.test.ts
+  s_8cdb7c38b65307::t_c3a47f4a74ad3a 120,142-241,254-267,292-307,315,320,324-353
+src/render/markdownToHtml.ts
+  s_8cdb7c38b65307::t_40ef3277f07a81 10-14,17-18,20-22,37-41,66-69,170,172,175
+src/render/safeMarkdownHtml.ts
+  s_8cdb7c38b65307::t_229bd58ca2955e 1-434
+src/shell/desktopAdapter.tsx
+  s_8cdb7c38b65307::t_f9a9d30c599c32 1529-1532
+src/styles/global.css
+  s_8cdb7c38b65307::t_d28d5a2c1cf2e1 2997-3005
+src/types/doc2mdShell.d.ts
+  s_8cdb7c38b65307::t_73fe80f2b6fefc 127
+tests/e2e/markdown-anchor-navigation.spec.ts
+  s_8cdb7c38b65307::t_4e52e455700c66 1-127
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "6a55fce83b90ffc781177fee08b7903171fd0e78",
+  "prompts": {},
+  "sessions": {
+    "s_8cdb7c38b65307": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0735b-5b1d-7b70-8f60-4a5c89fddab8",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_b36eb580d726f7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a06e91-a224-7d51-a3c2-c4f69eb8ce96",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
