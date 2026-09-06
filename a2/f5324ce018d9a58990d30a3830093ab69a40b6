@@ -1,0 +1,19 @@
+scripts/build-mac-app.sh
+  s_8cdb7c38b65307::t_6759799641efad 389-397
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "a2f5324ce018d9a58990d30a3830093ab69a40b6",
+  "prompts": {},
+  "sessions": {
+    "s_8cdb7c38b65307": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0735b-5b1d-7b70-8f60-4a5c89fddab8",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
