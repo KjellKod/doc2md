@@ -386,7 +386,15 @@ fi
 INFO_PLIST="$APP_PATH/Contents/Info.plist"
 [[ -f "$INFO_PLIST" ]] || fail "built Info.plist was not found: $INFO_PLIST"
 
-BUILT_POLAR_ORGANIZATION_ID="$(/usr/libexec/PlistBuddy -c 'Print :DOC2MDPolarOrganizationID' "$INFO_PLIST" 2>/dev/null || true)"
+set +e
+BUILT_POLAR_ORGANIZATION_ID="$(/usr/libexec/PlistBuddy -c 'Print :DOC2MDPolarOrganizationID' "$INFO_PLIST" 2>/dev/null)"
+BUILT_POLAR_ORGANIZATION_ID_STATUS=$?
+set -e
+
+if ((BUILT_POLAR_ORGANIZATION_ID_STATUS != 0)); then
+  fail "built Info.plist is missing DOC2MDPolarOrganizationID"
+fi
+
 if [[ "$BUILT_POLAR_ORGANIZATION_ID" != "$POLAR_ORGANIZATION_ID" ]]; then
   fail "built Info.plist Polar organization ID does not match the validated build value"
 fi
