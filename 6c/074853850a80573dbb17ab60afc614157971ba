@@ -1,0 +1,21 @@
+src/render/safeMarkdownHtml.ts
+  s_6a6865d94293c0::t_18f156d199d4a1 296-299,341
+src/render/markdownToHtml.test.ts
+  s_6a6865d94293c0::t_8a777bf309692a 194-207
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "6c074853850a80573dbb17ab60afc614157971ba",
+  "prompts": {},
+  "sessions": {
+    "s_6a6865d94293c0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0736d-862a-7b31-8d77-9ebf26c79472",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
