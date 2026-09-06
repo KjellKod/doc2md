@@ -1,5 +1,9 @@
 import Foundation
 
+#if DOC2MD_POLAR_SANDBOX && !DEBUG
+#error("DOC2MD_POLAR_SANDBOX is restricted to Debug builds")
+#endif
+
 enum PolarLicenseClientError: Error, Equatable {
     case activationLimitReached
     case invalidLicense
@@ -41,13 +45,19 @@ protocol PolarLicenseClientProtocol {
 struct PolarLicenseClient: PolarLicenseClientProtocol {
     static let requestTimeout: TimeInterval = 15
     static let productionBaseURL = URL(string: "https://api.polar.sh")!
+    static let sandboxBaseURL = URL(string: "https://sandbox-api.polar.sh")!
+#if DOC2MD_POLAR_SANDBOX
+    static let defaultBaseURL = sandboxBaseURL
+#else
+    static let defaultBaseURL = productionBaseURL
+#endif
 
     private let session: URLSession
     private let baseURL: URL
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
 
-    init(session: URLSession? = nil, baseURL: URL = Self.productionBaseURL) {
+    init(session: URLSession? = nil, baseURL: URL = Self.defaultBaseURL) {
         if let session {
             self.session = session
         } else {

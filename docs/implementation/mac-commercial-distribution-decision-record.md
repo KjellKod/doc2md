@@ -43,6 +43,8 @@ The Official App remains evaluation-friendly when unregistered:
 
 `KjellKod <kjell@candidtalentedge.com>` is the accountable operational owner/contact in this repository decision record. `support@doc2md.dev` is the intended public customer-facing support/contact alias before go-live.
 
+**Support alias amendment (2026-09-05):** `support@candidtalentedge.com` supersedes the former support alias throughout this record. Older references remain below as historical context.
+
 ## Merchant Path
 
 Use Polar first because the commercial preference is a merchant-of-record path and Polar additionally provides first-class license keys (activation limits, expiry, automatic revocation on subscription cancellation) that serve as the v1 interim issuer. Use Paddle only as the fallback if Polar blocks launch operationally.

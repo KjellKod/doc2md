@@ -143,20 +143,32 @@ Help-menu third-party items have been removed: there is no longer an `Acknowledg
 
 The Help menu now hosts the licensing/status workflow items (relocated from the `doc2md` app menu): `Enter License...`, a `Monthly Update Checks` toggle, and `Check for Updates...`.
 
-Polar activation uses a public organization UUID supplied at build time. It is not a credential. For direct Xcode builds, pass the setting as an assignment:
+Polar activation uses a public organization UUID supplied at build time. It is not a credential. The official Mac release workflow reads `DOC2MD_POLAR_ORGANIZATION_ID` from a public GitHub repository Actions variable, passes it only to the unsigned build and plist-validation steps, and fails before packaging if it is missing or malformed. The unsigned build remains outside the `mac-release` Environment.
+
+For direct Xcode builds, pass the setting as an assignment:
 
 ```bash
 xcodebuild -project apps/macos/doc2md.xcodeproj -scheme doc2md -configuration Release \
   DOC2MD_POLAR_ORGANIZATION_ID=11111111-2222-3333-4444-555555555555 build
 ```
 
-For the one-command build, export the same public value:
+For a strict local Release build, export the same public value:
 
 ```bash
-DOC2MD_POLAR_ORGANIZATION_ID=11111111-2222-3333-4444-555555555555 npm run build:mac
+DOC2MD_POLAR_ORGANIZATION_ID=11111111-2222-3333-4444-555555555555 \
+  bash scripts/build-mac-app.sh --configuration Release --require-polar-organization-id
 ```
 
-A missing or malformed value disables activation only. It never blocks launch or document work. No merchant secret, organization token, or API credential belongs in the app, repository, or this setting.
+The helper rejects every supplied malformed organization UUID and verifies the built plist contains the exact validated value. Missing organization configuration remains allowed only on non-strict local builds, where it disables activation without blocking launch or document work. No merchant secret, organization token, or API credential belongs in the app, repository, or this setting.
+
+Polar sandbox testing has one explicit build path:
+
+```bash
+DOC2MD_POLAR_SANDBOX_ORGANIZATION_ID=aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee \
+  bash scripts/build-mac-app.sh --configuration Debug --polar-sandbox
+```
+
+This Debug-only mode compiles against the fixed `https://sandbox-api.polar.sh` host, uses separate Polar Keychain and Application Support storage, embeds the sandbox UUID, changes the bundle identifier to `com.kjellkod.doc2md.sandbox`, and names the app `doc2md Sandbox (Non-Production)`. Normal builds compile against the fixed `https://api.polar.sh` host. Release builds reject sandbox flags, variables, and compilation conditions. There is no runtime endpoint setting.
 
 Notice inventory maintenance:
 
@@ -384,9 +396,11 @@ Open-source PR safety rules:
 
 Phase 7 adds Mac-only honest-user licensing. The app remains free to keep using when unlicensed; a valid paid license removes occasional reminders. Hosted web remains free, stateless, and independent at `https://kjellkod.github.io/doc2md/`.
 
-Polar is the active v1 license issuer. Entering a key calls Polar's public customer-portal activation endpoint. Quiet validation starts seven days before expiry and continues through grace and the expired reminder state so a late renewal can restore the license. Network failures retain the cached state and never block opening, editing, converting, saving, or exporting documents. Sandbox end-to-end validation remains deferred and is not performed by local or CI builds.
+Polar is the active v1 license issuer. Entering a key calls Polar's public customer-portal activation endpoint. Quiet validation starts seven days before expiry and continues through grace and the expired reminder state so a late renewal can restore the license. Network failures retain the cached state and never block opening, editing, converting, saving, or exporting documents. The explicit sandbox build above supports non-production testing without sharing Polar credentials or metadata with production.
 
 The raw Polar key and returned activation ID live together in a separate, non-syncing, device-only Keychain item. Application Support stores only the recognized status, expiry, last validation time, and four-character installation suffix. Removing a license clears credentials and cached entitlement while retaining that non-secret suffix. If remote deactivation cannot complete, the app clears locally and directs the user to Polar's portal to recover the occupied slot.
+
+Paid-support verification is manual. Ask the customer for the purchase email address, then look up paid status in the Polar dashboard. The app does not perform customer or paid-status verification.
 
 The dormant Ed25519 verifier and legacy token stores remain compiled and tested as the private-issuer contingency. They are not used for new Polar key entry, and their trust behavior is unchanged. The private signing key, merchant credentials, webhook secrets, customer records, Apple secrets, and Sparkle private key must not be committed or exposed to PR CI.
 

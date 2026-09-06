@@ -3,12 +3,15 @@ set -euo pipefail
 
 CONFIGURATION="Release"
 ALLOW_DEVELOPMENT_LICENSE_KEY_FOR_PR=0
+REQUIRE_POLAR_ORGANIZATION_ID=0
+POLAR_SANDBOX=0
 PERSISTENCE_SWIFT_SOURCE_ROOT="apps/macos/doc2md"
 NOTICE_SOURCE_PATH="apps/macos/THIRD_PARTY_NOTICES.md"
 NOTICE_STAGE_DIR=""
 NOTICE_BACKUP_PATH=""
 NOTICE_STAGED_PATH=""
 POLAR_ORGANIZATION_ID=""
+SANDBOX_APP_NAME="doc2md Sandbox (Non-Production)"
 NATIVE_API_ALLOWLIST=(
   "FileManager :: stat/read/temp-file creation/atomic replacement staging for user-selected Markdown files"
   "NSOpenPanel :: user-selected supported-document open panel"
@@ -29,7 +32,7 @@ ALLOWED_NATIVE_API_PATTERN='FileManager|NSOpenPanel|NSSavePanel|NSWorkspace|repl
 FORBIDDEN_NATIVE_API_PATTERN='FileHandle|replaceItem\(|replacingItem|(^|[^A-Za-z0-9_])moveItem[[:space:]]*\(|(^|[^A-Za-z0-9_])copyItem[[:space:]]*\(|\.write\(to:'
 
 usage() {
-  printf 'Usage: %s [--configuration Debug|Release] [--allow-development-license-key-for-pr]\n' "$(basename "$0")"
+  printf 'Usage: %s [--configuration Debug|Release] [--require-polar-organization-id] [--polar-sandbox] [--allow-development-license-key-for-pr]\n' "$(basename "$0")"
 }
 
 fail() {
@@ -114,7 +117,10 @@ validated_polar_organization_id() {
 
   if [[ "$value" =~ ^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$ ]]; then
     printf '%s' "$value"
+    return 0
   fi
+
+  return 1
 }
 
 absolute_path() {
@@ -208,6 +214,14 @@ while (($#)); do
       ALLOW_DEVELOPMENT_LICENSE_KEY_FOR_PR=1
       shift
       ;;
+    --require-polar-organization-id)
+      REQUIRE_POLAR_ORGANIZATION_ID=1
+      shift
+      ;;
+    --polar-sandbox)
+      POLAR_SANDBOX=1
+      shift
+      ;;
     -h|--help)
       usage
       exit 0
@@ -222,6 +236,32 @@ case "$CONFIGURATION" in
   Debug|Release) ;;
   *) fail "--configuration must be Debug or Release" ;;
 esac
+
+PRODUCTION_POLAR_ORGANIZATION_ID="${DOC2MD_POLAR_ORGANIZATION_ID:-}"
+SANDBOX_POLAR_ORGANIZATION_ID="${DOC2MD_POLAR_SANDBOX_ORGANIZATION_ID:-}"
+
+if ((POLAR_SANDBOX)); then
+  [[ "$CONFIGURATION" == "Debug" ]] || fail "--polar-sandbox requires Debug configuration"
+  ((REQUIRE_POLAR_ORGANIZATION_ID == 0)) || fail "--require-polar-organization-id cannot be combined with --polar-sandbox"
+  [[ -z "$PRODUCTION_POLAR_ORGANIZATION_ID" ]] || fail "DOC2MD_POLAR_ORGANIZATION_ID cannot be set for a sandbox build"
+  [[ -n "$SANDBOX_POLAR_ORGANIZATION_ID" ]] || fail "DOC2MD_POLAR_SANDBOX_ORGANIZATION_ID is required for a sandbox build"
+  if ! POLAR_ORGANIZATION_ID="$(validated_polar_organization_id "$SANDBOX_POLAR_ORGANIZATION_ID")"; then
+    fail "DOC2MD_POLAR_SANDBOX_ORGANIZATION_ID must be a UUID in 8-4-4-4-12 form"
+  fi
+else
+  [[ -z "$SANDBOX_POLAR_ORGANIZATION_ID" ]] || fail "DOC2MD_POLAR_SANDBOX_ORGANIZATION_ID requires --polar-sandbox"
+  if [[ "${OTHER_SWIFT_FLAGS:-}" == *DOC2MD_POLAR_SANDBOX* ||
+        "${SWIFT_ACTIVE_COMPILATION_CONDITIONS:-}" == *DOC2MD_POLAR_SANDBOX* ]]; then
+    fail "$CONFIGURATION builds cannot use DOC2MD_POLAR_SANDBOX without --polar-sandbox"
+  fi
+  if [[ -n "$PRODUCTION_POLAR_ORGANIZATION_ID" ]]; then
+    if ! POLAR_ORGANIZATION_ID="$(validated_polar_organization_id "$PRODUCTION_POLAR_ORGANIZATION_ID")"; then
+      fail "DOC2MD_POLAR_ORGANIZATION_ID must be a UUID in 8-4-4-4-12 form"
+    fi
+  elif ((REQUIRE_POLAR_ORGANIZATION_ID)); then
+    fail "DOC2MD_POLAR_ORGANIZATION_ID is required for this build"
+  fi
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && /bin/pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && /bin/pwd)"
@@ -302,12 +342,20 @@ done < <(grep_matches_or_fail "$WATCHED_NATIVE_API_PATTERN" "${persistence_swift
 prepare_notice_resource
 npm run build:desktop
 
-POLAR_ORGANIZATION_ID="$(validated_polar_organization_id "${DOC2MD_POLAR_ORGANIZATION_ID:-}")"
 XCODE_BUILD_SETTINGS=(
   "MARKETING_VERSION=$MARKETING_VERSION_OVERRIDE"
   "CURRENT_PROJECT_VERSION=$BUNDLE_VERSION_OVERRIDE"
   "DOC2MD_POLAR_ORGANIZATION_ID=$POLAR_ORGANIZATION_ID"
 )
+
+if ((POLAR_SANDBOX)); then
+  XCODE_BUILD_SETTINGS+=(
+    'OTHER_SWIFT_FLAGS=$(inherited) -DDOC2MD_POLAR_SANDBOX'
+    "PRODUCT_BUNDLE_IDENTIFIER=com.kjellkod.doc2md.sandbox"
+    "DOC2MD_BUNDLE_DISPLAY_NAME=$SANDBOX_APP_NAME"
+    "DOC2MD_BUNDLE_NAME=$SANDBOX_APP_NAME"
+  )
+fi
 
 set +e
 "$XCODEBUILD_BIN" \
@@ -333,6 +381,28 @@ verify_notice_resource_restored
 APP_PATH="$REPO_ROOT/.build/mac/Build/Products/$CONFIGURATION/doc2md.app"
 if [[ ! -d "$APP_PATH" ]]; then
   fail "xcodebuild completed, but expected app was not found: $APP_PATH"
+fi
+
+INFO_PLIST="$APP_PATH/Contents/Info.plist"
+[[ -f "$INFO_PLIST" ]] || fail "built Info.plist was not found: $INFO_PLIST"
+
+BUILT_POLAR_ORGANIZATION_ID="$(/usr/libexec/PlistBuddy -c 'Print :DOC2MDPolarOrganizationID' "$INFO_PLIST" 2>/dev/null || true)"
+if [[ "$BUILT_POLAR_ORGANIZATION_ID" != "$POLAR_ORGANIZATION_ID" ]]; then
+  fail "built Info.plist Polar organization ID does not match the validated build value"
+fi
+
+BUILT_DISPLAY_NAME="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$INFO_PLIST")"
+BUILT_BUNDLE_NAME="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleName' "$INFO_PLIST")"
+BUILT_BUNDLE_IDENTIFIER="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$INFO_PLIST")"
+
+if ((POLAR_SANDBOX)); then
+  [[ "$BUILT_DISPLAY_NAME" == "$SANDBOX_APP_NAME" ]] || fail "sandbox Info.plist is missing its non-production display name"
+  [[ "$BUILT_BUNDLE_NAME" == "$SANDBOX_APP_NAME" ]] || fail "sandbox Info.plist is missing its non-production bundle name"
+  [[ "$BUILT_BUNDLE_IDENTIFIER" == "com.kjellkod.doc2md.sandbox" ]] || fail "sandbox Info.plist has the wrong bundle identifier"
+else
+  [[ "$BUILT_DISPLAY_NAME" == "doc2md" ]] || fail "production Info.plist has the wrong display name"
+  [[ "$BUILT_BUNDLE_NAME" == "doc2md" ]] || fail "production Info.plist has the wrong bundle name"
+  [[ "$BUILT_BUNDLE_IDENTIFIER" == "com.kjellkod.doc2md" ]] || fail "production Info.plist has the wrong bundle identifier"
 fi
 
 printf 'Built: %s\n' "$(absolute_path "$APP_PATH")"

@@ -103,13 +103,15 @@ jobs:
 
       - name: Build unsigned Mac app
         env:
+          DOC2MD_POLAR_ORGANIZATION_ID: ${{ vars.DOC2MD_POLAR_ORGANIZATION_ID }}
           REQUIRE_RELEASE_TAG: "true"
-        run: bash scripts/build-mac-app.sh --configuration Release
+        run: bash scripts/build-mac-app.sh --configuration Release --require-polar-organization-id
 
-      - name: Validate app version and bundle version
+      - name: Validate app version, bundle version, and Polar organization
         id: bundle
         env:
           APP_PATH: .build/mac/Build/Products/Release/doc2md.app
+          DOC2MD_POLAR_ORGANIZATION_ID: ${{ vars.DOC2MD_POLAR_ORGANIZATION_ID }}
           TAG_VERSION: ${{ steps.resolve.outputs.version }}
           LATEST_APPCAST_URL: https://github.com/KjellKod/doc2md/releases/latest/download/appcast.xml
         run: |
@@ -118,6 +120,12 @@ jobs:
           INFO_PLIST="$APP_PATH/Contents/Info.plist"
           SHORT_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$INFO_PLIST")"
           BUNDLE_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$INFO_PLIST")"
+          POLAR_ORGANIZATION_ID="$(/usr/libexec/PlistBuddy -c 'Print :DOC2MDPolarOrganizationID' "$INFO_PLIST")"
+
+          if [[ "$POLAR_ORGANIZATION_ID" != "$DOC2MD_POLAR_ORGANIZATION_ID" ]]; then
+            echo "::error::DOC2MDPolarOrganizationID does not match the public repository variable"
+            exit 1
+          fi
 
           if [[ "$SHORT_VERSION" != "$TAG_VERSION" ]]; then
             echo "::error::CFBundleShortVersionString $SHORT_VERSION does not match release tag version $TAG_VERSION"
