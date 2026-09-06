@@ -1,0 +1,28 @@
+docs/implementation/mac-commercial-distribution-decision-record.md
+  s_8cdb7c38b65307::t_cd102b6495115c 3,6,164-166
+  s_e049d9ae0ae402::t_d056b744e4bc4e 167
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "8d6efa74d32e7c5762fe1b3b645f998f40cfea6c",
+  "prompts": {},
+  "sessions": {
+    "s_8cdb7c38b65307": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0735b-5b1d-7b70-8f60-4a5c89fddab8",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_e049d9ae0ae402": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a068b0-d6a1-73b2-a74a-315efab04d95",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
