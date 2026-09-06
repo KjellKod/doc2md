@@ -1,9 +1,9 @@
 # Mac Commercial Distribution Decision Record
 
-Status: Accepted (amended 2026-07-07)
+Status: Accepted (amended 2026-09-05)
 Owner: KjellKod <kjell@candidtalentedge.com>
 Date: 2026-05-06
-Amended: 2026-07-07, joint sharpen with maintainer; see the Amendment Log at the bottom for what changed and why.
+Amended: 2026-07-07 and 2026-09-05; see the Amendment Log at the bottom for what changed and why.
 Roadmap: `ideas/mac-desktop-app-roadmap.md` Phase 7b
 Related: [Mac commercial distribution and licensing research](mac-commercial-distribution-and-licensing.md), [Mac private license issuer spec](mac-private-license-issuer-spec.md), [Mac desktop app roadmap](../../ideas/mac-desktop-app-roadmap.md)
 
@@ -160,6 +160,10 @@ This quest is documentation-only. Validation should confirm:
 - Manual release-step requirements.
 
 ## Amendment Log
+
+### 2026-09-05: Support alias correction
+
+`support@candidtalentedge.com` superseded `support@doc2md.dev` for in-app support routing. Paid-support verification remains a manual Polar dashboard lookup by purchase email. Remaining references to the former alias are retained only as historical context.
 
 ### 2026-07-07 — Polar merchant path, interim issuer, licensed-feature boundary
 
