@@ -32,7 +32,8 @@ final class ImportHandoff {
     }
 
     private let stateQueue = DispatchQueue(label: "com.kjellkod.doc2md.import-handoff")
-    private var activeImport: StoredImport?
+    private var pendingImports: [String: StoredImport] = [:]
+    private var pendingOrder: [String] = []
 
     func enqueue(url: URL) throws -> Ticket {
         let standardizedURL = url.standardizedFileURL
@@ -68,8 +69,8 @@ final class ImportHandoff {
             )
 
             stateQueue.sync {
-                releaseActiveImportLocked()
-                activeImport = storedImport
+                pendingImports[storedImport.token] = storedImport
+                pendingOrder.append(storedImport.token)
             }
 
             return Ticket(
@@ -95,7 +96,7 @@ final class ImportHandoff {
 
     func peek(token: String) throws -> Payload? {
         let storedImport = stateQueue.sync {
-            activeImport?.token == token ? activeImport : nil
+            pendingImports[token]
         }
 
         guard let storedImport else {
@@ -127,17 +128,16 @@ final class ImportHandoff {
 
     func release(token: String) {
         stateQueue.sync {
-            guard activeImport?.token == token else {
-                return
-            }
-
-            releaseActiveImportLocked()
+            releaseImportLocked(token: token)
         }
     }
 
     func clear() {
         stateQueue.sync {
-            releaseActiveImportLocked()
+            let tokens = pendingOrder
+            for token in tokens {
+                releaseImportLocked(token: token)
+            }
         }
     }
 
@@ -145,16 +145,15 @@ final class ImportHandoff {
         "\(AppSchemeHandler.scheme)://\(AppSchemeHandler.host)\(AppSchemeHandler.importPathPrefix)\(token)"
     }
 
-    private func releaseActiveImportLocked() {
-        guard let activeImport else {
+    private func releaseImportLocked(token: String) {
+        guard let storedImport = pendingImports.removeValue(forKey: token) else {
             return
         }
 
-        if activeImport.startedSecurityScope {
-            activeImport.url.stopAccessingSecurityScopedResource()
+        pendingOrder.removeAll { $0 == token }
+        if storedImport.startedSecurityScope {
+            storedImport.url.stopAccessingSecurityScopedResource()
         }
-
-        self.activeImport = nil
     }
 
     private static func makeToken() -> String {

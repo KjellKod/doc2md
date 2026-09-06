@@ -155,6 +155,16 @@ final class LicenseStateTests: XCTestCase {
         // never infer eligibility by negating licensedConveniencesPaused.
     }
 
+    func testAllowsDocumentLibraryRecordingOnlyForLicensedAndGrace() {
+        let claims = makeClaims(expiresAt: expiry)
+        XCTAssertTrue(LicenseState.licensed(claims).allowsDocumentLibraryRecording)
+        XCTAssertTrue(LicenseState.grace(claims).allowsDocumentLibraryRecording)
+        XCTAssertFalse(LicenseState.expiredReminder(claims).allowsDocumentLibraryRecording)
+        XCTAssertFalse(LicenseState.unlicensed.allowsDocumentLibraryRecording)
+        XCTAssertFalse(LicenseState.invalid(reason: "invalid").allowsDocumentLibraryRecording)
+        XCTAssertFalse(LicenseState.licenseCheckFailed(reason: "failed").allowsDocumentLibraryRecording)
+    }
+
     func testControllerEvaluatesCachedSnapshotWheneverStateIsRead() {
         var now = expiry.addingTimeInterval(-day)
         let controller = makeUnlicensedController(now: { now })

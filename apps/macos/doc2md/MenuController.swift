@@ -9,6 +9,9 @@ final class MenuController: NSObject {
     private var licenseWindowController: NSWindowController?
     private var aboutWindowController: AboutWindowController?
     private var thirdPartyLicensesWindowController: ThirdPartyLicensesWindowController?
+    private var documentLibraryWindowController: DocumentLibraryWindowController?
+    private var documentLibraryStore: DocumentLibraryStore?
+    private var documentLibraryOpenRequest: ((URL, @escaping (ShellCallResult) -> Void) -> Bool)?
     private let markdownDefaultAppHelpController = MarkdownDefaultAppHelpController()
 
     func newDocument() {
@@ -39,6 +42,28 @@ final class MenuController: NSObject {
         dispatchNativeEvent("doc2md:native-close-window") {
             NSApp.keyWindow?.performClose(nil)
         }
+    }
+
+    @MainActor
+    func configureDocumentLibrary(
+        store: DocumentLibraryStore,
+        openRequest: @escaping (URL, @escaping (ShellCallResult) -> Void) -> Bool
+    ) {
+        documentLibraryStore = store
+        documentLibraryOpenRequest = openRequest
+    }
+
+    @MainActor
+    func showDocumentLibrary() {
+        if documentLibraryWindowController == nil,
+           let documentLibraryStore,
+           let documentLibraryOpenRequest {
+            documentLibraryWindowController = DocumentLibraryWindowController(
+                store: documentLibraryStore,
+                openRequest: documentLibraryOpenRequest
+            )
+        }
+        documentLibraryWindowController?.show()
     }
 
     func showLicenseWindow() {

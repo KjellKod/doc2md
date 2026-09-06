@@ -52,6 +52,16 @@ Recent files are recorded in the settings file and through the app's recent-docu
 
 Disabling `Persistence` deletes the settings file and returns the app to the disabled/default persistence snapshot. No document contents, imported bytes, credentials, signing material, release secrets, license data, or payment data are stored.
 
+## Document Library
+
+`File` then `Document Library` opens a native searchable history of successfully opened, imported, reloaded, and saved documents. It stores standardized path, display name, and last-touched timestamp in a separate Application Support `document-library.json`. History is unlimited and independent of the opt-in ten-row free Recent list and its Clear History action.
+
+Licensed and grace states add or retouch rows. Expired-reminder, unlicensed, invalid, and license-check-failed states stop recording, but every state can browse, search, and reopen all retained rows. License changes never delete library data. A successful library reopen follows the existing Recent and session trust flow so Markdown remains saveable. Session hydration remains controlled by the existing session store and does not retouch library history. Reload from Disk and confirmed conflict reload are explicit touches and update the timestamp only after a successful open.
+
+For imported source documents, native success means creating a token-scoped import handoff. Tokens remain independent within the current web navigation, are released after a successful fetch, and are all released when navigation changes. Later web conversion failure does not remove the source row.
+
+Failed rows stay visible with Retry. Permission failure shows `Permission is needed to access this file. Open or save it again.` Missing files show `The file no longer exists.` Other failures preserve the native error message.
+
 ## Debug Development
 
 1. Install web dependencies from the repo root:
@@ -70,7 +80,9 @@ Disabling `Persistence` deletes the settings file and returns the app to the dis
 
 4. Select the `doc2md` scheme and run the Debug configuration.
 
-The Debug app loads `http://localhost:5173` in `WKWebView`. Vite uses `strictPort`, so `npm run dev` fails clearly if that port is already occupied. If the Vite dev server is not running, the app shows a visible local-development error instead of a blank window.
+The Debug app normally loads `http://localhost:5173` in `WKWebView`. Vite uses `strictPort`, so `npm run dev` fails clearly if that port is already occupied. If the Vite dev server is not running, the app shows a visible local-development error instead of a blank window.
+
+For Document Library smoke testing, `bash scripts/build-mac-app.sh --configuration Debug` creates a fresh bundled desktop web resource. After also building the PR-only Release configuration, run `bash scripts/verify-document-library-smoke-build.sh`, then launch Debug with one of the exact `DOC2MD_TEST_LICENSE_STATE` values: `licensed`, `grace`, `expired-reminder`, `unlicensed`, `invalid`, or `license-check-failed`. The Debug-only hook changes only the library recording predicate. It does not alter licensing state or add a network dependency. Release contains no hook key.
 
 ## Desktop Web Bundle
 

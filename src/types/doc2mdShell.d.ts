@@ -124,6 +124,7 @@ export interface StatFileArgs {
 
 export interface OpenFileArgs {
   path?: string;
+  origin?: "sessionRestore";
 }
 
 export interface SetPersistenceEnabledArgs {

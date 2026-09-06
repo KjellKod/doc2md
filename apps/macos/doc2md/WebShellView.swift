@@ -5,6 +5,7 @@ import WebKit
 
 private let logger = Logger(subsystem: "com.kjellkod.doc2md", category: "webshell")
 
+@MainActor
 final class ShellHost: ObservableObject {
     let licenseController: LicenseController
     let updatePreferences: UpdateCheckPreferences
@@ -14,18 +15,38 @@ final class ShellHost: ObservableObject {
             self?.menuController.showLicenseWindow()
         }
     )
-    lazy var shellBridge = ShellBridge(licenseReminderController: licenseReminderController)
+    let documentLibraryStore: DocumentLibraryStore
+    lazy var shellBridge = ShellBridge(
+        licenseReminderController: licenseReminderController,
+        documentLibraryStore: documentLibraryStore,
+        licenseStateProvider: { [weak self] in
+            #if DEBUG
+            if let override = DocumentLibraryTestHooks.licenseState() {
+                return override
+            }
+            #endif
+            return self?.licenseController.state ?? .unlicensed
+        }
+    )
     lazy var externalOpenRouter = ExternalOpenRouter(shellBridge: shellBridge)
     let menuController = MenuController()
 
     init(
         licenseController: LicenseController = LicenseController(),
-        updatePreferences: UpdateCheckPreferences = UpdateCheckPreferences()
+        updatePreferences: UpdateCheckPreferences = UpdateCheckPreferences(),
+        documentLibraryStore: DocumentLibraryStore = DocumentLibraryStore()
     ) {
         self.licenseController = licenseController
         self.updatePreferences = updatePreferences
+        self.documentLibraryStore = documentLibraryStore
         menuController.licenseController = licenseController
         menuController.updatePreferences = updatePreferences
+        menuController.configureDocumentLibrary(
+            store: documentLibraryStore,
+            openRequest: { [weak self] url, completion in
+                self?.externalOpenRouter.enqueueLibrary(url: url, completion: completion) ?? true
+            }
+        )
     }
 
     func attach(webView: WKWebView) {
@@ -42,6 +63,7 @@ extension Doc2mdAppDelegate {
     // Convenience over configure(externalOpenRouter:) that lives in the app
     // target alongside ShellHost, keeping the core delegate free of the
     // ShellHost dependency so it compiles cleanly into the test target.
+    @MainActor
     func configure(shellHost: ShellHost) {
         configure(externalOpenRouter: shellHost.externalOpenRouter)
     }
@@ -132,8 +154,12 @@ private struct WebView: NSViewRepresentable {
         shellHost.attach(webView: webView)
 
         #if DEBUG
-        let devServerURL = URL(string: "http://localhost:5173")!
-        webView.load(URLRequest(url: devServerURL))
+        if DocumentLibraryTestHooks.licenseState() != nil {
+            loadBundledWebApp(in: webView)
+        } else {
+            let devServerURL = URL(string: "http://localhost:5173")!
+            webView.load(URLRequest(url: devServerURL))
+        }
         #else
         loadBundledWebApp(in: webView)
         #endif
