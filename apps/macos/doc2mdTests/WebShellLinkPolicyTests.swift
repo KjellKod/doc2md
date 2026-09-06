@@ -15,6 +15,12 @@ final class WebShellLinkPolicyTests: XCTestCase {
         XCTAssertTrue(WebShellLinkPolicy.isInternalURL(url))
     }
 
+    func testInternalURL_acceptsBundledAppSchemeWithFragment() {
+        let url = URL(string: "doc2md://app/index.html#section")!
+        XCTAssertTrue(WebShellLinkPolicy.isInternalURL(url))
+        XCTAssertFalse(WebShellLinkPolicy.isExternallyOpenable(url))
+    }
+
     func testInternalURL_isCaseInsensitiveForBundledScheme() {
         let url = URL(string: "DOC2MD://app/")!
         XCTAssertTrue(WebShellLinkPolicy.isInternalURL(url))
@@ -136,6 +142,13 @@ final class WebShellLinkPolicyTests: XCTestCase {
         XCTAssertEqual(routing, .allowInShell)
     }
 
+    func testRoute_allowsInternalFragmentInShell() {
+        let target = URL(string: "doc2md://app/index.html#section")!
+        let routing = WebShellLinkPolicy.route(for: target)
+        XCTAssertEqual(routing.policy, .allow)
+        XCTAssertNil(routing.openExternally)
+    }
+
     #if DEBUG
     func testRoute_allowsLocalhostInDebug() {
         let routing = WebShellLinkPolicy.route(for: URL(string: "http://localhost:5173/")!)
@@ -189,6 +202,16 @@ final class WebShellLinkPolicyTests: XCTestCase {
         )
         XCTAssertEqual(routing.policy, .cancel)
         XCTAssertEqual(routing.openExternally, target)
+    }
+
+    func testNavigationRoute_keepsActivatedInternalFragmentInShell() {
+        let target = URL(string: "doc2md://app/index.html#section")!
+        let routing = WebShellLinkPolicy.route(
+            forNavigationActionWith: target,
+            navigationType: .linkActivated
+        )
+        XCTAssertEqual(routing.policy, .allow)
+        XCTAssertNil(routing.openExternally)
     }
 
     func testNavigationRoute_cancelsFormSubmitsSilently() {

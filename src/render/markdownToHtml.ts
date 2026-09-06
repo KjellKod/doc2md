@@ -7,19 +7,19 @@
 //   1. formatPreviewMarkdown(markdown)  — same transform Preview applies
 //   2. remark-parse                     — Markdown -> mdast
 //   3. remark-gfm                       — tables, task lists, strikethrough
-//   4. remark-rehype                    — mdast -> hast (raw HTML -> escaped
-//                                         text, matching Preview; NO live markup)
-//   5. rehype-slug                      — heading ids for in-document anchors
-//   6. export link policy               — shared classifier; disabled links
+//   4. remark-rehype                    : mdast -> hast with opaque raw nodes
+//   5. shared raw parse + sanitization   : bounded semantic HTML only
+//   6. shared identity policy            : namespace author ids and references
+//   7. rehype-slug                       : heading ids for in-document anchors
+//   8. export link policy                : shared classifier; disabled links
 //                                         become inert anchors (no tooltip
 //                                         wrapper, no JS)
-//   7. image guard                      — strip any residual <img>
-//   8. rehype-stringify                 — hast -> HTML string
+//   9. image guard                       : strip any residual <img>
+//  10. rehype-stringify                  : hast -> HTML string
 //
-// Raw HTML passthrough is intentionally absent (no rehype-raw, no
-// allowDangerousHtml), so untrusted Markdown cannot inject live markup. Raw
-// HTML in the source is rendered as escaped text (see the remark-rehype html
-// handler), matching Preview and avoiding silent content loss.
+// Raw HTML is never passed through unrestricted. Preview and export share the
+// same sanitizer, generated-footnote provenance, author-id namespace, and
+// fragment/ARIA rewrite policy.
 
 import rehypeSlug from "rehype-slug";
 import rehypeStringify from "rehype-stringify";
@@ -34,6 +34,11 @@ import { formatPreviewMarkdown } from "./previewMarkdown";
 import { classifyMarkdownHref } from "./markdownLinks";
 import { HTML_EXPORT_STYLES } from "./htmlExportStyles";
 import { tableTaskCheckboxRehype } from "./tableTaskCheckboxRehype";
+import {
+  isExplicitMarkdownTarget,
+  safeMarkdownHtmlAfterSlugPlugins,
+  safeMarkdownHtmlBeforeSlugPlugins,
+} from "./safeMarkdownHtml";
 
 export interface MarkdownToHtmlOptions {
   /** true (default) wraps in a self-contained document; false returns a fragment. */
@@ -55,6 +60,10 @@ const DEFAULT_TITLE = "Document";
 const exportLinkPolicy: Plugin<[], Root> = () => (tree: Root) => {
   visit(tree, "element", (node: Element) => {
     if (node.tagName !== "a") {
+      return;
+    }
+
+    if (isExplicitMarkdownTarget(node)) {
       return;
     }
 
@@ -158,21 +167,12 @@ function renderFragment(normalizedMarkdown: string): string {
     .use(remarkParse)
     .use(remarkGfm)
     .use(remarkRehype, {
-      // Match Preview (react-markdown default): raw HTML is rendered as
-      // escaped TEXT, never live markup. With no handler, remark-rehype DROPS
-      // html nodes entirely — silently losing block-level raw HTML such as
-      // <div>x</div> and diverging from Preview, which shows the literal tags.
-      // Converting html nodes to text nodes makes rehype-stringify escape
-      // them: same visible output as Preview, still injection-safe (no live
-      // markup, so no allowDangerousHtml/rehype-raw).
-      handlers: {
-        html(_state, node: { value?: string }) {
-          return { type: "text", value: node.value ?? "" };
-        },
-      },
+      allowDangerousHtml: true,
     })
+    .use(safeMarkdownHtmlBeforeSlugPlugins())
     .use(tableTaskCheckboxRehype({ resolveRowSourceLine }))
     .use(rehypeSlug)
+    .use(safeMarkdownHtmlAfterSlugPlugins())
     .use(exportLinkPolicy)
     .use(stripImages)
     .use(rehypeStringify)

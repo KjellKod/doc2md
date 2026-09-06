@@ -24,6 +24,25 @@ function renderPreview(markdown: string) {
 }
 
 describe("PreviewMode markdown anchor handling", () => {
+  it("renders a safe explicit target and rewrites its fragment link", () => {
+    const { container } = renderPreview(
+      '[Jump](#7-2-prove-the-ci-commercial-dmg-build-path)\n\n<a id="7-2-prove-the-ci-commercial-dmg-build-path"></a>\n\n### 7.2 Prove the CI commercial DMG build path',
+    );
+
+    expect(container.textContent).not.toContain('<a id="7-2');
+    const target = container.querySelector(
+      '[id="user-content:7-2-prove-the-ci-commercial-dmg-build-path"]',
+    );
+    expect(target).not.toBeNull();
+    expect(target?.tagName).toBe("A");
+    expect(target?.textContent).toBe("");
+    expect(target?.hasAttribute("href")).toBe(false);
+    expect(target?.classList.contains("markdown-explicit-anchor")).toBe(true);
+    expect(target?.classList.contains("markdown-disabled-link")).toBe(false);
+    expect(target?.getAttribute("aria-disabled")).toBeNull();
+    expect(container.querySelector('a[href="#user-content:7-2-prove-the-ci-commercial-dmg-build-path"]')?.textContent).toBe("Jump");
+  });
+
   it("opens markdown body links in a new tab with safe rel", () => {
     const { container } = renderPreview(
       "Read more at [docs](https://example.com/docs).",
@@ -41,6 +60,27 @@ describe("PreviewMode markdown anchor handling", () => {
     );
     const link = container.querySelector("a");
     expect(link?.getAttribute("href")).toBe("mailto:hello@example.com");
+    expect(link?.getAttribute("target")).toBe("_blank");
+    expect(link?.getAttribute("rel")).toBe("noopener noreferrer");
+  });
+
+  it.each([
+    ["Markdown", "[Call](tel:+15555550123)"],
+    ["raw HTML", '<a href="tel:+15555550123">Call</a>'],
+  ])("opens %s tel links in a new tab with safe rel", (_kind, markdown) => {
+    const { container } = renderPreview(markdown);
+    const link = container.querySelector("a");
+    expect(link?.getAttribute("href")).toBe("tel:+15555550123");
+    expect(link?.getAttribute("target")).toBe("_blank");
+    expect(link?.getAttribute("rel")).toBe("noopener noreferrer");
+  });
+
+  it("applies the external policy to raw HTML links", () => {
+    const { container } = renderPreview(
+      '<a href="https://example.com/raw">Raw docs</a>',
+    );
+    const link = container.querySelector("a");
+    expect(link?.getAttribute("href")).toBe("https://example.com/raw");
     expect(link?.getAttribute("target")).toBe("_blank");
     expect(link?.getAttribute("rel")).toBe("noopener noreferrer");
   });
@@ -222,6 +262,114 @@ describe("PreviewMode markdown anchor handling", () => {
       const { container } = renderPreview("### Mac App 🍎 with `code`\n");
       const heading = container.querySelector("h3");
       expect(heading?.id).toBe("mac-app--with-code");
+    });
+  });
+
+  describe("safe raw HTML", () => {
+    it("keeps explicit targets out of the keyboard tab order", () => {
+      const { container } = renderPreview(
+        '<a id="target" tabindex="0" accesskey="k"></a>',
+      );
+      const target = container.querySelector('[id="user-content:target"]');
+      expect(target?.hasAttribute("tabindex")).toBe(false);
+      expect(target?.hasAttribute("accesskey")).toBe(false);
+      expect(target?.hasAttribute("href")).toBe(false);
+    });
+
+    it("keeps explicit targets separate from generated heading ids", () => {
+      const { container } = renderPreview(
+        '[Explicit](#foo) [Heading](#user-content-foo)\n\n<a id="foo"></a>\n\n### Foo\n\n### User Content Foo',
+      );
+      expect(container.querySelector('[id="user-content:foo"]')).not.toBeNull();
+      expect(container.querySelector('h3[id="foo"]')).not.toBeNull();
+      expect(container.querySelector('h3[id="user-content-foo"]')).not.toBeNull();
+      expect(container.querySelector('a[href="#user-content:foo"]')?.textContent).toBe("Explicit");
+      expect(container.querySelector('a[href="#user-content-foo"]')?.textContent).toBe("Heading");
+    });
+
+    it("suffixes repeated explicit ids without emitting duplicates", () => {
+      const { container } = renderPreview(
+        '<a id="repeat"></a>\n\n<a id="repeat"></a>',
+      );
+      const ids = Array.from(container.querySelectorAll("[id]"), (node) => node.id);
+      expect(ids).toContain("user-content:repeat");
+      expect(ids).toContain("user-content:repeat-1");
+      expect(new Set(ids).size).toBe(ids.length);
+    });
+
+    it("does not double-prefix normalized ids or crash on malformed fragments", () => {
+      const { container } = renderPreview(
+        '<a id="user-content:ready"></a>\n\n[Ready](#user-content%3Aready) [Malformed](#%ZZ)',
+      );
+      expect(container.querySelector('[id="user-content:ready"]')).not.toBeNull();
+      expect(container.querySelector('[id="user-content:user-content:ready"]')).toBeNull();
+      expect(container.querySelector('a[href="#user-content:ready"]')?.textContent).toBe("Ready");
+      expect(container.querySelector('a[href="#%ZZ"]')?.textContent).toBe("Malformed");
+    });
+
+    it("preserves generated footnote identity and rewrites author ARIA references", () => {
+      const { container } = renderPreview(
+        'Note[^1]\n\n<h2 id="label">Label</h2>\n\n<table aria-labelledby="label"><tr><td>Cell</td></tr></table>\n\n[^1]: Footnote',
+      );
+      const reference = container.querySelector("a[data-footnote-ref]");
+      const definition = container.querySelector('li[id="user-content-fn-1"]');
+      const backReference = container.querySelector('a[data-footnote-backref]');
+      expect(reference?.id).toBe("user-content-fnref-1");
+      expect(reference?.getAttribute("href")).toBe("#user-content-fn-1");
+      expect(reference?.getAttribute("aria-describedby")).toBe("footnote-label");
+      expect(definition).not.toBeNull();
+      expect(backReference?.getAttribute("href")).toBe("#user-content-fnref-1");
+      expect(backReference?.classList.contains("data-footnote-backref")).toBe(true);
+      expect(container.querySelector("section.footnotes[data-footnotes]")).not.toBeNull();
+      expect(container.querySelector("h2#footnote-label.sr-only")).not.toBeNull();
+      expect(container.querySelector('[id="user-content:label"]')).not.toBeNull();
+      expect(container.querySelector("table")?.getAttribute("aria-labelledby")).toBe("user-content:label");
+    });
+
+    it("does not let forged raw footnotes claim generated ids", () => {
+      const { container } = renderPreview(
+        'Note[^1]\n\n<a id="user-content-fn-1" data-footnote-ref>Forged</a>\n\n<a name="legacy"></a>\n\n[^1]: Real footnote',
+      );
+      expect(container.querySelectorAll('[id="user-content-fn-1"]')).toHaveLength(1);
+      expect(container.querySelector('li[id="user-content-fn-1"]')?.textContent).toContain("Real footnote");
+      expect(container.querySelector('[id="user-content:user-content-fn-1"]')?.textContent).toBe("Forged");
+      expect(container.querySelector("[name]")).toBeNull();
+    });
+
+    it("allows semantic HTML, unwraps benign containers, and removes executable content", () => {
+      const { container } = renderPreview(
+        'Before <strong>strong</strong>.\n\n<div class="note">kept child</div>\n\n<script>removed script text</script>',
+      );
+      expect(container.querySelector("strong")?.textContent).toBe("strong");
+      expect(container.querySelector("div.note")).toBeNull();
+      expect(container.textContent).toContain("kept child");
+      expect(container.querySelector("script")).toBeNull();
+      expect(container.textContent).not.toContain("removed script text");
+    });
+
+    it("removes dangerous elements, attributes, and URL schemes", () => {
+      const { container } = renderPreview(
+        '<style>.x{color:red}</style><iframe src="https://example.com"></iframe><form><button>Send</button></form><object>Object</object><embed src="x"><a href="javascript:alert(1)" onclick="alert(1)" style="color:red">unsafe</a><picture><source srcset="https://example.com/tracker.png"><img src="https://example.com/fallback.png"></picture>',
+      );
+      expect(container.querySelector("style, iframe, form, object, embed, picture, source")).toBeNull();
+      expect(container.textContent).not.toContain("Send");
+      expect(container.textContent).not.toContain("Object");
+      const unsafe = Array.from(container.querySelectorAll("a")).find(
+        (node) => node.textContent === "unsafe",
+      );
+      expect(unsafe?.hasAttribute("onclick")).toBe(false);
+      expect(unsafe?.hasAttribute("style")).toBe(false);
+      expect(unsafe?.getAttribute("href") ?? "").not.toMatch(/^javascript:/iu);
+    });
+
+    it("does not mistake an id-bearing unsafe link for an explicit target", () => {
+      const { container } = renderPreview(
+        '<a id="unsafe-link" href="javascript:alert(1)">unsafe</a>',
+      );
+      const link = container.querySelector('[id="user-content:unsafe-link"]');
+      expect(link?.classList.contains("markdown-explicit-anchor")).toBe(false);
+      expect(link?.classList.contains("markdown-disabled-link")).toBe(true);
+      expect(link?.getAttribute("aria-disabled")).toBe("true");
     });
   });
 

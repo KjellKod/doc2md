@@ -2994,6 +2994,15 @@ body.is-height-resizing * {
 .markdown-surface h6 {
   color: var(--accent-strong);
   text-wrap: balance;
+}
+
+.markdown-surface h1,
+.markdown-surface h2,
+.markdown-surface h3,
+.markdown-surface h4,
+.markdown-surface h5,
+.markdown-surface h6,
+.markdown-surface .markdown-explicit-anchor {
   /* When the user clicks a hash link, scroll the heading down past the
      sticky preview toolbar (12px top offset + ~44px buttons + padding)
      instead of jamming it under the buttons. */

@@ -81,6 +81,7 @@ The current app build can include these direct runtime dependencies from the roo
 | `dingbat-to-unicode` | 1.0.1 | BSD-2-Clause | git+https://github.com/mwilliamson/dingbat-to-unicode.git |
 | `duck` | 0.1.12 | BSD | https://github.com/mwilliamson/duck.js.git |
 | `duplexer2` | 0.1.4 | BSD-3-Clause | deoxxa/duplexer2 |
+| `entities` | 6.0.1 | BSD-2-Clause | git://github.com/fb55/entities.git |
 | `entities` | 8.0.0 | BSD-2-Clause | https://github.com/fb55/entities.git |
 | `escape-string-regexp` | 5.0.0 | MIT | sindresorhus/escape-string-regexp |
 | `estree-util-is-identifier-name` | 3.0.0 | MIT | syntax-tree/estree-util-is-identifier-name |
@@ -89,11 +90,17 @@ The current app build can include these direct runtime dependencies from the roo
 | `fs-extra` | 11.3.4 | MIT | git+https://github.com/jprichardson/node-fs-extra.git |
 | `github-slugger` | 2.0.0 | ISC | https://github.com/Flet/github-slugger.git |
 | `graceful-fs` | 4.2.11 | ISC | https://github.com/isaacs/node-graceful-fs |
+| `hast-util-from-parse5` | 8.0.3 | MIT | syntax-tree/hast-util-from-parse5 |
 | `hast-util-heading-rank` | 3.0.0 | MIT | syntax-tree/hast-util-heading-rank |
+| `hast-util-parse-selector` | 4.0.0 | MIT | syntax-tree/hast-util-parse-selector |
+| `hast-util-raw` | 9.1.0 | MIT | syntax-tree/hast-util-raw |
+| `hast-util-sanitize` | 5.0.2 | MIT | syntax-tree/hast-util-sanitize |
 | `hast-util-to-html` | 9.0.5 | MIT | syntax-tree/hast-util-to-html |
 | `hast-util-to-jsx-runtime` | 2.3.6 | MIT | syntax-tree/hast-util-to-jsx-runtime |
+| `hast-util-to-parse5` | 8.0.1 | MIT | syntax-tree/hast-util-to-parse5 |
 | `hast-util-to-string` | 3.0.1 | MIT | https://github.com/rehypejs/rehype-minify/tree/main/packages/hast-util-to-string |
 | `hast-util-whitespace` | 3.0.0 | MIT | syntax-tree/hast-util-whitespace |
+| `hastscript` | 9.0.1 | MIT | syntax-tree/hastscript |
 | `html-encoding-sniffer` | 6.0.0 | MIT | git+https://github.com/jsdom/html-encoding-sniffer.git |
 | `html-url-attributes` | 3.0.1 | MIT | https://github.com/rehypejs/rehype-minify/tree/main/packages/html-url-attributes |
 | `html-void-elements` | 3.0.0 | MIT | wooorm/html-void-elements |
@@ -166,6 +173,7 @@ The current app build can include these direct runtime dependencies from the roo
 | `option` | 0.2.4 | BSD-2-Clause | https://github.com/mwilliamson/node-options.git |
 | `pako` | 1.0.11 | (MIT AND Zlib) | nodeca/pako |
 | `parse-entities` | 4.0.2 | MIT | wooorm/parse-entities |
+| `parse5` | 7.3.0 | MIT | git://github.com/inikulin/parse5.git |
 | `parse5` | 8.0.1 | MIT | git://github.com/inikulin/parse5.git |
 | `path-is-absolute` | 1.0.1 | MIT | sindresorhus/path-is-absolute |
 | `pdfjs-dist` | 5.7.284 | Apache-2.0 | git+https://github.com/mozilla/pdf.js.git |
@@ -177,6 +185,8 @@ The current app build can include these direct runtime dependencies from the roo
 | `react` | 19.2.6 | MIT | https://github.com/facebook/react.git |
 | `read-excel-file` | 9.0.9 | MIT | https://gitlab.com/catamphetamine/read-excel-file |
 | `readable-stream` | 2.3.8 | MIT | git://github.com/nodejs/readable-stream |
+| `rehype-raw` | 7.0.0 | MIT | rehypejs/rehype-raw |
+| `rehype-sanitize` | 6.0.0 | MIT | rehypejs/rehype-sanitize |
 | `rehype-slug` | 6.0.0 | MIT | rehypejs/rehype-slug |
 | `rehype-stringify` | 10.0.1 | MIT | https://github.com/rehypejs/rehype/tree/main/packages/rehype-stringify |
 | `remark-gfm` | 4.0.1 | MIT | remarkjs/remark-gfm |
@@ -214,9 +224,11 @@ The current app build can include these direct runtime dependencies from the roo
 | `universalify` | 2.0.1 | MIT | git+https://github.com/RyanZim/universalify.git |
 | `unzipper` | 0.12.3 | MIT | https://github.com/ZJONSSON/node-unzipper.git |
 | `util-deprecate` | 1.0.2 | MIT | git://github.com/TooTallNate/util-deprecate.git |
+| `vfile-location` | 5.0.3 | MIT | vfile/vfile-location |
 | `vfile-message` | 4.0.3 | MIT | vfile/vfile-message |
 | `vfile` | 6.0.3 | MIT | vfile/vfile |
 | `w3c-xmlserializer` | 5.0.0 | MIT | jsdom/w3c-xmlserializer |
+| `web-namespaces` | 2.0.1 | MIT | wooorm/web-namespaces |
 | `webidl-conversions` | 8.0.1 | BSD-2-Clause | git+https://github.com/jsdom/webidl-conversions.git |
 | `whatwg-mimetype` | 5.0.0 | MIT | jsdom/whatwg-mimetype |
 | `whatwg-url` | 16.0.1 | MIT | git+https://github.com/jsdom/whatwg-url.git |
