@@ -73,6 +73,9 @@ describe("Mac native API allowlist", () => {
     expect(script).toContain(
       "Application Support license token :: license-token file read/write/delete under doc2md Application Support",
     );
+    expect(script).toContain(
+      "Application Support document library :: unlimited path metadata read/write/atomic replacement",
+    );
   });
 
   it("keeps unexpected broad file APIs in the watched failure policy", () => {

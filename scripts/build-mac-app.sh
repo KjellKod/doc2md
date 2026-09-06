@@ -23,6 +23,7 @@ NATIVE_API_ALLOWLIST=(
   "Application Support settings :: metadata-only settings-file read/write/delete/atomic replacement"
   "Application Support license token :: license-token file read/write/delete under doc2md Application Support"
   "Application Support Polar license metadata :: non-secret metadata read/write/delete/atomic replacement"
+  "Application Support document library :: unlimited path metadata read/write/atomic replacement"
 )
 WATCHED_NATIVE_API_PATTERN='FileManager|NSOpenPanel|NSSavePanel|NSWorkspace|FileHandle|replaceItemAt|replaceItem\(|replacingItem|startAccessingSecurityScopedResource|stopAccessingSecurityScopedResource|createFile|removeItem|moveItem|copyItem|\.write\(to:'
 ALLOWED_NATIVE_API_PATTERN='FileManager|NSOpenPanel|NSSavePanel|NSWorkspace|replaceItemAt|startAccessingSecurityScopedResource|stopAccessingSecurityScopedResource|createFile|removeItem'
@@ -177,6 +178,18 @@ prepare_notice_resource() {
   cp "$NOTICE_STAGED_PATH" "$NOTICE_SOURCE_PATH"
 }
 
+prepare_debug_web_resource() {
+  if [[ "$CONFIGURATION" != "Debug" ]]; then
+    return 0
+  fi
+
+  local resource_dir="apps/macos/doc2md/Resources/Web"
+  mkdir -p "$resource_dir"
+  find "$resource_dir" -mindepth 1 ! -name '.gitkeep' -delete
+  ditto dist "$resource_dir"
+  touch "$resource_dir/.gitkeep"
+}
+
 verify_notice_resource_restored() {
   if [[ -z "$NOTICE_BACKUP_PATH" ]]; then
     return
@@ -301,6 +314,7 @@ done < <(grep_matches_or_fail "$WATCHED_NATIVE_API_PATTERN" "${persistence_swift
 
 prepare_notice_resource
 npm run build:desktop
+prepare_debug_web_resource
 
 POLAR_ORGANIZATION_ID="$(validated_polar_organization_id "${DOC2MD_POLAR_ORGANIZATION_ID:-}")"
 XCODE_BUILD_SETTINGS=(
@@ -308,6 +322,10 @@ XCODE_BUILD_SETTINGS=(
   "CURRENT_PROJECT_VERSION=$BUNDLE_VERSION_OVERRIDE"
   "DOC2MD_POLAR_ORGANIZATION_ID=$POLAR_ORGANIZATION_ID"
 )
+
+if [[ "$CONFIGURATION" = "Debug" ]]; then
+  XCODE_BUILD_SETTINGS+=("ENABLE_DEBUG_DYLIB=NO")
+fi
 
 set +e
 "$XCODEBUILD_BIN" \

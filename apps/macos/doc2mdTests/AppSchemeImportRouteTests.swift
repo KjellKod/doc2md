@@ -56,6 +56,55 @@ final class AppSchemeImportRouteTests: XCTestCase {
         XCTAssertEqual(task.receivedData, Data())
     }
 
+    func testNavigationClearReleasesEveryPendingToken() throws {
+        let first = try ImportHandoff.shared.enqueue(url: makeFile(name: "first.txt", data: Data("first".utf8)))
+        let second = try ImportHandoff.shared.enqueue(url: makeFile(name: "second.txt", data: Data("second".utf8)))
+        ImportHandoff.shared.clear()
+        XCTAssertNil(try ImportHandoff.shared.peek(token: first.token))
+        XCTAssertNil(try ImportHandoff.shared.peek(token: second.token))
+    }
+
+    func testTwoQueuedLibrarySourceResultsServeDistinctTokensInOrder() throws {
+        let firstData = Data("first".utf8)
+        let secondData = Data("second".utf8)
+        let firstURL = try makeFile(name: "one.txt", data: firstData)
+        let secondURL = try makeFile(name: "two.txt", data: secondData)
+        let bridge = ShellBridge()
+        var results: [ShellCallResult] = []
+        let router = ExternalOpenRouter(
+            opener: { bridge.openExternalMarkdownURL($0) },
+            dispatcher: { result, completion in
+                results.append(result)
+                completion(true)
+            },
+            libraryOpener: { bridge.openLibraryURL($0) }
+        )
+
+        _ = router.enqueueLibrary(url: firstURL) { _ in }
+        _ = router.enqueueLibrary(url: secondURL) { _ in }
+        router.markWebShellReady()
+
+        let importURLs = try results.map { try XCTUnwrap($0.importUrl) }
+        XCTAssertEqual(importURLs.count, 2)
+        XCTAssertNotEqual(importURLs[0], importURLs[1])
+
+        let handler = AppSchemeHandler(webRoot: nil)
+        let firstTask = MockURLSchemeTask(url: try XCTUnwrap(URL(string: importURLs[0])))
+        let secondTask = MockURLSchemeTask(url: try XCTUnwrap(URL(string: importURLs[1])))
+        let finished = expectation(description: "both import routes finished")
+        finished.expectedFulfillmentCount = 2
+        firstTask.onFinish = { finished.fulfill() }
+        secondTask.onFinish = { finished.fulfill() }
+        handler.webView(WKWebView(), start: firstTask)
+        handler.webView(WKWebView(), start: secondTask)
+        wait(for: [finished], timeout: 1.0)
+
+        XCTAssertEqual(firstTask.receivedData, firstData)
+        XCTAssertEqual(secondTask.receivedData, secondData)
+        XCTAssertEqual((firstTask.receivedResponse as? HTTPURLResponse)?.value(forHTTPHeaderField: "Content-Type"), "text/plain")
+        XCTAssertEqual((secondTask.receivedResponse as? HTTPURLResponse)?.value(forHTTPHeaderField: "Content-Type"), "text/plain")
+    }
+
     func testValidImportTokenReturnsBytesAndMimeType() throws {
         let sourceData = Data("hello import".utf8)
         let sourceURL = try makeFile(name: "sample.txt", data: sourceData)

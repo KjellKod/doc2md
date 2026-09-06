@@ -3,6 +3,18 @@ import Foundation
 import UniformTypeIdentifiers
 import WebKit
 
+enum DocumentOpenOrigin {
+    case filePanel
+    case finder
+    case recent
+    case library
+    case sessionRestore
+
+    var recordsInLibrary: Bool {
+        self != .sessionRestore
+    }
+}
+
 final class ShellBridge: NSObject, WKScriptMessageHandler {
     private enum HandlerName {
         static let openFile = "doc2mdOpenFile"
@@ -82,8 +94,11 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
     private let persistenceStore: PersistenceStore
     private let sessionStore: SessionStore
     private let licenseReminderController: LicenseReminderController?
+    private let documentLibraryStore: DocumentLibraryStore
+    private let licenseStateProvider: () -> LicenseState
     private var knownURLsByPath: [String: URL] = [:]
     private var restoreCandidatePaths: Set<String> = []
+    private var sessionRestoreClassifiedPaths: Set<String> = []
     private var nativeRecentOpenPaths: Set<String> = []
     private var sessionSyncSuppressedPaths: Set<String> = []
     private var lastDirectoryURL: URL?
@@ -92,12 +107,16 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
         fileStore: FileStore = FileStore(),
         persistenceStore: PersistenceStore = PersistenceStore(),
         sessionStore: SessionStore = SessionStore(),
-        licenseReminderController: LicenseReminderController? = nil
+        licenseReminderController: LicenseReminderController? = nil,
+        documentLibraryStore: DocumentLibraryStore = DocumentLibraryStore(),
+        licenseStateProvider: @escaping () -> LicenseState = { .unlicensed }
     ) {
         self.fileStore = fileStore
         self.persistenceStore = persistenceStore
         self.sessionStore = sessionStore
         self.licenseReminderController = licenseReminderController
+        self.documentLibraryStore = documentLibraryStore
+        self.licenseStateProvider = licenseStateProvider
         super.init()
         seedRestoreCandidatePaths()
     }
@@ -167,9 +186,13 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
         do {
             let args = try Self.decode(OpenFileArgs.self, from: message.args)
             let url: URL
+            let origin: DocumentOpenOrigin
 
             if let path = args.path {
                 let standardizedPath = Self.standardPath(path)
+                origin = sessionRestoreClassifiedPaths.remove(standardizedPath) != nil
+                    ? .sessionRestore
+                    : .recent
                 if let knownURL = knownURLsByPath[standardizedPath] {
                     url = knownURL
                 } else if restoreCandidatePaths.contains(standardizedPath),
@@ -189,6 +212,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
                     return
                 }
             } else {
+                origin = .filePanel
                 let panel = NSOpenPanel()
                 panel.canChooseDirectories = false
                 panel.canChooseFiles = true
@@ -207,7 +231,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
             let fileExtension = standardizedURL.pathExtension.lowercased()
 
             if Self.markdownDirectExtensions.contains(fileExtension) {
-                let result = try openMarkdownURL(standardizedURL)
+                let result = try openMarkdownURL(standardizedURL, origin: origin)
                 resolve(id: message.id, result: ShellCallResult.openMarkdown(result))
                 return
             }
@@ -216,21 +240,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
                 throw FileStoreError.error(message: "The selected file type is not supported.")
             }
 
-            let ticket = try ImportHandoff.shared.enqueue(url: standardizedURL)
-            rememberLastDirectory(from: standardizedURL)
-            recordRecentDocumentIfEnabled(url: standardizedURL)
-            // Import-source handoff URLs are intentionally not remembered as
-            // directly editable paths; only `.md` targets belong in knownURLsByPath.
-            let openImportResult = ShellOpenImportOk(
-                ok: true,
-                kind: "import-source",
-                path: ticket.path,
-                name: ticket.name,
-                format: ticket.format,
-                mtimeMs: ticket.mtimeMs,
-                importUrl: ImportHandoff.importURL(for: ticket.token),
-                mimeType: ticket.mimeType
-            )
+            let openImportResult = try openSupportedSourceURL(standardizedURL, origin: origin)
             resolve(id: message.id, result: ShellCallResult.openImport(openImportResult))
         } catch {
             resolve(id: message.id, result: Self.response(for: error))
@@ -255,20 +265,61 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
         }
 
         do {
-            let result = try openMarkdownURL(standardizedURL)
+            let result = try openMarkdownURL(standardizedURL, origin: .finder)
             return ShellCallResult.openMarkdown(result)
         } catch {
             return Self.response(for: error)
         }
     }
 
-    private func openMarkdownURL(_ standardizedURL: URL) throws -> ShellOpenMarkdownOk {
+    func openLibraryURL(_ url: URL) -> ShellCallResult {
+        let standardizedURL = url.standardizedFileURL
+        let fileExtension = standardizedURL.pathExtension.lowercased()
+
+        do {
+            if Self.markdownDirectExtensions.contains(fileExtension) {
+                return .openMarkdown(try openMarkdownURL(standardizedURL, origin: .library))
+            }
+            guard SupportedFormats.supportedNonMarkdownExtensions.contains(fileExtension) else {
+                throw FileStoreError.error(message: "The selected file type is not supported.")
+            }
+            return .openImport(try openSupportedSourceURL(standardizedURL, origin: .library))
+        } catch {
+            return Self.response(for: error)
+        }
+    }
+
+    private func openMarkdownURL(
+        _ standardizedURL: URL,
+        origin: DocumentOpenOrigin
+    ) throws -> ShellOpenMarkdownOk {
         let result = try withSecurityScope(for: standardizedURL) {
             try fileStore.open(url: standardizedURL)
         }
         remember(url: standardizedURL)
         recordRecentDocumentIfEnabled(url: standardizedURL)
+        recordDocumentLibraryIfAllowed(url: standardizedURL, origin: origin)
         return result
+    }
+
+    private func openSupportedSourceURL(
+        _ standardizedURL: URL,
+        origin: DocumentOpenOrigin
+    ) throws -> ShellOpenImportOk {
+        let ticket = try ImportHandoff.shared.enqueue(url: standardizedURL)
+        rememberLastDirectory(from: standardizedURL)
+        recordRecentDocumentIfEnabled(url: standardizedURL)
+        recordDocumentLibraryIfAllowed(url: standardizedURL, origin: origin)
+        return ShellOpenImportOk(
+            ok: true,
+            kind: "import-source",
+            path: ticket.path,
+            name: ticket.name,
+            format: ticket.format,
+            mtimeMs: ticket.mtimeMs,
+            importUrl: ImportHandoff.importURL(for: ticket.token),
+            mimeType: ticket.mimeType
+        )
     }
 
     private func handleSaveFile(_ message: BridgeMessage) {
@@ -292,6 +343,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
 
             remember(url: knownURL)
             recordRecentDocumentIfEnabled(url: knownURL)
+            recordDocumentLibraryIfAllowed(url: knownURL, origin: .recent)
             resolve(id: message.id, result: ShellCallResult.save(result)) { [weak self] in
                 self?.licenseReminderController?.recordSuccessfulSave()
             }
@@ -331,6 +383,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
 
             remember(url: url)
             recordRecentDocumentIfEnabled(url: url)
+            recordDocumentLibraryIfAllowed(url: url, origin: .filePanel)
             resolve(id: message.id, result: ShellCallResult.save(result)) { [weak self] in
                 self?.licenseReminderController?.recordSuccessfulSave()
             }
@@ -430,6 +483,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
             if !args.enabled {
                 try sessionStore.clear()
                 restoreCandidatePaths.removeAll()
+                sessionRestoreClassifiedPaths.removeAll()
                 nativeRecentOpenPaths.removeAll()
                 sessionSyncSuppressedPaths.removeAll()
             } else {
@@ -470,6 +524,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
             try sessionStore.clear()
             sessionSyncSuppressedPaths.formUnion(knownURLsByPath.keys)
             restoreCandidatePaths.removeAll()
+            sessionRestoreClassifiedPaths.removeAll()
             nativeRecentOpenPaths.removeAll()
             resolve(
                 id: message.id,
@@ -499,6 +554,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
 
             let state = try sessionStore.loadAndPrune()
             state.openPaths.forEach { restoreCandidatePaths.insert($0) }
+            state.openPaths.forEach { sessionRestoreClassifiedPaths.insert($0) }
             resolve(
                 id: message.id,
                 result: ShellSessionStateOk(
@@ -575,6 +631,20 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
         }
     }
 
+    private func recordDocumentLibraryIfAllowed(url: URL, origin: DocumentOpenOrigin) {
+        guard origin.recordsInLibrary, licenseStateProvider().allowsDocumentLibraryRecording else {
+            return
+        }
+
+        do {
+            try documentLibraryStore.record(url: url)
+        } catch {
+            #if DEBUG
+            print("ShellBridge failed to record document library entry: \(error.localizedDescription)")
+            #endif
+        }
+    }
+
     private func remember(url: URL) {
         let standardizedPath = url.standardizedFileURL.path
         knownURLsByPath[standardizedPath] = url
@@ -585,6 +655,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
     private func seedRestoreCandidatePaths() {
         guard persistenceStore.load().persistenceEnabled else {
             restoreCandidatePaths.removeAll()
+            sessionRestoreClassifiedPaths.removeAll()
             nativeRecentOpenPaths.removeAll()
             return
         }
@@ -598,6 +669,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
         restoreCandidatePaths = Set(sessionPaths.filter {
             sessionStore.isRestoreEligiblePath($0)
         })
+        sessionRestoreClassifiedPaths = restoreCandidatePaths
         nativeRecentOpenPaths = Set(recentPaths.filter(Self.isSupportedExistingFilePath))
     }
 
