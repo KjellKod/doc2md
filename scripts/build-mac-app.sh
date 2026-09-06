@@ -19,6 +19,7 @@ NATIVE_API_ALLOWLIST=(
   "NSWorkspace :: Reveal in Finder for a saved user-selected file"
   "NSWorkspace :: About panel Docs and GitHub button opens of the doc2md GitHub repository"
   "replaceItemAt :: atomic final replacement from a sibling temp file"
+  "moveItem :: atomic first publication of completed Document Library metadata"
   "startAccessingSecurityScopedResource :: current-session scoped file access around selected URLs"
   "stopAccessingSecurityScopedResource :: balanced release of scoped file access"
   "createFile :: sibling temp-file staging and placeholder creation before replaceItemAt"
@@ -26,6 +27,7 @@ NATIVE_API_ALLOWLIST=(
   "Application Support settings :: metadata-only settings-file read/write/delete/atomic replacement"
   "Application Support license token :: license-token file read/write/delete under doc2md Application Support"
   "Application Support Polar license metadata :: non-secret metadata read/write/delete/atomic replacement"
+  "Application Support document library :: unlimited path metadata read/write/atomic replacement"
 )
 WATCHED_NATIVE_API_PATTERN='FileManager|NSOpenPanel|NSSavePanel|NSWorkspace|FileHandle|replaceItemAt|replaceItem\(|replacingItem|startAccessingSecurityScopedResource|stopAccessingSecurityScopedResource|createFile|removeItem|moveItem|copyItem|\.write\(to:'
 ALLOWED_NATIVE_API_PATTERN='FileManager|NSOpenPanel|NSSavePanel|NSWorkspace|replaceItemAt|startAccessingSecurityScopedResource|stopAccessingSecurityScopedResource|createFile|removeItem'
@@ -103,6 +105,12 @@ is_allowed_native_api_match() {
   esac
 
   IFS=: read -r source_path line_number source_content <<< "$match"
+  if [[ "$source_path" == "apps/macos/doc2md/DocumentLibraryStore.swift" &&
+        "$line_number" =~ ^[0-9]+$ &&
+        "$source_content" == '                    try fileManager.moveItem(at: tempURL, to: storeURL)' ]]; then
+    return 0
+  fi
+
   if [[ "$source_path" == "apps/macos/doc2md/Licensing/PolarLicensePersistence.swift" &&
         "$line_number" =~ ^[0-9]+$ &&
         "$source_content" == '        try encoded.write(to: metadataURL, options: [.atomic])' ]]; then
@@ -181,6 +189,18 @@ prepare_notice_resource() {
 
   npm run generate:notices -- --output "$NOTICE_STAGED_PATH"
   cp "$NOTICE_STAGED_PATH" "$NOTICE_SOURCE_PATH"
+}
+
+prepare_debug_web_resource() {
+  if [[ "$CONFIGURATION" != "Debug" ]]; then
+    return 0
+  fi
+
+  local resource_dir="apps/macos/doc2md/Resources/Web"
+  mkdir -p "$resource_dir"
+  find "$resource_dir" -mindepth 1 ! -name '.gitkeep' -delete
+  ditto dist "$resource_dir"
+  touch "$resource_dir/.gitkeep"
 }
 
 verify_notice_resource_restored() {
@@ -341,6 +361,7 @@ done < <(grep_matches_or_fail "$WATCHED_NATIVE_API_PATTERN" "${persistence_swift
 
 prepare_notice_resource
 npm run build:desktop
+prepare_debug_web_resource
 
 XCODE_BUILD_SETTINGS=(
   "MARKETING_VERSION=$MARKETING_VERSION_OVERRIDE"
@@ -355,6 +376,10 @@ if ((POLAR_SANDBOX)); then
     "DOC2MD_BUNDLE_DISPLAY_NAME=$SANDBOX_APP_NAME"
     "DOC2MD_BUNDLE_NAME=$SANDBOX_APP_NAME"
   )
+fi
+
+if [[ "$CONFIGURATION" = "Debug" ]]; then
+  XCODE_BUILD_SETTINGS+=("ENABLE_DEBUG_DYLIB=NO")
 fi
 
 set +e

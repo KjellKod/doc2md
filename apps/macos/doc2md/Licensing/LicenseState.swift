@@ -141,6 +141,15 @@ enum LicenseState: Equatable {
         return false
     }
 
+    var allowsDocumentLibraryRecording: Bool {
+        switch self {
+        case .licensed, .grace:
+            return true
+        case .expiredReminder, .unlicensed, .invalid, .licenseCheckFailed:
+            return false
+        }
+    }
+
     var displayTitle: String {
         switch self {
         case .licensed:

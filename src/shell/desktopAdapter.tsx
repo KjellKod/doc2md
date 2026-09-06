@@ -1526,7 +1526,10 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
         }
 
         for (const path of sessionResult.openPaths) {
-          const openResult = await desktopShell.openFile({ path });
+          const openResult = await desktopShell.openFile({
+            path,
+            origin: "sessionRestore",
+          });
           if (cancelled) {
             return;
           }

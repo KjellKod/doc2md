@@ -60,6 +60,11 @@ struct Doc2mdApp: App {
                 }
                 .keyboardShortcut("o", modifiers: [.command])
 
+                Button("Document Library") {
+                    shellHost.menuController.showDocumentLibrary()
+                }
+                .keyboardShortcut("l", modifiers: [.command, .shift])
+
                 Divider()
 
                 Button("Close Window") {

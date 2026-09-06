@@ -18,6 +18,15 @@
 		9A0200000000000000000088 /* PolarDeviceLabelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000085 /* PolarDeviceLabelTests.swift */; };
 		9A0200000000000000000089 /* PolarLicensePresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000086 /* PolarLicensePresentationTests.swift */; };
 		9A020000000000000000008A /* PolarLicenseControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000087 /* PolarLicenseControllerTests.swift */; };
+		9A0200000000000000000090 /* DocumentLibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000090 /* DocumentLibraryStore.swift */; };
+		9A0200000000000000000091 /* DocumentLibraryTestHooks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000091 /* DocumentLibraryTestHooks.swift */; };
+		9A0200000000000000000092 /* DocumentLibraryWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000092 /* DocumentLibraryWindow.swift */; };
+		9A0200000000000000000093 /* DocumentLibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000090 /* DocumentLibraryStore.swift */; };
+		9A0200000000000000000094 /* DocumentLibraryTestHooks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000091 /* DocumentLibraryTestHooks.swift */; };
+		9A0200000000000000000095 /* DocumentLibraryWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000092 /* DocumentLibraryWindow.swift */; };
+		9A0200000000000000000096 /* DocumentLibraryStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000093 /* DocumentLibraryStoreTests.swift */; };
+		9A0200000000000000000097 /* DocumentLibraryWindowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000094 /* DocumentLibraryWindowTests.swift */; };
+		9A0200000000000000000098 /* ShellBridgeDocumentLibraryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000095 /* ShellBridgeDocumentLibraryTests.swift */; };
 		9A0200000000000000000000 /* doc2mdApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000000 /* doc2mdApp.swift */; };
 		9A0200000000000000000001 /* WebShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000001 /* WebShellView.swift */; };
 		9A0200000000000000000060 /* WebShellLinkPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0100000000000000000060 /* WebShellLinkPolicy.swift */; };
@@ -113,6 +122,12 @@
 		9A0100000000000000000085 /* PolarDeviceLabelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolarDeviceLabelTests.swift; sourceTree = "<group>"; };
 		9A0100000000000000000086 /* PolarLicensePresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolarLicensePresentationTests.swift; sourceTree = "<group>"; };
 		9A0100000000000000000087 /* PolarLicenseControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolarLicenseControllerTests.swift; sourceTree = "<group>"; };
+		9A0100000000000000000090 /* DocumentLibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentLibraryStore.swift; sourceTree = "<group>"; };
+		9A0100000000000000000091 /* DocumentLibraryTestHooks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentLibraryTestHooks.swift; sourceTree = "<group>"; };
+		9A0100000000000000000092 /* DocumentLibraryWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentLibraryWindow.swift; sourceTree = "<group>"; };
+		9A0100000000000000000093 /* DocumentLibraryStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentLibraryStoreTests.swift; sourceTree = "<group>"; };
+		9A0100000000000000000094 /* DocumentLibraryWindowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentLibraryWindowTests.swift; sourceTree = "<group>"; };
+		9A0100000000000000000095 /* ShellBridgeDocumentLibraryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellBridgeDocumentLibraryTests.swift; sourceTree = "<group>"; };
 		9A0100000000000000000000 /* doc2mdApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = doc2mdApp.swift; sourceTree = "<group>"; };
 		9A0100000000000000000001 /* WebShellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebShellView.swift; sourceTree = "<group>"; };
 		9A0100000000000000000060 /* WebShellLinkPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebShellLinkPolicy.swift; sourceTree = "<group>"; };
@@ -200,6 +215,9 @@
 		9A0000000000000000000001 /* doc2md */ = {
 			isa = PBXGroup;
 			children = (
+				9A0100000000000000000090 /* DocumentLibraryStore.swift */,
+				9A0100000000000000000091 /* DocumentLibraryTestHooks.swift */,
+				9A0100000000000000000092 /* DocumentLibraryWindow.swift */,
 				9A0100000000000000000000 /* doc2mdApp.swift */,
 				9A0100000000000000000071 /* Doc2mdAppDelegate.swift */,
 				9A0100000000000000000001 /* WebShellView.swift */,
@@ -271,6 +289,9 @@
 		9A0000000000000000000004 /* doc2mdTests */ = {
 			isa = PBXGroup;
 			children = (
+				9A0100000000000000000093 /* DocumentLibraryStoreTests.swift */,
+				9A0100000000000000000094 /* DocumentLibraryWindowTests.swift */,
+				9A0100000000000000000095 /* ShellBridgeDocumentLibraryTests.swift */,
 				9A0100000000000000000009 /* FileStoreTests.swift */,
 				9A0100000000000000000010 /* PersistenceStoreTests.swift */,
 				9A0100000000000000000015 /* SessionStoreTests.swift */,
@@ -445,6 +466,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9A0200000000000000000090 /* DocumentLibraryStore.swift in Sources */,
+				9A0200000000000000000091 /* DocumentLibraryTestHooks.swift in Sources */,
+				9A0200000000000000000092 /* DocumentLibraryWindow.swift in Sources */,
 				9A0200000000000000000080 /* PolarLicenseClient.swift in Sources */,
 				9A0200000000000000000081 /* PolarDeviceLabel.swift in Sources */,
 				9A0200000000000000000082 /* PolarLicensePersistence.swift in Sources */,
@@ -485,6 +509,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9A0200000000000000000093 /* DocumentLibraryStore.swift in Sources */,
+				9A0200000000000000000094 /* DocumentLibraryTestHooks.swift in Sources */,
+				9A0200000000000000000095 /* DocumentLibraryWindow.swift in Sources */,
+				9A0200000000000000000096 /* DocumentLibraryStoreTests.swift in Sources */,
+				9A0200000000000000000097 /* DocumentLibraryWindowTests.swift in Sources */,
+				9A0200000000000000000098 /* ShellBridgeDocumentLibraryTests.swift in Sources */,
 				9A0200000000000000000083 /* PolarLicenseClient.swift in Sources */,
 				9A0200000000000000000084 /* PolarDeviceLabel.swift in Sources */,
 				9A0200000000000000000085 /* PolarLicensePersistence.swift in Sources */,

@@ -32,6 +32,18 @@ A paragraph with **bold**, _italic_, and \`inline code\`.
 
 ## Second Section
 
+[Explicit target](#explicit-target) and [Call](tel:+15555550123).
+
+<a id="explicit-target"></a>
+
+Raw <strong>allowed</strong> content.
+
+<div class="note">Unwrapped child</div>
+
+<script>Removed executable text</script>
+
+Footnote reference[^1].
+
 - [ ] open task
 - [x] done task
 
@@ -47,6 +59,8 @@ const parity = true;
 \`\`\`
 
 [External](https://example.com) then [Anchor](#second-section) then [Repo](../README.md).
+
+[^1]: Footnote body.
 `;
 
 function createEntry(): FileEntry {
@@ -63,6 +77,7 @@ function createEntry(): FileEntry {
 }
 
 interface NormalizedDoc {
+  ids: string[];
   headings: { level: string; id: string; text: string }[];
   tableCells: string[];
   tableHeaders: string[];
@@ -139,6 +154,7 @@ function normalize(input: ParentNode): NormalizedDoc {
   });
 
   return {
+    ids: Array.from(root.querySelectorAll("[id]"), (node) => node.id),
     headings,
     tableHeaders,
     tableCells,
@@ -177,8 +193,13 @@ describe("export/Preview parity guard", () => {
       expect(preview.headings.length).toBeGreaterThanOrEqual(2);
       // 2 list-item task checkboxes + 2 synthesized table-cell checkboxes.
       expect(preview.checkboxes.length).toBe(4);
-      expect(preview.links.length).toBe(3);
+      expect(preview.links.length).toBeGreaterThanOrEqual(8);
+      expect(preview.text).toContain("Raw allowed content");
+      expect(preview.text).toContain("Unwrapped child");
+      expect(preview.text).not.toContain("Removed executable text");
+      expect(preview.ids).toContain("user-content:explicit-target");
 
+      expect(exported.ids).toEqual(preview.ids);
       expect(exported.headings).toEqual(preview.headings);
       expect(exported.tableHeaders).toEqual(preview.tableHeaders);
       expect(exported.tableCells).toEqual(preview.tableCells);
