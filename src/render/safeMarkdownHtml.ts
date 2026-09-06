@@ -1,4 +1,4 @@
-import type { Element, Root } from "hast";
+import type { Element, Parent, Root } from "hast";
 import type { Schema } from "hast-util-sanitize";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
@@ -8,6 +8,7 @@ import type { VFile } from "vfile";
 
 const EXPLICIT_ID_PREFIX = "user-content:";
 const GENERATED_MARKER_PROPERTY = "dataDoc2mdGeneratedIdentity";
+const GENERATED_IMAGE_MARKER_PROPERTY = "dataDoc2mdGeneratedImage";
 const EXPLICIT_TARGET_MARKER_PROPERTY = "dataDoc2mdExplicitTarget";
 const EXPLICIT_TARGET_CLASS = "markdown-explicit-anchor";
 const GENERATED_MARKER_BYTES = 16;
@@ -115,6 +116,19 @@ const markExplicitMarkdownTargets: Plugin<[], Root> = () =>
     });
   };
 
+const markGeneratedMarkdownImages: Plugin<[], Root> = () =>
+  (tree: Root, file: VFile) => {
+    const state = (file.data as MarkdownFileData).doc2mdMarkdownIdentity;
+    if (!state) {
+      return;
+    }
+    visit(tree, "element", (node: Element) => {
+      if (node.tagName === "img") {
+        node.properties[GENERATED_IMAGE_MARKER_PROPERTY] = state.marker;
+      }
+    });
+  };
+
 function withoutProperties(
   properties: NonNullable<Schema["attributes"]>[string] | undefined,
   blocked: Set<string>,
@@ -172,11 +186,40 @@ export const safeMarkdownHtmlSchema: Schema = {
       "id",
       GENERATED_MARKER_PROPERTY,
     ],
+    img: [
+      ...withoutProperties(attributes.img, blockedWildcardProperties),
+      GENERATED_IMAGE_MARKER_PROPERTY,
+    ],
   },
   protocols: {
     ...defaultSchema.protocols,
     href: ["http", "https", "mailto", "tel"],
   },
+};
+
+const removeRawImages: Plugin<[], Root> = () => (tree: Root, file: VFile) => {
+  const state = (file.data as MarkdownFileData).doc2mdMarkdownIdentity;
+  visit(
+    tree,
+    "element",
+    (node: Element, index: number | undefined, parent: Parent | undefined) => {
+      if (node.tagName !== "img") {
+        return;
+      }
+      const marker = stringProperty(
+        node.properties[GENERATED_IMAGE_MARKER_PROPERTY],
+      );
+      delete node.properties[GENERATED_IMAGE_MARKER_PROPERTY];
+      if (state && marker === state.marker) {
+        return;
+      }
+      if (parent && typeof index === "number") {
+        parent.children.splice(index, 1);
+        return index;
+      }
+      return;
+    },
+  );
 };
 
 function normalizedAuthorId(sourceId: string): string | null {
@@ -366,9 +409,11 @@ const reparseRawHtmlWhenPresent: Plugin<[], Root> = () => (tree, file) => {
 export function safeMarkdownHtmlBeforeSlugPlugins(): PluggableList {
   return [
     captureGeneratedFootnoteIds,
+    markGeneratedMarkdownImages,
     reparseRawHtmlWhenPresent,
     markExplicitMarkdownTargets,
     [rehypeSanitize, safeMarkdownHtmlSchema],
+    removeRawImages,
     normalizeMarkdownIdentities,
   ];
 }
