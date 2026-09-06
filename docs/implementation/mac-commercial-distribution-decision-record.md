@@ -38,12 +38,12 @@ The Official App remains evaluation-friendly when unregistered:
 | `doc2md.dev` | Public Mac product, download, support, pricing, privacy, terms, and licensing surface. | Must be ready before public paid launch. |
 | `updates.doc2md.dev` | Sparkle appcast/update surface. | Continues the established Sparkle release path; not changed by this decision record. |
 | `license.doc2md.dev` | Private issuer/API territory. | May be implemented by a later private issuer quest; not required to be live in this quest. |
-| `support@doc2md.dev` | Intended public customer-facing go-live support/contact alias. | Must exist before taking money. |
+| `support@candidtalentedge.com` | Current public customer-facing go-live support/contact alias. | Must exist before taking money. |
 | `https://kjellkod.github.io/doc2md/` | Hosted free web app. | Must not expose Mac purchase, download, or registration links before commercial go-live approval. |
 
-`KjellKod <kjell@candidtalentedge.com>` is the accountable operational owner/contact in this repository decision record. `support@doc2md.dev` is the intended public customer-facing support/contact alias before go-live.
+`KjellKod <kjell@candidtalentedge.com>` is the accountable operational owner/contact in this repository decision record. `support@candidtalentedge.com` is the current public customer-facing support/contact alias before go-live.
 
-**Support alias amendment (2026-09-05):** `support@candidtalentedge.com` supersedes the former support alias throughout this record. Older references remain below as historical context.
+**Support alias amendment (2026-09-05):** `support@candidtalentedge.com` supersedes the former support alias throughout this record. Remaining former-alias references below are retained only as historical context.
 
 ## Merchant Path
 
