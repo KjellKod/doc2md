@@ -56,8 +56,8 @@ The current app build can include these direct runtime dependencies from the roo
 | `@types/unist` | 2.0.11 | MIT | https://github.com/DefinitelyTyped/DefinitelyTyped.git |
 | `@types/unist` | 3.0.3 | MIT | https://github.com/DefinitelyTyped/DefinitelyTyped.git |
 | `@ungap/structured-clone` | 1.3.0 | ISC | git+https://github.com/ungap/structured-clone.git |
-| `@xmldom/xmldom` | 0.8.13 | MIT | git://github.com/xmldom/xmldom.git |
-| `@xmldom/xmldom` | 0.9.10 | MIT | git://github.com/xmldom/xmldom.git |
+| `@xmldom/xmldom` | 0.8.15 | MIT | git://github.com/xmldom/xmldom.git |
+| `@xmldom/xmldom` | 0.9.12 | MIT | git://github.com/xmldom/xmldom.git |
 | `argparse` | 1.0.10 | MIT | nodeca/argparse |
 | `bail` | 2.0.2 | MIT | wooorm/bail |
 | `base64-js` | 1.5.1 | MIT | git://github.com/beatgammit/base64-js.git |
@@ -85,7 +85,7 @@ The current app build can include these direct runtime dependencies from the roo
 | `escape-string-regexp` | 5.0.0 | MIT | sindresorhus/escape-string-regexp |
 | `estree-util-is-identifier-name` | 3.0.0 | MIT | syntax-tree/estree-util-is-identifier-name |
 | `extend` | 3.0.2 | MIT | https://github.com/justmoon/node-extend.git |
-| `fflate` | 0.8.2 | MIT | https://github.com/101arrowz/fflate |
+| `fflate` | 0.8.3 | MIT | https://github.com/101arrowz/fflate |
 | `fs-extra` | 11.3.4 | MIT | git+https://github.com/jprichardson/node-fs-extra.git |
 | `github-slugger` | 2.0.0 | ISC | https://github.com/Flet/github-slugger.git |
 | `graceful-fs` | 4.2.11 | ISC | https://github.com/isaacs/node-graceful-fs |
@@ -204,7 +204,7 @@ The current app build can include these direct runtime dependencies from the roo
 | `trough` | 2.2.0 | MIT | wooorm/trough |
 | `turndown` | 7.2.4 | MIT | https://github.com/mixmark-io/turndown.git |
 | `underscore` | 1.13.8 | MIT | git://github.com/jashkenas/underscore.git |
-| `undici` | 7.25.0 | MIT | git+https://github.com/nodejs/undici.git |
+| `undici` | 7.29.1 | MIT | git+https://github.com/nodejs/undici.git |
 | `unified` | 11.0.5 | MIT | unifiedjs/unified |
 | `unist-util-is` | 6.0.1 | MIT | syntax-tree/unist-util-is |
 | `unist-util-position` | 5.0.0 | MIT | syntax-tree/unist-util-position |
