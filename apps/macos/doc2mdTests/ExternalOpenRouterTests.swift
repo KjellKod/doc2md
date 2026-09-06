@@ -128,14 +128,14 @@ final class ExternalOpenRouterTests: XCTestCase {
     func testFinderAndLibrarySelectDifferentOpeners() {
         var messages: [String] = []
         let router = ExternalOpenRouter(
-            opener: { url in self.markdownResult(url) },
-            dispatcher: { result in messages.append(result.path ?? "") },
+            opener: { url in .error(message: "finder:\(url.lastPathComponent)") },
+            dispatcher: { result in messages.append(result.path ?? result.message ?? "") },
             libraryOpener: { url in self.markdownResult(url) }
         )
         router.markWebShellReady()
         router.enqueue(urls: [makeURL("Finder.md")])
         _ = router.enqueueLibrary(url: makeURL("Library.md")) { _ in }
-        XCTAssertEqual(messages, ["/tmp/doc2md-router-tests/Finder.md", "/tmp/doc2md-router-tests/Library.md"])
+        XCTAssertEqual(messages, ["finder:Finder.md", "/tmp/doc2md-router-tests/Library.md"])
     }
 
     func testMixedFinderAndLibraryRequestsPreserveOrder() {

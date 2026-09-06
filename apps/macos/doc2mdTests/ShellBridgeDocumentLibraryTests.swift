@@ -97,9 +97,40 @@ final class ShellBridgeDocumentLibraryTests: XCTestCase {
         let webView = DocumentLibraryCapturingWebView()
         bridge.webView = webView
 
-        await sendOpen(bridge: bridge, webView: webView, path: source.path, id: "restore")
+        await sendOpen(
+            bridge: bridge,
+            webView: webView,
+            path: source.path,
+            id: "restore",
+            origin: "sessionRestore"
+        )
         XCTAssertTrue(try store.load().isEmpty)
         await sendOpen(bridge: bridge, webView: webView, path: source.path, id: "recent")
+        XCTAssertEqual(try store.load().map(\.path), [source.path])
+    }
+
+    func testRecentOpenOfPendingRestorePathRecordsWhenLicensed() async throws {
+        let source = try makeFile("pending-restore.md", "# Test")
+        let store = DocumentLibraryStore(storeURL: directory.appendingPathComponent("library.json"))
+        let settingsURL = directory.appendingPathComponent("settings.json")
+        let sessionURL = directory.appendingPathComponent("session.json")
+        let persistence = PersistenceStore(settingsURL: settingsURL)
+        _ = try persistence.setPersistenceEnabled(true)
+        _ = try SessionStore(sessionURL: sessionURL).write(
+            openPaths: [source.path],
+            selectedPath: source.path
+        )
+        let bridge = ShellBridge(
+            persistenceStore: persistence,
+            sessionStore: SessionStore(sessionURL: sessionURL),
+            documentLibraryStore: store,
+            licenseStateProvider: { .licensed(LicenseEntitlement(expiresAt: nil)) }
+        )
+        let webView = DocumentLibraryCapturingWebView()
+        bridge.webView = webView
+
+        await sendOpen(bridge: bridge, webView: webView, path: source.path, id: "recent")
+
         XCTAssertEqual(try store.load().map(\.path), [source.path])
     }
 
@@ -121,14 +152,20 @@ final class ShellBridgeDocumentLibraryTests: XCTestCase {
         bridge.webView = webView
         try FileManager.default.removeItem(at: source)
 
-        await sendMessage(bridge: bridge, webView: webView, name: "doc2mdOpenFile", id: "failed-restore", args: ["path": source.path])
+        await sendMessage(
+            bridge: bridge,
+            webView: webView,
+            name: "doc2mdOpenFile",
+            id: "failed-restore",
+            args: ["path": source.path, "origin": "sessionRestore"]
+        )
         XCTAssertTrue(try store.load().isEmpty)
         try Data("# restored".utf8).write(to: source)
         await sendMessage(bridge: bridge, webView: webView, name: "doc2mdOpenFile", id: "recent-reopen", args: ["path": source.path])
         XCTAssertEqual(try store.load().map(\.path), [source.path])
     }
 
-    func testReloadFromDiskAndConflictReloadRetouchWhenLicensed() async throws {
+    func testRepeatedRecentReopenRetouchesExistingRowWhenLicensed() async throws {
         let source = try makeFile("reload.md", "# Test")
         var now = Date(timeIntervalSince1970: 1)
         let store = DocumentLibraryStore(storeURL: directory.appendingPathComponent("library.json"), now: { now })
@@ -224,9 +261,19 @@ final class ShellBridgeDocumentLibraryTests: XCTestCase {
         bridge: ShellBridge,
         webView: DocumentLibraryCapturingWebView,
         path: String,
-        id: String
+        id: String,
+        origin: String? = nil
     ) async {
-        _ = await sendMessage(bridge: bridge, webView: webView, name: "doc2mdOpenFile", id: id, args: ["path": path])
+        var args = ["path": path]
+        args["origin"] = origin
+        let script = await sendMessage(
+            bridge: bridge,
+            webView: webView,
+            name: "doc2mdOpenFile",
+            id: id,
+            args: args
+        )
+        XCTAssertTrue(script.contains("\"ok\":true"))
     }
 
     @discardableResult

@@ -51,6 +51,11 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
 
     private struct OpenFileArgs: Codable {
         let path: String?
+        let origin: OpenFileOrigin?
+    }
+
+    private enum OpenFileOrigin: String, Codable {
+        case sessionRestore
     }
 
     private enum SaveFormat: String, Codable {
@@ -98,7 +103,6 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
     private let licenseStateProvider: () -> LicenseState
     private var knownURLsByPath: [String: URL] = [:]
     private var restoreCandidatePaths: Set<String> = []
-    private var sessionRestoreClassifiedPaths: Set<String> = []
     private var nativeRecentOpenPaths: Set<String> = []
     private var sessionSyncSuppressedPaths: Set<String> = []
     private var lastDirectoryURL: URL?
@@ -190,7 +194,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
 
             if let path = args.path {
                 let standardizedPath = Self.standardPath(path)
-                origin = sessionRestoreClassifiedPaths.remove(standardizedPath) != nil
+                origin = args.origin == .sessionRestore
                     ? .sessionRestore
                     : .recent
                 if let knownURL = knownURLsByPath[standardizedPath] {
@@ -483,7 +487,6 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
             if !args.enabled {
                 try sessionStore.clear()
                 restoreCandidatePaths.removeAll()
-                sessionRestoreClassifiedPaths.removeAll()
                 nativeRecentOpenPaths.removeAll()
                 sessionSyncSuppressedPaths.removeAll()
             } else {
@@ -524,7 +527,6 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
             try sessionStore.clear()
             sessionSyncSuppressedPaths.formUnion(knownURLsByPath.keys)
             restoreCandidatePaths.removeAll()
-            sessionRestoreClassifiedPaths.removeAll()
             nativeRecentOpenPaths.removeAll()
             resolve(
                 id: message.id,
@@ -554,7 +556,6 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
 
             let state = try sessionStore.loadAndPrune()
             state.openPaths.forEach { restoreCandidatePaths.insert($0) }
-            state.openPaths.forEach { sessionRestoreClassifiedPaths.insert($0) }
             resolve(
                 id: message.id,
                 result: ShellSessionStateOk(
@@ -655,7 +656,6 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
     private func seedRestoreCandidatePaths() {
         guard persistenceStore.load().persistenceEnabled else {
             restoreCandidatePaths.removeAll()
-            sessionRestoreClassifiedPaths.removeAll()
             nativeRecentOpenPaths.removeAll()
             return
         }
@@ -669,7 +669,6 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
         restoreCandidatePaths = Set(sessionPaths.filter {
             sessionStore.isRestoreEligiblePath($0)
         })
-        sessionRestoreClassifiedPaths = restoreCandidatePaths
         nativeRecentOpenPaths = Set(recentPaths.filter(Self.isSupportedExistingFilePath))
     }
 

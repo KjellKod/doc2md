@@ -213,6 +213,12 @@ final class DocumentLibraryWindowController: NSWindowController {
 }
 
 struct DocumentLibraryView: View {
+    private static let timestampFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+
     @ObservedObject var viewModel: DocumentLibraryViewModel
     @FocusState private var searchFocused: Bool
     @FocusState private var focusedEntryPath: String?
@@ -278,12 +284,14 @@ struct DocumentLibraryView: View {
             }
             Spacer(minLength: 16)
             let isPending = viewModel.pendingPaths.contains(entry.path)
-            Button(isPending ? "Opening..." : viewModel.errorsByPath[entry.path] == nil ? "Open" : "Retry") {
+            let hasError = viewModel.errorsByPath[entry.path] != nil
+            let actionLabel = isPending ? "Opening" : hasError ? "Retry" : "Open"
+            Button(isPending ? "Opening..." : actionLabel) {
                 viewModel.open(entry)
             }
             .disabled(isPending)
             .focused($focusedEntryPath, equals: entry.path)
-            .accessibilityLabel(isPending ? "Opening \(entry.displayName)" : "Open \(entry.displayName)")
+            .accessibilityLabel("\(actionLabel) \(entry.displayName)")
             .accessibilityAddTraits(isPending ? .updatesFrequently : [])
             .frame(minWidth: 64, minHeight: 32)
         }
@@ -300,9 +308,7 @@ struct DocumentLibraryView: View {
     }
 
     static func formattedTimestamp(_ value: String) -> String {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        guard let date = formatter.date(from: value) else { return value }
+        guard let date = timestampFormatter.date(from: value) else { return value }
         return date.formatted(date: .abbreviated, time: .shortened)
     }
 }

@@ -1905,8 +1905,14 @@ describe("App desktop bridge", () => {
 
     await screen.findByRole("heading", { name: "Beta" });
     expect(getSessionState).toHaveBeenCalledTimes(1);
-    expect(openFile).toHaveBeenNthCalledWith(1, { path: "/Users/me/Alpha.md" });
-    expect(openFile).toHaveBeenNthCalledWith(2, { path: "/Users/me/Beta.md" });
+    expect(openFile).toHaveBeenNthCalledWith(1, {
+      path: "/Users/me/Alpha.md",
+      origin: "sessionRestore",
+    });
+    expect(openFile).toHaveBeenNthCalledWith(2, {
+      path: "/Users/me/Beta.md",
+      origin: "sessionRestore",
+    });
     ensureSidebarVisible();
     expect(screen.getByRole("button", { name: "Open Alpha.md" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Open Beta.md" })).toBeInTheDocument();

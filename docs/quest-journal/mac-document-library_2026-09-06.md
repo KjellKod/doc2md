@@ -120,6 +120,7 @@ Use a full Quest and an isolated worktree. Do not edit source files before Build
 - The primary search control is a plain rounded TextField, not a macOS search field
 - The library list does not refresh while the window stays open
 - The production ShellHost LicenseController.state provider is still asserted only by a bridge-seam proxy, not by ShellHost itself
+- Verify shared Command-W routing before fixing auxiliary-window dirty-state handling
 
 ## Celebration
 

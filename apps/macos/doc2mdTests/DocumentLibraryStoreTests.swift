@@ -21,9 +21,11 @@ final class DocumentLibraryStoreTests: XCTestCase {
         let store = makeStore()
         let first = directory.appendingPathComponent("folder/../Alpha.md")
         try store.record(url: first, now: Date(timeIntervalSince1970: 1))
-        let entries = try store.record(url: directory.appendingPathComponent("Alpha.md"), now: Date(timeIntervalSince1970: 2))
-        XCTAssertEqual(entries.count, 1)
+        try store.record(url: directory.appendingPathComponent("Beta.md"), now: Date(timeIntervalSince1970: 2))
+        let entries = try store.record(url: directory.appendingPathComponent("Alpha.md"), now: Date(timeIntervalSince1970: 3))
+        XCTAssertEqual(entries.count, 2)
         XCTAssertEqual(entries[0].path, directory.appendingPathComponent("Alpha.md").path)
+        XCTAssertEqual(entries[1].path, directory.appendingPathComponent("Beta.md").path)
     }
 
     func testEqualTimestampsSortByStandardizedPath() throws {
@@ -64,9 +66,7 @@ final class DocumentLibraryStoreTests: XCTestCase {
         try store.record(url: directory.appendingPathComponent("Saved.md"))
 
         XCTAssertFalse(
-            fileManager.createdFiles.contains { path, data in
-                path == storeURL.path && data?.isEmpty == true
-            }
+            fileManager.createdFilePaths.contains(storeURL.path)
         )
         XCTAssertEqual(try store.load().map(\.displayName), ["Saved.md"])
     }
@@ -85,14 +85,14 @@ final class DocumentLibraryStoreTests: XCTestCase {
 }
 
 private final class RecordingFileManager: FileManager {
-    private(set) var createdFiles: [(path: String, data: Data?)] = []
+    private(set) var createdFilePaths: [String] = []
 
     override func createFile(
         atPath path: String,
         contents data: Data?,
         attributes attr: [FileAttributeKey: Any]? = nil
     ) -> Bool {
-        createdFiles.append((path: path, data: data))
+        createdFilePaths.append(path)
         return super.createFile(atPath: path, contents: data, attributes: attr)
     }
 }
