@@ -87,8 +87,6 @@ final class DocumentLibraryStore {
         let tempURL = directory.appendingPathComponent(
             ".\(storeURL.lastPathComponent).doc2md-\(UUID().uuidString).tmp"
         )
-        var createdPlaceholder = false
-
         do {
             try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
             let data = try JSONEncoder().encode(Envelope(version: 1, entries: entries))
@@ -97,22 +95,17 @@ final class DocumentLibraryStore {
             }
 
             do {
-                if !fileManager.fileExists(atPath: storeURL.path) {
-                    guard fileManager.createFile(atPath: storeURL.path, contents: Data()) else {
-                        throw DocumentLibraryStoreError.unwritable
-                    }
-                    createdPlaceholder = true
+                if fileManager.fileExists(atPath: storeURL.path) {
+                    _ = try fileManager.replaceItemAt(
+                        storeURL,
+                        withItemAt: tempURL,
+                        backupItemName: nil,
+                        options: []
+                    )
+                } else {
+                    try fileManager.moveItem(at: tempURL, to: storeURL)
                 }
-                _ = try fileManager.replaceItemAt(
-                    storeURL,
-                    withItemAt: tempURL,
-                    backupItemName: nil,
-                    options: []
-                )
             } catch {
-                if createdPlaceholder {
-                    try? fileManager.removeItem(at: storeURL)
-                }
                 try? fileManager.removeItem(at: tempURL)
                 throw error
             }

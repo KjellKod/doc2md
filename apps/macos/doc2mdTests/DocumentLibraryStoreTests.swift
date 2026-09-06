@@ -57,6 +57,20 @@ final class DocumentLibraryStoreTests: XCTestCase {
         XCTAssertEqual(try makeStore().load().map(\.displayName), ["Saved.md"])
     }
 
+    func testFirstWriteDoesNotCreateEmptyDestinationPlaceholder() throws {
+        let fileManager = RecordingFileManager()
+        let store = DocumentLibraryStore(fileManager: fileManager, storeURL: storeURL)
+
+        try store.record(url: directory.appendingPathComponent("Saved.md"))
+
+        XCTAssertFalse(
+            fileManager.createdFiles.contains { path, data in
+                path == storeURL.path && data?.isEmpty == true
+            }
+        )
+        XCTAssertEqual(try store.load().map(\.displayName), ["Saved.md"])
+    }
+
     func testDecodeFailurePreservesOriginalBytes() throws {
         let bytes = Data("not-json".utf8)
         XCTAssertTrue(FileManager.default.createFile(atPath: storeURL.path, contents: bytes))
@@ -67,5 +81,18 @@ final class DocumentLibraryStoreTests: XCTestCase {
 
     private func makeStore() -> DocumentLibraryStore {
         DocumentLibraryStore(storeURL: storeURL)
+    }
+}
+
+private final class RecordingFileManager: FileManager {
+    private(set) var createdFiles: [(path: String, data: Data?)] = []
+
+    override func createFile(
+        atPath path: String,
+        contents data: Data?,
+        attributes attr: [FileAttributeKey: Any]? = nil
+    ) -> Bool {
+        createdFiles.append((path: path, data: data))
+        return super.createFile(atPath: path, contents: data, attributes: attr)
     }
 }

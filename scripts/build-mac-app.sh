@@ -16,6 +16,7 @@ NATIVE_API_ALLOWLIST=(
   "NSWorkspace :: Reveal in Finder for a saved user-selected file"
   "NSWorkspace :: About panel Docs and GitHub button opens of the doc2md GitHub repository"
   "replaceItemAt :: atomic final replacement from a sibling temp file"
+  "moveItem :: atomic first publication of completed Document Library metadata"
   "startAccessingSecurityScopedResource :: current-session scoped file access around selected URLs"
   "stopAccessingSecurityScopedResource :: balanced release of scoped file access"
   "createFile :: sibling temp-file staging and placeholder creation before replaceItemAt"
@@ -101,6 +102,12 @@ is_allowed_native_api_match() {
   esac
 
   IFS=: read -r source_path line_number source_content <<< "$match"
+  if [[ "$source_path" == "apps/macos/doc2md/DocumentLibraryStore.swift" &&
+        "$line_number" =~ ^[0-9]+$ &&
+        "$source_content" == '                    try fileManager.moveItem(at: tempURL, to: storeURL)' ]]; then
+    return 0
+  fi
+
   if [[ "$source_path" == "apps/macos/doc2md/Licensing/PolarLicensePersistence.swift" &&
         "$line_number" =~ ^[0-9]+$ &&
         "$source_content" == '        try encoded.write(to: metadataURL, options: [.atomic])' ]]; then

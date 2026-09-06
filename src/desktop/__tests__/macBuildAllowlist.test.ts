@@ -62,6 +62,9 @@ describe("Mac native API allowlist", () => {
       "replaceItemAt :: atomic final replacement from a sibling temp file",
     );
     expect(script).toContain(
+      "moveItem :: atomic first publication of completed Document Library metadata",
+    );
+    expect(script).toContain(
       "startAccessingSecurityScopedResource :: current-session scoped file access around selected URLs",
     );
     expect(script).toContain(
