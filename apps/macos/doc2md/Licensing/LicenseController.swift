@@ -3,15 +3,16 @@ import Foundation
 
 struct PolarLicenseConfiguration: Equatable {
     static let organizationIDInfoPlistName = "DOC2MDPolarOrganizationID"
-    static let recoveryURL = URL(string: "https://polar.sh/purchases")!
     static let supportURL = URL(
         string: "mailto:support@candidtalentedge.com?subject=doc2md%20support"
     )!
 #if DOC2MD_POLAR_SANDBOX
+    static let recoveryURL = URL(string: "https://sandbox.polar.sh/purchases")!
     static let keychainService = "com.kjellkod.doc2md.sandbox.polar-license"
     static let keychainAccount = "doc2md-sandbox-polar-license-credentials"
     static let applicationSupportDirectoryName = "doc2md Sandbox"
 #else
+    static let recoveryURL = URL(string: "https://polar.sh/purchases")!
     static let keychainService = "com.kjellkod.doc2md.polar-license"
     static let keychainAccount = "doc2md-polar-license-credentials"
     static let applicationSupportDirectoryName = "doc2md"

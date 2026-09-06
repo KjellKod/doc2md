@@ -175,6 +175,20 @@ final class PolarLicenseControllerTests: XCTestCase {
         )
     }
 
+    func testRecoveryURLMatchesPolarEnvironment() {
+#if DOC2MD_POLAR_SANDBOX
+        XCTAssertEqual(
+            PolarLicenseConfiguration.recoveryURL.absoluteString,
+            "https://sandbox.polar.sh/purchases"
+        )
+#else
+        XCTAssertEqual(
+            PolarLicenseConfiguration.recoveryURL.absoluteString,
+            "https://polar.sh/purchases"
+        )
+#endif
+    }
+
     func testKeychainLossKeepsCachedStateAndFreshActivationReusesSuffix() async {
         let client = ScriptedPolarClient()
         client.activationResult = .success(
