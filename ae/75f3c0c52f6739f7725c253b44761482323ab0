@@ -1,0 +1,107 @@
+src/render/safeMarkdownHtml.ts
+  s_6a6865d94293c0::t_40e8f61dcb3acc 11-12,101-117,163,224-226,228,252-259,263,366,382-383
+  s_6a6865d94293c0::t_2faeca81b734ad 129-134,351-354,356-361,365
+  s_6a6865d94293c0::t_5424fcb9584255 3-5,350,362-364,367-374
+  s_6a6865d94293c0::t_0639b00ce1896d 1-2,7-10,13-100,118-128,135-162,164-223,227,229-251,260-262,264-349,375-381,384-385
+  s_6a6865d94293c0::t_56902f3012b2f3 6,355
+src/render/markdownToHtml.ts
+  s_6a6865d94293c0::t_4698925f5a2e0a 37-41,66-69,170,172,175
+  s_6a6865d94293c0::t_d26269c9b93317 10-14,17-18
+  s_6a6865d94293c0::t_3e0a98347c4c30 20-22
+src/components/preview/PreviewMode.tsx
+  s_6a6865d94293c0::t_49058b52159f86 43-47,81-85,87-90,318,320,394,397,792,794,796,813,826-836
+  s_6a6865d94293c0::t_2faeca81b734ad 10-14,48-54
+  s_6a6865d94293c0::t_40e8f61dcb3acc 86
+.ai/allowlist.json
+  s_6a6865d94293c0::t_42775977dd2b07 148,159-160,162-165,167-168,187-190,194,222-224,258,269-270,272-275,277-278,297-307,332-334
+src/components/__tests__/markdownExternalLinks.test.tsx
+  s_6a6865d94293c0::t_8f869737f77008 269-278
+  s_6a6865d94293c0::t_8c3275fb42457f 27-45
+  s_6a6865d94293c0::t_e7c2e5a56a1968 300-309
+  s_6a6865d94293c0::t_31d5a22f6e9ed0 314,362
+  s_6a6865d94293c0::t_8742ec14726ec4 335
+  s_6a6865d94293c0::t_607aa9f805ea7d 67-87,268,279-299,310-313,315-318,320-321,325-334,336-361,374
+  s_6a6865d94293c0::t_b803827c8100d3 319,322-324,363-373
+  s_c23be18b8cb910::t_bd6fd58a58cf42 375
+docs/markdown-gfm-reference.md
+  s_6a6865d94293c0::t_56902f3012b2f3 73
+  s_6a6865d94293c0::t_0738ca97f4ff73 56-72,74-78
+src/render/markdownToHtml.test.ts
+  s_6a6865d94293c0::t_e7c2e5a56a1968 181-193
+  s_6a6865d94293c0::t_8f869737f77008 276-291
+  s_6a6865d94293c0::t_31d5a22f6e9ed0 201
+  s_6a6865d94293c0::t_b803827c8100d3 206,209-210
+  s_6a6865d94293c0::t_607aa9f805ea7d 120,250,299,304,308-336
+  s_6a6865d94293c0::t_8c3275fb42457f 142-162,224-225
+  s_6a6865d94293c0::t_6828d5d0be3815 163-180,194-200,202-205,207-208,212-223,238-249
+  s_6a6865d94293c0::t_8742ec14726ec4 211
+  s_c23be18b8cb910::t_b9b2ae1a83255c 251
+src/styles/global.css
+  s_6a6865d94293c0::t_2faeca81b734ad 2997-3005
+docs/journal/056-celebrate-gfm-safe-html-anchors.md
+  s_6a6865d94293c0::t_13e9a290830dfe 101
+  s_6a6865d94293c0::t_31ba133db4b76b 5,85,87
+  s_6a6865d94293c0::t_49db6365121583 1-4,6-84,86,88-100
+src/components/PreviewPanel.test.tsx
+  s_6a6865d94293c0::t_81efe079a5c841 15,1187-1207,1210-1212,1214-1222
+  s_6a6865d94293c0::t_2a9fa76d7c1c8f 1208-1209,1213
+  s_e049d9ae0ae402::t_150aa25a336136 1223-1224
+tests/e2e/markdown-anchor-navigation.spec.ts
+  s_6a6865d94293c0::t_deeb37e974fdf2 77,95
+  s_6a6865d94293c0::t_53001c7fab8631 1-76,78-94,96-127
+docs/journal/README.md
+  s_6a6865d94293c0::t_49db6365121583 9
+apps/macos/doc2mdTests/WebShellLinkPolicyTests.swift
+  s_6a6865d94293c0::t_9d60fac1703fc7 18-23,145-151,207-215
+  s_39f82ae7bb5b01::t_ae9c04a3be6dd1 216
+src/render/markdownToHtml.parity.test.tsx
+  s_6a6865d94293c0::t_74c8d77a29ea9e 35-46,62-63,80,157,196-200,202
+apps/macos/THIRD_PARTY_NOTICES.md
+  s_6a6865d94293c0::t_1671a4a1280f78 84,93,95-97,100,103,176,188-189,227,231
+package-lock.json
+  s_6a6865d94293c0::t_5a2d45660fd08b 24-25,2885-2904,2918-2994,3045-3063,3090-3106,5182-5210,5910-5923,6118-6127,6291-6292
+package.json
+  s_6a6865d94293c0::t_40f40522341b30 41-42
+packages/core/package.json
+  s_6a6865d94293c0::t_2a584d9142c0e7 54,59-60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "ae75f3c0c52f6739f7725c253b44761482323ab0",
+  "prompts": {},
+  "sessions": {
+    "s_39f82ae7bb5b01": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a0735b-5b1d-7b70-8f60-4a5c89fddab8",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_6a6865d94293c0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0736d-862a-7b31-8d77-9ebf26c79472",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_c23be18b8cb910": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a06ce1-0d77-7a43-b3fc-0edd2e29ba3c",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    },
+    "s_e049d9ae0ae402": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a068b0-d6a1-73b2-a74a-315efab04d95",
+        "model": "unknown"
+      },
+      "human_author": "KjellKod <kjell.hedstrom@gmail.com>"
+    }
+  }
+}
