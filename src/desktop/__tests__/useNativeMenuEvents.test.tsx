@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LicenseRef-doc2md-Desktop
 
 import { cleanup, render } from "@testing-library/react";
+import { useLayoutEffect } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   NATIVE_MENU_EVENTS,
@@ -100,6 +101,29 @@ describe("useNativeMenuEvents", () => {
     unmount();
 
     expect(countNativeRemoves()).toBe(nativeEventNames.size);
+  });
+
+  it("uses the committed Save As handler before passive effects run", () => {
+    const previousSaveAs = vi.fn();
+    const currentSaveAs = vi.fn();
+
+    function SaveAsDuringCommit({ onSaveAs }: { onSaveAs: () => void }) {
+      useNativeMenuEvents({ onSaveAs });
+      useLayoutEffect(() => {
+        window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.saveAs));
+      }, [onSaveAs]);
+      return null;
+    }
+
+    const { rerender } = render(
+      <SaveAsDuringCommit onSaveAs={previousSaveAs} />,
+    );
+    previousSaveAs.mockClear();
+
+    rerender(<SaveAsDuringCommit onSaveAs={currentSaveAs} />);
+
+    expect(currentSaveAs).toHaveBeenCalledTimes(1);
+    expect(previousSaveAs).not.toHaveBeenCalled();
   });
 
   it("dispatches a web-shell-ready event after native listeners are registered", () => {

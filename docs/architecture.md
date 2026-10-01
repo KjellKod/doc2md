@@ -175,6 +175,8 @@ interface ConversionResult {
 3. Desktop React code calls the bridge for open, save, save-as, reveal, file metadata, persistence, and native menu events.
 4. Conversion still runs through the shared converter layer; Markdown persistence is desktop-owned.
 
+Native-menu listeners stay subscribed while their handlers refresh during React's layout commit. Save and Save As therefore use the committed document name and conversion state, including events arriving before passive effects run.
+
 **License boundary:** desktop-specific app code is source-visible shareware under `LicenseRef-doc2md-Desktop`. Shared converters, hosted-web code, `@doc2md/core`, and MIT-marked files remain independently usable under MIT. See `docs/licensing.md`.
 
 ### @doc2md/core (npm package)
