@@ -51,6 +51,9 @@ jobs:
       - name: Run tests
         run: npm test -- --run
 
+      - name: Run core conversion tests
+        run: npm run test:core
+
       - name: Run release script tests
         run: bash tests/release/test_p12_decode.sh
 
@@ -73,6 +76,12 @@ jobs:
 
       - name: Build application
         run: npm run build
+
+      - name: Build core package
+        run: npm run build:core
+
+      - name: Build desktop application
+        run: npm run build:desktop
 
   e2e:
     name: e2e
