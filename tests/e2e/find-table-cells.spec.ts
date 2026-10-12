@@ -47,7 +47,7 @@ async function openXlsxFixture(page: Page) {
       buffer,
     },
   ]);
-  const showUpload = page.getByRole("button", { name: "Show upload panel" });
+  const showUpload = page.getByRole("button", { name: "Show files" });
   if (await showUpload.isVisible().catch(() => false)) {
     await showUpload.click();
   }

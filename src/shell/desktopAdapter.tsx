@@ -284,6 +284,10 @@ export type DesktopAppShellAdapter = {
   fileListProps: AppShellFileListProps;
   workingModeBarProps: WorkingModeBarProps;
   heroActionsSlot: ReactNode;
+  settingsContent: ReactNode;
+  settingsActions: ReactNode;
+  documentTitle: string;
+  renameDisabled: boolean;
   dropZoneProps: DropZoneProps;
   desktopStatusSlot: ReactNode;
   hiddenInputSlot: ReactNode;
@@ -306,6 +310,7 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     clearEntriesById,
     replaceEntryWithMarkdownFile,
     renameEntry,
+    renameOutput,
     selectEntry,
     selectedEntry,
     updateMarkdown,
@@ -321,7 +326,10 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
   const persistEditShellHeight = useCallback(
     (key: string, height: number | null) => {
       const existing = docViewStateRef.current.get(key) ?? {};
-      docViewStateRef.current.set(key, { ...existing, editShellHeight: height });
+      docViewStateRef.current.set(key, {
+        ...existing,
+        editShellHeight: height,
+      });
     },
     [],
   );
@@ -390,19 +398,10 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
   const [checkedEntryIds, setCheckedEntryIds] = useState<Set<string>>(
     () => new Set(),
   );
-  // Scratch entries that the user has paste-promoted into a real working
-  // document. Mirrors the same state in webAdapter so a desktop user who
-  // pastes a large markdown blob into a fresh draft gets the small-header
-  // working-mode chrome instead of staying stuck on the hero. Cleaned up
-  // when the underlying scratch leaves the entry list (see the pruning
-  // useEffect below).
-  const [pastePromotedEntryIds, setPastePromotedEntryIds] = useState<
+  const [isDesktopSettingsOpen, setIsDesktopSettingsOpen] = useState(false);
+  const [unavailableRecentPaths, setUnavailableRecentPaths] = useState<
     Set<string>
   >(() => new Set());
-  const [isDesktopSettingsOpen, setIsDesktopSettingsOpen] = useState(false);
-  const [unavailableRecentPaths, setUnavailableRecentPaths] = useState<Set<string>>(
-    () => new Set(),
-  );
   const [persistenceSettings, setPersistenceSettings] =
     useState<DesktopPersistenceSettings>(DEFAULT_DESKTOP_PERSISTENCE_SETTINGS);
   const [initialPersistenceLoaded, setInitialPersistenceLoaded] =
@@ -419,16 +418,15 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
   const [downloadMarkdownBusy, setDownloadMarkdownBusy] = useState(false);
   const exportHtmlInFlightRef = useRef(false);
   const selectedEntryId = selectedEntry?.id ?? null;
-  const hasWorkingEntry =
-    selectedEntry !== null &&
-    (!selectedEntry.isScratch || pastePromotedEntryIds.has(selectedEntry.id));
+  const hasWorkingEntry = selectedEntry !== null;
   const isWorkingMode = hasWorkingEntry && !showLandingChrome;
 
   // Re-measure the editor height ceiling once the working-mode collapse has
   // settled (see the matching note in webAdapter): the ResizeObserver can miss
   // this reflow because the panel only shifts position. Double rAF defers to
   // the post-collapse layout.
-  const recomputeEditShellHeightCeiling = resize.recomputeEditShellHeightCeiling;
+  const recomputeEditShellHeightCeiling =
+    resize.recomputeEditShellHeightCeiling;
   useEffect(() => {
     if (!isWorkingMode) {
       return;
@@ -473,10 +471,7 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
       `${entries.length} ${pluralize(entries.length, "entry")} in session`
     );
   };
-  const heroSummary = buildSummary(
-    "Start writing or open files",
-    " open",
-  );
+  const heroSummary = buildSummary("Start writing or open files", " open");
   const fileSummary = buildSummary(
     "Converted files and drafts stay in this list.",
     "",
@@ -527,35 +522,32 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     });
     setEntrySaveStates((current) =>
       Object.fromEntries(
-        Object.entries(current).filter(([entryId]) => liveEntryIds.has(entryId)),
+        Object.entries(current).filter(([entryId]) =>
+          liveEntryIds.has(entryId),
+        ),
       ),
     );
     setDocumentNotices((current) =>
       Object.fromEntries(
-        Object.entries(current).filter(([entryId]) => liveEntryIds.has(entryId)),
+        Object.entries(current).filter(([entryId]) =>
+          liveEntryIds.has(entryId),
+        ),
       ),
     );
     setPendingConflicts((current) =>
       Object.fromEntries(
-        Object.entries(current).filter(([entryId]) => liveEntryIds.has(entryId)),
+        Object.entries(current).filter(([entryId]) =>
+          liveEntryIds.has(entryId),
+        ),
       ),
     );
     setDesktopFiles((current) =>
       Object.fromEntries(
-        Object.entries(current).filter(([entryId]) => liveEntryIds.has(entryId)),
+        Object.entries(current).filter(([entryId]) =>
+          liveEntryIds.has(entryId),
+        ),
       ),
     );
-    // Drop paste-promoted ids that no longer correspond to a live scratch
-    // entry. Mirrors the same pruning step in webAdapter.
-    setPastePromotedEntryIds((current) => {
-      const liveScratchEntryIds = new Set(
-        entries.filter((entry) => entry.isScratch).map((entry) => entry.id),
-      );
-      const next = new Set(
-        [...current].filter((entryId) => liveScratchEntryIds.has(entryId)),
-      );
-      return next.size === current.size ? current : next;
-    });
   }, [entries]);
 
   useEffect(() => {
@@ -585,17 +577,17 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     saveStateRef.current = saveState.state;
   }, [saveState.state]);
 
-  // Close the landing chrome when a non-scratch entry becomes selected.
+  // Close the landing chrome when a document becomes selected.
   // Keep this in a post-commit effect (not a during-render guard) so the
   // user can later re-open the landing chrome via the eyebrow toggle while
   // an entry is still selected — a during-render guard would refire on the
   // next render and prevent the re-open. Same pattern as the hosted App.tsx.
   useEffect(() => {
-    if (selectedEntryId !== null && !selectedEntry?.isScratch) {
+    if (selectedEntryId !== null) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- close-on-select (see comment above)
       setShowLandingChrome(false);
     }
-  }, [selectedEntry?.isScratch, selectedEntryId]);
+  }, [selectedEntryId]);
 
   const setEntryDesktopSaveState = useCallback(
     (entryId: string, nextState: DesktopSaveState) => {
@@ -632,27 +624,37 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     const idsToRemove = new Set(entryIds);
     setEntrySaveStates((current) =>
       Object.fromEntries(
-        Object.entries(current).filter(([entryId]) => !idsToRemove.has(entryId)),
+        Object.entries(current).filter(
+          ([entryId]) => !idsToRemove.has(entryId),
+        ),
       ),
     );
     setDocumentNotices((current) =>
       Object.fromEntries(
-        Object.entries(current).filter(([entryId]) => !idsToRemove.has(entryId)),
+        Object.entries(current).filter(
+          ([entryId]) => !idsToRemove.has(entryId),
+        ),
       ),
     );
     setPendingConflicts((current) =>
       Object.fromEntries(
-        Object.entries(current).filter(([entryId]) => !idsToRemove.has(entryId)),
+        Object.entries(current).filter(
+          ([entryId]) => !idsToRemove.has(entryId),
+        ),
       ),
     );
     setDesktopFiles((current) =>
       Object.fromEntries(
-        Object.entries(current).filter(([entryId]) => !idsToRemove.has(entryId)),
+        Object.entries(current).filter(
+          ([entryId]) => !idsToRemove.has(entryId),
+        ),
       ),
     );
     setEntryLastSavedAt((current) =>
       Object.fromEntries(
-        Object.entries(current).filter(([entryId]) => !idsToRemove.has(entryId)),
+        Object.entries(current).filter(
+          ([entryId]) => !idsToRemove.has(entryId),
+        ),
       ),
     );
   }, []);
@@ -808,7 +810,10 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
       return;
     }
 
-    if (themeBaselineRef.current === theme || persistenceSettings.theme === theme) {
+    if (
+      themeBaselineRef.current === theme ||
+      persistenceSettings.theme === theme
+    ) {
       return;
     }
 
@@ -904,17 +909,20 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     setIsDesktopSettingsOpen(false);
   };
 
-  const toggleCheckedEntry = useCallback((entryId: string, checked: boolean) => {
-    setCheckedEntryIds((current) => {
-      const next = new Set(current);
-      if (checked) {
-        next.add(entryId);
-      } else {
-        next.delete(entryId);
-      }
-      return next;
-    });
-  }, []);
+  const toggleCheckedEntry = useCallback(
+    (entryId: string, checked: boolean) => {
+      setCheckedEntryIds((current) => {
+        const next = new Set(current);
+        if (checked) {
+          next.add(entryId);
+        } else {
+          next.delete(entryId);
+        }
+        return next;
+      });
+    },
+    [],
+  );
 
   const toggleAllChecked = useCallback(() => {
     setCheckedEntryIds((current) => {
@@ -929,7 +937,9 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     });
   }, [entries]);
 
-  const checkedTargets = entries.filter((entry) => checkedEntryIds.has(entry.id));
+  const checkedTargets = entries.filter((entry) =>
+    checkedEntryIds.has(entry.id),
+  );
 
   const handleDownload = useCallback(async () => {
     const targets =
@@ -980,13 +990,30 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
       return;
     }
 
+    const hasUnsavedWork = targets.some((entry) => {
+      const state =
+        entrySaveStates[entry.id] ??
+        (entry.id === selectedEntry?.id ? saveState.state : "saved");
+      return state !== "saved";
+    });
+    if (
+      hasUnsavedWork &&
+      !window.confirm(
+        "Discard unsaved changes? Clearing these files cannot be undone.",
+      )
+    ) {
+      return;
+    }
+
     clearEntriesById(targetIds);
     removeEntryScopedDesktopState(targetIds);
     setCheckedEntryIds(new Set());
   }, [
     checkedTargets,
     clearEntriesById,
+    entrySaveStates,
     removeEntryScopedDesktopState,
+    saveState.state,
     selectedEntry,
   ]);
 
@@ -1222,6 +1249,7 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
   const handleNewDocument = useCallback(() => {
     addScratchEntry();
     setActivePage("convert");
+    setShowLandingChrome(false);
     setEditorFocusRequest(({ id }) => ({ id: id + 1, target: "editor" }));
   }, [addScratchEntry]);
 
@@ -1243,15 +1271,6 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     if (!selectedEntry?.isScratch) {
       return;
     }
-    const scratchId = selectedEntry.id;
-    setPastePromotedEntryIds((current) => {
-      if (current.has(scratchId)) {
-        return current;
-      }
-      const next = new Set(current);
-      next.add(scratchId);
-      return next;
-    });
     setShowLandingChrome(false);
   }, [selectedEntry]);
 
@@ -1409,11 +1428,7 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
       });
       console.error("doc2md desktop openFile transport failure", error);
     }
-  }, [
-    handleOpenFileResult,
-    saveState,
-    shell,
-  ]);
+  }, [handleOpenFileResult, saveState, shell]);
 
   const handleOpenRecentFile = useCallback(
     async (path: string) => {
@@ -1592,11 +1607,7 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     return () => {
       cancelled = true;
     };
-  }, [
-    initialPersistenceLoaded,
-    persistenceSettings.persistenceEnabled,
-    shell,
-  ]);
+  }, [initialPersistenceLoaded, persistenceSettings.persistenceEnabled, shell]);
 
   useEffect(() => {
     if (
@@ -1656,8 +1667,21 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
   ]);
 
   const restoreCancelledSaveState = useCallback(
-    (entryId: string, previousState: DesktopSaveState) => {
-      setEntryDesktopSaveState(entryId, previousState);
+    (
+      entryId: string,
+      previousState: DesktopSaveState,
+      submittedMarkdown: string,
+    ) => {
+      const liveEntry = entriesRef.current.find((item) => item.id === entryId);
+      if (!liveEntry) {
+        return;
+      }
+      setEntryDesktopSaveState(
+        entryId,
+        markdownForEntry(liveEntry) === submittedMarkdown
+          ? previousState
+          : "edited",
+      );
     },
     [setEntryDesktopSaveState],
   );
@@ -1674,6 +1698,7 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
       }
 
       const previousState = entrySaveStates[entry.id] ?? saveState.state;
+      const submittedMarkdown = markdownForEntry(entry);
       saveInFlightRef.current = true;
       setEntryDesktopSaveState(entry.id, "saving");
 
@@ -1681,12 +1706,18 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
         await afterNextPaint();
         const result = await shell.saveFile({
           path: desktopFile.path,
-          content: markdownForEntry(entry),
+          content: submittedMarkdown,
           expectedMtimeMs: expectedMtimeMs ?? desktopFile.mtimeMs,
           lineEnding: lineEndingForDesktopFile(desktopFile),
         });
 
         if (result.ok) {
+          const liveEntry = entriesRef.current.find(
+            (item) => item.id === entry.id,
+          );
+          if (!liveEntry) {
+            return;
+          }
           const lineEnding = lineEndingForDesktopFile(desktopFile);
           allowSessionSyncForPath(result.path);
           renameEntry(entry.id, basenameForPath(result.path));
@@ -1698,7 +1729,12 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
               lineEnding,
             },
           }));
-          setEntryDesktopSaveState(entry.id, "saved");
+          setEntryDesktopSaveState(
+            entry.id,
+            markdownForEntry(liveEntry) === submittedMarkdown
+              ? "saved"
+              : "edited",
+          );
           clearDocumentProblem(entry.id);
           void refreshPersistenceSettings();
           return;
@@ -1720,7 +1756,7 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
         }
 
         if (result.code === "cancelled") {
-          restoreCancelledSaveState(entry.id, previousState);
+          restoreCancelledSaveState(entry.id, previousState, submittedMarkdown);
           return;
         }
 
@@ -1765,6 +1801,7 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
 
     const entry = selectedEntry;
     const previousState = entrySaveStates[entry.id] ?? saveState.state;
+    const submittedMarkdown = markdownForEntry(entry);
     if (entry.status === "pending" || entry.status === "converting") {
       setDocumentNotice(entry.id, {
         kind: "info",
@@ -1789,11 +1826,17 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
       );
       const result = await shell.saveFileAs({
         suggestedName: suggestedNameForEntry(entry),
-        content: markdownForEntry(entry),
+        content: submittedMarkdown,
         lineEnding,
       });
 
       if (result.ok) {
+        const liveEntry = entriesRef.current.find(
+          (item) => item.id === entry.id,
+        );
+        if (!liveEntry) {
+          return;
+        }
         allowSessionSyncForPath(result.path);
         renameEntry(entry.id, basenameForPath(result.path));
         setDesktopFiles((current) => ({
@@ -1804,14 +1847,19 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
             lineEnding,
           },
         }));
-        setEntryDesktopSaveState(entry.id, "saved");
+        setEntryDesktopSaveState(
+          entry.id,
+          markdownForEntry(liveEntry) === submittedMarkdown
+            ? "saved"
+            : "edited",
+        );
         clearDocumentProblem(entry.id);
         void refreshPersistenceSettings();
         return;
       }
 
       if (result.code === "cancelled") {
-        restoreCancelledSaveState(entry.id, previousState);
+        restoreCancelledSaveState(entry.id, previousState, submittedMarkdown);
         return;
       }
 
@@ -1863,10 +1911,7 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
   ]);
 
   const handleExportHtml = useCallback(() => {
-    if (
-      !isDownloadableEntry(selectedEntry) ||
-      exportHtmlInFlightRef.current
-    ) {
+    if (!isDownloadableEntry(selectedEntry) || exportHtmlInFlightRef.current) {
       return;
     }
     const entry = selectedEntry;
@@ -2285,7 +2330,10 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
         message:
           "Reload failed before the app received a native result. Try Reload again or open the file manually.",
       });
-      console.error("doc2md desktop reload-via-picker transport failure", error);
+      console.error(
+        "doc2md desktop reload-via-picker transport failure",
+        error,
+      );
     }
   }, [
     activeSaveState,
@@ -2436,7 +2484,10 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     isDesktop && shell && persistenceSettings.persistenceEnabled
       ? persistenceSettings.recentFiles
       : [];
-  const renderDesktopSettingsControl = (placement: "hero" | "working") => {
+  const renderDesktopSettingsControl = (
+    placement: "hero" | "working",
+    inline = false,
+  ) => {
     if (!isDesktop || !shell) {
       return null;
     }
@@ -2444,6 +2495,104 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     const popoverId = `desktop-settings-popover-${placement}`;
     const settingsTooltipId = `${popoverId}-tooltip`;
     const recentFiles = persistenceSettings.recentFiles;
+
+    const content = (
+      <>
+        <label className="desktop-persistence-toggle">
+          <input
+            type="checkbox"
+            checked={persistenceSettings.persistenceEnabled}
+            onChange={(event) =>
+              void handlePersistenceEnabledChange(event.currentTarget.checked)
+            }
+          />
+          <span>Persistence</span>
+        </label>
+
+        {persistenceSettings.persistenceEnabled ? (
+          <div className="desktop-recent-files">
+            <div className="desktop-settings-section-header">
+              <p className="desktop-settings-heading">Recent files</p>
+              {recentFiles.length > 0 && shell.clearRecentFiles ? (
+                <button
+                  type="button"
+                  className="desktop-clear-recents-button"
+                  data-keep-settings-open
+                  onClick={() => {
+                    void handleClearRecentFiles();
+                  }}
+                >
+                  Clear history
+                </button>
+              ) : null}
+            </div>
+            {recentFiles.length > 0 ? (
+              <ol className="desktop-recent-list">
+                {recentFiles.map((file, index) => {
+                  const isUnavailable = unavailableRecentPaths.has(file.path);
+                  const tooltipId = `${popoverId}-recent-${index}-tooltip`;
+                  const tooltipText = isUnavailable
+                    ? "Not available. Click to retry opening this file."
+                    : `Open ${file.path}`;
+                  return (
+                    <li key={file.path}>
+                      <button
+                        type="button"
+                        className={`desktop-recent-item instant-tooltip-anchor${
+                          isUnavailable ? " is-unavailable" : ""
+                        }`}
+                        aria-label={`Open ${file.displayName}`}
+                        aria-describedby={tooltipId}
+                        onClick={() => {
+                          // eslint-disable-next-line react-hooks/refs -- click handler opens recent file after user action
+                          void handleOpenRecentFile(file.path).then(
+                            (opened) => {
+                              if (opened) {
+                                setIsDesktopSettingsOpen(false);
+                              }
+                            },
+                          );
+                        }}
+                      >
+                        <span
+                          className="desktop-recent-unavailable-dot"
+                          aria-hidden="true"
+                        />
+                        {isUnavailable ? (
+                          <span className="visually-hidden">
+                            Not available.{" "}
+                          </span>
+                        ) : null}
+                        <span className="desktop-recent-name">
+                          {file.displayName}
+                        </span>
+                        <span className="desktop-recent-path">{file.path}</span>
+                        <time
+                          className="desktop-recent-time"
+                          dateTime={file.lastOpenedAt}
+                        >
+                          {file.lastOpenedAt}
+                        </time>
+                        <span
+                          id={tooltipId}
+                          role="tooltip"
+                          className="instant-tooltip instant-tooltip--menu recent-file-tooltip"
+                        >
+                          {tooltipText}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ol>
+            ) : (
+              <p className="desktop-settings-empty">No recent files yet.</p>
+            )}
+          </div>
+        ) : null}
+      </>
+    );
+    if (inline) return content;
 
     return (
       <div
@@ -2457,7 +2606,9 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
           aria-label="Desktop settings"
           aria-expanded={isDesktopSettingsOpen}
           aria-controls={popoverId}
-          aria-describedby={isDesktopSettingsOpen ? undefined : settingsTooltipId}
+          aria-describedby={
+            isDesktopSettingsOpen ? undefined : settingsTooltipId
+          }
           onClick={() => setIsDesktopSettingsOpen((isOpen) => !isOpen)}
         >
           <Settings className="desktop-settings-icon" aria-hidden="true" />
@@ -2478,106 +2629,67 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
             role="dialog"
             aria-label="Desktop settings"
           >
-            <label className="desktop-persistence-toggle">
-              <input
-                type="checkbox"
-                checked={persistenceSettings.persistenceEnabled}
-                onChange={(event) =>
-                  void handlePersistenceEnabledChange(
-                    event.currentTarget.checked,
-                  )
-                }
-              />
-              <span>Persistence</span>
-            </label>
-
-            {persistenceSettings.persistenceEnabled ? (
-              <div className="desktop-recent-files">
-                <div className="desktop-settings-section-header">
-                  <p className="desktop-settings-heading">Recent files</p>
-                  {recentFiles.length > 0 && shell.clearRecentFiles ? (
-                    <button
-                      type="button"
-                      className="desktop-clear-recents-button"
-                      onClick={() => {
-                        void handleClearRecentFiles();
-                      }}
-                    >
-                      Clear history
-                    </button>
-                  ) : null}
-                </div>
-                {recentFiles.length > 0 ? (
-                  <ol className="desktop-recent-list">
-                    {recentFiles.map((file, index) => {
-                      const isUnavailable = unavailableRecentPaths.has(file.path);
-                      const tooltipId = `${popoverId}-recent-${index}-tooltip`;
-                      const tooltipText = isUnavailable
-                        ? "Not available. Click to retry opening this file."
-                        : `Open ${file.path}`;
-                      return (
-                        <li key={file.path}>
-                          <button
-                            type="button"
-                            className={`desktop-recent-item instant-tooltip-anchor${
-                              isUnavailable ? " is-unavailable" : ""
-                            }`}
-                            aria-label={`Open ${file.displayName}`}
-                            aria-describedby={tooltipId}
-                            onClick={() => {
-                              // eslint-disable-next-line react-hooks/refs -- click handler opens recent file after user action
-                              void handleOpenRecentFile(file.path).then((opened) => {
-                                if (opened) {
-                                  setIsDesktopSettingsOpen(false);
-                                }
-                              });
-                            }}
-                          >
-                            <span
-                              className="desktop-recent-unavailable-dot"
-                              aria-hidden="true"
-                            />
-                            {isUnavailable ? (
-                              <span className="visually-hidden">
-                                Not available.{" "}
-                              </span>
-                            ) : null}
-                            <span className="desktop-recent-name">
-                              {file.displayName}
-                            </span>
-                            <span className="desktop-recent-path">
-                              {file.path}
-                            </span>
-                            <time
-                              className="desktop-recent-time"
-                              dateTime={file.lastOpenedAt}
-                            >
-                              {file.lastOpenedAt}
-                            </time>
-                            <span
-                              id={tooltipId}
-                              role="tooltip"
-                              className="instant-tooltip instant-tooltip--menu recent-file-tooltip"
-                            >
-                              {tooltipText}
-                            </span>
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ol>
-                ) : (
-                  <p className="desktop-settings-empty">No recent files yet.</p>
-                )}
-              </div>
-            ) : null}
+            {content}
           </div>
         ) : null}
       </div>
     );
   };
 
+  const handleRenameDocument = async (name: string) => {
+    const entry = selectedEntry;
+    if (!entry) return;
+    if (saveInFlightRef.current)
+      throw new Error("Wait for the current file operation to finish.");
+    const file = desktopFilesRef.current[entry.id];
+    if (!file) {
+      renameOutput(entry.id, name);
+      return;
+    }
+    if (!shell?.renameFile)
+      throw new Error(
+        "This app version cannot rename files. Use Save As instead.",
+      );
+    if (pendingConflictsRef.current[entry.id])
+      throw new Error("Resolve the file conflict before renaming.");
+    const previousState = entrySaveStates[entry.id] ?? saveState.state;
+    const originalText = markdownForEntry(entry);
+    saveInFlightRef.current = true;
+    setEntryDesktopSaveState(entry.id, "saving");
+    try {
+      const result = await shell.renameFile({
+        path: file.path,
+        name,
+        expectedMtimeMs: file.mtimeMs,
+      });
+      if (!result.ok)
+        throw new Error(
+          "message" in result
+            ? result.message
+            : "The file changed on disk. Reload it before renaming.",
+        );
+      const renamed = { ...file, path: result.path, mtimeMs: result.mtimeMs };
+      desktopFilesRef.current = {
+        ...desktopFilesRef.current,
+        [entry.id]: renamed,
+      };
+      setDesktopFiles((current) => ({ ...current, [entry.id]: renamed }));
+      renameEntry(entry.id, name);
+      allowSessionSyncForPath(result.path);
+      void refreshPersistenceSettings();
+    } finally {
+      saveInFlightRef.current = false;
+      const live = entriesRef.current.find((item) => item.id === entry.id);
+      if (live)
+        setEntryDesktopSaveState(
+          entry.id,
+          markdownForEntry(live) === originalText ? previousState : "edited",
+        );
+    }
+  };
+
   const callbacks: AppShellCallbacks = {
+    onRenameDocument: handleRenameDocument,
     onNewDocument: handleNewDocument,
     onReturnHome: handleReturnHome,
     onCollapseFromHero: handleCollapseFromHero,
@@ -2653,92 +2765,86 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     onBrowseRequest: shell ? handleOpenFile : undefined,
   };
 
+  const settingsContent = <>{renderDesktopSettingsControl("working", true)}</>;
+  const settingsActions = (
+    <>
+      <hr />
+      <button
+        type="button"
+        disabled={!selectedEntry || saveButtonBusy}
+        onClick={() => void handleSaveAs()}
+      >
+        Save As…
+      </button>
+      {!activePendingConflict ? (
+        <button
+          type="button"
+          className="ghost-button desktop-reload-button instant-tooltip-anchor"
+          onClick={() => {
+            if (selectedPath) {
+              void handleReloadSelectedDocument();
+              return;
+            }
+            if (shell) {
+              void handleReloadViaPicker();
+              return;
+            }
+            handleResetEditedMarkdown();
+          }}
+          disabled={activeSaveState === "saving"}
+          aria-label={
+            selectedPath
+              ? "Reload from disk"
+              : shell
+                ? "Reload from disk (pick file)"
+                : "Discard edits and restore original"
+          }
+          aria-describedby="desktop-reload-tooltip"
+        >
+          Reload
+          <span
+            id="desktop-reload-tooltip"
+            role="tooltip"
+            className="instant-tooltip instant-tooltip--menu"
+          >
+            {selectedPath
+              ? "Reload from disk and discard unsaved changes"
+              : shell
+                ? "Pick the source file to reload from disk"
+                : "Discard your edits and restore the original document content"}
+          </span>
+        </button>
+      ) : null}
+      <button
+        type="button"
+        className="ghost-button desktop-reveal-button instant-tooltip-anchor"
+        onClick={() => void handleRevealInFinder()}
+        disabled={!selectedPath}
+        aria-label="Reveal in Finder"
+        aria-describedby="desktop-reveal-tooltip"
+      >
+        Reveal
+        <span
+          id="desktop-reveal-tooltip"
+          role="tooltip"
+          className="instant-tooltip instant-tooltip--menu"
+        >
+          Reveal in Finder
+        </span>
+      </button>
+    </>
+  );
+
   const desktopStatusSlot = showDesktopShellBar ? (
     <section
-      className={`desktop-shell-bar desktop-shell-bar-${activeSaveState}`}
+      className={`desktop-shell-bar desktop-shell-bar-${activeSaveState}${!activePendingConflict && visibleDesktopNotice.kind === "none" ? " desktop-shell-bar-quiet" : ""}`}
       aria-label="Desktop file status"
       data-app-ready={appReady ? "true" : undefined}
     >
-      <div className="desktop-shell-main">
-        <span className="desktop-shell-title-wrap instant-tooltip-anchor">
-          <span
-            className="desktop-shell-title"
-            tabIndex={0}
-            aria-describedby="desktop-title-tooltip"
-          >
-            {selectedEntry ? desktopTitle : "doc2md"}
-          </span>
-          <span
-            id="desktop-title-tooltip"
-            role="tooltip"
-            className="instant-tooltip instant-tooltip--right"
-          >
-            {selectedEntry ? desktopTitle : "doc2md"}
-          </span>
-        </span>
-        {selectedEntry ? (
-          <>
-            <span className="desktop-save-pill">{saveStateLabel}</span>
-            {!activePendingConflict ? (
-              <button
-                type="button"
-                className="ghost-button desktop-reload-button instant-tooltip-anchor"
-                onClick={() => {
-                  if (selectedPath) {
-                    void handleReloadSelectedDocument();
-                    return;
-                  }
-                  if (shell) {
-                    void handleReloadViaPicker();
-                    return;
-                  }
-                  handleResetEditedMarkdown();
-                }}
-                disabled={activeSaveState === "saving"}
-                aria-label={
-                  selectedPath
-                    ? "Reload from disk"
-                    : shell
-                      ? "Reload from disk (pick file)"
-                      : "Discard edits and restore original"
-                }
-                aria-describedby="desktop-reload-tooltip"
-              >
-                Reload
-                <span
-                  id="desktop-reload-tooltip"
-                  role="tooltip"
-                  className="instant-tooltip instant-tooltip--menu"
-                >
-                  {selectedPath
-                    ? "Reload from disk and discard unsaved changes"
-                    : shell
-                      ? "Pick the source file to reload from disk"
-                      : "Discard your edits and restore the original document content"}
-                </span>
-              </button>
-            ) : null}
-            <button
-              type="button"
-              className="ghost-button desktop-reveal-button instant-tooltip-anchor"
-              onClick={() => void handleRevealInFinder()}
-              disabled={!selectedPath}
-              aria-label="Reveal in Finder"
-              aria-describedby="desktop-reveal-tooltip"
-            >
-              Reveal
-              <span
-                id="desktop-reveal-tooltip"
-                role="tooltip"
-                className="instant-tooltip instant-tooltip--menu"
-              >
-                Reveal in Finder
-              </span>
-            </button>
-          </>
-        ) : null}
-      </div>
-
+      <span className="visually-hidden">
+        <span>{saveStateLabel}</span> <span>{desktopTitle}</span>{" "}
+        <span>{selectedPath ?? "No saved path yet."}</span>
+      </span>
       <div
         className="desktop-shell-status"
         role={
@@ -2768,9 +2874,7 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
           <span>{visibleDesktopNotice.message}</span>
         ) : visibleDesktopNotice.kind === "info" ? (
           <span>{visibleDesktopNotice.message}</span>
-        ) : (
-          <span>{selectedPath ?? "No saved path yet."}</span>
-        )}
+        ) : null}
       </div>
     </section>
   ) : null;
@@ -2796,10 +2900,19 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
     fileListProps,
     workingModeBarProps,
     heroActionsSlot,
+    settingsContent,
+    settingsActions,
+    documentTitle: desktopTitle,
+    renameDisabled:
+      saveButtonBusy ||
+      !!activePendingConflict ||
+      selectedEntry?.status === "converting",
     dropZoneProps,
     desktopStatusSlot,
     hiddenInputSlot: null,
     nativeMenuBridgeSlot,
-    heroClassExtension: isDesktopSettingsOpen ? "hero--settings-open" : undefined,
+    heroClassExtension: isDesktopSettingsOpen
+      ? "hero--settings-open"
+      : undefined,
   };
 }

@@ -29,7 +29,7 @@ async function openMarkdown(page: Page) {
       buffer: Buffer.from(FENCED_XML),
     },
   ]);
-  const showUpload = page.getByRole("button", { name: "Show upload panel" });
+  const showUpload = page.getByRole("button", { name: "Show files" });
   if (await showUpload.isVisible().catch(() => false)) {
     await showUpload.click();
   }

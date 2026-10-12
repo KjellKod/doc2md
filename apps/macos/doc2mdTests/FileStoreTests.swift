@@ -12,6 +12,77 @@ final class FileStoreTests: XCTestCase {
         try super.tearDownWithError()
     }
 
+    func testRenameMovesMarkdownWithoutChangingBytesOrMtime() throws {
+        let source = try makeFile(name: "before.md", data: Data("original\r\n".utf8))
+        let store = FileStore()
+        let mtime = try store.modificationTimeMs(for: source)
+        let result = try store.rename(args: RenameFileArgs(path: source.path, name: "after.md", expectedMtimeMs: mtime), knownURL: source)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: source.path))
+        XCTAssertEqual(try Data(contentsOf: URL(fileURLWithPath: result.path)), Data("original\r\n".utf8))
+        XCTAssertEqual(result.mtimeMs, mtime)
+    }
+
+    func testCaseOnlyRenamePreservesContentsAndUsesRequestedCapitalization() throws {
+        let source = try makeFile(name: "notes.md", data: Data("original".utf8))
+        let store = FileStore()
+        let mtime = try store.modificationTimeMs(for: source)
+        let result = try store.rename(args: RenameFileArgs(path: source.path, name: "Notes.md", expectedMtimeMs: mtime), knownURL: source)
+        XCTAssertEqual(result.mtimeMs, mtime)
+        XCTAssertEqual(try String(contentsOfFile: result.path, encoding: .utf8), "original")
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: source.deletingLastPathComponent().path), ["Notes.md"])
+    }
+
+    func testRenameMapsMtimePermissionFailuresWithoutMovingTheFile() throws {
+        let source = try makeFile(name: "before.md", data: Data("original".utf8))
+        let failures = [
+            NSError(domain: NSCocoaErrorDomain, code: NSFileReadNoPermissionError),
+            NSError(domain: NSPOSIXErrorDomain, code: Int(EACCES)),
+            NSError(domain: NSPOSIXErrorDomain, code: Int(EPERM)),
+        ]
+        for failure in failures {
+            let store = FileStore(fileManager: AttributeFailureFileManager(failure: failure))
+            XCTAssertThrowsError(try store.rename(args: RenameFileArgs(path: source.path, name: "after.md", expectedMtimeMs: 0), knownURL: source)) { error in
+                XCTAssertEqual(error as? FileStoreError, .permissionNeeded(path: source.path, message: "Permission is needed to access this file. Open or save it again."))
+            }
+        }
+        XCTAssertEqual(try String(contentsOf: source, encoding: .utf8), "original")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: source.deletingLastPathComponent().appendingPathComponent("after.md").path))
+    }
+
+    func testRenameAcceptsMarkdownExtensionAndRejectsImportedSources() throws {
+        let markdown = try makeFile(name: "before.markdown", data: Data("source".utf8))
+        let imported = try makeFile(name: "before.txt", data: Data("source".utf8))
+        let store = FileStore()
+        let markdownMtime = try store.modificationTimeMs(for: markdown)
+        let result = try store.rename(args: RenameFileArgs(path: markdown.path, name: "after.md", expectedMtimeMs: markdownMtime), knownURL: markdown)
+        XCTAssertTrue(result.path.hasSuffix("after.md"))
+        let importedMtime = try store.modificationTimeMs(for: imported)
+        XCTAssertThrowsError(try store.rename(args: RenameFileArgs(path: imported.path, name: "after.md", expectedMtimeMs: importedMtime), knownURL: imported))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: imported.path))
+    }
+
+    func testRenameNeverOverwritesAnExistingDestination() throws {
+        let source = try makeFile(name: "before.md", data: Data("source".utf8))
+        let destination = source.deletingLastPathComponent().appendingPathComponent("after.md")
+        try Data("destination".utf8).write(to: destination)
+        let store = FileStore()
+        let mtime = try store.modificationTimeMs(for: source)
+        XCTAssertThrowsError(try store.rename(args: RenameFileArgs(path: source.path, name: "after.md", expectedMtimeMs: mtime), knownURL: source))
+        XCTAssertEqual(try String(contentsOf: source, encoding: .utf8), "source")
+        XCTAssertEqual(try String(contentsOf: destination, encoding: .utf8), "destination")
+    }
+
+    func testRenameRejectsTraversalAndStaleMtime() throws {
+        let source = try makeFile(name: "before.md", data: Data("source".utf8))
+        let store = FileStore()
+        let mtime = try store.modificationTimeMs(for: source)
+        for name in ["../outside.md", "nested/file.md", "bad:name.md", ".md"] {
+            XCTAssertThrowsError(try store.rename(args: RenameFileArgs(path: source.path, name: name, expectedMtimeMs: mtime), knownURL: source))
+        }
+        XCTAssertThrowsError(try store.rename(args: RenameFileArgs(path: source.path, name: "after.md", expectedMtimeMs: mtime - 1), knownURL: source))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: source.path))
+    }
+
     func testOpenDetectsCRLFAndMtime() throws {
         let fileURL = try makeFile(name: "crlf.md", data: Data("one\r\ntwo\r\n".utf8))
         let store = FileStore()
@@ -293,5 +364,18 @@ private final class CreateFileFailureFileManager: FileManager {
 
     override func isWritableFile(atPath path: String) -> Bool {
         true
+    }
+}
+
+private final class AttributeFailureFileManager: FileManager {
+    let failure: NSError
+
+    init(failure: NSError) {
+        self.failure = failure
+        super.init()
+    }
+
+    override func attributesOfItem(atPath path: String) throws -> [FileAttributeKey: Any] {
+        throw failure
     }
 }

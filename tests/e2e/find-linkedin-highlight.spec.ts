@@ -42,7 +42,7 @@ async function openInLinkedIn(page: Page) {
       buffer: Buffer.from(FIXTURE),
     },
   ]);
-  const showUpload = page.getByRole("button", { name: "Show upload panel" });
+  const showUpload = page.getByRole("button", { name: "Show files" });
   if (await showUpload.isVisible().catch(() => false)) {
     await showUpload.click();
   }

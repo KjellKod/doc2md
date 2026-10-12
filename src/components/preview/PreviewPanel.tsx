@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ConversionStatus, FileEntry } from "../../types";
 import type { SaveState } from "../../types/saveState";
@@ -33,10 +34,16 @@ export interface EditorViewState {
 }
 
 export interface PreviewPanelProps {
+  toolbarTarget?: HTMLElement | null;
+  documentControlsVisible?: boolean;
+  toolbarStart?: ReactNode;
+  settingsContent?: ReactNode;
+  settingsActions?: ReactNode;
   entry: FileEntry | null;
   getSavedEditorViewState?: (id: string) => EditorViewState | undefined;
   onEditorViewStateChange?: (id: string, state: EditorViewState) => void;
   onMarkdownChange?: (markdown: string) => void;
+  outputMode?: "save" | "download";
   onSave?: () => void | Promise<void>;
   onDownloadMarkdown?: () => void | Promise<void>;
   downloadMarkdownDisabled?: boolean;
@@ -60,11 +67,17 @@ export interface PreviewPanelProps {
 }
 
 export default function PreviewPanel({
+  toolbarTarget,
+  documentControlsVisible,
+  toolbarStart,
+  settingsContent,
+  settingsActions,
   entry,
   getSavedEditorViewState,
   onEditorViewStateChange,
   onMarkdownChange,
   onSave,
+  outputMode = "save",
   onDownloadMarkdown,
   downloadMarkdownDisabled = false,
   downloadMarkdownBusy = false,
@@ -132,11 +145,11 @@ export default function PreviewPanel({
      pattern, which necessarily reads/writes refs in render. */
   if (
     entryId !== previousEntryIdRef.current ||
-    entry?.isScratch !== previousIsScratchRef.current
+    (Boolean(entry?.isScratch) && !previousIsScratchRef.current)
   ) {
     const idChanged = entryId !== previousEntryIdRef.current;
     previousEntryIdRef.current = entryId;
-    previousIsScratchRef.current = entry?.isScratch;
+    previousIsScratchRef.current = Boolean(entry?.isScratch);
     setMode(entry?.isScratch ? "edit" : "preview");
     setIsFindOpen(false);
     setActiveFindMatch(null);
@@ -150,6 +163,9 @@ export default function PreviewPanel({
         saved && saved.selectionStart != null ? saved : null;
     }
   }
+  // Renaming or saving a scratch file may clear its scratch flag without
+  // changing documents. Preserve the current mode, find state and caret.
+  previousIsScratchRef.current = Boolean(entry?.isScratch);
   /* eslint-enable react-hooks/refs */
 
   const findCapable =
@@ -235,6 +251,7 @@ export default function PreviewPanel({
 
   useEffect(() => {
     function handleFindShortcut(event: KeyboardEvent) {
+      if (documentControlsVisible === false) return;
       const key = event.key.toLowerCase();
       const isFindShortcut =
         key === "f" &&
@@ -277,7 +294,7 @@ export default function PreviewPanel({
     window.addEventListener("keydown", handleFindShortcut);
 
     return () => window.removeEventListener("keydown", handleFindShortcut);
-  }, [findCapable, isFindOpen, mode]);
+  }, [documentControlsVisible, findCapable, isFindOpen, mode]);
 
   function viewportTopFloor(): number {
     return toolbarRef.current?.getBoundingClientRect().bottom ?? 0;
@@ -389,6 +406,31 @@ export default function PreviewPanel({
   ) {
     return (
       <>
+        {toolbarTarget && (
+          <PreviewToolbar
+            toolbarTarget={toolbarTarget}
+            documentControlsVisible={documentControlsVisible}
+            toolbarStart={toolbarStart}
+            settingsContent={settingsContent}
+            settingsActions={settingsActions}
+            toolbarRef={toolbarRef}
+            mode={mode}
+            copyState={copyState}
+            showToggle={false}
+            showCopyButton={false}
+            outputMode={outputMode}
+            onSave={onSave}
+            saveBusy={false}
+            saveDisabled={true}
+            saveState={saveState}
+            lastSavedAt={lastSavedAt}
+            onModeChange={setMode}
+            onOpenFind={() => {}}
+            onCopy={() => {}}
+            showLineNumbers={showLineNumbers}
+            onToggleLineNumbers={() => setShowLineNumbers(value => !value)}
+          />
+        )}
         {conversionOverlay}
         <PreviewEmptyStates
           entry={entry}
@@ -494,15 +536,21 @@ export default function PreviewPanel({
       {conversionOverlay}
     <div className="preview-body">
       <PreviewToolbar
+        toolbarTarget={toolbarTarget}
+            documentControlsVisible={documentControlsVisible}
+        toolbarStart={toolbarStart}
+        settingsContent={settingsContent}
+        settingsActions={settingsActions}
         toolbarRef={toolbarRef}
         mode={mode}
         copyState={copyState}
         showToggle={showToggle}
         showCopyButton={showCopyButton}
         lineNumbersSupported={lineNumbersSupported && mode !== "linkedin"}
-        showLineNumbers={lineNumbersVisible}
+        showLineNumbers={toolbarTarget ? showLineNumbers : lineNumbersVisible}
         onToggleLineNumbers={() => setShowLineNumbers((visible) => !visible)}
         onSave={onSave}
+        outputMode={outputMode}
         onDownloadMarkdown={onDownloadMarkdown}
         downloadMarkdownDisabled={downloadMarkdownDisabled}
         downloadMarkdownBusy={downloadMarkdownBusy}

@@ -8,6 +8,14 @@ describe("SaveButton", () => {
     cleanup();
   });
 
+  it("shows download preparation without promising a save", () => {
+    render(<SaveButton onSave={vi.fn()} outputMode="download" busy disabled />);
+    const button = screen.getByRole("button", { name: "Download Markdown" });
+    expect(button).toHaveTextContent("Preparing…");
+    expect(button).toHaveAttribute("aria-busy", "true");
+    expect(button).toBeDisabled();
+  });
+
   it("renders with an accessible save label", () => {
     render(<SaveButton onSave={() => undefined} />);
 

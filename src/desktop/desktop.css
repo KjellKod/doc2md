@@ -318,3 +318,55 @@
     width: min(92vw, 360px);
   }
 }
+
+/* The native window owns editor height. Reserve the actual toolbar and notice
+   heights, so resizing the window never puts the editor bottom off screen. */
+.app-shell-combined.app-shell-desktop .page {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.app-shell-desktop .combined-toolbar-host,
+.app-shell-desktop .desktop-shell-bar {
+  flex-shrink: 0;
+}
+.app-shell-desktop .desktop-shell-bar-quiet {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.app-shell-desktop #view-panel-convert {
+  flex: 1;
+  min-height: 0;
+}
+.app-shell-desktop #view-panel-convert > .workspace {
+  flex: 1;
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr);
+}
+.app-shell-combined.app-shell-desktop .workspace .preview-panel {
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+}
+.app-shell-desktop .workspace .sidebar-panel {
+  min-height: 0;
+  overflow-y: auto;
+}
+.app-shell-desktop .preview-height-handle,
+.app-shell-desktop .resize-handle-tooltip--height {
+  display: none;
+}
+.app-shell-desktop .markdown-edit-area {
+  display: block;
+}
+
+@media (max-width: 979px) {
+  .app-shell-desktop #view-panel-convert > .workspace:not(.sidebar-collapsed) {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+}

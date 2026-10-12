@@ -154,6 +154,6 @@ describe("useWorkspaceResize collapseSidebarOnPhoneSelect (P0)", () => {
       result.current.handleShowSidebar();
     });
     expect(result.current.sidebarCollapsed).toBe(false);
-    expect(result.current.workspaceStyle["--sidebar-width"]).toBe("380px");
+    expect(result.current.workspaceStyle["--sidebar-width"]).toBe("240px");
   });
 });

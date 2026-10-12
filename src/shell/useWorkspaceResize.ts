@@ -12,7 +12,7 @@ import type { CSSProperties, KeyboardEvent, MouseEvent, RefObject } from "react"
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export const BASE_PAGE_MAX_WIDTH = 1680;
-export const DEFAULT_SIDEBAR_WIDTH = 380;
+export const DEFAULT_SIDEBAR_WIDTH = 240;
 export const SIDEBAR_COLLAPSE_WIDTH = 56;
 export const SIDEBAR_SNAP_THRESHOLD = 200;
 export const SIDEBAR_WIDTH_STEP = 16;

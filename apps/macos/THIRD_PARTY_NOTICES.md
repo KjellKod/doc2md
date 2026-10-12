@@ -192,7 +192,7 @@ The current app build can include these direct runtime dependencies from the roo
 | `saxes` | 6.0.0 | ISC | https://github.com/lddubeau/saxes.git |
 | `scheduler` | 0.27.0 | MIT | https://github.com/facebook/react.git |
 | `setimmediate` | 1.0.5 | MIT | YuzuJS/setImmediate |
-| `source-map-js` | 1.2.1 | BSD-3-Clause | 7rulnik/source-map-js |
+| `source-map-js` | 1.2.2 | BSD-3-Clause | 7rulnik/source-map-js |
 | `space-separated-tokens` | 2.0.2 | MIT | wooorm/space-separated-tokens |
 | `sprintf-js` | 1.0.3 | BSD-3-Clause | https://github.com/alexei/sprintf.js.git |
 | `string_decoder` | 1.1.1 | MIT | git://github.com/nodejs/string_decoder.git |
