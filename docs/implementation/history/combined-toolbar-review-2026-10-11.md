@@ -27,7 +27,21 @@ Claude's review was source-based for accessibility; it did not claim a VoiceOver
 
 ## Validation
 
-Final verification results are being consolidated after syncing the default branch.
+Synced cleanly onto `origin/main` at `ed75d3d`, installed its locked dependencies with `npm ci`, and rebuilt/retested the combined result.
+
+- TypeScript: passed. ESLint: no errors, six existing warnings.
+- Web production, desktop web bundle, core package and native Release app: built successfully. Existing large-bundle warnings remain.
+- Web unit/integration: all 1,006 tests passed in 86 files on the final quiet run (`NODE_OPTIONS=--no-experimental-webstorage npm test -- --run --maxWorkers=4`). The flag disables Node 25's experimental storage so JSDOM owns the test storage; CI uses Node 22. An earlier concurrent run had one timeout that passed in isolation and in this full rerun; no timeout or test expectation was weakened.
+- Core package: 76 tests passed.
+- Native XCTest: 270 passed, zero failures/skips.
+- Python workflow/packaging tests: 86 passed; workflow security guard passed.
+- Full Playwright matrix on final dependencies: 394 passed, 23 existing skips, six failures. No skips were added. Desktop Chromium and mobile Chromium are green; all new toolbar, rename, settings, output, mobile keyboard and Install navigation checks pass.
+- Unsigned DMG mount/layout and structural determinism, Sparkle ZIP and dry-run appcast XML checks: passed. Artifact: `/tmp/doc2md-review-release/doc2md-2.11.1-dev.dmg` (local validation artifact, not a release).
+- Actual built native React workspace: visually verified before the clean main sync. Final GUI replay was unavailable because the Mac was locked; final native tests/build/packaging passed.
+
+The same six mobile Safari failures reproduced against an archive of current `origin/main` (`ed75d3d`) with the same refreshed dependencies/browser: Replace All undo, single-replace undo, replacement performance, bulk download count, explicit anchor margin, and unsupported clipboard-write permission. The two baseline undo/performance test files hid the old About overlay in test-only CSS to reach their assertions; no baseline production code was changed. These are existing limits, not a claim that the whole E2E suite is green.
+
+Local unit log: `/tmp/doc2md-pr-review/unit-final-quiet.log`. Other local logs: `/tmp/doc2md-pr-e2e-finalbase.log`, `/tmp/doc2md-main-final-six.log`, `/tmp/doc2md-main-synced-native.xcresult`.
 
 ## Known limits
 
