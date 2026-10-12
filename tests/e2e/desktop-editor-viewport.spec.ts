@@ -103,6 +103,7 @@ for (const width of [900, 979]) {
     await expect.poll(async () => (await editor.boundingBox())?.height ?? 0).toBeGreaterThan(280);
     const expanded = await editor.boundingBox();
     const files = await sidebar.boundingBox();
+    expect(expanded!.y).toBeGreaterThanOrEqual(files!.y + files!.height);
     expect(expanded!.y).toBeLessThanOrEqual(files!.y + files!.height + 20);
     expect(expanded!.y + expanded!.height).toBeLessThanOrEqual(700);
     await page.getByRole("button", { name: "Hide files", exact: true }).click();
