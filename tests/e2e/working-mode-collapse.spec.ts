@@ -47,6 +47,8 @@ test("collapsed files toggle has a focus tooltip inside the viewport", async ({ 
   expect(box).not.toBeNull();
   expect(box!.x).toBeGreaterThanOrEqual(0);
   expect(box!.x + box!.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+  expect(box!.y).toBeGreaterThanOrEqual(0);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
 });
 
 test("does not auto-collapse when the user has already adjusted the sidebar", async ({

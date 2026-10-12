@@ -24,7 +24,10 @@ export default function SaveStatePill({
   compact = false,
   lastSavedAt = null,
 }: SaveStatePillProps) {
-  const relative = useRelativeTime(state === "saved" ? lastSavedAt : null);
+  const showRelativeTime = !(compact && outputMode === "download");
+  const relative = useRelativeTime(
+    state === "saved" && showRelativeTime ? lastSavedAt : null,
+  );
   let label = SAVE_STATE_LABELS[state];
   if (outputMode === "download") {
     if (state === "saved") {
@@ -35,12 +38,13 @@ export default function SaveStatePill({
       label = "Preparing download";
     }
   }
-  if (state === "saved" && relative && !(compact && outputMode === "download")) {
+  if (state === "saved" && relative && showRelativeTime) {
     label = `${label} · ${relative}`;
   }
   return (
     <span
       className={`save-state-pill save-state-pill--${state}`}
+      data-output-mode={outputMode}
       role="status"
       aria-live="polite"
       aria-atomic="true"

@@ -46,3 +46,12 @@ Local unit log: `/tmp/doc2md-pr-review/unit-final-quiet.log`. Other local logs: 
 ## Known limits
 
 The native launch verification script expects an `app ready` log that the existing native source does not emit. Its automated readiness assertion is therefore inconclusive; separate process/bundle checks and visual inspection of the actual built React workspace succeeded. The installed user app was preserved; validation used the separately built app. Local DMG builds are unsigned and are not published releases.
+
+
+## PR #216 shepherd follow-up
+
+Initial hosted CI was green, including E2E. Reviewed all 28 inline Cubic comments. Corrected rename locking and C1/name validation, native permission mapping and MRU behavior on settings-write failure, mock rename bookkeeping, compact-status timer use, mobile download feedback, About navigation and section semantics. Updated stale documentation and removed obsolete paste/layout tests.
+
+Existing integration/browser tests already cover Clear cancellation, edits during deferred download, and content preservation across navigation; those duplicate-test suggestions did not add tests. The global Line numbers preference and normalized `.md` rename destination remain intentional. Windows-native filename policy and additional historical-prototype editor behavior remain outside this PR. Corrected historical menu placement copy to reflect the single Settings gear.
+
+Local fix validation: 1,018 unit/integration tests; 52 relevant native XCTest cases; 103 focused browser checks with five existing skips. One browser fixture-name collision was corrected and its case rerun successfully. Build, typecheck, whitespace checks and ESLint pass (six existing lint warnings). New failure-path regressions were run failing-first. No timeouts, expectations or skips were weakened.

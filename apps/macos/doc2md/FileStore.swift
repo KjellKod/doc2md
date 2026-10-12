@@ -108,7 +108,14 @@ final class FileStore {
               name.utf8.count <= 255 else {
             throw FileStoreError.error(message: "Choose a valid Markdown filename.")
         }
-        let actualMtime = try modificationTimeMs(for: knownURL)
+        let actualMtime: Int64
+        do {
+            actualMtime = try modificationTimeMs(for: knownURL)
+        } catch let error as FileStoreError {
+            throw error
+        } catch {
+            throw Self.map(error: error, path: knownURL.path)
+        }
         guard actualMtime == args.expectedMtimeMs else {
             throw FileStoreError.conflict(path: knownURL.path, actualMtimeMs: actualMtime)
         }

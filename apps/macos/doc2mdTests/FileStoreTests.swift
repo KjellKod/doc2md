@@ -32,6 +32,23 @@ final class FileStoreTests: XCTestCase {
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: source.deletingLastPathComponent().path), ["Notes.md"])
     }
 
+    func testRenameMapsMtimePermissionFailuresWithoutMovingTheFile() throws {
+        let source = try makeFile(name: "before.md", data: Data("original".utf8))
+        let failures = [
+            NSError(domain: NSCocoaErrorDomain, code: NSFileReadNoPermissionError),
+            NSError(domain: NSPOSIXErrorDomain, code: Int(EACCES)),
+            NSError(domain: NSPOSIXErrorDomain, code: Int(EPERM)),
+        ]
+        for failure in failures {
+            let store = FileStore(fileManager: AttributeFailureFileManager(failure: failure))
+            XCTAssertThrowsError(try store.rename(args: RenameFileArgs(path: source.path, name: "after.md", expectedMtimeMs: 0), knownURL: source)) { error in
+                XCTAssertEqual(error as? FileStoreError, .permissionNeeded(path: source.path, message: "Permission is needed to access this file. Open or save it again."))
+            }
+        }
+        XCTAssertEqual(try String(contentsOf: source, encoding: .utf8), "original")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: source.deletingLastPathComponent().appendingPathComponent("after.md").path))
+    }
+
     func testRenameAcceptsMarkdownExtensionAndRejectsImportedSources() throws {
         let markdown = try makeFile(name: "before.markdown", data: Data("source".utf8))
         let imported = try makeFile(name: "before.txt", data: Data("source".utf8))
@@ -347,5 +364,18 @@ private final class CreateFileFailureFileManager: FileManager {
 
     override func isWritableFile(atPath path: String) -> Bool {
         true
+    }
+}
+
+private final class AttributeFailureFileManager: FileManager {
+    let failure: NSError
+
+    init(failure: NSError) {
+        self.failure = failure
+        super.init()
+    }
+
+    override func attributesOfItem(atPath path: String) throws -> [FileAttributeKey: Any] {
+        throw failure
     }
 }

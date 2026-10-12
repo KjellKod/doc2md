@@ -4904,7 +4904,7 @@ body.is-height-resizing * {
 }
 @media (max-width: 700px) {
   .combined-toolbar
-    .save-state-pill:is(
+    .save-state-pill[data-output-mode="save"]:is(
       .save-state-pill--saved,
       .save-state-pill--edited,
       .save-state-pill--saving

@@ -47,6 +47,33 @@ describe("RenameDocumentTitle", () => {
     await waitFor(() => expect(screen.getByRole("textbox")).toHaveFocus());
   });
 
+  it("blocks submission when an open editor becomes disabled and preserves cancellation", () => {
+    const rename = vi.fn();
+    const { rerender } = render(<RenameDocumentTitle name="Notes.md" onRename={rename} />);
+    fireEvent.click(screen.getByRole("button", { name: /^Rename document:/ }));
+    const input = screen.getByRole("textbox");
+    fireEvent.change(input, { target: { value: "Chosen" } });
+    rerender(<RenameDocumentTitle name="Notes.md" onRename={rename} disabled />);
+    fireEvent.submit(input.closest("form")!);
+    expect(rename).not.toHaveBeenCalled();
+    expect(input).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Confirm document name" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel rename" }));
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+  });
+
+  it.each(["", ".", "..", " .md "])("explains missing document name %j", (name) => {
+    expect(() => markdownRename(name)).toThrow("Enter a document name other than a dot or two dots.");
+  });
+
+  it.each(["\u0080", "\u0085", "\u009f"])("rejects embedded C1 control %j", (control) => {
+    expect(() => markdownRename(`before${control}after`)).toThrow("control characters");
+  });
+
+  it("preserves ordinary accented names", () => {
+    expect(markdownRename("Résumé")).toBe("Résumé.md");
+  });
+
   it.each([
     "",
     "..",

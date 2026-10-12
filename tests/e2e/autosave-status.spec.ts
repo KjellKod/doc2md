@@ -30,6 +30,12 @@ test("download availability is quiet and initiation feedback is truthful", async
   await expect(pill).toHaveText(
     "Download started",
   );
+  // Sighted mobile users also need the confirmation; a clipped live region
+  // still passes text and ordinary visibility assertions.
+  await expect(pill).toHaveCSS("clip-path", "none");
+  const pillBox = await pill.boundingBox();
+  expect(pillBox!.width).toBeGreaterThan(20);
+  expect(pillBox!.height).toBeGreaterThan(16);
 });
 
 test("in-session edit survives a tab switch within the same session", async ({
@@ -44,7 +50,7 @@ test("in-session edit survives a tab switch within the same session", async ({
   // which is deferred to doc2md-browser-crash-recovery.)
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page.getByRole("button", { name: "Install & Use", exact: true }).click();
-  await expect(page.getByRole("tabpanel", { name: "Install & Use" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Install & Use" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Download Markdown" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /^Rename document:/ })).toHaveCount(0);
   await expect(page.getByRole("group", { name: "View mode" })).toHaveCount(0);

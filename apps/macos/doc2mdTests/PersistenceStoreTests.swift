@@ -41,6 +41,28 @@ final class PersistenceStoreTests: XCTestCase {
         XCTAssertEqual(recentController.recentDocumentURLs, [newURL])
     }
 
+    func testRenameKeepsNativeRecentListWhenSettingsWriteFails() throws {
+        let recentController = TestRecentDocumentController()
+        let fileManager = SettingsWriteFailureFileManager()
+        let settingsURL = try makeSettingsURL()
+        let store = PersistenceStore(fileManager: fileManager, settingsURL: settingsURL, recentDocumentController: recentController)
+        _ = try store.setPersistenceEnabled(true)
+        let first = try makeFile(name: "First.md")
+        let oldURL = try makeFile(name: "Before.md")
+        let last = try makeFile(name: "Last.md")
+        let newURL = oldURL.deletingLastPathComponent().appendingPathComponent("After.md")
+        for url in [first, oldURL, last] {
+            _ = try store.recordRecentDocument(url: url)
+        }
+        let originalSettings = try Data(contentsOf: settingsURL)
+        fileManager.failWrites = true
+
+        XCTAssertThrowsError(try store.recordRecentDocument(url: newURL, replacingPath: oldURL.path))
+
+        XCTAssertEqual(recentController.recentDocumentURLs, [newURL, last, first])
+        XCTAssertEqual(try Data(contentsOf: settingsURL), originalSettings)
+    }
+
     func testLoadReturnsDisabledDefaultWhenMissingOrUnreadable() throws {
         let settingsURL = try makeSettingsURL()
         let store = PersistenceStore(settingsURL: settingsURL)
@@ -265,5 +287,14 @@ final class PersistenceStoreTests: XCTestCase {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         tempDirectories.append(directory)
         return directory
+    }
+}
+
+private final class SettingsWriteFailureFileManager: FileManager {
+    var failWrites = false
+
+    override func createFile(atPath path: String, contents data: Data?, attributes attr: [FileAttributeKey: Any]? = nil) -> Bool {
+        if failWrites { return false }
+        return super.createFile(atPath: path, contents: data, attributes: attr)
     }
 }

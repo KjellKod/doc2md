@@ -5,13 +5,13 @@ max_score: 40
 na_heuristics:
 p0_count: 0
 p1_count: 1
-target_identity: "file:/Users/kjell/ws/doc2md/src/shell/AppShell.tsx"
+target_identity: "file:src/shell/AppShell.tsx"
 target_fingerprint: "sha256:75a610e68257794562f4ff1d8145321afe4da0948c027f0262e8b6c3f7b4bf71"
-target_path: /Users/kjell/ws/doc2md/src/shell/AppShell.tsx
+target_path: src/shell/AppShell.tsx
 timestamp: 2026-10-10T01-09-55Z
 slug: src-shell-appshell-tsx
 ---
-Method: dual-agent (A: /root/design_assessment · B: /root/evidence_assessment)
+Method: dual-agent (A: design_assessment · B: evidence_assessment)
 
 # doc2md shared interface critique
 

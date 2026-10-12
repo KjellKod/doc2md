@@ -160,8 +160,10 @@ final class PersistenceStore {
         }
         let recentFile = recentFile(for: url, now: now)
         settings.recentFiles = Self.dedupedRecentFiles([recentFile] + settings.recentFiles)
-        try write(settings)
+        // The file operation already succeeded; keep native recents accurate
+        // even when writing the separate persistence settings fails.
         recentDocumentController.noteNewRecentDocumentURL(url.standardizedFileURL)
+        try write(settings)
         return settings
     }
 

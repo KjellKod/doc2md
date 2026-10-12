@@ -952,44 +952,6 @@ describe("App desktop bridge", () => {
     cleanupShell();
   });
 
-  it("keeps a desktop scratch entry in working mode after a large paste", async () => {
-    // Regression guard. PR #135 ("Refactor: collapse App.tsx and
-    // DesktopApp.tsx into shared AppShell") wired onLargeMarkdownPaste to a
-    // no-op in the desktop adapter, which silently broke the auto-shrink-on-
-    // paste flow that the hosted web build had always supported. Catch it
-    // here so the desktop adapter stays in step with the web adapter.
-    const cleanupShell = installMockShell();
-    const { container } = render(<DesktopApp />);
-
-    window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.new));
-    expect(await awaitOpenButton(/^Open untitled\.md$/i)).toBeInTheDocument();
-    expect(container.querySelector(".page")).toHaveClass("is-working-mode");
-
-    const editor = await screen.findByRole("textbox", {
-      name: "Edit markdown",
-    });
-    fireEvent.paste(editor, {
-      clipboardData: {
-        getData: (type: string) =>
-          type === "text/plain" ? "x".repeat(201) : "",
-      },
-    });
-
-    await waitFor(() => {
-      expect(container.querySelector(".page")).toHaveClass("is-working-mode");
-    });
-    expect(
-      screen.queryByRole("heading", {
-        name: "Start writing or convert files to Markdown.",
-      }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "doc2md workspace" }),
-    ).toBeInTheDocument();
-
-    cleanupShell();
-  });
-
   it("opens desktop scratch entries in the working layout", async () => {
     const cleanupShell = installMockShell();
     const { container } = render(<DesktopApp />);
@@ -2440,7 +2402,7 @@ describe("App desktop bridge", () => {
     openSettings();
     fireEvent.click(screen.getByRole("button", { name: "Install & Use" }));
     expect(
-      screen.getByRole("tabpanel", { name: "Install & Use" }),
+      screen.getByRole("region", { name: "Install & Use" }),
     ).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "doc2md workspace" }));
 

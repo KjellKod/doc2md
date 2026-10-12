@@ -109,6 +109,24 @@ describe("mockShellBridge", () => {
     expect(openFile).toHaveBeenCalledTimes(1);
   });
 
+  it.each([false, true])("moves rename mtimes to the new path with override=%s", async (override) => {
+    const shell = createMockShell(override ? {
+      renameFile: vi.fn(async () => ({ ok: true as const, path: "/mock/Renamed.md", mtimeMs: 42 })),
+    } : {});
+    await shell.saveFile({ path: "/mock/Untitled.md", content: "# Saved", expectedMtimeMs: 1, lineEnding: "lf" });
+    const result = await shell.renameFile!({ path: "/mock/Untitled.md", name: "Renamed.md", expectedMtimeMs: 2 });
+    expect(result.ok).toBe(true);
+    await expect(shell.statFile({ path: "/mock/Renamed.md" })).resolves.toMatchObject({ mtimeMs: override ? 42 : 2 });
+    await expect(shell.statFile({ path: "/mock/Untitled.md" })).resolves.toMatchObject({ mtimeMs: 1 });
+  });
+
+  it("preserves the original mtime when rename fails", async () => {
+    const shell = createMockShell({ renameFile: vi.fn(async () => ({ ok: false as const, code: "error" as const, message: "Rename failed" })) });
+    await shell.saveFile({ path: "/mock/Untitled.md", content: "# Saved", expectedMtimeMs: 1, lineEnding: "lf" });
+    await shell.renameFile!({ path: "/mock/Untitled.md", name: "Renamed.md", expectedMtimeMs: 2 });
+    await expect(shell.statFile({ path: "/mock/Untitled.md" })).resolves.toMatchObject({ mtimeMs: 2 });
+  });
+
   it("installs and cleans up the mock shell on window", () => {
     const cleanup = installMockShell();
 

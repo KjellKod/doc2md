@@ -368,7 +368,13 @@ export default function AppShell(props: AppShellProps) {
       >
         {convertPageActive ? "Install & Use" : "Back to workspace"}
       </button>
-      <button type="button" onClick={() => setShowAbout((value) => !value)}>
+      <button
+        type="button"
+        onClick={() => {
+          onActivePageChange("convert");
+          setShowAbout(true);
+        }}
+      >
         About doc2md
       </button>
       <small aria-label="Current release version">
@@ -390,7 +396,6 @@ export default function AppShell(props: AppShellProps) {
           <section
             id="view-panel-convert"
             className="view-panel"
-            role="tabpanel"
             aria-label="Workspace"
             hidden={!convertPageActive}
           >
@@ -580,7 +585,6 @@ export default function AppShell(props: AppShellProps) {
           <section
             id="view-panel-install"
             className="view-panel"
-            role="tabpanel"
             aria-label="Install & Use"
             hidden={convertPageActive}
           >

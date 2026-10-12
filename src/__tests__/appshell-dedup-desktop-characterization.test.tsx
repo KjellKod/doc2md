@@ -183,7 +183,7 @@ describe("AppShell dedup characterization (desktop)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Settings" }));
     fireEvent.click(screen.getByRole("button", { name: "Install & Use" }));
     expect(
-      screen.getByRole("tabpanel", { name: "Install & Use" }),
+      screen.getByRole("region", { name: "Install & Use" }),
     ).toBeVisible();
   });
 

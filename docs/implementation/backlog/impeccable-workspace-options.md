@@ -1,7 +1,7 @@
 ---
 title: doc2md workspace comparison
-status: Design exploration; not approved for implementation
-updated: 2026-10-10
+status: Historical exploration; B approved and implemented
+updated: 2026-10-11
 ---
 
 # doc2md workspace comparison

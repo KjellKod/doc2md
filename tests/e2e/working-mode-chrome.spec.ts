@@ -36,7 +36,7 @@ test("workspace logo preserves documents after visiting Install & Use", async ({
   await uploadViaLandingBrowse(page, "alpha.md", "# Alpha");
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page.getByRole("button", { name: "Install & Use", exact: true }).click();
-  await expect(page.getByRole("tabpanel", { name: "Install & Use" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Install & Use" })).toBeVisible();
   await page.getByRole("button", { name: "doc2md workspace" }).click();
   await expect(page.getByRole("heading", { name: "Alpha", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Show files" }).click();

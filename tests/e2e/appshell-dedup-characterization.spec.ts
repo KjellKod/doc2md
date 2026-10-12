@@ -11,7 +11,7 @@ import { Buffer } from "node:buffer";
 
 // Baseline constants updated for the approved 240px sidebar. Other resize
 // invariants remain unchanged. Values picked at deterministic resize breakpoints
-// from the resize helpers in src/App.tsx (DEFAULT_SIDEBAR_WIDTH=240,
+// from the resize helpers in src/shell/useWorkspaceResize.ts (DEFAULT_SIDEBAR_WIDTH=240,
 // BASE_PAGE_MAX_WIDTH=1680, SIDEBAR_COLLAPSE_WIDTH=56,
 // MIN_EDIT_SHELL_HEIGHT=240).
 const BASELINE_PAGE_MAX_WIDTH_PX = "1680px";
@@ -220,13 +220,13 @@ test("MIN_EDIT_SHELL_HEIGHT lower-bound clamp is enforced", async ({
 
 test("Settings navigation switches between install and workspace panels", async ({ page }) => {
   await openHostedApp(page);
-  await expect(page.getByRole("tabpanel", { name: "Workspace" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Workspace" })).toBeVisible();
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page.getByRole("button", { name: "Install & Use", exact: true }).click();
-  await expect(page.getByRole("tabpanel", { name: "Install & Use" })).toBeVisible();
-  await expect(page.getByRole("tabpanel", { name: "Workspace" })).toBeHidden();
+  await expect(page.getByRole("region", { name: "Install & Use" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Workspace" })).toBeHidden();
   await page.getByRole("button", { name: "doc2md workspace" }).click();
-  await expect(page.getByRole("tabpanel", { name: "Workspace" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Workspace" })).toBeVisible();
 });
 
 test("working-mode chrome auto-collapses upload sidebar on first non-scratch open and stays manual after re-expand", async ({

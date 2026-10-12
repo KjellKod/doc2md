@@ -25,7 +25,7 @@ export default function RenameDocumentTitle({
   }
 
   async function commit() {
-    if (saving.current) return;
+    if (disabled || saving.current) return;
     try {
       const nextName = markdownRename(draft);
       saving.current = true;
@@ -59,7 +59,7 @@ export default function RenameDocumentTitle({
               ref={input}
               aria-label="Document name"
               value={draft}
-              disabled={busy}
+              disabled={busy || disabled}
               aria-invalid={Boolean(error)}
               aria-describedby={error ? "rename-document-error" : undefined}
               onChange={(event) => {
@@ -76,7 +76,7 @@ export default function RenameDocumentTitle({
             <span aria-hidden="true">.md</span>
             <button
               type="submit"
-              disabled={busy}
+              disabled={busy || disabled}
               aria-label="Confirm document name"
               title="Confirm document name"
             >

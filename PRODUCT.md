@@ -66,5 +66,5 @@ These sources establish product behavior, not user-research results or proof of 
 ## Confirmed interface preferences
 
 - Use familiar icons for recurring toolbar actions such as Open, New, Find, and Copy. Provide precise labels on hover and keyboard focus plus accessible names; avoid permanent explanatory labels that consume toolbar space.
-- Keep document content prominent at ordinary and narrow desktop widths. Avoid redundant workspace subtitles and automatically stacked toolbar rows. Evaluate revisions against the existing app at matched viewport, content, mode, sidebar, and search states.
+- Keep document content prominent at ordinary and narrow desktop widths. Avoid redundant workspace subtitles and unnecessary desktop toolbar rows; preserve compact wrapping on narrow screens when needed to keep controls usable. Evaluate revisions against the existing app at matched viewport, content, mode, sidebar, and search states.
 - Keep the existing width animation unless observed behavior establishes a problem.

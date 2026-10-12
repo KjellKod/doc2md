@@ -2,7 +2,7 @@
 title: doc2md UX handoff and deferred decisions
 purpose: Preserve Impeccable setup, critique results, and the decisions needed to resume work.
 status: Approved scope complete; deferred decisions remain
-last_updated: 2026-10-09
+last_updated: 2026-10-11
 ---
 
 # doc2md UX handoff and deferred decisions
@@ -68,7 +68,7 @@ The implementation uses a discard confirmation for dirty browser entries, the ex
 
 - Clear asks for confirmation only when the targeted documents contain unsaved edits or a save/download is in progress. Cancel preserves documents and selection. Clean documents and untouched blank drafts clear without a prompt.
 - Start writing/New immediately enters the existing working layout. The logo restores the introduction without closing documents, and the user can return to editing.
-- Browser output has one primary **Download .md** action (**Download** on narrow screens; accessible name **Download Markdown**). Feedback is **Ready to download**, **Not downloaded**, **Preparing download**, or **Download started**. The last state confirms a request, not a verified file on disk. HTML export stays separate.
+- Browser output has one primary **Download .md** action (**Download** on narrow screens; accessible name **Download Markdown**). The initial feedback included **Ready to download** and **Not downloaded**; the October 11 combined-toolbar decision removed those routine pills. Current feedback is **Preparing download** or **Download started**; unavailable output uses a disabled icon with a hover/focus explanation. The last state confirms a request, not a verified file on disk. HTML export stays separate.
 - Browser output state belongs to each document. Switching documents or editing during a download cannot mark newer content as downloaded.
 - Native Mac Save/Save As keeps its file-writing behavior. A review exposed a race where edits made during a pending save could be marked saved; success and cancellation now compare against the submitted content and retain newer edits as unsaved.
 - Compact browser output remains readable at 14px and preserves the existing mobile toolbar geometry. LinkedIn and native Save labels remain unchanged.

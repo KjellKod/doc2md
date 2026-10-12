@@ -7,6 +7,7 @@ import type {
   Doc2mdShell,
   ShellFile,
   ShellRevealOk,
+  RenameFileArgs,
   ShellSaveOk,
   ShellStatOk,
 } from "../types/doc2mdShell";
@@ -98,16 +99,26 @@ export function createMockShell(
     return result;
   });
 
+  const renameFile = overrides.renameFile ?? vi.fn(async (args: RenameFileArgs) => ({
+    ok: true as const,
+    path: `${args.path.slice(0, args.path.lastIndexOf("/") + 1)}${args.name}`,
+    mtimeMs: mtimesByPath.get(args.path) ?? args.expectedMtimeMs,
+  }));
+  const wrappedRenameFile = vi.fn(async (args: RenameFileArgs) => {
+    const result = await renameFile(args);
+    if (result.ok) {
+      mtimesByPath.delete(args.path);
+      mtimesByPath.set(result.path, result.mtimeMs);
+    }
+    return result;
+  });
+
   return {
     version: (overrides.version ?? 2) as 2,
     openFile: wrappedOpenFile,
     saveFile: wrappedSaveFile,
     saveFileAs: wrappedSaveFileAs,
-    renameFile: overrides.renameFile ?? vi.fn(async (args) => ({
-      ok: true as const,
-      path: `${args.path.slice(0, args.path.lastIndexOf("/") + 1)}${args.name}`,
-      mtimeMs: mtimesByPath.get(args.path) ?? args.expectedMtimeMs,
-    })),
+    renameFile: wrappedRenameFile,
     revealInFinder:
       overrides.revealInFinder ?? vi.fn(async () => DEFAULT_REVEAL),
     statFile:

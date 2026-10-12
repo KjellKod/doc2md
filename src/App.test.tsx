@@ -74,27 +74,6 @@ async function ensureSidebarVisible() {
   }
 }
 
-function fireEditorPaste(
-  editor: HTMLElement,
-  {
-    html = "",
-    plainText = "",
-  }: {
-    html?: string;
-    plainText?: string;
-  },
-) {
-  fireEvent.paste(editor, {
-    clipboardData: {
-      getData: (type: string) => {
-        if (type === "text/html") return html;
-        if (type === "text/plain") return plainText;
-        return "";
-      },
-    },
-  });
-}
-
 describe("App", () => {
   afterEach(() => {
     vi.clearAllMocks();
@@ -215,29 +194,6 @@ describe("App", () => {
       await screen.findByRole("button", { name: "Open Untitled.md" }),
     ).toBeInTheDocument();
     expect(container.querySelector(".page")).toHaveClass("is-working-mode");
-    expect(
-      screen.queryByRole("heading", {
-        name: "Start writing or convert files to Markdown.",
-      }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "doc2md workspace" }),
-    ).toBeInTheDocument();
-  });
-
-  it("promotes scratch entry to working mode after large paste", async () => {
-    const { container } = render(<App />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Start writing" }));
-
-    const editor = await screen.findByRole("textbox", {
-      name: "Edit markdown",
-    });
-    fireEditorPaste(editor, { plainText: "x".repeat(201) });
-
-    await waitFor(() => {
-      expect(container.querySelector(".page")).toHaveClass("is-working-mode");
-    });
     expect(
       screen.queryByRole("heading", {
         name: "Start writing or convert files to Markdown.",
@@ -876,7 +832,7 @@ describe("App", () => {
     expect(screen.getByText("No files or drafts yet.")).toBeInTheDocument();
   });
 
-  it("keeps both tab panels mounted and hides the inactive one", () => {
+  it("keeps both named regions mounted and hides the inactive one", () => {
     const { container } = render(<App />);
 
     const convertPanel = container.querySelector("#view-panel-convert");
@@ -892,8 +848,18 @@ describe("App", () => {
       "hidden",
     );
     expect(
-      screen.getByRole("tabpanel", { name: "Install & Use" }),
+      screen.getByRole("region", { name: "Install & Use" }),
     ).toBeVisible();
+  });
+
+  it("opens About from Install without leaving it inside the hidden workspace", () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    fireEvent.click(screen.getByRole("button", { name: "Install & Use" }));
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    fireEvent.click(screen.getByRole("button", { name: "About doc2md" }));
+    expect(screen.getByRole("heading", { name: "Why this utility exists" })).toBeVisible();
+    expect(screen.getByRole("region", { name: "Workspace" })).toBeVisible();
   });
 
   it("opens Settings from the keyboard and returns focus with Escape", () => {

@@ -1,13 +1,14 @@
 export function markdownRename(name: string): string {
   const stem = name.trim().replace(/\.md$/iu, "").trim();
+  if (!stem || stem === "." || stem === "..") {
+    throw new Error("Enter a document name other than a dot or two dots.");
+  }
   if (
-    !stem ||
-    stem === "." ||
-    stem === ".." ||
     /[/\\:]/u.test(stem) ||
     Array.from(stem).some(
       (character) =>
-        character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127,
+        character.charCodeAt(0) < 32 ||
+        (character.charCodeAt(0) >= 127 && character.charCodeAt(0) <= 159),
     )
   ) {
     throw new Error(

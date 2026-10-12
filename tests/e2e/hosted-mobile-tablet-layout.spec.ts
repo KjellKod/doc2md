@@ -465,22 +465,20 @@ test.describe("hosted mobile and tablet layout", () => {
     page,
     isMobile,
   }) => {
-    // AC-P2b home (F4): the desktop rail is unchanged. The hosted-phone hide is
-    // scoped to .app-shell-hosted .page.is-working-mode at <=720px, so a desktop
-    // viewport never matches it. Skip on the mobile-emulation projects; this is
-    // the desktop-width contract.
-    test.skip(isMobile, "desktop-width rail contract; mobile projects hide it");
+    // The combined toolbar owns the reopen control at desktop widths too;
+    // the old standalone rail stays hidden. Mobile coverage lives above.
+    test.skip(isMobile, "desktop-width contract; mobile behavior is covered separately");
 
     await page.setViewportSize({ width: 1280, height: 900 });
     await openHostedApp(page);
     await uploadMarkdownFile(
       page,
       "desktop-rail.md",
-      "# Desktop rail\n\nThe rail must still render at desktop widths.",
+      "# Desktop rail\n\nThe toolbar reopens files at desktop widths.",
     );
 
-    // The first open auto-collapses; on desktop the rail stays visible (it is
-    // the reopen control there). Visibility semantics, not boundingBox math.
+    // First open collapses the sidebar. Its toolbar control remains visible
+    // while the retired standalone rail remains hidden.
     const showUpload = page.getByRole("button", { name: "Show files" });
     await expect(showUpload).toBeVisible({ timeout: 15_000 });
     const collapseRail = page.locator(".collapse-rail");
