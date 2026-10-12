@@ -160,3 +160,9 @@ The user requested full build/validation, self-review, independent Claude review
 The user approved replacing internal Install & Use navigation with an external documentation link, and replacing below-workspace About content with a small dialog. Both actions preserve the document workspace. The About dialog shows version and project resources immediately, closes with Close/Escape, and returns focus to Settings. Installation documentation now links directly to release downloads rather than sending readers back to the removed internal tab.
 
 Validation: 1,019 unit tests passed; 31 focused Chromium cases and 10 mobile Chrome/Safari cases passed (3 existing desktop skips). Eight additional Chromium/WebKit checks covered the dialog in light/dark themes at desktop/phone widths. Lint completed with six existing warnings and no errors; typecheck and web/desktop shell builds passed. Native external-link routing was verified in the existing WKWebView delegate; native code was unchanged.
+
+## October 12 CI packaging follow-up
+
+Run `38261901309` failed in core test collection because the install smoke test rewrote `packages/core/package.json` in place while another worker read it (`File is empty`). The aggregate `ci` failure reports that same upstream failure. UI unit tests, E2E, lint/typecheck and builds passed. The packaging script was unchanged from main; the user requested investigation after this previously deferred race recurred. The focused fix replaces both manifest writes atomically so concurrent readers always see a complete file.
+
+Validation: the two new deterministic regression cases failed before the fix and passed unchanged afterward, covering successful packing and restoration after build failure. All 76 core tests passed, including the real package install smoke test; all five release-script tests passed.
