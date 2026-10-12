@@ -1,9 +1,9 @@
 # Mac Commercial Distribution Decision Record
 
-Status: Accepted (amended 2026-07-07)
+Status: Accepted (amended 2026-09-05)
 Owner: KjellKod <kjell@candidtalentedge.com>
 Date: 2026-05-06
-Amended: 2026-07-07, joint sharpen with maintainer; see the Amendment Log at the bottom for what changed and why.
+Amended: 2026-07-07 and 2026-09-05; see the Amendment Log at the bottom for what changed and why.
 Roadmap: `ideas/mac-desktop-app-roadmap.md` Phase 7b
 Related: [Mac commercial distribution and licensing research](mac-commercial-distribution-and-licensing.md), [Mac private license issuer spec](mac-private-license-issuer-spec.md), [Mac desktop app roadmap](../../ideas/mac-desktop-app-roadmap.md)
 
@@ -38,10 +38,12 @@ The Official App remains evaluation-friendly when unregistered:
 | `doc2md.dev` | Public Mac product, download, support, pricing, privacy, terms, and licensing surface. | Must be ready before public paid launch. |
 | `updates.doc2md.dev` | Sparkle appcast/update surface. | Continues the established Sparkle release path; not changed by this decision record. |
 | `license.doc2md.dev` | Private issuer/API territory. | May be implemented by a later private issuer quest; not required to be live in this quest. |
-| `support@doc2md.dev` | Intended public customer-facing go-live support/contact alias. | Must exist before taking money. |
+| `support@candidtalentedge.com` | Current public customer-facing go-live support/contact alias. | Must exist before taking money. |
 | `https://kjellkod.github.io/doc2md/` | Hosted free web app. | Must not expose Mac purchase, download, or registration links before commercial go-live approval. |
 
-`KjellKod <kjell@candidtalentedge.com>` is the accountable operational owner/contact in this repository decision record. `support@doc2md.dev` is the intended public customer-facing support/contact alias before go-live.
+`KjellKod <kjell@candidtalentedge.com>` is the accountable operational owner/contact in this repository decision record. `support@candidtalentedge.com` is the current public customer-facing support/contact alias before go-live.
+
+**Support alias amendment (2026-09-05):** `support@candidtalentedge.com` supersedes the former support alias throughout this record. Remaining former-alias references below are retained only as historical context.
 
 ## Merchant Path
 
@@ -158,6 +160,10 @@ This quest is documentation-only. Validation should confirm:
 - Manual release-step requirements.
 
 ## Amendment Log
+
+### 2026-09-05: Support alias correction
+
+`support@candidtalentedge.com` superseded `support@doc2md.dev` for in-app support routing. Paid-support verification remains a manual Polar dashboard lookup by purchase email. Remaining references to the former alias are retained only as historical context.
 
 ### 2026-07-07 — Polar merchant path, interim issuer, licensed-feature boundary
 

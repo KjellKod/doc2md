@@ -168,6 +168,27 @@ final class PolarLicenseControllerTests: XCTestCase {
         XCTAssertNil(PolarLicenseConfiguration(rawValue: nil).organizationID)
     }
 
+    func testSupportURLUsesCandidTalentEdgeAddressAndSubject() {
+        XCTAssertEqual(
+            PolarLicenseConfiguration.supportURL.absoluteString,
+            "mailto:support@candidtalentedge.com?subject=doc2md%20support"
+        )
+    }
+
+    func testRecoveryURLMatchesPolarEnvironment() {
+#if DOC2MD_POLAR_SANDBOX
+        XCTAssertEqual(
+            PolarLicenseConfiguration.recoveryURL.absoluteString,
+            "https://sandbox.polar.sh/purchases"
+        )
+#else
+        XCTAssertEqual(
+            PolarLicenseConfiguration.recoveryURL.absoluteString,
+            "https://polar.sh/purchases"
+        )
+#endif
+    }
+
     func testKeychainLossKeepsCachedStateAndFreshActivationReusesSuffix() async {
         let client = ScriptedPolarClient()
         client.activationResult = .success(
@@ -389,7 +410,11 @@ final class PolarLicenseControllerTests: XCTestCase {
         XCTAssertFalse(activated)
         XCTAssertEqual(controller.recoveryNotice, .activationLimit)
         XCTAssertTrue(controller.recoveryNotice?.offersSlotRecovery == true)
-        XCTAssertTrue(controller.recoveryNotice?.message.contains("support@doc2md.dev") == true)
+        let message = controller.recoveryNotice?.message ?? ""
+        XCTAssertTrue(message.localizedCaseInsensitiveContains("purchase email"))
+        XCTAssertFalse(message.contains("support@doc2md.dev"))
+        XCTAssertFalse(message.localizedCaseInsensitiveContains("verified in the app"))
+        XCTAssertFalse(message.localizedCaseInsensitiveContains("automatically verified"))
     }
 
     func testActivationPersistenceFailureCompensatesRemoteSlotAndClearsPartialData() async {

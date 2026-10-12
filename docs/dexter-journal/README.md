@@ -6,7 +6,9 @@ For the other perspective, see [Jean-Claude's Journal](../journal/).
 
 | # | Title | Theme |
 |---|-------|-------|
-| 057 | [Requiem: Document Library](057-requiem-document-library.md) | Unlimited searchable Mac document history with state-gated recording, retained access after expiry, deterministic reopen behavior, preserved free recents, two post-cap keyboard repairs, and one shared Command-W follow-up |
+| 059 | [Requiem: Document Library](059-requiem-document-library.md) | Unlimited searchable Mac document history with state-gated recording, retained access after expiry, deterministic reopen behavior, preserved free recents, two post-cap keyboard repairs, and one shared Command-W follow-up |
+| 058 | [Polar Release Basics](058-polar-release-basics.md) | Converting release, sandbox, and support intentions into build-time refusals and artifact evidence |
+| 057 | [Requiem: Polar Release Basics](057-requiem-polar-release-basics.md) | Burying empty release UUIDs, sandbox ambiguity, and the obsolete support alias after one focused fix pass |
 | 056 | [Line Number Toggle](056-line-number-toggle.md) | Source-accurate visual numbering across native Edit and rendered View, plus the reminder that browser geometry tests must measure paint rather than repeat CSS arithmetic |
 | 055 | [Requiem: Mac License Grace States](055-requiem-mac-license-grace-states.md) | Pure cached entitlement gained exact grace boundaries, moment-of-use expiry, restored reminders, clean dual review, and one safely recovered orchestration artifact |
 | 054 | [Requiem: Commercial Spin-Off](054-requiem-commercial-spinoff.md) | Burying Lemon Squeezy, the sedated Ed25519 issuer, and six assumptions that died in nine review rounds; Polar becomes merchant and interim issuer while money stays out of core document work (PR #195) |

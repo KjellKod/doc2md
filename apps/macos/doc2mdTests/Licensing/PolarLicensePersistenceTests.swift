@@ -13,8 +13,30 @@ final class PolarLicensePersistenceTests: XCTestCase {
             attributes[kSecAttrAccessible as String] as? String,
             kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly as String
         )
+#if DOC2MD_POLAR_SANDBOX
+        XCTAssertEqual(
+            attributes[kSecAttrService as String] as? String,
+            "com.kjellkod.doc2md.sandbox.polar-license"
+        )
+        XCTAssertEqual(
+            attributes[kSecAttrAccount as String] as? String,
+            "doc2md-sandbox-polar-license-credentials"
+        )
+#else
         XCTAssertEqual(attributes[kSecAttrService as String] as? String, "com.kjellkod.doc2md.polar-license")
         XCTAssertEqual(attributes[kSecAttrAccount as String] as? String, "doc2md-polar-license-credentials")
+#endif
+    }
+
+    func testDefaultMetadataPathMatchesBuildMode() {
+        let url = ApplicationSupportPolarLicenseMetadataStore.defaultMetadataURLForTesting()
+
+        XCTAssertEqual(url.lastPathComponent, "polar-license-metadata.json")
+#if DOC2MD_POLAR_SANDBOX
+        XCTAssertEqual(url.deletingLastPathComponent().lastPathComponent, "doc2md Sandbox")
+#else
+        XCTAssertEqual(url.deletingLastPathComponent().lastPathComponent, "doc2md")
+#endif
     }
 
     func testMetadataRoundTripUsesExactNonSecretWhitelist() throws {

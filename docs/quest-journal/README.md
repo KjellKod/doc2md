@@ -3,6 +3,7 @@
 | Date | Quest | Outcome |
 |------|-------|---------|
 | 2026-09-06 | [mac-document-library](mac-document-library_2026-09-06.md) | `$quest "Implement Phase 3, Document Library, from docs/implementation/mac-commercial-phase-7b-plan.md. Goal: Ship th... |
+| 2026-09-05 | [polar-release-basics](polar-release-basics_2026-09-05.md) | Official builds embed a validated Polar UUID, sandbox testing is isolated and visibly non-production, and recovery opens the correct support email. |
 | 2026-08-22 | [line-number-toggle](line-number-toggle_2026-08-22.md) | Add optional line numbers to Edit and rendered View. ### Goal Users can toggle line numbers on and off while editing ... |
 | 2026-08-14 | [polar-activation-client](polar-activation-client_2026-08-14.md) | Add the Polar activation client and wire it to the Mac license entry window. Goal: Implement Phase 2 of `docs/impleme... |
 | 2026-07-20 | [mac-license-grace-states](mac-license-grace-states_2026-07-20.md) | Extend the Mac license state machine with grace and expired-reminder states. Goal: Implement Phase 1 of docs/implemen... |

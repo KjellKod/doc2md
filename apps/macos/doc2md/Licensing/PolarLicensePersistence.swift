@@ -78,8 +78,8 @@ protocol PolarLicenseMetadataStorage {
 }
 
 final class KeychainPolarLicenseCredentialStore: PolarLicenseCredentialStorage {
-    private let service = "com.kjellkod.doc2md.polar-license"
-    private let account = "doc2md-polar-license-credentials"
+    private let service = PolarLicenseConfiguration.keychainService
+    private let account = PolarLicenseConfiguration.keychainAccount
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
 
@@ -164,6 +164,10 @@ final class ApplicationSupportPolarLicenseMetadataStore: PolarLicenseMetadataSto
         decoder.dateDecodingStrategy = .iso8601
     }
 
+    static func defaultMetadataURLForTesting(fileManager: FileManager = .default) -> URL {
+        defaultMetadataURL(fileManager: fileManager)
+    }
+
     func loadMetadata() throws -> PolarLicenseMetadata? {
         guard fileManager.fileExists(atPath: metadataURL.path) else {
             return nil
@@ -224,7 +228,10 @@ final class ApplicationSupportPolarLicenseMetadataStore: PolarLicenseMetadataSto
             .appendingPathComponent("Library", isDirectory: true)
             .appendingPathComponent("Application Support", isDirectory: true)
         return applicationSupportURL
-            .appendingPathComponent("doc2md", isDirectory: true)
+            .appendingPathComponent(
+                PolarLicenseConfiguration.applicationSupportDirectoryName,
+                isDirectory: true
+            )
             .appendingPathComponent("polar-license-metadata.json")
     }
 }

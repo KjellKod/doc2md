@@ -225,6 +225,30 @@ final class PolarLicenseClientTests: XCTestCase {
         XCTAssertNil(requests[1].value(forHTTPHeaderField: "Cookie"))
     }
 
+    func testDefaultBaseURLMatchesBuildMode() async throws {
+        var capturedRequest: URLRequest?
+        MockPolarURLProtocol.handler = { request in
+            capturedRequest = request
+            return Self.response(
+                for: request,
+                status: 200,
+                body: "{\"status\":\"granted\",\"expires_at\":null}"
+            )
+        }
+
+        _ = try await makeClientUsingDefaultBaseURL().validate(
+            key: "polar-test-key",
+            organizationID: organizationID,
+            activationID: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"
+        )
+
+#if DOC2MD_POLAR_SANDBOX
+        XCTAssertEqual(capturedRequest?.url?.host, "sandbox-api.polar.sh")
+#else
+        XCTAssertEqual(capturedRequest?.url?.host, "api.polar.sh")
+#endif
+    }
+
     private func makeClient() -> PolarLicenseClient {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [MockPolarURLProtocol.self]
@@ -232,6 +256,12 @@ final class PolarLicenseClientTests: XCTestCase {
             session: URLSession(configuration: configuration),
             baseURL: URL(string: "https://api.polar.sh")!
         )
+    }
+
+    private func makeClientUsingDefaultBaseURL() -> PolarLicenseClient {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockPolarURLProtocol.self]
+        return PolarLicenseClient(session: URLSession(configuration: configuration))
     }
 
     private func requestJSON(_ request: URLRequest) throws -> [String: Any] {
