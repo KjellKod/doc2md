@@ -4695,13 +4695,18 @@ body.is-height-resizing * {
   color: var(--text-primary);
 }
 .combined-settings-row,
-.combined-settings .line-numbers-checkbox {
+.combined-settings .line-numbers-checkbox,
+.combined-settings .desktop-persistence-toggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   min-height: 44px;
+  padding-inline: 8px;
   font-size: 14px;
+  font-weight: 400;
+  color: var(--text-primary);
+  text-align: left;
 }
 .combined-settings select {
   max-width: 65%;
@@ -4713,6 +4718,9 @@ body.is-height-resizing * {
   color: var(--text-primary);
 }
 .combined-settings input[type="checkbox"] {
+  order: 1;
+  flex-shrink: 0;
+  margin: 0 0 0 auto;
   width: 18px;
   height: 18px;
   accent-color: var(--accent);
@@ -4949,6 +4957,17 @@ body.is-height-resizing * {
 .combined-settings > button:hover,
 .combined-settings-footer > button:hover {
   background: var(--accent-soft);
+}
+.combined-settings :is(button, a.combined-settings-action, summary) {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  text-align: left;
+}
+.combined-settings-footer > small {
+  display: block;
+  padding: 8px;
+  color: var(--text-secondary);
 }
 .combined-settings-narrow-action {
   display: none;

@@ -166,3 +166,7 @@ Validation: 1,019 unit tests passed; 31 focused Chromium cases and 10 mobile Chr
 Run `38261901309` failed in core test collection because the install smoke test rewrote `packages/core/package.json` in place while another worker read it (`File is empty`). The aggregate `ci` failure reports that same upstream failure. UI unit tests, E2E, lint/typecheck and builds passed. The packaging script was unchanged from main; the user requested investigation after this previously deferred race recurred. The focused fix replaces both manifest writes atomically so concurrent readers always see a complete file.
 
 Validation: the two new deterministic regression cases failed before the fix and passed unchanged afterward, covering successful packing and restoration after build failure. All 76 core tests passed, including the real package install smoke test; all five release-script tests passed.
+
+## October 12 Settings alignment
+
+All Settings labels and commands share a left text edge and regular text weight. Appearance, Persistence and Line numbers use the same row padding; the selector and checkboxes sit on the right. The version uses the same left inset. This corrects inherited desktop/toolbar style differences without changing the controls or their behavior.
