@@ -4,9 +4,8 @@ This guide is for people who want `doc2md` outside the browser UI.
 
 If you only need one quick conversion, use the live site first:
 
-- Open `https://kjellkod.github.io/doc2md/`
-- Click the `Install & Use` tab
-- Download the latest released `doc2md-core-<version>.tgz` package
+- Open [doc2md in your browser](https://kjellkod.github.io/doc2md/) and convert your documents there; no installation is needed.
+- For repeated work or automation, [download the latest core package](https://kjellkod.github.io/doc2md/doc2md-core-latest.tgz) and follow this guide.
 
 If you want the CLI for repeated work, automation, or agent workflows, follow the steps below.
 
@@ -29,9 +28,9 @@ You have two supported ways to get `@doc2md/core`.
 
 ### Option A: Download it from the site
 
-1. Open `https://kjellkod.github.io/doc2md/`
-2. Click `Install & Use`
-3. Download the latest released `doc2md-core-<version>.tgz`
+1. Download [the latest released core tarball](https://kjellkod.github.io/doc2md/doc2md-core-latest.tgz).
+2. Save `doc2md-core-latest.tgz` to your computer.
+3. Use that downloaded path in the installation commands below. You can also check [release metadata](https://kjellkod.github.io/doc2md/latest-tarball.json) for the versioned filename.
 
 The site tarball is a release artifact. It updates when a new version tag is
 deployed, not on every merge to `main`.
@@ -192,7 +191,7 @@ npm install /absolute/path/to/newer-doc2md-core-<derived-version>.tgz
 
 ### You want the easiest beginner path
 
-Start from the browser UI at `https://kjellkod.github.io/doc2md/`, then use the `Install & Use` tab for the download link and the same commands shown here.
+For a quick conversion, use [the browser workspace](https://kjellkod.github.io/doc2md/). For local automation, download the tarball linked above and follow the global or project-local commands in this guide. Settings → Install & Use opens this guide without replacing your document workspace.
 
 ## Mac App: Open Markdown Files by Double-Clicking
 

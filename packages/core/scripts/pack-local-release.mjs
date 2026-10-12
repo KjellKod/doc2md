@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { getReleaseVersionInfo } from "./release-version.mjs";
@@ -7,6 +7,17 @@ import { getReleaseVersionInfo } from "./release-version.mjs";
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const packageDir = path.resolve(scriptDir, "..");
 const packageJsonPath = path.join(packageDir, "package.json");
+
+async function writeManifest() {
+  const temporaryPath = `${packageJsonPath}.${process.pid}.tmp`;
+  try {
+    await writeFile(temporaryPath, `${JSON.stringify(packageJson, null, 2)}\n`, "utf8");
+    // Readers must always see a complete manifest, including during restoration.
+    await rename(temporaryPath, packageJsonPath);
+  } finally {
+    await rm(temporaryPath, { force: true });
+  }
+}
 
 function runNpm(args) {
   return execFileSync("npm", args, {
@@ -30,7 +41,7 @@ const release = getReleaseVersionInfo();
 try {
   await removeExistingTarballs();
   packageJson.version = release.version;
-  await writeFile(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`, "utf8");
+  await writeManifest();
 
   runNpm(["run", "build"]);
   const packOutput = runNpm(["pack", "--json", "--ignore-scripts"]);
@@ -62,5 +73,5 @@ try {
   );
 } finally {
   packageJson.version = originalVersion;
-  await writeFile(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`, "utf8");
+  await writeManifest();
 }

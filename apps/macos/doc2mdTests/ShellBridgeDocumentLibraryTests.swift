@@ -257,6 +257,37 @@ final class ShellBridgeDocumentLibraryTests: XCTestCase {
         XCTAssertEqual(try licensedStore.load().count, 1)
     }
 
+    func testRenameRelocatesExistingLibraryRowAfterLicenseExpires() async throws {
+        let source = try makeFile("before.md", "# Test")
+        let store = DocumentLibraryStore(storeURL: directory.appendingPathComponent("library.json"))
+        try store.record(url: source)
+        let bridge = ShellBridge(documentLibraryStore: store, licenseStateProvider: { .unlicensed })
+        XCTAssertTrue(bridge.openExternalMarkdownURL(source).ok)
+        let webView = DocumentLibraryCapturingWebView()
+        bridge.webView = webView
+        let script = await sendMessage(bridge: bridge, webView: webView, name: "doc2mdRenameFile", id: "rename", args: [
+            "path": source.path, "name": "after.md", "expectedMtimeMs": try FileStore().modificationTimeMs(for: source),
+        ])
+        XCTAssertTrue(script.contains("\"ok\":true"))
+        XCTAssertEqual(try store.load().map(\.path), [directory.appendingPathComponent("after.md").path])
+    }
+
+    func testRenameDoesNotEnrollUnrecordedDocumentWhenLicenseBecomesActive() async throws {
+        let source = try makeFile("before.md", "# Test")
+        let store = DocumentLibraryStore(storeURL: directory.appendingPathComponent("library.json"))
+        var state: LicenseState = .unlicensed
+        let bridge = ShellBridge(documentLibraryStore: store, licenseStateProvider: { state })
+        XCTAssertTrue(bridge.openExternalMarkdownURL(source).ok)
+        state = .licensed(LicenseEntitlement(expiresAt: nil))
+        let webView = DocumentLibraryCapturingWebView()
+        bridge.webView = webView
+        let script = await sendMessage(bridge: bridge, webView: webView, name: "doc2mdRenameFile", id: "rename", args: [
+            "path": source.path, "name": "after.md", "expectedMtimeMs": try FileStore().modificationTimeMs(for: source),
+        ])
+        XCTAssertTrue(script.contains("\"ok\":true"))
+        XCTAssertTrue(try store.load().isEmpty)
+    }
+
     private func sendOpen(
         bridge: ShellBridge,
         webView: DocumentLibraryCapturingWebView,

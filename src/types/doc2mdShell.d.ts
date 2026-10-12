@@ -96,6 +96,12 @@ export type ShellResult<T> =
   | ShellPermissionNeeded
   | ShellError;
 
+export interface RenameFileArgs {
+  path: string;
+  name: string;
+  expectedMtimeMs: number;
+}
+
 export interface SaveFileArgs {
   path: string;
   content: string;
@@ -143,6 +149,7 @@ export interface SetSessionStateArgs {
 export interface Doc2mdShell {
   readonly version: 2;
   openFile(args?: OpenFileArgs): Promise<ShellResult<ShellFile>>;
+  renameFile?(args: RenameFileArgs): Promise<ShellResult<ShellSaveOk>>;
   saveFile(args: SaveFileArgs): Promise<ShellResult<ShellSaveOk>>;
   saveFileAs(args: SaveFileAsArgs): Promise<ShellResult<ShellSaveOk>>;
   revealInFinder(

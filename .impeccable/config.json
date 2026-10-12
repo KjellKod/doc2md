@@ -1,0 +1,27 @@
+{
+  "buildPath": "code",
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "src/styles/global.css"
+        ],
+        "createdAt": "2026-10-10T05:36:42.402Z",
+        "reason": "Agent review: existing borders identify the active file, Markdown blockquotes, and the About automation information callout. Preserve these semantic cues within the approved focused refinement; all three declarations predate this session."
+      },
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          "docs/design/workspace-comparison/index.html"
+        ],
+        "createdAt": "2026-10-10T14:03:23.169Z",
+        "reason": "Agent: comparison intentionally inherits doc2md existing warm cream and navy identity from src/styles/global.css; this is not a new palette choice."
+      }
+    ]
+  }
+}

@@ -7,6 +7,9 @@ import {
   WandSparkles,
 } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import type { ReactNode } from "react";
+import { createPortal } from "react-dom";
+import CombinedToolbar from "./CombinedToolbar";
 import type { SaveState } from "../../types/saveState";
 import SaveButton from "../SaveButton";
 import SaveStatePill from "../SaveStatePill";
@@ -15,7 +18,12 @@ import type { PreviewOverflowMenuItem } from "./PreviewOverflowMenu";
 
 type PreviewModeName = "edit" | "preview" | "linkedin";
 
-interface PreviewToolbarProps {
+export interface PreviewToolbarProps {
+  toolbarTarget?: HTMLElement | null;
+  documentControlsVisible?: boolean;
+  toolbarStart?: ReactNode;
+  settingsContent?: ReactNode;
+  settingsActions?: ReactNode;
   toolbarRef: { current: HTMLDivElement | null };
   mode: PreviewModeName;
   copyState: "idle" | "copied";
@@ -24,6 +32,7 @@ interface PreviewToolbarProps {
   lineNumbersSupported?: boolean;
   showLineNumbers?: boolean;
   onToggleLineNumbers?: () => void;
+  outputMode?: "save" | "download";
   onSave?: () => void | Promise<void>;
   onDownloadMarkdown?: () => void | Promise<void>;
   downloadMarkdownDisabled?: boolean;
@@ -57,7 +66,10 @@ interface ShortcutRow {
   keys: string;
 }
 
-function shortcutRows(saveKeyShortcuts?: string): ShortcutRow[] {
+function shortcutRows(
+  saveKeyShortcuts?: string,
+  outputMode: "save" | "download" = "save",
+): ShortcutRow[] {
   const mod = "Cmd/Ctrl";
   const shift = "Shift";
   const rows: ShortcutRow[] = [
@@ -72,13 +84,16 @@ function shortcutRows(saveKeyShortcuts?: string): ShortcutRow[] {
   ];
 
   if (saveKeyShortcuts) {
-    rows.unshift({ label: "Save document", keys: "Cmd+S" });
+    rows.unshift({
+      label: outputMode === "download" ? "Download Markdown" : "Save document",
+      keys: outputMode === "download" ? "Cmd/Ctrl+S" : "Cmd+S",
+    });
   }
 
   return rows;
 }
 
-export default function PreviewToolbar({
+function LegacyPreviewToolbar({
   toolbarRef,
   mode,
   copyState,
@@ -88,6 +103,7 @@ export default function PreviewToolbar({
   showLineNumbers = false,
   onToggleLineNumbers,
   onSave,
+  outputMode = "save",
   onDownloadMarkdown,
   downloadMarkdownDisabled = false,
   downloadMarkdownBusy = false,
@@ -123,7 +139,9 @@ export default function PreviewToolbar({
   const adjustFormattingButtonRef = useRef<HTMLButtonElement | null>(null);
   const adjustFormattingSpotlightTimerRef = useRef<number | null>(null);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
-  const rows = shortcutRows(saveKeyShortcuts);
+  const rows = shortcutRows(saveKeyShortcuts, outputMode);
+  const showSeparateMarkdownDownload =
+    Boolean(onDownloadMarkdown) && outputMode !== "download";
 
   // The element to restore focus to when the shortcuts popover closes: the
   // dedicated shortcuts button on the non-compact toolbar, or the overflow
@@ -246,7 +264,7 @@ export default function PreviewToolbar({
       checked: showLineNumbers,
     });
   }
-  if (onDownloadMarkdown) {
+  if (showSeparateMarkdownDownload && onDownloadMarkdown) {
     overflowItems.push({
       key: "download-markdown",
       label: "Download Markdown",
@@ -311,11 +329,18 @@ export default function PreviewToolbar({
     <div className="save-control-group">
       <SaveButton
         onSave={onSave}
+        compact={compactToolbar}
+        outputMode={outputMode}
         disabled={saveDisabled}
         busy={saveBusy}
         ariaKeyshortcuts={saveKeyShortcuts}
       />
-      <SaveStatePill state={saveState} lastSavedAt={lastSavedAt} />
+      <SaveStatePill
+        state={saveState}
+        lastSavedAt={lastSavedAt}
+        outputMode={outputMode}
+        compact={compactToolbar}
+      />
     </div>
   ) : null;
 
@@ -504,24 +529,14 @@ export default function PreviewToolbar({
             <span className="find-entry-label">Find</span>
           </button>
         ) : null}
-        {onSave ? (
-          <div className="save-control-group">
-            <SaveButton
-              onSave={onSave}
-              disabled={saveDisabled}
-              busy={saveBusy}
-              ariaKeyshortcuts={saveKeyShortcuts}
-            />
-            <SaveStatePill state={saveState} lastSavedAt={lastSavedAt} />
-          </div>
-        ) : null}
-        {onDownloadMarkdown || onExportHtml ? (
+        {saveControlGroup}
+        {showSeparateMarkdownDownload || onExportHtml ? (
           <div
             className="format-download-actions"
             role="group"
             aria-label="Download formats"
           >
-            {onDownloadMarkdown ? (
+            {showSeparateMarkdownDownload && onDownloadMarkdown ? (
               <span className="instant-tooltip-anchor">
                 <button
                   type="button"
@@ -655,4 +670,9 @@ export default function PreviewToolbar({
       </div>
     </div>
   );
+}
+
+export default function PreviewToolbar(props: PreviewToolbarProps) {
+  if (props.toolbarTarget) return createPortal(<CombinedToolbar {...props} />, props.toolbarTarget);
+  return <LegacyPreviewToolbar {...props} />;
 }

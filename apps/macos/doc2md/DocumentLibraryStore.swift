@@ -82,6 +82,21 @@ final class DocumentLibraryStore {
         }
     }
 
+    func relocateExisting(from oldURL: URL, to newURL: URL) throws {
+        var entries = try load()
+        guard let previous = entries.first(where: { $0.path == oldURL.standardizedFileURL.path }) else {
+            return
+        }
+        let destination = newURL.standardizedFileURL
+        entries.removeAll { $0.path == previous.path || $0.path == destination.path }
+        entries.append(DocumentLibraryEntry(
+            path: destination.path,
+            displayName: destination.lastPathComponent,
+            lastTouchedAt: previous.lastTouchedAt
+        ))
+        try write(Self.sorted(entries))
+    }
+
     private func write(_ entries: [DocumentLibraryEntry]) throws {
         let directory = storeURL.deletingLastPathComponent()
         let tempURL = directory.appendingPathComponent(

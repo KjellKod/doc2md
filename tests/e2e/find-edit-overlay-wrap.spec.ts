@@ -42,22 +42,14 @@ async function openEditor(page: Page, lineNumbers: boolean) {
       buffer: Buffer.from("# Doc\n\n" + "word ".repeat(2000)),
     },
   ]);
-  const showUpload = page.getByRole("button", { name: "Show upload panel" });
+  const showUpload = page.getByRole("button", { name: "Show files" });
   if (await showUpload.isVisible().catch(() => false)) {
     await showUpload.click();
   }
   if (lineNumbers) {
-    const desktopControl = page.getByRole("checkbox", { name: "Line numbers" });
-    if (await desktopControl.isVisible().catch(() => false)) {
-      await desktopControl.click();
-    } else {
-      await page.getByRole("button", { name: "More actions" }).click();
-      const menuItem = page.getByRole("menuitemcheckbox", {
-        name: "Line numbers",
-      });
-      await expect(menuItem).toHaveAttribute("aria-checked", "false");
-      await menuItem.click();
-    }
+    await page.getByRole("button", { name: "Settings", exact: true }).click();
+    await page.getByRole("checkbox", { name: "Line numbers" }).check();
+    await page.keyboard.press("Escape");
   }
   await page.getByRole("button", { name: "Edit", exact: true }).click();
   await expect(page.locator(".markdown-edit-area")).toBeVisible();
@@ -149,7 +141,7 @@ test("editor find scrolls long unbroken wrapped text to the active match", async
       buffer: Buffer.from(longToken),
     },
   ]);
-  const showUpload = page.getByRole("button", { name: "Show upload panel" });
+  const showUpload = page.getByRole("button", { name: "Show files" });
   if (await showUpload.isVisible().catch(() => false)) {
     await showUpload.click();
   }

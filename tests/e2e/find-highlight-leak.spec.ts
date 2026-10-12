@@ -54,14 +54,14 @@ async function openFixtureInPreview(page: Page) {
     },
   ]);
   // Auto-collapse: re-expand for stability.
-  const showUpload = page.getByRole("button", { name: "Show upload panel" });
+  const showUpload = page.getByRole("button", { name: "Show files" });
   if (await showUpload.isVisible().catch(() => false)) {
     await showUpload.click();
   }
   // Wait for the preview heading to mount.
   await expect(
     page
-      .getByRole("region", { name: "View" })
+      .getByRole("region", { name: "Document", exact: true })
       .getByRole("heading", { name: "Heading" }),
   ).toBeVisible();
 }
@@ -224,13 +224,13 @@ test("Symptom A (Enter-navigation variant): rendered text + structure invariant 
       buffer: Buffer.from(dense),
     },
   ]);
-  const showUpload = page.getByRole("button", { name: "Show upload panel" });
+  const showUpload = page.getByRole("button", { name: "Show files" });
   if (await showUpload.isVisible().catch(() => false)) {
     await showUpload.click();
   }
   await expect(
     page
-      .getByRole("region", { name: "View" })
+      .getByRole("region", { name: "Document", exact: true })
       .getByRole("heading", { name: "Dense" }),
   ).toBeVisible();
 

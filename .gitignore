@@ -32,3 +32,6 @@ packages/core/doc2md-core-*.tgz
 apps/macos/doc2md/Resources/Web/*
 !apps/macos/doc2md/Resources/Web/.gitkeep
 apps/macos/doc2md/ReleaseCommit.generated.swift
+
+# Impeccable detector cache is local; keep design decisions and critiques.
+.impeccable/hook.cache.json

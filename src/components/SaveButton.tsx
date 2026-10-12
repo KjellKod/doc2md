@@ -1,6 +1,9 @@
 import type { SVGProps } from "react";
+import { Download } from "lucide-react";
 
 interface SaveButtonProps {
+  outputMode?: "save" | "download";
+  compact?: boolean;
   onSave: () => void | Promise<void>;
   disabled?: boolean;
   busy?: boolean;
@@ -37,6 +40,8 @@ function SaveIcon(props: SVGProps<SVGSVGElement>) {
 
 export default function SaveButton({
   onSave,
+  outputMode = "save",
+  compact = false,
   disabled = false,
   busy = false,
   ariaKeyshortcuts,
@@ -44,16 +49,22 @@ export default function SaveButton({
   return (
     <button
       type="button"
-      className="save-button"
+      className={`save-button${outputMode === "download" ? " save-button--download" : ""}`}
       onClick={() => void onSave()}
       disabled={disabled}
       aria-disabled={disabled}
       aria-busy={busy}
-      aria-label="Save document"
+      aria-label={outputMode === "download" ? "Download Markdown" : "Save document"}
       aria-keyshortcuts={ariaKeyshortcuts}
     >
-      <SaveIcon className="save-button-icon" aria-hidden="true" />
-      <span className="save-button-label">Save</span>
+      {outputMode === "download" ? (
+        compact ? null : <Download className="save-button-icon" aria-hidden="true" />
+      ) : (
+        <SaveIcon className="save-button-icon" aria-hidden="true" />
+      )}
+      <span className="save-button-label">
+        {outputMode === "download" ? (busy ? "Preparing…" : compact ? "Download" : "Download .md") : "Save"}
+      </span>
     </button>
   );
 }

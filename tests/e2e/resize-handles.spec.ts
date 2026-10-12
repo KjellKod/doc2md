@@ -5,7 +5,7 @@ const EPSILON_PX = 6;
 async function openHostedApp(page: Page, height = 1200) {
   await page.setViewportSize({ width: 1440, height });
   await page.goto("./");
-  await expect(page.getByRole("heading", { name: "Upload" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Upload", exact: true })).toBeVisible();
 }
 
 async function boundingBox(locator: Locator) {
@@ -65,13 +65,13 @@ test("vertical drag direction matches the cursor", async ({
   });
   const initialSidebarBox = await boundingBox(sidebar);
 
-  await dragFromCenter(page, splitBar, -120, 0);
+  await dragFromCenter(page, splitBar, -20, 0);
 
   const narrowedSidebarBox = await boundingBox(sidebar);
   expect(narrowedSidebarBox.width).toBeLessThan(initialSidebarBox.width);
   expect(narrowedSidebarBox.width).toBeGreaterThan(200);
 
-  await dragFromCenter(page, splitBar, 60, 0);
+  await dragFromCenter(page, splitBar, 10, 0);
   const grownSidebarBox = await boundingBox(sidebar);
   expect(grownSidebarBox.width).toBeGreaterThan(narrowedSidebarBox.width);
   expect(grownSidebarBox.width).toBeLessThanOrEqual(
@@ -90,7 +90,7 @@ test("resets and snap-collapses the upload panel from the split bar", async ({
   });
   const initialSidebarBox = await boundingBox(sidebar);
 
-  await dragFromCenter(page, splitBar, -120, 0);
+  await dragFromCenter(page, splitBar, -20, 0);
 
   const narrowedSidebarBox = await boundingBox(sidebar);
   expect(narrowedSidebarBox.width).toBeLessThan(initialSidebarBox.width);
@@ -120,7 +120,7 @@ test("resets and snap-collapses the upload panel from the split bar", async ({
   );
   await page.mouse.up();
 
-  await expect(page.getByRole("button", { name: "Show upload panel" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Show files" })).toBeVisible();
   await expect(splitBar).toHaveCount(0);
 });
 
@@ -211,10 +211,12 @@ test("focus rings use the same outline treatment", async ({ page }) => {
     page.getByRole("textbox", { name: "Edit markdown" }),
     page.getByRole("separator", { name: "Resize upload panel" }),
     page.getByRole("separator", { name: "Resize editor height" }),
-    page.getByRole("button", { name: "Hide upload panel" }),
-    page.getByRole("tab", { name: "Convert" }),
+    page.getByRole("button", { name: "Hide files" }),
+    page.getByRole("button", { name: "doc2md workspace" }),
   ];
 
+  // Inspect keyboard focus, not programmatic focus in pointer modality.
+  await page.keyboard.press("Tab");
   const outlines: Array<{ color: string; width: string }> = [];
   for (const surface of surfaces) {
     await surface.focus();

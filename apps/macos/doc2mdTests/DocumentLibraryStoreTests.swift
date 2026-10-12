@@ -17,6 +17,16 @@ final class DocumentLibraryStoreTests: XCTestCase {
         try? FileManager.default.removeItem(at: directory)
     }
 
+    func testRenameReplacesOldLibraryPath() throws {
+        let store = makeStore()
+        let oldURL = directory.appendingPathComponent("Before.md")
+        let newURL = directory.appendingPathComponent("After.md")
+        try store.record(url: oldURL)
+        try store.relocateExisting(from: oldURL, to: newURL)
+        let entries = try store.load()
+        XCTAssertEqual(entries.map(\.path), [newURL.path])
+    }
+
     func testRecordDeduplicatesStandardizedPathAndMovesNewestFirst() throws {
         let store = makeStore()
         let first = directory.appendingPathComponent("folder/../Alpha.md")

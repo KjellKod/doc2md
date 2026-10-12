@@ -9,6 +9,7 @@ import {
   TIMEOUT_MESSAGE,
 } from "../converters/messages";
 import { useFileConversion } from "./useFileConversion";
+import { entryDisplayName } from "../utils/displayName";
 
 const { convertFileMock } = vi.hoisted(() => ({
   convertFileMock: vi.fn(),
@@ -344,6 +345,41 @@ describe("useFileConversion", () => {
     expect(result.current.selectedEntry?.id).toBe(
       result.current.entries[2]?.id,
     );
+  });
+
+  it("renames imported JSON output without replacing its source or conversion metadata", async () => {
+    const source = createJsonFile("inventory.json", '{"items":[1,2,3]}');
+    const conversion = {
+      markdown: "# Inventory",
+      status: "warning" as const,
+      warnings: ["Review converted values"],
+      quality: { level: "review" as const, summary: "Review converted values" },
+    };
+    convertFileMock.mockResolvedValue(conversion);
+    const { result } = renderHook(() => useFileConversion());
+    act(() => result.current.addFiles([source]));
+    await waitFor(() => expect(result.current.entries[0]?.status).toBe("warning"));
+    const original = result.current.entries[0]!;
+
+    act(() => result.current.renameOutput(original.id, "Renamed.md"));
+
+    const renamed = result.current.entries[0]!;
+    expect(renamed).toEqual({ ...original, name: "Renamed.md", isScratch: false });
+    expect(renamed.file).toBe(source);
+    expect(renamed.format).toBe("json");
+    expect(renamed.quality).toBe(original.quality);
+  });
+
+  it("keeps an explicitly renamed scratch title after its heading changes", () => {
+    const { result } = renderHook(() => useFileConversion());
+    act(() => result.current.addScratchEntry());
+    const id = result.current.entries[0]!.id;
+    act(() => result.current.updateMarkdown(id, "# Heading"));
+    act(() => result.current.renameOutput(id, "Chosen.md"));
+    act(() => result.current.updateMarkdown(id, "# Different heading"));
+
+    expect(entryDisplayName(result.current.entries[0]!)).toBe("Chosen.md");
+    expect(result.current.entries[0]?.format).toBe("md");
   });
 
   it("reuses the lowest available untitled number after a scratch entry is saved", () => {

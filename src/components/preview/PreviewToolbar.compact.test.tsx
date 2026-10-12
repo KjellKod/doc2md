@@ -35,6 +35,24 @@ describe("PreviewToolbar render paths (P1)", () => {
     cleanup();
   });
 
+  it.each([false, true])("keeps one primary Markdown download in compact=%s", (compactToolbar) => {
+    const onSave = vi.fn();
+    render(<PreviewToolbar {...baseProps({ compactToolbar, outputMode: "download", onSave })} />);
+    const download = screen.getByRole("button", { name: "Download Markdown" });
+    expect(download).toHaveTextContent(compactToolbar ? "Download" : "Download .md");
+    expect(screen.queryByRole("button", { name: "Save document" })).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Ready to download");
+    fireEvent.click(download);
+    expect(onSave).toHaveBeenCalledTimes(1);
+    if (compactToolbar) {
+      fireEvent.click(screen.getByRole("button", { name: "More actions" }));
+      expect(screen.queryByRole("menuitem", { name: "Download Markdown" })).not.toBeInTheDocument();
+      expect(screen.getByRole("menuitem", { name: "Download HTML" })).toBeInTheDocument();
+    } else {
+      expect(screen.getByRole("button", { name: "Download HTML" })).toBeInTheDocument();
+    }
+  });
+
   describe("non-compact (desktop / bare shells, AC-P1c)", () => {
     it("renders the line-number checkbox outside the View mode group", () => {
       const onToggleLineNumbers = vi.fn();

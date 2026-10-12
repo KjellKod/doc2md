@@ -36,8 +36,7 @@ const { convertFileMock } = vi.hoisted(() => ({
 // constants used by the hosted web characterization spec at
 // tests/e2e/appshell-dedup-characterization.spec.ts.
 const BASELINE_PAGE_MAX_WIDTH_PX = "1680px";
-const BASELINE_DEFAULT_SIDEBAR_WIDTH_PX = "380px";
-const BASELINE_MIN_EDIT_SHELL_HEIGHT = 240;
+const BASELINE_DEFAULT_SIDEBAR_WIDTH_PX = "240px";
 
 afterEach(() => {
   delete window.doc2mdShell;
@@ -113,7 +112,7 @@ describe("AppShell dedup characterization (desktop)", () => {
     expect(document.body.classList.contains("is-height-resizing")).toBe(false);
   });
 
-  it("sidebar width and editor height styles round-trip through desktop resize controls", async () => {
+  it("sidebar width remains resizable while the native window owns editor height", async () => {
     const cleanupShell = installMockShell({
       openFile: async () => ({
         ok: true as const,
@@ -136,7 +135,9 @@ describe("AppShell dedup characterization (desktop)", () => {
       name: "Resize upload panel",
     });
     fireEvent.keyDown(splitBar, { key: "ArrowLeft" });
-    expect(workspace!.getAttribute("style")).toMatch(/^--sidebar-width: \d+px;$/);
+    expect(workspace!.getAttribute("style")).toMatch(
+      /^--sidebar-width: \d+px;$/,
+    );
     expect(workspace!.getAttribute("style")).not.toBe(
       `--sidebar-width: ${BASELINE_DEFAULT_SIDEBAR_WIDTH_PX};`,
     );
@@ -150,44 +151,30 @@ describe("AppShell dedup characterization (desktop)", () => {
 
     const previewPanel = document.querySelector(".preview-panel");
     expect(previewPanel).not.toBeNull();
-    const heightHandle = screen.getByRole("separator", {
-      name: "Resize editor height",
-    });
-    fireEvent.keyDown(heightHandle, { key: "ArrowDown" });
-    const resizedStyle = previewPanel!.getAttribute("style") ?? "";
-    expect(resizedStyle).toMatch(
-      /^--preview-panel-ceiling: \d+px; height: \d+px; min-height: \d+px;$/,
-    );
-    const heightMatch = resizedStyle.match(/ height: (\d+)px;/);
-    expect(heightMatch).not.toBeNull();
-    expect(Number(heightMatch![1])).toBeGreaterThanOrEqual(
-      BASELINE_MIN_EDIT_SHELL_HEIGHT,
-    );
-
-    fireEvent.keyDown(heightHandle, { key: "Home" });
     expect(previewPanel!.getAttribute("style")).toMatch(
       /^--preview-panel-ceiling: \d+px;$/,
     );
+    expect(document.querySelector(".app-shell-desktop")).not.toBeNull();
 
     cleanupShell();
   });
 
-  it("renders the view switcher with byte-identical landing meta string", () => {
+  it("keeps install access in the combined settings menu", () => {
     render(<DesktopApp />);
-    expect(screen.getByRole("tab", { name: "Convert" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
-    expect(screen.getByRole("tab", { name: "Install & Use" })).toHaveAttribute(
-      "aria-selected",
-      "false",
-    );
+    expect(document.querySelector(".combined-toolbar")).toBeInTheDocument();
     expect(
-      document.querySelector(".view-switcher-meta")?.textContent,
-    ).toBe("Start writing or open files");
+      screen.queryByRole("tab", { name: "Convert" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    const installLink = screen.getByRole("link", { name: "Install & Use" });
+    expect(installLink).toHaveAttribute("href", "https://github.com/KjellKod/doc2md/blob/main/INSTALL.md");
+    expect(installLink).toHaveAttribute("target", "_blank");
+    expect(installLink).toHaveAttribute("rel", "noopener noreferrer");
+    fireEvent.click(installLink);
+    expect(screen.getByRole("region", { name: "Workspace" })).toBeVisible();
   });
 
-  it("updates desktop view switcher meta from the same source state as the shell", async () => {
+  it("shows the opened document title in the combined toolbar", async () => {
     const cleanupShell = installMockShell({
       openFile: async () => ({
         ok: true as const,
@@ -203,13 +190,12 @@ describe("AppShell dedup characterization (desktop)", () => {
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
     await screen.findByRole("heading", { name: "Meta" });
 
-    expect(document.querySelector(".view-switcher-meta")?.textContent).toBe(
-      "1 converted file",
-    );
-    expect(document.querySelector("#view-tab-convert")).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
+    expect(
+      screen.getByRole("button", { name: /^Rename document:/ }),
+    ).toHaveTextContent("Meta.md");
+    expect(
+      document.querySelector(".view-switcher-meta"),
+    ).not.toBeInTheDocument();
 
     cleanupShell();
   });
@@ -341,10 +327,9 @@ describe("AppShell dedup characterization (desktop)", () => {
     expect(screen.getByRole("textbox", { name: "Edit markdown" })).toHaveValue(
       "# Browse",
     );
-    expect(screen.getByRole("button", { name: "Save document" })).toHaveAttribute(
-      "aria-keyshortcuts",
-      "Meta+S",
-    );
+    expect(
+      screen.getByRole("button", { name: "Save document" }),
+    ).toHaveAttribute("aria-keyshortcuts", "Meta+S");
 
     cleanupShell();
   });
@@ -354,11 +339,12 @@ describe("AppShell dedup characterization (desktop)", () => {
     convertFileMock.mockResolvedValue(createSuccessResult("# Imported"));
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () =>
-        new Response(new Blob(["hello world"], { type: "text/plain" }), {
-          status: 200,
-          headers: { "Content-Type": "text/plain" },
-        }),
+      vi.fn(
+        async () =>
+          new Response(new Blob(["hello world"], { type: "text/plain" }), {
+            status: 200,
+            headers: { "Content-Type": "text/plain" },
+          }),
       ),
     );
     const openFile = vi.fn(async () =>

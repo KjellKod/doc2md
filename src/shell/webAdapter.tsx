@@ -19,7 +19,6 @@ import type { DropZoneProps } from "../components/DropZone";
 import ThemeToggle from "../components/ThemeToggle";
 import type { WorkingModeBarProps } from "../components/WorkingModeBar";
 import { useFileConversion } from "../hooks/useFileConversion";
-import { useSaveState } from "../hooks/useSaveState";
 import type {
   AppShellCallbacks,
   AppShellFileListProps,
@@ -93,8 +92,8 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     selectEntry,
     selectedEntry,
     updateMarkdown,
+    renameOutput,
   } = useFileConversion();
-  const saveState = useSaveState();
   // Per-document view memory (panel height + edit caret/scroll), kept in an
   // in-memory map keyed by entry id — same lifetime model as entrySaveStates.
   // Survives document switches within a session; not persisted across reloads
@@ -107,7 +106,10 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
   const persistEditShellHeight = useCallback(
     (key: string, height: number | null) => {
       const existing = docViewStateRef.current.get(key) ?? {};
-      docViewStateRef.current.set(key, { ...existing, editShellHeight: height });
+      docViewStateRef.current.set(key, {
+        ...existing,
+        editShellHeight: height,
+      });
     },
     [],
   );
@@ -160,15 +162,11 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     resolveInitialEditShellHeight,
     onEditShellHeightChange: persistEditShellHeight,
   });
-  const activeEntryIdRef = useRef<string | null>(null);
-  const saveStateRef = useRef<SaveState>(saveState.state);
+  const downloadingEntryIdsRef = useRef(new Set<string>());
   const entriesRef = useRef<FileEntry[]>([]);
   const [checkedEntryIds, setCheckedEntryIds] = useState<Set<string>>(
     () => new Set(),
   );
-  const [pastePromotedEntryIds, setPastePromotedEntryIds] = useState<
-    Set<string>
-  >(() => new Set());
   const [entrySaveStates, setEntrySaveStates] = useState<
     Record<string, SaveState>
   >({});
@@ -180,12 +178,12 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     target: "editor";
   }>({ id: 0, target: "editor" });
   const [exportHtmlBusy, setExportHtmlBusy] = useState(false);
-  const [downloadMarkdownBusy, setDownloadMarkdownBusy] = useState(false);
 
   const selectedEntryId = selectedEntry?.id ?? null;
-  const hasWorkingEntry =
-    selectedEntry !== null &&
-    (!selectedEntry.isScratch || pastePromotedEntryIds.has(selectedEntry.id));
+  const hasWorkingEntry = selectedEntry !== null;
+  const currentSaveState = selectedEntryId
+    ? (entrySaveStates[selectedEntryId] ?? "saved")
+    : "saved";
   const isWorkingMode = hasWorkingEntry && !showLandingChrome;
 
   // Re-measure the editor height ceiling after the working-mode collapse (and
@@ -195,7 +193,8 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
   // value measured while the hero was still tall — the cramped-editor bug in
   // WebKit. Double rAF waits for the post-collapse layout to settle before
   // measuring rather than reading the in-flight frame.
-  const recomputeEditShellHeightCeiling = resize.recomputeEditShellHeightCeiling;
+  const recomputeEditShellHeightCeiling =
+    resize.recomputeEditShellHeightCeiling;
   useEffect(() => {
     if (!isWorkingMode) {
       return;
@@ -241,10 +240,7 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
       `${entries.length} ${pluralize(entries.length, "entry")} in session`
     );
   };
-  const heroSummary = buildSummary(
-    "Start writing or open files",
-    " open",
-  );
+  const heroSummary = buildSummary("Start writing or open files", " open");
   const fileSummary = buildSummary(
     "Converted files and drafts stay in this list.",
     "",
@@ -259,60 +255,26 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- prune-stale-keys
     setEntrySaveStates((current) =>
       Object.fromEntries(
-        Object.entries(current).filter(([entryId]) => liveEntryIds.has(entryId)),
+        Object.entries(current).filter(([entryId]) =>
+          liveEntryIds.has(entryId),
+        ),
       ),
     );
     setEntryLastSavedAt((current) =>
       Object.fromEntries(
-        Object.entries(current).filter(([entryId]) => liveEntryIds.has(entryId)),
+        Object.entries(current).filter(([entryId]) =>
+          liveEntryIds.has(entryId),
+        ),
       ),
     );
-    setPastePromotedEntryIds((current) => {
-      const liveScratchEntryIds = new Set(
-        entries.filter((entry) => entry.isScratch).map((entry) => entry.id),
-      );
-      const next = new Set(
-        Array.from(current).filter((entryId) =>
-          liveScratchEntryIds.has(entryId),
-        ),
-      );
-      const unchanged =
-        next.size === current.size &&
-        Array.from(next).every((entryId) => current.has(entryId));
-      return unchanged ? current : next;
-    });
   }, [entries]);
 
   useEffect(() => {
-    const previousEntryId = activeEntryIdRef.current;
-    if (previousEntryId === selectedEntryId) {
-      return;
-    }
-    const previousEntryStillExists =
-      previousEntryId &&
-      entriesRef.current.some((entry) => entry.id === previousEntryId);
-    if (previousEntryStillExists) {
-      setEntrySaveStates((current) => ({
-        ...current,
-        [previousEntryId]: saveStateRef.current,
-      }));
-    }
-    activeEntryIdRef.current = selectedEntryId;
-    saveState.restore(
-      selectedEntryId ? (entrySaveStates[selectedEntryId] ?? "saved") : "saved",
-    );
-  }, [entrySaveStates, saveState, selectedEntryId]);
-
-  useEffect(() => {
-    saveStateRef.current = saveState.state;
-  }, [saveState.state]);
-
-  useEffect(() => {
-    if (selectedEntryId !== null && !selectedEntry?.isScratch) {
+    if (selectedEntryId !== null) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- close-on-select
       setShowLandingChrome(false);
     }
-  }, [selectedEntry?.isScratch, selectedEntryId]);
+  }, [selectedEntryId]);
 
   const setEntrySaveState = useCallback(
     (entryId: string, nextState: SaveState) => {
@@ -320,11 +282,8 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
         ...current,
         [entryId]: nextState,
       }));
-      if (activeEntryIdRef.current === entryId) {
-        saveState.restore(nextState);
-      }
     },
-    [saveState],
+    [],
   );
 
   useEffect(() => {
@@ -352,17 +311,20 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     collapseSidebarOnPhoneSelect(Boolean(selectedEntry?.isScratch));
   }, [collapseSidebarOnPhoneSelect, selectedEntry?.isScratch, selectedEntryId]);
 
-  const toggleCheckedEntry = useCallback((entryId: string, checked: boolean) => {
-    setCheckedEntryIds((current) => {
-      const next = new Set(current);
-      if (checked) {
-        next.add(entryId);
-      } else {
-        next.delete(entryId);
-      }
-      return next;
-    });
-  }, []);
+  const toggleCheckedEntry = useCallback(
+    (entryId: string, checked: boolean) => {
+      setCheckedEntryIds((current) => {
+        const next = new Set(current);
+        if (checked) {
+          next.add(entryId);
+        } else {
+          next.delete(entryId);
+        }
+        return next;
+      });
+    },
+    [],
+  );
 
   const toggleAllChecked = useCallback(() => {
     setCheckedEntryIds((current) => {
@@ -375,7 +337,51 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     });
   }, [entries]);
 
-  const checkedTargets = entries.filter((entry) => checkedEntryIds.has(entry.id));
+  const checkedTargets = entries.filter((entry) =>
+    checkedEntryIds.has(entry.id),
+  );
+
+  const downloadMarkdownEntry = useCallback(
+    async (entry: FileEntry) => {
+      if (
+        !isDownloadableEntry(entry) ||
+        downloadingEntryIdsRef.current.has(entry.id)
+      ) {
+        return;
+      }
+      downloadingEntryIdsRef.current.add(entry.id);
+      const downloadedMarkdown = getEntryMarkdown(entry);
+      setEntrySaveState(entry.id, "saving");
+      try {
+        await afterNextPaint();
+        downloadEntry(entry);
+        await keepBusyStateVisible();
+        const liveEntry = entriesRef.current.find(
+          (item) => item.id === entry.id,
+        );
+        if (!liveEntry) {
+          return;
+        }
+        if (getEntryMarkdown(liveEntry) === downloadedMarkdown) {
+          setEntrySaveState(entry.id, "saved");
+          setEntryLastSavedAt((current) => ({
+            ...current,
+            [entry.id]: Date.now(),
+          }));
+        } else {
+          setEntrySaveState(entry.id, "edited");
+        }
+      } catch (error) {
+        if (entriesRef.current.some((item) => item.id === entry.id)) {
+          setEntrySaveState(entry.id, "edited");
+        }
+        console.error("doc2md hosted Markdown download failure", error);
+      } finally {
+        downloadingEntryIdsRef.current.delete(entry.id);
+      }
+    },
+    [setEntrySaveState],
+  );
 
   const handleDownload = useCallback(async () => {
     const targets =
@@ -388,12 +394,9 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     if (downloadableTargets.length === 0) {
       return;
     }
-    await afterNextPaint();
-    for (const entry of downloadableTargets) {
-      downloadEntry(entry);
-    }
+    await Promise.all(downloadableTargets.map(downloadMarkdownEntry));
     setCheckedEntryIds(new Set());
-  }, [checkedTargets, selectedEntry]);
+  }, [checkedTargets, downloadMarkdownEntry, selectedEntry]);
 
   const handleClear = useCallback(() => {
     const targets =
@@ -406,9 +409,22 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     if (targetIds.length === 0) {
       return;
     }
+    const hasUndownloadedChanges = targets.some(
+      (entry) =>
+        entrySaveStates[entry.id] === "edited" ||
+        entrySaveStates[entry.id] === "saving",
+    );
+    if (
+      hasUndownloadedChanges &&
+      !window.confirm(
+        "Discard changes that have not been downloaded? Clearing these files cannot be undone.",
+      )
+    ) {
+      return;
+    }
     clearEntriesById(targetIds);
     setCheckedEntryIds(new Set());
-  }, [checkedTargets, clearEntriesById, selectedEntry]);
+  }, [checkedTargets, clearEntriesById, entrySaveStates, selectedEntry]);
 
   const handleNewDocument = useCallback(() => {
     const entryId = addScratchEntry();
@@ -417,6 +433,7 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
       [entryId]: "saved",
     }));
     setActivePage("convert");
+    setShowLandingChrome(false);
     setEditorFocusRequest(({ id }) => ({ id: id + 1, target: "editor" }));
   }, [addScratchEntry]);
 
@@ -424,14 +441,6 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     if (!selectedEntry?.isScratch) {
       return;
     }
-    setPastePromotedEntryIds((current) => {
-      if (current.has(selectedEntry.id)) {
-        return current;
-      }
-      const next = new Set(current);
-      next.add(selectedEntry.id);
-      return next;
-    });
     setShowLandingChrome(false);
   }, [selectedEntry]);
 
@@ -469,59 +478,11 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     [addFiles],
   );
 
-  const handleSave = useCallback(async () => {
-    if (!isDownloadableEntry(selectedEntry)) {
-      return;
-    }
-    const entry = selectedEntry;
-    const savedMarkdown = getEntryMarkdown(entry);
-    setEntrySaveState(entry.id, "saving");
-
-    try {
-      await afterNextPaint();
-      downloadEntry(entry);
-      await keepBusyStateVisible();
-
-      const liveEntry = entriesRef.current.find(
-        (currentEntry) => currentEntry.id === entry.id,
-      );
-      if (!liveEntry) {
-        return;
-      }
-
-      const liveEntryMatchesSavedSnapshot =
-        getEntryMarkdown(liveEntry) === savedMarkdown;
-      if (liveEntryMatchesSavedSnapshot) {
-        setEntrySaveState(entry.id, "saved");
-        setEntryLastSavedAt((current) => ({
-          ...current,
-          [entry.id]: Date.now(),
-        }));
-        return;
-      }
-
-      setEntrySaveState(entry.id, "edited");
-    } catch (error) {
-      setEntrySaveState(entry.id, "edited");
-      console.error("doc2md hosted save failure", error);
-    }
-  }, [selectedEntry, setEntrySaveState]);
-
   const handleDownloadMarkdown = useCallback(async () => {
-    if (!isDownloadableEntry(selectedEntry) || downloadMarkdownBusy) {
-      return;
+    if (selectedEntry) {
+      await downloadMarkdownEntry(selectedEntry);
     }
-    setDownloadMarkdownBusy(true);
-    try {
-      await afterNextPaint();
-      downloadEntry(selectedEntry);
-      await keepBusyStateVisible();
-    } catch (error) {
-      console.error("doc2md hosted Markdown download failure", error);
-    } finally {
-      setDownloadMarkdownBusy(false);
-    }
-  }, [downloadMarkdownBusy, selectedEntry]);
+  }, [downloadMarkdownEntry, selectedEntry]);
 
   const handleExportHtml = useCallback(() => {
     if (!isDownloadableEntry(selectedEntry) || exportHtmlBusy) {
@@ -556,7 +517,7 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
 
   useEffect(() => {
     const dirty = Object.values(entrySaveStates).some(
-      (state) => state === "edited",
+      (state) => state === "edited" || state === "saving",
     );
     if (!dirty) {
       return;
@@ -570,11 +531,15 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [entrySaveStates]);
 
-  const saveButtonBusy = saveState.state === "saving";
-  const saveButtonDisabled = !isDownloadableEntry(selectedEntry) || saveButtonBusy;
+  const saveButtonBusy = currentSaveState === "saving";
+  const saveButtonDisabled =
+    !isDownloadableEntry(selectedEntry) || saveButtonBusy;
   const exportHtmlDisabled = !isDownloadableEntry(selectedEntry);
 
   const callbacks: AppShellCallbacks = {
+    onRenameDocument: (name) => {
+      if (selectedEntry) renameOutput(selectedEntry.id, name);
+    },
     onNewDocument: handleNewDocument,
     onReturnHome: handleReturnHome,
     onCollapseFromHero: handleCollapseFromHero,
@@ -583,16 +548,17 @@ export function useWebAppShellAdapter(): WebAppShellAdapter {
   };
 
   const previewPanelSaveProps: AppShellPreviewPanelSaveProps = {
-    saveState: saveState.state,
+    outputMode: "download",
+    saveState: currentSaveState,
     saveBusy: saveButtonBusy,
     saveDisabled: saveButtonDisabled,
     lastSavedAt: selectedEntry
       ? (entryLastSavedAt[selectedEntry.id] ?? null)
       : null,
-    onSave: handleSave,
+    onSave: handleDownloadMarkdown,
     onDownloadMarkdown: handleDownloadMarkdown,
     downloadMarkdownDisabled: !isDownloadableEntry(selectedEntry),
-    downloadMarkdownBusy,
+    downloadMarkdownBusy: saveButtonBusy,
     onExportHtml: handleExportHtml,
     exportHtmlBusy,
     exportHtmlDisabled,

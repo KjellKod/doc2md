@@ -8,7 +8,7 @@ const ONFLEET_INVENTORY =
 async function openHostedApp(page: Page) {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("./");
-  await expect(page.getByRole("heading", { name: "Upload" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Upload", exact: true })).toBeVisible();
 }
 
 function createGeneratedInventoryFixture() {
@@ -104,7 +104,7 @@ test.describe("large JSON responsiveness", () => {
     }, switchStarted);
     expect(switchElapsed).toBeLessThan(500);
 
-    const saveButton = page.getByRole("button", { name: "Save document" });
+    const saveButton = page.getByRole("button", { name: "Download Markdown" });
     const beforeSaveHeartbeat = await heartbeat(page);
     const saveDownloadPromise = page.waitForEvent("download");
     await saveButton.click();
@@ -113,24 +113,13 @@ test.describe("large JSON responsiveness", () => {
     await expect(saveButton).toHaveAttribute("aria-busy", "false");
     expect(await heartbeat(page)).toBeGreaterThan(beforeSaveHeartbeat);
 
-    const markdownButton = page.getByRole("button", {
-      name: "Download Markdown",
-    });
-    const beforeMarkdownHeartbeat = await heartbeat(page);
-    const markdownDownloadPromise = page.waitForEvent("download");
-    await markdownButton.click();
-    await expect(markdownButton).toHaveAttribute("aria-busy", "true");
-    await markdownDownloadPromise;
-    await expect(markdownButton).toHaveAttribute("aria-busy", "false");
-    expect(await heartbeat(page)).toBeGreaterThan(beforeMarkdownHeartbeat);
-
+    await page.getByRole("button", { name: "Settings", exact: true }).click();
     const htmlButton = page.getByRole("button", { name: "Download HTML" });
     const beforeHtmlHeartbeat = await heartbeat(page);
     const htmlDownloadPromise = page.waitForEvent("download");
     await htmlButton.click();
-    await expect(htmlButton).toHaveAttribute("aria-busy", "true");
     await htmlDownloadPromise;
-    await expect(htmlButton).toHaveAttribute("aria-busy", "false");
+    await expect(page.getByRole("dialog", { name: "Settings" })).toBeHidden();
     expect(await heartbeat(page)).toBeGreaterThan(beforeHtmlHeartbeat);
   });
 });

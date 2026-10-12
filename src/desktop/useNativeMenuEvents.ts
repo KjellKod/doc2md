@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: LicenseRef-doc2md-Desktop
 
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import type { ShellFile, ShellResult } from "../types/doc2mdShell";
 
 export const NATIVE_MENU_EVENTS = {
@@ -52,15 +52,10 @@ function notifyNativeShellReady() {
 export function useNativeMenuEvents(handlers: NativeMenuHandlers) {
   const handlersRef = useRef(handlers);
 
-  // Keep the ref pointing at the latest handlers without rebinding the
-  // window listeners below. eslint-plugin-react-hooks 7's `react-hooks/refs`
-  // rule rejects ref writes during render, so do the update after commit.
-  //
-  // This effect is declared before the listener-registration effect, so on
-  // first mount it runs first: the ref is current before the registration
-  // effect emits readiness and any native external-open event arrives. That
-  // closes the handler-ref freshness race (plan Risk 2 / arbiter backlog).
-  useEffect(() => {
+  // Refresh handlers during commit, before native events can observe the new
+  // document with callbacks from the previous render. A passive effect leaves
+  // Save/Save As briefly bound to stale conversion state or filenames.
+  useLayoutEffect(() => {
     handlersRef.current = handlers;
   });
 

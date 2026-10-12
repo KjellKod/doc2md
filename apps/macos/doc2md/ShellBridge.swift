@@ -18,6 +18,7 @@ enum DocumentOpenOrigin {
 final class ShellBridge: NSObject, WKScriptMessageHandler {
     private enum HandlerName {
         static let openFile = "doc2mdOpenFile"
+        static let renameFile = "doc2mdRenameFile"
         static let saveFile = "doc2mdSaveFile"
         static let saveFileAs = "doc2mdSaveFileAs"
         static let revealInFinder = "doc2mdRevealInFinder"
@@ -32,6 +33,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
         static let all = [
             openFile,
             saveFile,
+            renameFile,
             saveFileAs,
             revealInFinder,
             statFile,
@@ -158,6 +160,8 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
         switch messageName {
         case HandlerName.openFile:
             handleOpenFile(bridgeMessage)
+        case HandlerName.renameFile:
+            handleRenameFile(bridgeMessage)
         case HandlerName.saveFile:
             handleSaveFile(bridgeMessage)
         case HandlerName.saveFileAs:
@@ -324,6 +328,34 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
             importUrl: ImportHandoff.importURL(for: ticket.token),
             mimeType: ticket.mimeType
         )
+    }
+
+    private func handleRenameFile(_ message: BridgeMessage) {
+        do {
+            let args = try Self.decode(RenameFileArgs.self, from: message.args)
+            guard let knownURL = knownURLsByPath[Self.standardPath(args.path)] else {
+                throw FileStoreError.permissionNeeded(path: args.path, message: "Open the file again before renaming it.")
+            }
+            let result = try withSecurityScope(for: knownURL) {
+                try fileStore.rename(args: args, knownURL: knownURL)
+            }
+            let newURL = URL(fileURLWithPath: result.path)
+            knownURLsByPath.removeValue(forKey: Self.standardPath(args.path))
+            remember(url: newURL)
+            recordRecentDocumentIfEnabled(url: newURL, replacingPath: knownURL.standardizedFileURL.path)
+            // Keep previously recorded history valid even after a license expires.
+            // Renaming must not enroll documents excluded by session restore.
+            do {
+                try documentLibraryStore.relocateExisting(from: knownURL, to: newURL)
+            } catch {
+                #if DEBUG
+                print("ShellBridge failed to relocate document library entry: \(error.localizedDescription)")
+                #endif
+            }
+            resolve(id: message.id, result: ShellCallResult.save(result))
+        } catch {
+            resolve(id: message.id, result: Self.response(for: error))
+        }
     }
 
     private func handleSaveFile(_ message: BridgeMessage) {
@@ -615,9 +647,9 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
         return try operation()
     }
 
-    private func recordRecentDocumentIfEnabled(url: URL) {
+    private func recordRecentDocumentIfEnabled(url: URL, replacingPath: String? = nil) {
         do {
-            let settings = try persistenceStore.recordRecentDocument(url: url)
+            let settings = try persistenceStore.recordRecentDocument(url: url, replacingPath: replacingPath)
             if settings.persistenceEnabled {
                 let standardizedPath = url.standardizedFileURL.path
                 sessionSyncSuppressedPaths.remove(standardizedPath)
@@ -841,6 +873,7 @@ final class ShellBridge: NSObject, WKScriptMessageHandler {
     value: {
       version: 2,
       openFile: (args) => callShell("doc2mdOpenFile", args ?? null),
+      renameFile: (args) => callShell("doc2mdRenameFile", args),
       saveFile: (args) => callShell("doc2mdSaveFile", args),
       saveFileAs: (args) => callShell("doc2mdSaveFileAs", args),
       revealInFinder: (args) => callShell("doc2mdRevealInFinder", args),

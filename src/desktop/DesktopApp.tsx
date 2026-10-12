@@ -16,17 +16,23 @@ function DesktopAppContent() {
 
   return (
     <AppShell
+      appShellClassExtension="app-shell-desktop"
       activeResizeAxis={adapter.resize.activeResizeAxis}
       sidebarCollapsed={adapter.resize.sidebarCollapsed}
       previewPanelRef={adapter.resize.previewPanelRef}
       pageFrameStyle={adapter.resize.pageFrameStyle}
       workspaceStyle={adapter.resize.workspaceStyle}
-      previewPanelStyle={adapter.resize.previewPanelStyle}
+      previewPanelStyle={{
+        "--preview-panel-ceiling":
+          adapter.resize.previewPanelStyle["--preview-panel-ceiling"],
+      }}
       handleShowSidebar={adapter.resize.handleShowSidebar}
       handleCollapseSidebar={adapter.resize.handleCollapseSidebar}
       handleSidebarResizeStart={adapter.resize.handleSidebarResizeStart}
       handleSidebarResizeKeyDown={adapter.resize.handleSidebarResizeKeyDown}
-      handleSidebarResizeClickReset={adapter.resize.handleSidebarResizeClickReset}
+      handleSidebarResizeClickReset={
+        adapter.resize.handleSidebarResizeClickReset
+      }
       handleSidebarResizeMouseUp={adapter.resize.handleSidebarResizeMouseUp}
       handleSidebarResizeReset={adapter.resize.handleSidebarResizeReset}
       handleHeightResizeStart={adapter.resize.handleHeightResizeStart}
@@ -48,6 +54,10 @@ function DesktopAppContent() {
       callbacks={adapter.callbacks}
       workingModeBarProps={adapter.workingModeBarProps}
       heroActionsSlot={adapter.heroActionsSlot}
+      settingsContent={adapter.settingsContent}
+      settingsActions={adapter.settingsActions}
+      documentTitle={adapter.documentTitle}
+      renameDisabled={adapter.renameDisabled}
       dropZoneProps={adapter.dropZoneProps}
       fileListProps={adapter.fileListProps}
       desktopStatusSlot={adapter.desktopStatusSlot}

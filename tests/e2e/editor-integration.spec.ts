@@ -26,14 +26,14 @@ async function openExistingMarkdown(page: Page, name: string, body: string) {
   ]);
   // Sidebar auto-collapses on first file open; re-expand to access the
   // file list / preview heading reliably.
-  const showUpload = page.getByRole("button", { name: "Show upload panel" });
+  const showUpload = page.getByRole("button", { name: "Show files" });
   if (await showUpload.isVisible().catch(() => false)) {
     await showUpload.click();
   }
   // Wait for the preview to mount.
   await expect(
     page
-      .getByRole("region", { name: "View" })
+      .getByRole("region", { name: "Document", exact: true })
       .getByRole("heading")
       .first(),
   ).toBeVisible();
