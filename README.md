@@ -29,7 +29,7 @@ npm run dev
 
 Open `http://localhost:5173/` in your browser.
 
-The live site now includes an **Install & Use** tab for the package, tarball, and portable skill paths.
+Use **Settings → Install & Use** to open the external installation guide for the package, tarball, and portable skill paths. **About doc2md** opens a small dialog without replacing your document.
 
 Opening a document or choosing **Start writing** brings you into the working layout. Click the **doc2md** logo to return to the introduction without closing your documents.
 

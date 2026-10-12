@@ -74,8 +74,23 @@ async function ensureSidebarVisible() {
   }
 }
 
+const originalShowModal = Object.getOwnPropertyDescriptor(HTMLDialogElement.prototype, "showModal");
+
+// jsdom does not implement native modal activation or focus placement.
+function mockNativeDialog() {
+  Object.defineProperty(HTMLDialogElement.prototype, "showModal", {
+    configurable: true,
+    value(this: HTMLDialogElement) {
+      this.setAttribute("open", "");
+      this.querySelector<HTMLButtonElement>("button")?.focus();
+    },
+  });
+}
+
 describe("App", () => {
   afterEach(() => {
+    if (originalShowModal) Object.defineProperty(HTMLDialogElement.prototype, "showModal", originalShowModal);
+    else Reflect.deleteProperty(HTMLDialogElement.prototype, "showModal");
     vi.clearAllMocks();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
@@ -84,6 +99,7 @@ describe("App", () => {
   });
 
   it("opens directly into the workspace with preferences and product information in Settings", () => {
+    mockNativeDialog();
     render(<App />);
     expect(
       screen.getByRole("button", { name: "doc2md workspace" }),
@@ -108,7 +124,7 @@ describe("App", () => {
       "https://github.com/KjellKod/doc2md/blob/main/docs/using-doc2md-core.md",
     );
     expect(
-      screen.getByRole("link", { name: "Sponsor new features and bug fixes." }),
+      screen.getByRole("link", { name: "Sponsor doc2md" }),
     ).toHaveAttribute("href", "https://github.com/sponsors/KjellKod");
   });
 
@@ -794,72 +810,41 @@ describe("App", () => {
     expect(appearance).toHaveValue("dark");
   });
 
-  it("switches to the install view and shows the latest tarball link", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        filename: "doc2md-core-0.6.3.tgz",
-        version: "0.6.3",
-      }),
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
+  it("opens installation documentation externally without replacing the working draft", () => {
     render(<App />);
-
+    fireEvent.click(screen.getByRole("button", { name: "Start writing" }));
+    const editor = screen.getByRole("textbox", { name: "Edit markdown" });
+    fireEvent.change(editor, { target: { value: "# Keep this draft" } });
     fireEvent.click(screen.getByRole("button", { name: "Settings" }));
-    fireEvent.click(screen.getByRole("button", { name: "Install & Use" }));
-
-    expect(
-      await screen.findByRole("heading", {
-        name: "Install doc2md for CLI, automation, and agent workflows",
-      }),
-    ).toBeInTheDocument();
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringMatching(/latest-tarball\.json$/),
-      {
-        cache: "no-store",
-      },
-    );
-    expect(
-      await screen.findByRole("link", { name: /Download tarball/i }),
-    ).toHaveAttribute(
-      "href",
-      expect.stringMatching(/doc2md-core-0\.6\.3\.tgz$/),
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "doc2md workspace" }));
-
-    expect(screen.getByText("No files or drafts yet.")).toBeInTheDocument();
+    const link = screen.getByRole("link", { name: "Install & Use" });
+    expect(link).toHaveAttribute("href", "https://github.com/KjellKod/doc2md/blob/main/INSTALL.md");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    fireEvent.click(link);
+    expect(editor).toBeVisible();
+    expect(editor).toHaveValue("# Keep this draft");
+    expect(screen.getByRole("button", { name: "Edit" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByRole("region", { name: "Install & Use" })).not.toBeInTheDocument();
   });
 
-  it("keeps both named regions mounted and hides the inactive one", () => {
-    const { container } = render(<App />);
-
-    const convertPanel = container.querySelector("#view-panel-convert");
-    const installPanel = container.querySelector("#view-panel-install");
-
-    expect(convertPanel).toBeVisible();
-    expect(installPanel).toHaveAttribute("hidden");
-
-    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
-    fireEvent.click(screen.getByRole("button", { name: "Install & Use" }));
-
-    expect(container.querySelector("#view-panel-convert")).toHaveAttribute(
-      "hidden",
-    );
-    expect(
-      screen.getByRole("region", { name: "Install & Use" }),
-    ).toBeVisible();
-  });
-
-  it("opens About from Install without leaving it inside the hidden workspace", () => {
+  it("opens About above the working draft without changing the editor", async () => {
+    mockNativeDialog();
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
-    fireEvent.click(screen.getByRole("button", { name: "Install & Use" }));
-    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    fireEvent.click(screen.getByRole("button", { name: "Start writing" }));
+    const editor = screen.getByRole("textbox", { name: "Edit markdown" });
+    fireEvent.change(editor, { target: { value: "# Keep this draft" } });
+    const gear = screen.getByRole("button", { name: "Settings" });
+    fireEvent.click(gear);
     fireEvent.click(screen.getByRole("button", { name: "About doc2md" }));
-    expect(screen.getByRole("heading", { name: "Why this utility exists" })).toBeVisible();
-    expect(screen.getByRole("region", { name: "Workspace" })).toBeVisible();
+    const about = screen.getByRole("dialog", { name: "About doc2md" });
+    expect(about).toBeVisible();
+    await waitFor(() => expect(about.contains(document.activeElement)).toBe(true));
+    // Native Escape dismissal is covered in the browser test.
+    fireEvent(about, new Event("close"));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "About doc2md" })).not.toBeInTheDocument());
+    await waitFor(() => expect(gear).toHaveFocus());
+    expect(editor).toBeVisible();
+    expect(editor).toHaveValue("# Keep this draft");
   });
 
   it("opens Settings from the keyboard and returns focus with Escape", () => {

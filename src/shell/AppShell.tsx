@@ -26,11 +26,11 @@ import type {
   RefObject,
   SVGProps,
 } from "react";
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { FolderOpen, Plus, PanelLeft } from "lucide-react";
 import { useTheme } from "../hooks/useTheme";
 import RenameDocumentTitle from "../components/RenameDocumentTitle";
-import AboutSection from "../components/AboutSection";
+import AboutDialog from "../components/AboutDialog";
 import DropZone from "../components/DropZone";
 import type { DropZoneProps } from "../components/DropZone";
 import FileList from "../components/FileList";
@@ -273,6 +273,10 @@ export default function AppShell(props: AppShellProps) {
     null,
   );
   const [showAbout, setShowAbout] = useState(false);
+  useEffect(() => {
+    // Retain the workspace if a mounted older shell was on the retired page.
+    if (activePage === "install") onActivePageChange("convert");
+  }, [activePage, onActivePageChange]);
   const { theme, setTheme } = useTheme();
   const showSidebarTooltipId = useId();
   const hideSidebarTooltipId = useId();
@@ -360,21 +364,15 @@ export default function AppShell(props: AppShellProps) {
     <>
       {convertPageActive && props.settingsActions}
       <hr />
-      <button
-        type="button"
-        onClick={() =>
-          onActivePageChange(convertPageActive ? "install" : "convert")
-        }
+      <a
+        className="combined-settings-action"
+        href="https://github.com/KjellKod/doc2md/blob/main/INSTALL.md"
+        target="_blank"
+        rel="noopener noreferrer"
       >
-        {convertPageActive ? "Install & Use" : "Back to workspace"}
-      </button>
-      <button
-        type="button"
-        onClick={() => {
-          onActivePageChange("convert");
-          setShowAbout(true);
-        }}
-      >
+        Install &amp; Use
+      </a>
+      <button type="button" onClick={() => setShowAbout(true)}>
         About doc2md
       </button>
       <small aria-label="Current release version">
@@ -579,7 +577,6 @@ export default function AppShell(props: AppShellProps) {
               </section>
             </section>
 
-            {showAbout ? <AboutSection /> : null}
           </section>
 
           <section
@@ -592,6 +589,16 @@ export default function AppShell(props: AppShellProps) {
           </section>
         </div>
       </main>
+      {showAbout && (
+        <AboutDialog
+          onClose={() => {
+            setShowAbout(false);
+            toolbarTarget
+              ?.querySelector<HTMLButtonElement>('button[aria-label="Settings"]')
+              ?.focus();
+          }}
+        />
+      )}
     </div>
   );
 }

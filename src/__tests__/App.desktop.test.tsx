@@ -2400,11 +2400,10 @@ describe("App desktop bridge", () => {
     );
 
     openSettings();
-    fireEvent.click(screen.getByRole("button", { name: "Install & Use" }));
-    expect(
-      screen.getByRole("region", { name: "Install & Use" }),
-    ).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "doc2md workspace" }));
+    const installLink = screen.getByRole("link", { name: "Install & Use" });
+    expect(installLink).toHaveAttribute("target", "_blank");
+    fireEvent.click(installLink);
+    expect(screen.getByRole("region", { name: "Workspace" })).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: "Start writing" }));
     const editor = await screen.findByLabelText("Edit markdown");

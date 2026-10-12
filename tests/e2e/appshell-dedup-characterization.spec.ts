@@ -218,15 +218,21 @@ test("MIN_EDIT_SHELL_HEIGHT lower-bound clamp is enforced", async ({
   expect(clampedHeightPx).toBeGreaterThanOrEqual(BASELINE_MIN_EDIT_SHELL_HEIGHT);
 });
 
-test("Settings navigation switches between install and workspace panels", async ({ page }) => {
+test("Install & Use opens the guide externally and leaves the workspace visible", async ({ page, context }) => {
   await openHostedApp(page);
-  await expect(page.getByRole("region", { name: "Workspace" })).toBeVisible();
+  await context.route("https://github.com/KjellKod/doc2md/blob/main/INSTALL.md", route => route.fulfill({ contentType: "text/html", body: "<h1>Installation guide</h1>" }));
   await page.getByRole("button", { name: "Settings", exact: true }).click();
-  await page.getByRole("button", { name: "Install & Use", exact: true }).click();
-  await expect(page.getByRole("region", { name: "Install & Use" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Workspace" })).toBeHidden();
-  await page.getByRole("button", { name: "doc2md workspace" }).click();
+  const link = page.getByRole("link", { name: "Install & Use", exact: true });
+  await expect(link).toHaveAttribute("href", "https://github.com/KjellKod/doc2md/blob/main/INSTALL.md");
+  await expect(link).toHaveAttribute("target", "_blank");
+  await expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  const popupPromise = page.waitForEvent("popup");
+  await link.click();
+  const guide = await popupPromise;
+  await expect(guide).toHaveURL("https://github.com/KjellKod/doc2md/blob/main/INSTALL.md");
+  await guide.close();
   await expect(page.getByRole("region", { name: "Workspace" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Settings", exact: true })).toHaveCount(0);
 });
 
 test("working-mode chrome auto-collapses upload sidebar on first non-scratch open and stays manual after re-expand", async ({

@@ -2,7 +2,7 @@
 title: doc2md UX handoff and deferred decisions
 purpose: Preserve Impeccable setup, critique results, and the decisions needed to resume work.
 status: Approved scope complete; deferred decisions remain
-last_updated: 2026-10-11
+last_updated: 2026-10-12
 ---
 
 # doc2md UX handoff and deferred decisions
@@ -154,3 +154,9 @@ User explicitly approved production implementation and self-review. Shared combi
 ## October 11 final build and PR instruction
 
 The user requested full build/validation, self-review, independent Claude review, reasonable fixes, then a PR. That instruction supersedes the earlier local-only status above. B is implemented. Imported output renames preserve source metadata; native renames update existing library paths without changing enrollment. Download readiness text is removed, settings and disabled controls are accessible, and document commands hide on Install & Use. See the [final review record](history/combined-toolbar-review-2026-10-11.md) for final validation, review dispositions and known baseline Safari failures. The animation remains unchanged by explicit user decision.
+
+## October 12 Settings follow-up
+
+The user approved replacing internal Install & Use navigation with an external documentation link, and replacing below-workspace About content with a small dialog. Both actions preserve the document workspace. The About dialog shows version and project resources immediately, closes with Close/Escape, and returns focus to Settings. Installation documentation now links directly to release downloads rather than sending readers back to the removed internal tab.
+
+Validation: 1,019 unit tests passed; 31 focused Chromium cases and 10 mobile Chrome/Safari cases passed (3 existing desktop skips). Eight additional Chromium/WebKit checks covered the dialog in light/dark themes at desktop/phone widths. Lint completed with six existing warnings and no errors; typecheck and web/desktop shell builds passed. Native external-link routing was verified in the existing WKWebView delegate; native code was unchanged.

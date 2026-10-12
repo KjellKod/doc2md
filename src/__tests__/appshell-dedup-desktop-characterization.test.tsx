@@ -181,10 +181,12 @@ describe("AppShell dedup characterization (desktop)", () => {
       screen.queryByRole("tab", { name: "Convert" }),
     ).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Settings" }));
-    fireEvent.click(screen.getByRole("button", { name: "Install & Use" }));
-    expect(
-      screen.getByRole("region", { name: "Install & Use" }),
-    ).toBeVisible();
+    const installLink = screen.getByRole("link", { name: "Install & Use" });
+    expect(installLink).toHaveAttribute("href", "https://github.com/KjellKod/doc2md/blob/main/INSTALL.md");
+    expect(installLink).toHaveAttribute("target", "_blank");
+    expect(installLink).toHaveAttribute("rel", "noopener noreferrer");
+    fireEvent.click(installLink);
+    expect(screen.getByRole("region", { name: "Workspace" })).toBeVisible();
   });
 
   it("shows the opened document title in the combined toolbar", async () => {

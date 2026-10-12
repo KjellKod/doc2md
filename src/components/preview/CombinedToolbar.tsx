@@ -101,11 +101,11 @@ export default function CombinedToolbar(props: PreviewToolbarProps) {
   }
   function dismissSettingsCommand(event: MouseEvent<HTMLDivElement>) {
     const target = event.target;
-    const button = target instanceof Element ? target.closest("button") : null;
+    const command = target instanceof Element ? target.closest("button,a[href]") : null;
     if (
-      !button ||
-      button.disabled ||
-      button.hasAttribute("data-keep-settings-open")
+      !command ||
+      (command instanceof HTMLButtonElement && command.disabled) ||
+      command.hasAttribute("data-keep-settings-open")
     )
       return;
     setOpen(false);

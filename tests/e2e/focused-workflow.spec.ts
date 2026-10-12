@@ -57,11 +57,10 @@ test("a draft enters the workspace and downloads one clearly named Markdown copy
 
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page
-    .getByRole("button", { name: "Install & Use", exact: true })
+    .getByRole("button", { name: "About doc2md", exact: true })
     .click();
-  await page
-    .getByRole("button", { name: "doc2md workspace", exact: true })
-    .click();
+  await expect(page.getByRole("dialog", { name: "About doc2md" })).toBeVisible();
+  await page.keyboard.press("Escape");
   await expect(editor).toHaveValue(body);
 });
 

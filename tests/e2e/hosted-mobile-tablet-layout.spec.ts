@@ -332,34 +332,27 @@ test.describe("hosted mobile edit/view dominance (reproduce-first)", () => {
     await expectInViewport(editor, page);
   });
 
-  test("AC3 at 375px: About header is demoted vs desktop emphasis", async ({
-    page,
-  }) => {
-    // Honest fails-first invariant for AC3 (per arbiter finding arb-it1-2): the
-    // already-collapsed + below-the-panel placement is true on main, so it is
-    // NOT a reproduction. Instead we assert a *measurable demotion the fix
-    // introduces*: on hosted phones the About heading is rendered at a clearly
-    // smaller font size than its desktop emphasis. Pre-fix the phone heading is
-    // ~26.4px (no mobile treatment); this fails until the demotion rule lands.
+  test("About opens within the phone viewport and returns to the unchanged draft", async ({ page }) => {
     await page.setViewportSize(PHONE);
     await openHostedApp(page);
     await startDraftWithBody(page);
-
+    const editor = page.getByLabel("Edit markdown");
+    const draft = await editor.inputValue();
     await page.getByRole("button", { name: "Settings", exact: true }).click();
     await page.getByRole("button", { name: "About doc2md", exact: true }).click();
-    const aboutHeading = page.locator(".about-section .about-header h2");
-    await aboutHeading.scrollIntoViewIfNeeded();
-    const fontSize = await aboutHeading.evaluate(
-      (el) => Number.parseFloat(getComputedStyle(el).fontSize),
-    );
-    // Desktop emphasis is ~26.4px; demoted mobile heading must be <= 20px.
-    expect(fontSize).toBeLessThanOrEqual(20);
-
-    // The About section still sits below the preview panel (regression guard
-    // for the existing placement) and starts collapsed.
-    const aboutContent = page.locator("#about-content");
-    await expect(aboutContent).toBeHidden();
+    const about = page.getByRole("dialog", { name: "About doc2md" });
+    await expect(about).toBeVisible();
+    const box = await about.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.x).toBeGreaterThanOrEqual(0);
+    expect(box!.y).toBeGreaterThanOrEqual(0);
+    expect(box!.x + box!.width).toBeLessThanOrEqual(PHONE.width);
+    expect(box!.y + box!.height).toBeLessThanOrEqual(PHONE.height);
+    await about.getByRole("button", { name: "Close", exact: true }).click();
+    await expect(about).toHaveCount(0);
+    await expect(editor).toHaveValue(draft);
   });
+
 });
 
 test.describe("hosted mobile and tablet layout", () => {

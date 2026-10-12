@@ -38,24 +38,17 @@ test("download availability is quiet and initiation feedback is truthful", async
   expect(pillBox!.height).toBeGreaterThan(16);
 });
 
-test("in-session edit survives a tab switch within the same session", async ({
+test("in-session edit survives opening and closing About", async ({
   page,
 }) => {
   await openScratchEditor(page);
   const editor = page.getByLabel("Edit markdown");
   await editor.fill("draft body");
 
-  // Switch to Install & Use tab and back to Convert — content persists in
-  // React state. (Explicitly: this test does NOT cover reload-survival,
-  // which is deferred to doc2md-browser-crash-recovery.)
   await page.getByRole("button", { name: "Settings", exact: true }).click();
-  await page.getByRole("button", { name: "Install & Use", exact: true }).click();
-  await expect(page.getByRole("region", { name: "Install & Use" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Download Markdown" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: /^Rename document:/ })).toHaveCount(0);
-  await expect(page.getByRole("group", { name: "View mode" })).toHaveCount(0);
-  await page.getByRole("button", { name: "Settings", exact: true }).click();
-  await page.getByRole("button", { name: "Back to workspace", exact: true }).click();
+  await page.getByRole("button", { name: "About doc2md", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "About doc2md" })).toBeVisible();
+  await page.keyboard.press("Escape");
   await expect(page.getByRole("button", { name: "Edit", exact: true })).toHaveAttribute("aria-pressed", "true");
 
   await expect(editor).toHaveValue("draft body");

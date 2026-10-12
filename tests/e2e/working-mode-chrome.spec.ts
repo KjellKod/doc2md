@@ -28,28 +28,33 @@ test("opening a document keeps one combined toolbar and no introduction", async 
   await uploadViaLandingBrowse(page, "alpha.md", "# Alpha");
   await expect(page.locator(".combined-toolbar")).toHaveCount(1);
   await expect(page.locator(".hero h1")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Rename document" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Rename document:/ })).toBeVisible();
 });
 
-test("workspace logo preserves documents after visiting Install & Use", async ({ page }) => {
+test("About preserves the current document and restores Settings focus", async ({ page }) => {
   await openHostedApp(page);
   await uploadViaLandingBrowse(page, "alpha.md", "# Alpha");
   await page.getByRole("button", { name: "Settings", exact: true }).click();
-  await page.getByRole("button", { name: "Install & Use", exact: true }).click();
-  await expect(page.getByRole("region", { name: "Install & Use" })).toBeVisible();
-  await page.getByRole("button", { name: "doc2md workspace" }).click();
+  await page.getByRole("button", { name: "About doc2md", exact: true }).click();
+  const about = page.getByRole("dialog", { name: "About doc2md" });
+  await expect(about).toBeVisible();
+  await expect(about).toBeInViewport();
+  expect(await about.evaluate(element => element.contains(document.activeElement))).toBe(true);
+  await page.keyboard.press("Escape");
+  await expect(about).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Settings", exact: true })).toBeFocused();
   await expect(page.getByRole("heading", { name: "Alpha", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Show files" }).click();
   await expect(page.getByRole("button", { name: "Open alpha.md" })).toBeVisible();
 });
 
-test("workspace roundtrip preserves a manually expanded file list", async ({ page }) => {
+test("closing About preserves a manually expanded file list", async ({ page }) => {
   await openHostedApp(page);
   await uploadViaLandingBrowse(page, "alpha.md", "# Alpha");
   await page.getByRole("button", { name: "Show files" }).click();
   await page.getByRole("button", { name: "Settings", exact: true }).click();
-  await page.getByRole("button", { name: "Install & Use", exact: true }).click();
-  await page.getByRole("button", { name: "doc2md workspace" }).click();
+  await page.getByRole("button", { name: "About doc2md", exact: true }).click();
+  await page.getByRole("dialog", { name: "About doc2md" }).getByRole("button", { name: "Close", exact: true }).click();
   await uploadViaLandingBrowse(page, "beta.md", "# Beta");
   await expect(page.getByRole("button", { name: "Hide files" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Open beta.md" })).toBeVisible();
