@@ -134,6 +134,15 @@ export function replaceEntryWithMarkdown(
   };
 }
 
+/** Rename the output without changing the imported source or its preview safeguards. */
+export function renameEntryOutput(entry: FileEntry, name: string): FileEntry {
+  return {
+    ...entry,
+    name: basename(name),
+    isScratch: false,
+  };
+}
+
 export function renameEntryFile(entry: FileEntry, name: string): FileEntry {
   const content = entry.editedMarkdown ?? entry.markdown;
   const nextName = basename(name);

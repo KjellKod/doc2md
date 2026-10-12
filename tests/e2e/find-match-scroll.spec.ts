@@ -93,7 +93,7 @@ async function openFixtureInEditMode(page: Page) {
 
   // Auto-collapse moves the file list behind the rail; re-expand so the
   // editor is fully visible.
-  const showUpload = page.getByRole("button", { name: "Show upload panel" });
+  const showUpload = page.getByRole("button", { name: "Show files" });
   if (await showUpload.isVisible().catch(() => false)) {
     await showUpload.click();
   }

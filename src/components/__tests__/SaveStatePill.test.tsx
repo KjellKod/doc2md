@@ -9,6 +9,17 @@ describe("SaveStatePill", () => {
     cleanup();
   });
 
+  it.each<[SaveState, number | null, string]>([
+    ["saved", null, "Ready to download"],
+    ["saved", Date.now(), "Download started"],
+    ["edited", null, "Not downloaded"],
+    ["saving", null, "Preparing download"],
+  ])("describes browser output honestly for %s", (state, lastSavedAt, label) => {
+    render(<SaveStatePill state={state} lastSavedAt={lastSavedAt} outputMode="download" />);
+    expect(screen.getByRole("status")).toHaveTextContent(label);
+    expect(screen.getByRole("status")).not.toHaveTextContent(/saved|saving/i);
+  });
+
   it.each<[SaveState, string]>([
     ["saved", "Saved"],
     ["edited", "Unsaved"],

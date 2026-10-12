@@ -144,12 +144,20 @@ final class PersistenceStore {
         return Self.dedupedRecentFiles(nativeRecentFiles + settings.recentFiles)
     }
 
-    func recordRecentDocument(url: URL, now: Date = Date()) throws -> PersistenceSettings {
+    func recordRecentDocument(url: URL, now: Date = Date(), replacingPath: String? = nil) throws -> PersistenceSettings {
         var settings = load()
         guard settings.persistenceEnabled else {
             return .disabled
         }
 
+        if let replacingPath {
+            settings.recentFiles.removeAll { $0.path == replacingPath }
+            let remaining = recentDocumentController.recentDocumentURLs.filter { $0.standardizedFileURL.path != replacingPath }
+            recentDocumentController.clearRecentDocuments(nil)
+            for recentURL in remaining.reversed() {
+                recentDocumentController.noteNewRecentDocumentURL(recentURL)
+            }
+        }
         let recentFile = recentFile(for: url, now: now)
         settings.recentFiles = Self.dedupedRecentFiles([recentFile] + settings.recentFiles)
         try write(settings)

@@ -8,7 +8,7 @@ async function openScratchEditor(page: Page) {
   await expect(page.getByLabel("Edit markdown")).toBeFocused();
 }
 
-test("status pill flips to Unsaved on edit and to Saved with relative time on save", async ({
+test("download availability is quiet and initiation feedback is truthful", async ({
   page,
 }) => {
   await openScratchEditor(page);
@@ -17,16 +17,19 @@ test("status pill flips to Unsaved on edit and to Saved with relative time on sa
   const pill = page.locator(".save-state-pill");
 
   await editor.fill("# Hello");
-  await expect(pill).toHaveText("Unsaved");
+  await expect(pill).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Download Markdown" })).toBeEnabled();
 
-  // Trigger Save via the visible Save button (downloads the file).
+  // The primary output action explicitly downloads a Markdown copy.
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Save document" }).click();
+  await page.getByRole("button", { name: "Download Markdown" }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/\.md$/);
 
-  // After save, the pill renders "Saved · Ns ago".
-  await expect(pill).toHaveText(/^Saved · \d+s ago$/);
+  // Browser feedback confirms initiation, not a verified disk write.
+  await expect(pill).toHaveText(
+    "Download started",
+  );
 });
 
 test("in-session edit survives a tab switch within the same session", async ({
@@ -39,8 +42,15 @@ test("in-session edit survives a tab switch within the same session", async ({
   // Switch to Install & Use tab and back to Convert — content persists in
   // React state. (Explicitly: this test does NOT cover reload-survival,
   // which is deferred to doc2md-browser-crash-recovery.)
-  await page.getByRole("tab", { name: "Install & Use" }).click();
-  await page.getByRole("tab", { name: "Convert" }).click();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page.getByRole("button", { name: "Install & Use", exact: true }).click();
+  await expect(page.getByRole("tabpanel", { name: "Install & Use" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Download Markdown" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /^Rename document:/ })).toHaveCount(0);
+  await expect(page.getByRole("group", { name: "View mode" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page.getByRole("button", { name: "Back to workspace", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Edit", exact: true })).toHaveAttribute("aria-pressed", "true");
 
   await expect(editor).toHaveValue("draft body");
 });

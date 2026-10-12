@@ -106,6 +106,15 @@ describe("notice inventory release refs", () => {
     fs.mkdirSync(fakeXcodebuildDir, { recursive: true });
     fs.writeFileSync(path.join(fakeXcodebuildDir, "xcodebuild"), "#!/usr/bin/env bash\nexit 0\n");
     fs.chmodSync(path.join(fakeXcodebuildDir, "xcodebuild"), 0o755);
+    // Apple's /usr/bin/git resolves through xcrun and must not inherit the
+    // synthetic Xcode directory used only to pass the build's preflight.
+    if (process.platform === "darwin") {
+      fs.writeFileSync(
+        path.join(fakeXcodebuildDir, "git"),
+        '#!/bin/sh\nunset DEVELOPER_DIR\nexec /usr/bin/git "$@"\n',
+        { mode: 0o755 },
+      );
+    }
 
     const before = fs.readFileSync(NOTICES_PATH, "utf8");
     const result = spawnSync(
@@ -117,6 +126,7 @@ describe("notice inventory release refs", () => {
         env: {
           ...process.env,
           DEVELOPER_DIR: fakeDeveloperDir,
+          PATH: `${fakeXcodebuildDir}${path.delimiter}${process.env.PATH}`,
           DOC2MD_RELEASE_REF: "",
         },
       },

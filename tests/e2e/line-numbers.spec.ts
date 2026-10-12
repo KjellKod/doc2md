@@ -62,27 +62,24 @@ async function openMarkdownFiles(
       buffer: Buffer.from(markdown),
     })),
   );
-  const showUpload = page.getByRole("button", { name: "Show upload panel" });
+  const showUpload = page.getByRole("button", { name: "Show files" });
   if (await showUpload.isVisible().catch(() => false)) {
     await showUpload.click();
   }
 }
 
 async function showLineNumbers(page: Page) {
-  const desktopControl = page.getByRole("checkbox", {
-    name: "Line numbers",
-  });
-  if (await desktopControl.isVisible().catch(() => false)) {
-    await desktopControl.click();
-    return;
-  }
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page.getByRole("checkbox", { name: "Line numbers" }).check();
+  await page.keyboard.press("Escape");
+}
 
-  await page.getByRole("button", { name: "More actions" }).click();
-  const menuItem = page.getByRole("menuitemcheckbox", {
-    name: "Line numbers",
-  });
-  await expect(menuItem).toHaveAttribute("aria-checked", "false");
-  await menuItem.click();
+async function dayMode(page: Page) {
+  if (!await page.getByRole("dialog", { name: "Settings" }).isVisible()) {
+    await page.getByRole("button", { name: "Settings", exact: true }).click();
+  }
+  await page.getByRole("combobox", { name: "Appearance" }).selectOption("light");
+  await page.keyboard.press("Escape");
 }
 
 interface PaintedBox {
@@ -279,7 +276,7 @@ test("View renders original source markers without changing the accessibility tr
   const darkMarkerColor = darkColors.marker;
   expect(darkMarkerColor).not.toBe("rgba(0, 0, 0, 0)");
   expect(contrastRatio(darkColors.marker, "rgb(17, 21, 27)")).toBeGreaterThanOrEqual(4.5);
-  await page.getByRole("button", { name: "Day mode" }).click();
+  await dayMode(page);
   const lightColors = await surface.locator("h1").evaluate((element) => ({
     marker: getComputedStyle(element, "::before").color,
   }));
@@ -298,18 +295,20 @@ test("desktop checkbox toggles in both themes", async ({
     "Desktop checkbox semantics run once in desktop Chromium.",
   );
   await openMarkdown(page, "toggle.md", "# Toggle");
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
   const control = page.getByRole("checkbox", { name: "Line numbers" });
   await expect(control).toBeVisible();
   await expect(control).not.toBeChecked();
   await control.click();
   await expect(control).toBeChecked();
 
-  await page.getByRole("button", { name: "Day mode" }).click();
+  await dayMode(page);
   await expect
     .poll(() =>
       page.evaluate(() => document.documentElement.dataset.theme ?? "light"),
     )
     .toBe("light");
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
   await expect(control).toBeVisible();
   await expect(control).toBeChecked();
   await control.click();
@@ -524,7 +523,7 @@ test("Edit gutter stays aligned across 99 to 100 lines, scrolling, and resize", 
   expect(deltas.gutterScrollTop).toBe(deltas.textareaScrollTop);
 });
 
-test("large fenced JSON exposes no line-number control or markers", async ({
+test("large fenced JSON retains the preference without rendering line markers", async ({
   page,
 }, testInfo) => {
   test.skip(
@@ -542,9 +541,9 @@ test("large fenced JSON exposes no line-number control or markers", async ({
     await expect(page.getByTestId("large-json-preview")).toBeVisible({
       timeout: 30_000,
     });
-    await expect(
-      page.getByRole("checkbox", { name: "Line numbers" }),
-    ).toHaveCount(0);
+    await page.getByRole("button", { name: "Settings", exact: true }).click();
+    await page.getByRole("checkbox", { name: "Line numbers" }).check();
+    await page.keyboard.press("Escape");
     await expect(page.locator("[data-source-line-number]")).toHaveCount(0);
     await page.getByRole("button", { name: "Edit", exact: true }).click();
     await expect(page.locator(".markdown-line-number-gutter")).toHaveCount(0);
@@ -569,10 +568,15 @@ test("line-number preference follows modes and document switches", async ({
   await expect(page.locator('[data-source-line-number="1"]')).toBeVisible();
 
   await page.getByRole("button", { name: "LinkedIn", exact: true }).click();
-  await expect(page.getByRole("checkbox", { name: "Line numbers" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await expect(page.getByRole("checkbox", { name: "Line numbers" })).toBeChecked();
+  await expect(page.locator("[data-source-line-number]")).toHaveCount(0);
+  await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Open bravo.md" }).click();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
   const control = page.getByRole("checkbox", { name: "Line numbers" });
   await expect(control).toBeChecked();
+  await page.keyboard.press("Escape");
   await expect(page.locator('[data-source-line-number="1"]')).toBeVisible();
   await page.getByRole("button", { name: "Edit", exact: true }).click();
   await expect(page.locator(".markdown-line-number-gutter")).toBeVisible();
@@ -587,11 +591,11 @@ test("hosted phone exposes the checkable control without toolbar overflow", asyn
   );
   await page.setViewportSize({ width: 375, height: 800 });
   await openMarkdown(page, "phone.md", "# Phone\n\nParagraph");
-  const actions = page.locator(".preview-toolbar-actions");
+  const actions = page.locator(".combined-toolbar-controls");
   const surface = page.locator(".markdown-surface");
   const layout = await page.evaluate(() => {
     const actionBand = document.querySelector(
-      ".preview-toolbar-actions",
+      ".combined-toolbar-controls",
     ) as HTMLElement;
     const markdownSurface = document.querySelector(
       ".markdown-surface",
@@ -607,34 +611,18 @@ test("hosted phone exposes the checkable control without toolbar overflow", asyn
   await expect(actions).toBeVisible();
   await expect(surface).toBeVisible();
 
-  await page.getByRole("button", { name: "More actions" }).click();
-  const item = page.getByRole("menuitemcheckbox", { name: "Line numbers" });
-  await expect(item).toHaveAttribute("aria-checked", "false");
-  await expect(item.locator(".preview-overflow-check-slot svg")).toHaveCount(0);
-  await item.click();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  const item = page.getByRole("checkbox", { name: "Line numbers" });
+  await expect(item).not.toBeChecked();
+  await item.check();
+  await expect(item).toBeChecked();
+  await page.keyboard.press("Escape");
   await expect(page.locator('[data-source-line-number="1"]')).toBeVisible();
-  await page.getByRole("button", { name: "More actions" }).click();
-  const checkedItem = page.getByRole("menuitemcheckbox", {
-    name: "Line numbers",
-  });
-  await expect(checkedItem).toHaveAttribute("aria-checked", "true");
-  await expect(checkedItem.locator(".preview-overflow-check-slot svg")).toBeVisible();
-  const checkedBackground = await checkedItem.evaluate(
-    (element) => getComputedStyle(element).backgroundColor,
-  );
-  await checkedItem.hover();
-  await expect
-    .poll(() =>
-      checkedItem.evaluate((element) => getComputedStyle(element).backgroundColor),
-    )
-    .toBe(checkedBackground);
-  await page.mouse.move(0, 0);
-  await checkedItem.focus();
-  await expect
-    .poll(() =>
-      checkedItem.evaluate((element) => getComputedStyle(element).backgroundColor),
-    )
-    .toBe(checkedBackground);
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await expect(item).toBeChecked();
+  await item.uncheck();
+  await page.keyboard.press("Escape");
+  await expect(page.locator('[data-source-line-number="1"]')).toHaveCount(0);
 });
 
 test("virtualized table fallback keeps its row marker visible", async ({

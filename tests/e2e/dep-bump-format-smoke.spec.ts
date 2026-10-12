@@ -24,7 +24,7 @@ function readFixture(name: string): Buffer {
 async function openHostedApp(page: Page) {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("./");
-  await expect(page.getByRole("heading", { name: "Upload" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Upload", exact: true })).toBeVisible();
 }
 
 async function uploadFixture(
@@ -40,7 +40,7 @@ async function uploadFixture(
   // Upload triggers working-mode auto-collapse (PR #121); if the upload
   // panel collapses into a rail, re-expand it so the file-list buttons
   // remain locatable. Mirrors tests/e2e/hosted-browser-baseline.spec.ts.
-  const showUpload = page.getByRole("button", { name: "Show upload panel" });
+  const showUpload = page.getByRole("button", { name: "Show files" });
   await expect(showUpload).toBeVisible({ timeout: 15_000 });
   await showUpload.click();
   await expect(page.getByRole("heading", { name: "Files" })).toBeVisible();
@@ -70,7 +70,7 @@ test.describe("dep bump format smoke (PR #119)", () => {
 
     await openUploadedFile(page, "smoke-bump.md");
 
-    const preview = page.getByRole("region", { name: "View" });
+    const preview = page.getByRole("region", { name: "Document", exact: true });
     await expect(
       preview.getByRole("heading", { name: "Bump Smoke", level: 1 }),
     ).toBeVisible();
@@ -93,7 +93,7 @@ test.describe("dep bump format smoke (PR #119)", () => {
 
     // The unit-test smoke expects the converted markdown to contain
     // "Sample PDF"; that lives in the Preview region after conversion.
-    const preview = page.getByRole("region", { name: "View" });
+    const preview = page.getByRole("region", { name: "Document", exact: true });
     await expect(preview.getByText(/Sample PDF/i).first()).toBeVisible({
       timeout: 20_000,
     });
@@ -111,7 +111,7 @@ test.describe("dep bump format smoke (PR #119)", () => {
 
     await openUploadedFile(page, "sample.xlsx");
 
-    const preview = page.getByRole("region", { name: "View" });
+    const preview = page.getByRole("region", { name: "Document", exact: true });
     // Markers from src/__tests__/smoke.test.ts:130: per-sheet heading and
     // the Projects table header row.
     await expect(
@@ -134,7 +134,7 @@ test.describe("dep bump format smoke (PR #119)", () => {
 
     await openUploadedFile(page, "sample.docx");
 
-    const preview = page.getByRole("region", { name: "View" });
+    const preview = page.getByRole("region", { name: "Document", exact: true });
     // Marker from src/__tests__/smoke.test.ts:117: the Overview heading.
     await expect(
       preview.getByRole("heading", { name: /Overview/i, level: 1 }),
@@ -153,7 +153,7 @@ test.describe("dep bump format smoke (PR #119)", () => {
     await openUploadedFile(page, "find-target.md");
 
     // Wait for the preview to populate before opening Find.
-    const preview = page.getByRole("region", { name: "View" });
+    const preview = page.getByRole("region", { name: "Document", exact: true });
     await expect(preview.getByText(/Apple Banana Cherry/i)).toBeVisible();
 
     // PreviewPanel wires the find shortcut on window keydown.

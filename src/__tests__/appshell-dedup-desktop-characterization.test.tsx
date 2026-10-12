@@ -36,7 +36,7 @@ const { convertFileMock } = vi.hoisted(() => ({
 // constants used by the hosted web characterization spec at
 // tests/e2e/appshell-dedup-characterization.spec.ts.
 const BASELINE_PAGE_MAX_WIDTH_PX = "1680px";
-const BASELINE_DEFAULT_SIDEBAR_WIDTH_PX = "380px";
+const BASELINE_DEFAULT_SIDEBAR_WIDTH_PX = "240px";
 const BASELINE_MIN_EDIT_SHELL_HEIGHT = 240;
 
 afterEach(() => {
@@ -136,7 +136,9 @@ describe("AppShell dedup characterization (desktop)", () => {
       name: "Resize upload panel",
     });
     fireEvent.keyDown(splitBar, { key: "ArrowLeft" });
-    expect(workspace!.getAttribute("style")).toMatch(/^--sidebar-width: \d+px;$/);
+    expect(workspace!.getAttribute("style")).toMatch(
+      /^--sidebar-width: \d+px;$/,
+    );
     expect(workspace!.getAttribute("style")).not.toBe(
       `--sidebar-width: ${BASELINE_DEFAULT_SIDEBAR_WIDTH_PX};`,
     );
@@ -172,22 +174,20 @@ describe("AppShell dedup characterization (desktop)", () => {
     cleanupShell();
   });
 
-  it("renders the view switcher with byte-identical landing meta string", () => {
+  it("keeps install access in the combined settings menu", () => {
     render(<DesktopApp />);
-    expect(screen.getByRole("tab", { name: "Convert" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
-    expect(screen.getByRole("tab", { name: "Install & Use" })).toHaveAttribute(
-      "aria-selected",
-      "false",
-    );
+    expect(document.querySelector(".combined-toolbar")).toBeInTheDocument();
     expect(
-      document.querySelector(".view-switcher-meta")?.textContent,
-    ).toBe("Start writing or open files");
+      screen.queryByRole("tab", { name: "Convert" }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    fireEvent.click(screen.getByRole("button", { name: "Install & Use" }));
+    expect(
+      screen.getByRole("tabpanel", { name: "Install & Use" }),
+    ).toBeVisible();
   });
 
-  it("updates desktop view switcher meta from the same source state as the shell", async () => {
+  it("shows the opened document title in the combined toolbar", async () => {
     const cleanupShell = installMockShell({
       openFile: async () => ({
         ok: true as const,
@@ -203,13 +203,12 @@ describe("AppShell dedup characterization (desktop)", () => {
     window.dispatchEvent(new CustomEvent(NATIVE_MENU_EVENTS.open));
     await screen.findByRole("heading", { name: "Meta" });
 
-    expect(document.querySelector(".view-switcher-meta")?.textContent).toBe(
-      "1 converted file",
-    );
-    expect(document.querySelector("#view-tab-convert")).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
+    expect(
+      screen.getByRole("button", { name: /^Rename document:/ }),
+    ).toHaveTextContent("Meta.md");
+    expect(
+      document.querySelector(".view-switcher-meta"),
+    ).not.toBeInTheDocument();
 
     cleanupShell();
   });
@@ -341,10 +340,9 @@ describe("AppShell dedup characterization (desktop)", () => {
     expect(screen.getByRole("textbox", { name: "Edit markdown" })).toHaveValue(
       "# Browse",
     );
-    expect(screen.getByRole("button", { name: "Save document" })).toHaveAttribute(
-      "aria-keyshortcuts",
-      "Meta+S",
-    );
+    expect(
+      screen.getByRole("button", { name: "Save document" }),
+    ).toHaveAttribute("aria-keyshortcuts", "Meta+S");
 
     cleanupShell();
   });
@@ -354,11 +352,12 @@ describe("AppShell dedup characterization (desktop)", () => {
     convertFileMock.mockResolvedValue(createSuccessResult("# Imported"));
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () =>
-        new Response(new Blob(["hello world"], { type: "text/plain" }), {
-          status: 200,
-          headers: { "Content-Type": "text/plain" },
-        }),
+      vi.fn(
+        async () =>
+          new Response(new Blob(["hello world"], { type: "text/plain" }), {
+            status: 200,
+            headers: { "Content-Type": "text/plain" },
+          }),
       ),
     );
     const openFile = vi.fn(async () =>

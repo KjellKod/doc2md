@@ -44,6 +44,12 @@ struct ShellStatOk: Codable {
     let mtimeMs: Int64
 }
 
+struct RenameFileArgs: Codable {
+    let path: String
+    let name: String
+    let expectedMtimeMs: Int64
+}
+
 struct SaveFileArgs: Codable {
     let path: String
     let content: String
@@ -88,6 +94,41 @@ final class FileStore {
         } catch {
             throw Self.map(error: error, path: url.path)
         }
+    }
+
+    func rename(args: RenameFileArgs, knownURL: URL) throws -> ShellSaveOk {
+        guard ["md", "markdown"].contains(knownURL.pathExtension.lowercased()) else {
+            throw FileStoreError.error(message: "Only Markdown documents can be renamed.")
+        }
+        let name = args.name
+        let forbidden = CharacterSet.controlCharacters.union(CharacterSet(charactersIn: "/\\:"))
+        guard !name.unicodeScalars.contains(where: { forbidden.contains($0) }),
+              name == name.trimmingCharacters(in: .whitespacesAndNewlines),
+              name.lowercased().hasSuffix(".md"), name.count > 3,
+              name.utf8.count <= 255 else {
+            throw FileStoreError.error(message: "Choose a valid Markdown filename.")
+        }
+        let actualMtime = try modificationTimeMs(for: knownURL)
+        guard actualMtime == args.expectedMtimeMs else {
+            throw FileStoreError.conflict(path: knownURL.path, actualMtimeMs: actualMtime)
+        }
+        let target = knownURL.deletingLastPathComponent().appendingPathComponent(name)
+        if target.path != knownURL.path {
+            // RENAME_EXCL guarantees that a racing creator cannot be overwritten.
+            let result = knownURL.path.withCString { source in
+                target.path.withCString { destination in
+                    renamex_np(source, destination, UInt32(RENAME_EXCL))
+                }
+            }
+            if result != 0 {
+                if errno == EEXIST {
+                    throw FileStoreError.error(message: "A file with that name already exists.")
+                }
+                throw Self.map(error: NSError(domain: NSPOSIXErrorDomain, code: Int(errno)), path: knownURL.path)
+            }
+        }
+        // A rename preserves content and mtime, including unsaved editor changes.
+        return ShellSaveOk(ok: true, path: target.standardizedFileURL.path, mtimeMs: actualMtime)
     }
 
     func save(args: SaveFileArgs, knownURL: URL) throws -> ShellSaveOk {

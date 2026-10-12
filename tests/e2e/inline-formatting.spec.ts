@@ -59,27 +59,26 @@ test("Cmd-K inserts a link skeleton at the caret", async ({ page }) => {
 
 test("shortcut reference is reachable and dismisses with Escape", async ({
   page,
-  isMobile,
 }) => {
   await openScratchEditor(page);
   await openShortcutsReference(page);
 
-  const dialog = page.getByRole("dialog", { name: "Keyboard shortcuts" });
+  const dialog = page.getByRole("dialog", { name: "Settings" });
   await expect(dialog).toBeVisible();
   await expect(dialog).toContainText("Find");
   await expect(dialog).toContainText("Cmd/Ctrl+F");
   await expect(dialog).toContainText("Bold");
   await expect(dialog).toContainText("Cmd/Ctrl+B");
   await expect(dialog).toContainText("Italic");
-  await expect(dialog).toContainText("Cmd/Ctrl+I");
+  await expect(dialog).toContainText("B / I / K");
   await expect(dialog).toContainText("Link");
-  await expect(dialog).toContainText("Cmd/Ctrl+K");
-  await expect(dialog).toContainText("Ordered list");
+  await expect(dialog).toContainText("B / I / K");
+  await expect(dialog).toContainText("Ordered / Bulleted / Task list");
   await expect(dialog).toContainText("Cmd/Ctrl+Shift+7");
-  await expect(dialog).toContainText("Bulleted list");
-  await expect(dialog).toContainText("Cmd/Ctrl+Shift+8");
+  await expect(dialog).toContainText("Bulleted / Task list");
+  await expect(dialog).toContainText("7 / 8 / 9");
   await expect(dialog).toContainText("Task list");
-  await expect(dialog).toContainText("Cmd/Ctrl+Shift+9");
+  await expect(dialog).toContainText("7 / 8 / 9");
   await expect(dialog).toContainText("Close find or menu");
   await expect(dialog).toContainText("Escape");
   await expect(dialog).not.toContainText("Save document");
@@ -87,16 +86,7 @@ test("shortcut reference is reachable and dismisses with Escape", async ({
   await page.keyboard.press("Escape");
 
   await expect(dialog).toBeHidden();
-  // Focus-return-to-trigger is a desktop-toolbar a11y contract (the trigger is
-  // the persistent "Keyboard shortcuts" button). On hosted phones (P1) the
-  // trigger is an overflow-menu item that no longer exists once the popover
-  // opened, so the focus-return target is layout-specific — assert it only
-  // where the direct trigger persists.
-  if (!isMobile) {
-    await expect(
-      page.getByRole("button", { name: "Keyboard shortcuts" }),
-    ).toBeFocused();
-  }
+  await expect(page.getByRole("button", { name: "Settings", exact: true })).toBeFocused();
 });
 
 test("Cmd-Shift-8 toggles an unordered list across selected lines", async ({ page }) => {

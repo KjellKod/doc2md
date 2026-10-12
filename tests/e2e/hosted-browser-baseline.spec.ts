@@ -29,7 +29,7 @@ const files: MarkdownFixture[] = [
 
 async function openHostedApp(page: Page) {
   await page.goto("./");
-  await expect(page.getByRole("heading", { name: "Upload" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Upload", exact: true })).toBeVisible();
 }
 
 async function uploadMarkdownFiles(page: Page, fixtures: MarkdownFixture[]) {
@@ -49,7 +49,7 @@ async function uploadMarkdownFiles(page: Page, fixtures: MarkdownFixture[]) {
 
   // First file open triggers working-mode auto-collapse; re-expand so the
   // file-list buttons remain locatable for tests that interact with them.
-  const showUpload = page.getByRole("button", { name: "Show upload panel" });
+  const showUpload = page.getByRole("button", { name: "Show files" });
   if (
     await showUpload
       .waitFor({ state: "visible", timeout: 1500 })
@@ -68,7 +68,7 @@ async function uploadMarkdownFiles(page: Page, fixtures: MarkdownFixture[]) {
 async function expectPreviewHeading(page: Page, name: string) {
   await expect(
     page
-      .getByRole("region", { name: "View" })
+      .getByRole("region", { name: "Document", exact: true })
       .getByRole("heading", { name }),
   ).toBeVisible();
 }
@@ -115,7 +115,7 @@ test("loads hosted app regions and empty states", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Files", exact: true }),
   ).toBeVisible();
-  await expect(page.getByRole("heading", { name: "View" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Document" })).toBeVisible();
   await expect(
     page.getByText("No files or drafts yet.", { exact: true }),
   ).toBeVisible();
@@ -139,7 +139,7 @@ test("creates and edits a scratch draft", async ({ page }) => {
   await expect(editor).toHaveValue(
     "# Browser baseline draft\n\nPlaywright edits real focus.",
   );
-  await expect(page.getByRole("button", { name: "Save document" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Download Markdown" })).toBeEnabled();
   await expect(
     page.getByRole("button", { name: "Download active file" }),
   ).toBeEnabled();
@@ -485,8 +485,8 @@ test("keeps desktop working-mode layout characterized at 1280 and 1440", async (
   page,
 }) => {
   // AC5 regression shield: step-1 desktop geometry characterization.
-  // The hosted shell keeps 20px page padding on each side, sidebar width
-  // 380px, and an 8px split gutter at these widths.
+  // The combined shell fills the viewport with no page padding, sidebar width
+  // 240px, and an 8px split gutter at these widths.
   for (const viewport of [
     { width: 1280, height: 800 },
     { width: 1440, height: 900 },
@@ -509,8 +509,8 @@ test("keeps desktop working-mode layout characterized at 1280 and 1440", async (
 
     expect(sidebarBox).not.toBeNull();
     expect(previewBox).not.toBeNull();
-    const expectedWorkspaceWidth = viewport.width - 40;
-    const expectedSidebarWidth = 380;
+    const expectedWorkspaceWidth = viewport.width;
+    const expectedSidebarWidth = 240;
     const expectedGutterWidth = 8;
     const expectedPreviewWidth =
       expectedWorkspaceWidth - expectedSidebarWidth - expectedGutterWidth;
@@ -527,29 +527,16 @@ test("keeps desktop working-mode layout characterized at 1280 and 1440", async (
   }
 });
 
-test("keeps the LinkedIn tooltip inside a narrow viewport", async ({ page }) => {
+test("keeps action tooltips inside a narrow viewport", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 800 });
   await openHostedApp(page);
-  await uploadMarkdownFiles(page, [
-    {
-      name: "linkedin-tooltip.md",
-      body: "# LinkedIn tooltip\n\nToolbar tooltip should stay contained.",
-    },
-  ]);
-
-  await page.getByRole("button", { name: "LinkedIn", exact: true }).focus();
-
-  const tooltipRect = await page
-    .locator("#linkedin-toggle-tooltip")
-    .evaluate((element) => {
-      const rect = element.getBoundingClientRect();
-      return {
-        left: rect.left,
-        right: rect.right,
-      };
-    });
-
-  expect(tooltipRect.left).toBeGreaterThanOrEqual(0);
-  expect(tooltipRect.right).toBeLessThanOrEqual(375);
+  await uploadMarkdownFiles(page, [{ name: "tooltip.md", body: "# Tooltip" }]);
+  const button = page.getByRole("button", { name: "Open files", exact: true });
+  await button.focus();
+  const tooltip = button.getByRole("tooltip");
+  await expect(tooltip).toHaveCSS("opacity", "1");
+  const box = await tooltip.boundingBox();
+  expect(box!.x).toBeGreaterThanOrEqual(0);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(375);
   await expectNoHorizontalOverflow(page);
 });

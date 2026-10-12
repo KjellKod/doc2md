@@ -43,7 +43,9 @@ function changeFileInput(input: HTMLInputElement, files: File[]) {
 
 async function uploadConvertedFiles(container: HTMLElement, names: string[]) {
   convertFileMock.mockImplementation((file: File) =>
-    Promise.resolve(createSuccessResult(`# ${file.name.replace(/\.[^.]+$/u, "")}`)),
+    Promise.resolve(
+      createSuccessResult(`# ${file.name.replace(/\.[^.]+$/u, "")}`),
+    ),
   );
 
   const input = container.querySelector<HTMLInputElement>('input[type="file"]');
@@ -64,7 +66,9 @@ async function uploadConvertedFiles(container: HTMLElement, names: string[]) {
 }
 
 async function ensureSidebarVisible() {
-  const showButton = screen.queryByRole("button", { name: "Show upload panel" });
+  const showButton = screen.queryByRole("button", {
+    name: "Show upload panel",
+  });
   if (showButton) {
     fireEvent.click(showButton);
   }
@@ -100,40 +104,30 @@ describe("App", () => {
     cleanup();
   });
 
-  it("renders the core product promise", () => {
+  it("opens directly into the workspace with preferences and product information in Settings", () => {
     render(<App />);
-
     expect(
-      screen.getByRole("heading", {
+      screen.getByRole("button", { name: "doc2md workspace" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", {
         name: "Start writing or convert files to Markdown.",
       }),
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByText(/Privacy first\./),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Switch to day mode" }),
-    ).toBeInTheDocument();
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    expect(screen.getByRole("combobox", { name: "Appearance" })).toHaveValue(
+      "dark",
+    );
     expect(
       screen.getByLabelText("Current release version").textContent,
     ).toMatch(/^\d+\.\d+\.\d+(?:-dev)?$/);
+    fireEvent.click(screen.getByRole("button", { name: "About doc2md" }));
     expect(
-      screen.getByRole("link", {
-        name: /@doc2md\/core/i,
-      }),
+      screen.getByRole("link", { name: /@doc2md\/core/i }),
     ).toHaveAttribute(
       "href",
       "https://github.com/KjellKod/doc2md/blob/main/docs/using-doc2md-core.md",
     );
-    expect(
-      screen.getByText((_, element) => {
-        return (
-          element?.textContent ===
-          "Is doc2md useful? Sponsor new features and bug fixes."
-        );
-      }),
-    ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Sponsor new features and bug fixes." }),
     ).toHaveAttribute("href", "https://github.com/sponsors/KjellKod");
@@ -143,9 +137,7 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.getByText("No files or drafts yet.")).toBeInTheDocument();
-    expect(
-      screen.getByText("Nothing to preview yet."),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Nothing to preview yet.")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Start writing" }),
     ).toBeInTheDocument();
@@ -165,7 +157,7 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "Start writing" }));
 
     expect(
-      await screen.findByRole("button", { name: /untitled\.md/i }),
+      await screen.findByRole("button", { name: "Open Untitled.md" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("textbox", { name: "Edit markdown" }),
@@ -181,7 +173,7 @@ describe("App", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByRole("button", { name: /planning notes/i }),
+        screen.getByRole("button", { name: "Open Planning Notes" }),
       ).toBeInTheDocument();
       expect(
         screen.getByText("Draft is ready to preview and download."),
@@ -204,7 +196,9 @@ describe("App", () => {
     await uploadConvertedFiles(container, ["alpha.txt"]);
 
     expect(container.querySelector(".page")).toHaveClass("is-working-mode");
-    expect(screen.getByRole("button", { name: "Show intro and return to landing" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "doc2md workspace" }),
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole("heading", {
         name: "Start writing or convert files to Markdown.",
@@ -212,21 +206,23 @@ describe("App", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("keeps scratch entries on landing chrome", async () => {
+  it("opens scratch entries in the working layout", async () => {
     const { container } = render(<App />);
 
     fireEvent.click(screen.getByRole("button", { name: "Start writing" }));
 
     expect(
-      await screen.findByRole("button", { name: /untitled\.md/i }),
+      await screen.findByRole("button", { name: "Open Untitled.md" }),
     ).toBeInTheDocument();
-    expect(container.querySelector(".page")).not.toHaveClass("is-working-mode");
+    expect(container.querySelector(".page")).toHaveClass("is-working-mode");
     expect(
-      screen.getByRole("heading", {
+      screen.queryByRole("heading", {
         name: "Start writing or convert files to Markdown.",
       }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "doc2md workspace" }),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Show intro and return to landing" })).not.toBeInTheDocument();
   });
 
   it("promotes scratch entry to working mode after large paste", async () => {
@@ -248,49 +244,57 @@ describe("App", () => {
       }),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Show intro and return to landing" }),
+      screen.getByRole("button", { name: "doc2md workspace" }),
     ).toBeInTheDocument();
   });
 
-  it("returns Home without clearing entries and re-enters working mode on another hosted file", async () => {
+  it("keeps entries when returning to the workspace and opening another file", async () => {
     const { container } = render(<App />);
 
     await uploadConvertedFiles(container, ["alpha.txt"]);
-    fireEvent.click(screen.getByRole("button", { name: "Show intro and return to landing" }));
+    fireEvent.click(screen.getByRole("button", { name: "doc2md workspace" }));
 
-    expect(container.querySelector(".page")).not.toHaveClass("is-working-mode");
-    expect(screen.getByRole("button", { name: "Open alpha.txt" })).toBeInTheDocument();
+    expect(container.querySelector(".page")).toHaveClass("is-working-mode");
     expect(
-      screen.getByRole("heading", {
+      screen.getByRole("button", { name: "Open alpha.txt" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", {
         name: "Start writing or convert files to Markdown.",
       }),
-    ).toBeInTheDocument();
+    ).not.toBeInTheDocument();
 
-    const liftedInput = container.querySelectorAll<HTMLInputElement>(
-      'input[type="file"]',
-    )[0];
+    const liftedInput =
+      container.querySelectorAll<HTMLInputElement>('input[type="file"]')[0];
     convertFileMock.mockResolvedValueOnce(createSuccessResult("# Beta"));
     await act(async () => {
       changeFileInput(liftedInput, [createFile("beta.txt")]);
       await Promise.resolve();
     });
 
-    fireEvent.click(await screen.findByRole("button", { name: "Open beta.txt" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Open beta.txt" }),
+    );
     await screen.findByRole("heading", { name: "Beta" });
     expect(container.querySelector(".page")).toHaveClass("is-working-mode");
     await ensureSidebarVisible();
-    expect(screen.getByRole("button", { name: "Open alpha.txt" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Open beta.txt" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Open alpha.txt" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Open beta.txt" }),
+    ).toBeInTheDocument();
   });
 
-  it("keeps the upload panel expanded after a Home roundtrip and second hosted open", async () => {
+  it("keeps the upload panel expanded after returning to the workspace and opening a second file", async () => {
     convertFileMock.mockImplementation((file: File) =>
-      Promise.resolve(createSuccessResult(`# ${file.name.replace(/\.[^.]+$/u, "")}`)),
+      Promise.resolve(
+        createSuccessResult(`# ${file.name.replace(/\.[^.]+$/u, "")}`),
+      ),
     );
     const { container } = render(<App />);
-    let liftedInput = container.querySelectorAll<HTMLInputElement>(
-      'input[type="file"]',
-    )[0];
+    let liftedInput =
+      container.querySelectorAll<HTMLInputElement>('input[type="file"]')[0];
 
     changeFileInput(liftedInput, [createFile("alpha.txt")]);
 
@@ -299,21 +303,22 @@ describe("App", () => {
       screen.getByRole("button", { name: "Show upload panel" }),
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Show intro and return to landing" }));
+    fireEvent.click(screen.getByRole("button", { name: "doc2md workspace" }));
     fireEvent.click(screen.getByRole("button", { name: "Show upload panel" }));
     expect(
       screen.getByRole("button", { name: "Hide upload panel" }),
     ).toBeInTheDocument();
 
-    liftedInput = container.querySelectorAll<HTMLInputElement>(
-      'input[type="file"]',
-    )[0];
+    liftedInput =
+      container.querySelectorAll<HTMLInputElement>('input[type="file"]')[0];
     await act(async () => {
       changeFileInput(liftedInput, [createFile("beta.txt")]);
       await Promise.resolve();
     });
 
-    fireEvent.click(await screen.findByRole("button", { name: "Open beta.txt" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Open beta.txt" }),
+    );
     await screen.findByRole("heading", { name: "beta" });
     expect(container.querySelector(".page")).toHaveClass("is-working-mode");
     expect(
@@ -321,30 +326,24 @@ describe("App", () => {
     ).toBeInTheDocument();
   });
 
-  it("eyebrow toggle collapses landing back into working mode when an entry exists", async () => {
+  it("brand navigation preserves the current working document", async () => {
     const { container } = render(<App />);
 
     await uploadConvertedFiles(container, ["alpha.txt"]);
-    fireEvent.click(
-      screen.getByRole("button", { name: "Show intro and return to landing" }),
-    );
-    expect(container.querySelector(".page")).not.toHaveClass("is-working-mode");
+    fireEvent.click(screen.getByRole("button", { name: "doc2md workspace" }));
+    expect(container.querySelector(".page")).toHaveClass("is-working-mode");
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Hide intro and return to editor" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "doc2md workspace" }));
 
     expect(container.querySelector(".page")).toHaveClass("is-working-mode");
   });
 
-  it("eyebrow toggle is a no-op on landing when no non-scratch entry exists", () => {
+  it("brand navigation keeps the empty workspace ready for input", () => {
     const { container } = render(<App />);
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "doc2md, private markdown workspace" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "doc2md workspace" }));
 
-    expect(container.querySelector(".page")).not.toHaveClass("is-working-mode");
+    expect(container.querySelector(".app-shell")).toHaveClass("app-shell-combined");
   });
 
   it("collapses and expands the upload sidebar", () => {
@@ -353,9 +352,7 @@ describe("App", () => {
 
     expect(workspace).not.toHaveClass("sidebar-collapsed");
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Hide upload panel" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Hide upload panel" }));
 
     expect(workspace).toHaveClass("sidebar-collapsed");
     expect(
@@ -365,9 +362,7 @@ describe("App", () => {
       screen.queryByRole("button", { name: "Hide upload panel" }),
     ).not.toBeInTheDocument();
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Show upload panel" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Show upload panel" }));
 
     expect(workspace).not.toHaveClass("sidebar-collapsed");
     expect(
@@ -396,9 +391,11 @@ describe("App", () => {
     });
 
     const getSidebarWidth = () =>
-      Number(workspace!.style.getPropertyValue("--sidebar-width").replace("px", ""));
+      Number(
+        workspace!.style.getPropertyValue("--sidebar-width").replace("px", ""),
+      );
 
-    expect(getSidebarWidth()).toBe(380);
+    expect(getSidebarWidth()).toBe(240);
 
     fireEvent.mouseDown(splitBar, { clientX: 200 });
     fireEvent.mouseMove(window, { clientX: 80 });
@@ -419,7 +416,7 @@ describe("App", () => {
     expect(getSidebarWidth()).toBe(320);
 
     fireEvent.keyDown(splitBar, { key: "Home" });
-    expect(getSidebarWidth()).toBe(380);
+    expect(getSidebarWidth()).toBe(240);
   });
 
   it("resets and snap-collapses the upload panel from the split bar", () => {
@@ -439,7 +436,9 @@ describe("App", () => {
     });
 
     const getSidebarWidth = () =>
-      Number(workspace!.style.getPropertyValue("--sidebar-width").replace("px", ""));
+      Number(
+        workspace!.style.getPropertyValue("--sidebar-width").replace("px", ""),
+      );
 
     fireEvent.mouseDown(splitBar, { clientX: 200 });
     fireEvent.mouseMove(window, { clientX: 80 });
@@ -447,10 +446,10 @@ describe("App", () => {
     expect(getSidebarWidth()).toBe(260);
 
     fireEvent.doubleClick(splitBar);
-    expect(getSidebarWidth()).toBe(380);
+    expect(getSidebarWidth()).toBe(240);
 
     fireEvent.mouseDown(splitBar, { clientX: 200 });
-    fireEvent.mouseMove(window, { clientX: 80 });
+    fireEvent.mouseMove(window, { clientX: 220 });
     fireEvent.mouseUp(window);
     expect(getSidebarWidth()).toBe(260);
 
@@ -486,7 +485,9 @@ describe("App", () => {
     });
 
     const getSidebarWidth = () =>
-      Number(workspace!.style.getPropertyValue("--sidebar-width").replace("px", ""));
+      Number(
+        workspace!.style.getPropertyValue("--sidebar-width").replace("px", ""),
+      );
 
     fireEvent.mouseDown(splitBar, { clientX: 200 });
     fireEvent.mouseMove(window, { clientX: 80 });
@@ -523,7 +524,7 @@ describe("App", () => {
     fireEvent.mouseUp(window);
 
     expect(preview!.style.height).toBe("764px");
-    expect(workspace!.style.getPropertyValue("--sidebar-width")).toBe("380px");
+    expect(workspace!.style.getPropertyValue("--sidebar-width")).toBe("240px");
 
     fireEvent.keyDown(heightHandle, { key: "ArrowDown" });
     expect(preview!.style.height).toBe("796px");
@@ -664,7 +665,11 @@ describe("App", () => {
 
   it("clears checked files first and leaves row checkbox toggles separate from preview activation", async () => {
     const { container } = render(<App />);
-    await uploadConvertedFiles(container, ["alpha.txt", "beta.txt", "gamma.txt"]);
+    await uploadConvertedFiles(container, [
+      "alpha.txt",
+      "beta.txt",
+      "gamma.txt",
+    ]);
 
     expect(screen.getByRole("heading", { name: "alpha" })).toBeInTheDocument();
 
@@ -675,7 +680,9 @@ describe("App", () => {
       screen.getByRole("button", { name: "Clear selected files" }),
     ).toBeEnabled();
 
-    fireEvent.click(screen.getByRole("button", { name: "Clear selected files" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Clear selected files" }),
+    );
 
     expect(
       screen.queryByRole("button", { name: "Open beta.txt" }),
@@ -701,9 +708,9 @@ describe("App", () => {
 
     expect(betaCheckbox).toBeChecked();
     expect(screen.getByRole("heading", { name: "alpha" })).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Open alpha.txt" }),
-    ).toHaveClass("is-selected");
+    expect(screen.getByRole("button", { name: "Open alpha.txt" })).toHaveClass(
+      "is-selected",
+    );
     expect(
       screen.getByRole("button", { name: "Open beta.txt" }),
     ).not.toHaveClass("is-selected");
@@ -711,7 +718,11 @@ describe("App", () => {
 
   it("clears the active file when nothing is checked and selects the next file", async () => {
     const { container } = render(<App />);
-    await uploadConvertedFiles(container, ["alpha.txt", "beta.txt", "gamma.txt"]);
+    await uploadConvertedFiles(container, [
+      "alpha.txt",
+      "beta.txt",
+      "gamma.txt",
+    ]);
 
     fireEvent.click(screen.getByRole("button", { name: "Open beta.txt" }));
     await waitFor(() => {
@@ -724,30 +735,32 @@ describe("App", () => {
       screen.queryByRole("button", { name: "Open beta.txt" }),
     ).not.toBeInTheDocument();
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "gamma" })).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { name: "gamma" }),
+      ).toBeInTheDocument();
     });
   });
 
-  it("clears an edited active draft immediately without confirmation", async () => {
-    const confirmSpy = vi.spyOn(window, "confirm");
+  it("clears an edited active draft after discard confirmation", async () => {
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<App />);
 
     fireEvent.click(screen.getByRole("button", { name: "Start writing" }));
-    await screen.findByRole("button", { name: /untitled\.md/i });
+    await screen.findByRole("button", { name: "Open Untitled.md" });
     fireEvent.change(screen.getByRole("textbox", { name: "Edit markdown" }), {
       target: { value: "# Unsaved draft" },
     });
     await waitFor(() =>
       expect(
-        screen.getByRole("button", { name: /unsaved draft/i }),
+        screen.getByRole("button", { name: "Open Unsaved draft" }),
       ).toBeInTheDocument(),
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Clear active file" }));
 
-    expect(confirmSpy).not.toHaveBeenCalled();
+    expect(confirmSpy).toHaveBeenCalledTimes(1);
     expect(
-      screen.queryByRole("button", { name: /unsaved draft/i }),
+      screen.queryByRole("button", { name: "Open Unsaved draft" }),
     ).not.toBeInTheDocument();
     expect(screen.getByText("No files or drafts yet.")).toBeInTheDocument();
   });
@@ -779,8 +792,10 @@ describe("App", () => {
 
     await waitFor(() => {
       expect(clickedDownloads).toEqual(["beta.md"]);
+      expect(
+        screen.getByRole("checkbox", { name: "Select beta.txt" }),
+      ).not.toBeChecked();
     });
-    expect(screen.getByRole("checkbox", { name: "Select beta.txt" })).not.toBeChecked();
     expect(
       screen.getByRole("button", { name: "Download active file" }),
     ).toBeEnabled();
@@ -810,28 +825,17 @@ describe("App", () => {
     expect(beta).not.toBeChecked();
   });
 
-  it("toggles between day and night mode", () => {
+  it("toggles between day and night mode in Settings", () => {
     render(<App />);
-
-    const toggle = screen.getByRole("button", { name: "Switch to day mode" });
-
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    const appearance = screen.getByRole("combobox", { name: "Appearance" });
     expect(document.documentElement.dataset.theme).toBe("dark");
-
-    fireEvent.click(toggle);
-
+    fireEvent.change(appearance, { target: { value: "light" } });
     expect(document.documentElement.dataset.theme).toBeUndefined();
-    expect(
-      screen.getByRole("button", { name: "Switch to night mode" }),
-    ).toHaveAttribute("aria-pressed", "false");
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Switch to night mode" }),
-    );
-
+    expect(appearance).toHaveValue("light");
+    fireEvent.change(appearance, { target: { value: "dark" } });
     expect(document.documentElement.dataset.theme).toBe("dark");
-    expect(
-      screen.getByRole("button", { name: "Switch to day mode" }),
-    ).toHaveAttribute("aria-pressed", "true");
+    expect(appearance).toHaveValue("dark");
   });
 
   it("switches to the install view and shows the latest tarball link", async () => {
@@ -846,7 +850,8 @@ describe("App", () => {
 
     render(<App />);
 
-    fireEvent.click(screen.getByRole("tab", { name: "Install & Use" }));
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    fireEvent.click(screen.getByRole("button", { name: "Install & Use" }));
 
     expect(
       await screen.findByRole("heading", {
@@ -866,7 +871,7 @@ describe("App", () => {
       expect.stringMatching(/doc2md-core-0\.6\.3\.tgz$/),
     );
 
-    fireEvent.click(screen.getByRole("tab", { name: "Convert" }));
+    fireEvent.click(screen.getByRole("button", { name: "doc2md workspace" }));
 
     expect(screen.getByText("No files or drafts yet.")).toBeInTheDocument();
   });
@@ -880,31 +885,27 @@ describe("App", () => {
     expect(convertPanel).toBeVisible();
     expect(installPanel).toHaveAttribute("hidden");
 
-    fireEvent.click(screen.getByRole("tab", { name: "Install & Use" }));
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    fireEvent.click(screen.getByRole("button", { name: "Install & Use" }));
 
-    expect(container.querySelector("#view-panel-convert")).toHaveAttribute("hidden");
+    expect(container.querySelector("#view-panel-convert")).toHaveAttribute(
+      "hidden",
+    );
     expect(
       screen.getByRole("tabpanel", { name: "Install & Use" }),
     ).toBeVisible();
   });
 
-  it("switches tabs with arrow keys and moves focus to the active tab", () => {
+  it("opens Settings from the keyboard and returns focus with Escape", () => {
     render(<App />);
-
-    const convertTab = screen.getByRole("tab", { name: "Convert" });
-    const installTab = screen.getByRole("tab", { name: "Install & Use" });
-
-    convertTab.focus();
-    fireEvent.keyDown(convertTab, { key: "ArrowRight" });
-
-    expect(installTab).toHaveFocus();
-    expect(installTab).toHaveAttribute("aria-selected", "true");
-    expect(convertTab).toHaveAttribute("tabindex", "-1");
-
-    fireEvent.keyDown(installTab, { key: "ArrowLeft" });
-
-    expect(convertTab).toHaveFocus();
-    expect(convertTab).toHaveAttribute("aria-selected", "true");
-    expect(installTab).toHaveAttribute("tabindex", "-1");
+    const gear = screen.getByRole("button", { name: "Settings" });
+    gear.focus();
+    fireEvent.click(gear);
+    expect(screen.getByRole("combobox", { name: "Appearance" })).toHaveFocus();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(gear).toHaveFocus();
+    expect(
+      screen.queryByRole("dialog", { name: "Settings" }),
+    ).not.toBeInTheDocument();
   });
 });

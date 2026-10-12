@@ -26,7 +26,10 @@ import type {
   RefObject,
   SVGProps,
 } from "react";
-import { useId, useRef } from "react";
+import { useId, useState } from "react";
+import { FolderOpen, Plus, PanelLeft } from "lucide-react";
+import { useTheme } from "../hooks/useTheme";
+import RenameDocumentTitle from "../components/RenameDocumentTitle";
 import AboutSection from "../components/AboutSection";
 import DropZone from "../components/DropZone";
 import type { DropZoneProps } from "../components/DropZone";
@@ -34,15 +37,10 @@ import FileList from "../components/FileList";
 import InstallPage from "../components/InstallPage";
 import PreviewPanel from "../components/PreviewPanel";
 import type { EditorViewState } from "../components/PreviewPanel";
-import WorkingModeBar from "../components/WorkingModeBar";
 import type { WorkingModeBarProps } from "../components/WorkingModeBar";
 import type { FileEntry } from "../types";
 import type { SaveState } from "../types/saveState";
-import { entryDisplayName } from "../utils/displayName";
 import type { ResizeAxis } from "./useWorkspaceResize";
-
-const DISPLAY_VERSION = __DOC2MD_DISPLAY_VERSION__;
-const PAGES: PageView[] = ["convert", "install"];
 
 export type PageView = "convert" | "install";
 
@@ -65,6 +63,7 @@ export type AppShellFileListProps = {
 // adapter, and useSaveState for the web adapter. The shell mounts the
 // resulting state via these props; it does not own the state machine.
 export type AppShellPreviewPanelSaveProps = {
+  outputMode?: "save" | "download";
   saveState: SaveState;
   saveBusy: boolean;
   saveDisabled: boolean;
@@ -88,6 +87,7 @@ export type AppShellCallbacks = {
   onCollapseFromHero: () => void;
   onLargeMarkdownPaste: () => void;
   onMarkdownChange: (text: string) => void;
+  onRenameDocument?: (name: string) => void | Promise<void>;
 };
 
 export type AppShellProps = {
@@ -136,6 +136,10 @@ export type AppShellProps = {
   // desktop settings control). The shell renders the eyebrow toggle and
   // tagline; the adapter provides the hero-actions div contents.
   heroActionsSlot: ReactNode;
+  settingsContent?: ReactNode;
+  settingsActions?: ReactNode;
+  documentTitle?: string;
+  renameDisabled?: boolean;
 
   // Typed component props: AppShell owns the DropZone render while adapters
   // choose browser file input vs desktop native-open behavior.
@@ -246,8 +250,6 @@ export default function AppShell(props: AppShellProps) {
     handleHeightResizeMouseUp,
     handleHeightResizeReset,
     isWorkingMode,
-    hasWorkingEntry,
-    heroSummary,
     fileSummary,
     activePage,
     onActivePageChange,
@@ -258,65 +260,122 @@ export default function AppShell(props: AppShellProps) {
     previewPanelSaveProps,
     callbacks,
     workingModeBarProps,
-    heroActionsSlot,
     dropZoneProps,
     fileListProps,
     desktopStatusSlot,
     hiddenInputSlot,
     nativeMenuBridgeSlot,
-    heroClassExtension,
     appShellClassExtension,
-    installViewMetaText,
     compactToolbar,
   } = props;
 
-  const convertTabRef = useRef<HTMLButtonElement>(null);
-  const installTabRef = useRef<HTMLButtonElement>(null);
-  const eyebrowTooltipId = useId();
+  const [toolbarTarget, setToolbarTarget] = useState<HTMLDivElement | null>(
+    null,
+  );
+  const [showAbout, setShowAbout] = useState(false);
+  const { theme, setTheme } = useTheme();
   const showSidebarTooltipId = useId();
   const hideSidebarTooltipId = useId();
   const splitBarTooltipId = useId();
   const previewHeightTooltipId = useId();
   const convertPageActive = activePage === "convert";
-  const workingModeBarInertProps = { inert: !isWorkingMode || undefined };
-  const landingChromeInertProps = { inert: isWorkingMode || undefined };
-  const effectiveWorkspaceStyle: CSSProperties | undefined = sidebarCollapsed
-    ? undefined
-    : workspaceStyle;
-  const heroClassName = `hero${heroClassExtension ? ` ${heroClassExtension}` : ""}`;
-  const appShellClassName = `app-shell${isWorkingMode ? " app-shell-working-mode" : ""}${appShellClassExtension ? ` ${appShellClassExtension}` : ""}`;
-
-  const focusPageTab = (page: PageView) => {
-    const tab =
-      page === "convert" ? convertTabRef.current : installTabRef.current;
-    tab?.focus();
-  };
-
-  const handleViewTabKeyDown = (
-    event: KeyboardEvent<HTMLButtonElement>,
-    currentPage: PageView,
-  ) => {
-    const currentIndex = PAGES.indexOf(currentPage);
-    let nextPage: PageView | null = null;
-
-    if (event.key === "ArrowRight") {
-      nextPage = PAGES[(currentIndex + 1) % PAGES.length];
-    } else if (event.key === "ArrowLeft") {
-      nextPage = PAGES[(currentIndex - 1 + PAGES.length) % PAGES.length];
-    } else if (event.key === "Home") {
-      nextPage = PAGES[0];
-    } else if (event.key === "End") {
-      nextPage = PAGES[PAGES.length - 1];
-    }
-
-    if (!nextPage) {
-      return;
-    }
-
-    event.preventDefault();
-    onActivePageChange(nextPage);
-    focusPageTab(nextPage);
-  };
+  const effectiveWorkspaceStyle = sidebarCollapsed ? undefined : workspaceStyle;
+  const appShellClassName = `app-shell app-shell-combined${isWorkingMode ? " app-shell-working-mode" : ""}${appShellClassExtension ? ` ${appShellClassExtension}` : ""}`;
+  const toolbarStart = (
+    <>
+      <button
+        type="button"
+        className="combined-brand"
+        onClick={() => onActivePageChange("convert")}
+        aria-label="doc2md workspace"
+      >
+        doc2md
+      </button>
+      <button
+        type="button"
+        className="combined-icon instant-tooltip-anchor"
+        onClick={sidebarCollapsed ? handleShowSidebar : handleCollapseSidebar}
+        aria-label={sidebarCollapsed ? "Show files" : "Hide files"}
+        aria-expanded={!sidebarCollapsed}
+      >
+        <PanelLeft aria-hidden="true" />
+        <span role="tooltip" className="instant-tooltip">
+          {sidebarCollapsed ? "Show files" : "Hide files"}
+        </span>
+      </button>
+      <button
+        type="button"
+        className="combined-icon instant-tooltip-anchor"
+        onClick={() => void workingModeBarProps.onOpen()}
+        aria-label="Open files"
+      >
+        <FolderOpen aria-hidden="true" />
+        <span role="tooltip" className="instant-tooltip">
+          Open files
+        </span>
+      </button>
+      <button
+        type="button"
+        className="combined-icon instant-tooltip-anchor"
+        onClick={callbacks.onNewDocument}
+        aria-label="New document"
+      >
+        <Plus aria-hidden="true" />
+        <span role="tooltip" className="instant-tooltip">
+          New document
+        </span>
+      </button>
+      {convertPageActive && selectedEntry && callbacks.onRenameDocument ? (
+        <RenameDocumentTitle
+          key={selectedEntry.id}
+          name={
+            props.documentTitle ??
+            selectedEntry.name.replace(/\.[^.]+$/, "") + ".md"
+          }
+          onRename={callbacks.onRenameDocument}
+          disabled={props.renameDisabled}
+        />
+      ) : null}
+    </>
+  );
+  const settingsContent = (
+    <>
+      <label className="combined-settings-row">
+        Appearance{" "}
+        <select
+          aria-label="Appearance"
+          value={theme}
+          onChange={(event) =>
+            setTheme(event.target.value === "dark" ? "dark" : "light")
+          }
+        >
+          <option value="light">Day</option>
+          <option value="dark">Night</option>
+        </select>
+      </label>
+      {props.settingsContent}
+    </>
+  );
+  const settingsActions = (
+    <>
+      {convertPageActive && props.settingsActions}
+      <hr />
+      <button
+        type="button"
+        onClick={() =>
+          onActivePageChange(convertPageActive ? "install" : "convert")
+        }
+      >
+        {convertPageActive ? "Install & Use" : "Back to workspace"}
+      </button>
+      <button type="button" onClick={() => setShowAbout((value) => !value)}>
+        About doc2md
+      </button>
+      <small aria-label="Current release version">
+        {__DOC2MD_DISPLAY_VERSION__}
+      </small>
+    </>
+  );
 
   return (
     <div className={appShellClassName}>
@@ -326,115 +385,13 @@ export default function AppShell(props: AppShellProps) {
         style={pageFrameStyle}
       >
         <div className={`page${isWorkingMode ? " is-working-mode" : ""}`}>
-          <p className="page-version" aria-label="Current release version">
-            {DISPLAY_VERSION}
-          </p>
           {hiddenInputSlot}
-          <div aria-hidden={!isWorkingMode} {...workingModeBarInertProps}>
-            <WorkingModeBar {...workingModeBarProps} />
-          </div>
-          <header
-            className={heroClassName}
-            aria-hidden={isWorkingMode}
-            {...landingChromeInertProps}
-          >
-            <div className="hero-top">
-              <button
-                type="button"
-                className="eyebrow eyebrow-toggle instant-tooltip-anchor"
-                aria-label={
-                  hasWorkingEntry
-                    ? "Hide intro and return to editor"
-                    : "doc2md, private markdown workspace"
-                }
-                aria-disabled={!hasWorkingEntry}
-                aria-describedby={hasWorkingEntry ? eyebrowTooltipId : undefined}
-                onClick={callbacks.onCollapseFromHero}
-              >
-                <span className="eyebrow-brand">doc2md</span>
-                <span className="eyebrow-sep" aria-hidden="true"> - </span>
-                <span className="eyebrow-tagline">PRIVATE MARKDOWN WORKSPACE</span>
-                {hasWorkingEntry ? (
-                  <span
-                    id={eyebrowTooltipId}
-                    role="tooltip"
-                    className="instant-tooltip instant-tooltip--left"
-                  >
-                    Hide intro and return to editor
-                  </span>
-                ) : null}
-              </button>
-              <div className="hero-actions">{heroActionsSlot}</div>
-            </div>
-            <h1>
-              {"Start writing or convert files to "}
-              <br />
-              {"Markdown."}
-            </h1>
-            <p className="hero-copy">
-              Privacy first. Start with a blank draft, edit existing Markdown,
-              open files, or convert{" "}
-              <strong>.md</strong>, <strong>.txt</strong>,{" "}
-              <strong>.json</strong>, <strong>.csv</strong>,{" "}
-              <strong>.tsv</strong>, <strong>.html</strong>,{" "}
-              <strong>.docx</strong>, <strong>.xlsx</strong>,{" "}
-              <strong>.pdf</strong>, and <strong>.pptx</strong> files to
-              Markdown.
-            </p>
-          </header>
-
-          <div
-            className="view-switcher-row"
-            aria-hidden={isWorkingMode}
-            {...landingChromeInertProps}
-          >
-            <div
-              className="view-switcher"
-              role="tablist"
-              aria-label="doc2md views"
-            >
-              <button
-                id="view-tab-convert"
-                ref={convertTabRef}
-                type="button"
-                role="tab"
-                aria-selected={activePage === "convert"}
-                aria-controls="view-panel-convert"
-                tabIndex={activePage === "convert" ? 0 : -1}
-                className={`view-tab${activePage === "convert" ? " is-active" : ""}`}
-                onClick={() => onActivePageChange("convert")}
-                onKeyDown={(event) => handleViewTabKeyDown(event, "convert")}
-              >
-                Convert
-              </button>
-              <button
-                id="view-tab-install"
-                ref={installTabRef}
-                type="button"
-                role="tab"
-                aria-selected={activePage === "install"}
-                aria-controls="view-panel-install"
-                tabIndex={activePage === "install" ? 0 : -1}
-                className={`view-tab${activePage === "install" ? " is-active" : ""}`}
-                onClick={() => onActivePageChange("install")}
-                onKeyDown={(event) => handleViewTabKeyDown(event, "install")}
-              >
-                Install & Use
-              </button>
-            </div>
-            <span className="view-switcher-meta" aria-live="polite">
-              {convertPageActive
-                ? heroSummary
-                : (installViewMetaText ??
-                  "CLI, Node, and portable skill setup from one place")}
-            </span>
-          </div>
-
+          <div className="combined-toolbar-host" ref={setToolbarTarget} />
           <section
             id="view-panel-convert"
             className="view-panel"
             role="tabpanel"
-            aria-labelledby="view-tab-convert"
+            aria-label="Workspace"
             hidden={!convertPageActive}
           >
             {desktopStatusSlot}
@@ -487,8 +444,7 @@ export default function AppShell(props: AppShellProps) {
                     <div>
                       <h2 id="upload-title">Upload</h2>
                       <p className="panel-copy">
-                        Drop files, open files, or start writing
-                        from scratch.
+                        Drop files, open files, or start writing from scratch.
                       </p>
                     </div>
                     <button
@@ -555,24 +511,23 @@ export default function AppShell(props: AppShellProps) {
                     </span>
                   </>
                 ) : null}
-                <div className="panel-heading">
-                  <div>
-                    <h2 id="preview-title">View</h2>
-                    <p className="panel-copy">
-                      {selectedEntry
-                        ? entryDisplayName(selectedEntry)
-                        : "Markdown preview appears here."}
-                    </p>
-                  </div>
-                </div>
+                <h2 id="preview-title" className="visually-hidden">
+                  Document
+                </h2>
                 <PreviewPanel
                   entry={selectedEntry}
+                  toolbarTarget={toolbarTarget}
+                  documentControlsVisible={convertPageActive}
+                  toolbarStart={toolbarStart}
+                  settingsContent={settingsContent}
+                  settingsActions={settingsActions}
                   onStartWriting={callbacks.onNewDocument}
                   onNewDocument={callbacks.onNewDocument}
                   editorFocusRequest={editorFocusRequest}
                   getSavedEditorViewState={getSavedEditorViewState}
                   onEditorViewStateChange={onEditorViewStateChange}
                   onSave={previewPanelSaveProps.onSave}
+                  outputMode={previewPanelSaveProps.outputMode}
                   saveBusy={previewPanelSaveProps.saveBusy}
                   saveDisabled={previewPanelSaveProps.saveDisabled}
                   saveKeyShortcuts={previewPanelSaveProps.saveKeyShortcuts}
@@ -582,7 +537,9 @@ export default function AppShell(props: AppShellProps) {
                   downloadMarkdownDisabled={
                     previewPanelSaveProps.downloadMarkdownDisabled
                   }
-                  downloadMarkdownBusy={previewPanelSaveProps.downloadMarkdownBusy}
+                  downloadMarkdownBusy={
+                    previewPanelSaveProps.downloadMarkdownBusy
+                  }
                   onExportHtml={previewPanelSaveProps.onExportHtml}
                   exportHtmlBusy={previewPanelSaveProps.exportHtmlBusy}
                   exportHtmlDisabled={previewPanelSaveProps.exportHtmlDisabled}
@@ -617,14 +574,14 @@ export default function AppShell(props: AppShellProps) {
               </section>
             </section>
 
-            <AboutSection />
+            {showAbout ? <AboutSection /> : null}
           </section>
 
           <section
             id="view-panel-install"
             className="view-panel"
             role="tabpanel"
-            aria-labelledby="view-tab-install"
+            aria-label="Install & Use"
             hidden={convertPageActive}
           >
             <InstallPage active={!convertPageActive} />

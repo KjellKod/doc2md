@@ -42,7 +42,7 @@ vi.mock("../converters/browserConversion", () => ({
   convertFileForUi: convertFileMock,
 }));
 
-describe("App hosted save control", () => {
+describe("App hosted download control", () => {
   afterEach(() => {
     vi.clearAllMocks();
     vi.restoreAllMocks();
@@ -50,7 +50,7 @@ describe("App hosted save control", () => {
     cleanup();
   });
 
-  it("downloads through the hosted path and returns the pill to Saved", async () => {
+  it("downloads through the hosted path and reports that the download started", async () => {
     const createObjectURL = vi.fn(() => "blob:doc2md-test");
     const revokeObjectURL = vi.fn();
     Object.defineProperty(URL, "createObjectURL", {
@@ -73,16 +73,18 @@ describe("App hosted save control", () => {
     });
 
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent("Unsaved"),
+      expect(
+        screen.getByRole("button", { name: "Download Markdown" }),
+      ).toBeEnabled(),
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Save document" }));
+    fireEvent.click(screen.getByRole("button", { name: "Download Markdown" }));
 
-    expect(screen.getByRole("status")).toHaveTextContent("Saving");
+    expect(screen.getByRole("status")).toHaveTextContent("Preparing download");
     expect(createObjectURL).not.toHaveBeenCalled();
     await waitFor(() => expect(createObjectURL).toHaveBeenCalledTimes(1));
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent("Saved"),
+      expect(screen.getByRole("status")).toHaveTextContent("Download started"),
     );
   });
 
@@ -106,7 +108,9 @@ describe("App hosted save control", () => {
       animationFrameCallbacks.push(callback);
       return animationFrameCallbacks.length;
     });
-    vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => undefined);
+    vi.spyOn(window, "cancelAnimationFrame").mockImplementation(
+      () => undefined,
+    );
 
     render(<App />);
 
@@ -117,18 +121,22 @@ describe("App hosted save control", () => {
     });
 
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent("Unsaved"),
+      expect(
+        screen.getByRole("button", { name: "Download Markdown" }),
+      ).toBeEnabled(),
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Save document" }));
-    expect(screen.getByRole("status")).toHaveTextContent("Saving");
+    fireEvent.click(screen.getByRole("button", { name: "Download Markdown" }));
+    expect(screen.getByRole("status")).toHaveTextContent("Preparing download");
     expect(createObjectURL).not.toHaveBeenCalled();
 
     fireEvent.change(editor, {
       target: { value: "# Hosted\n\nChanged while saving." },
     });
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent("Unsaved"),
+      expect(
+        screen.getByRole("button", { name: "Download Markdown" }),
+      ).toBeEnabled(),
     );
 
     await act(async () => {
@@ -139,7 +147,9 @@ describe("App hosted save control", () => {
 
     await waitFor(() => expect(createObjectURL).toHaveBeenCalledTimes(1));
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent("Unsaved"),
+      expect(
+        screen.getByRole("button", { name: "Download Markdown" }),
+      ).toBeEnabled(),
     );
     expect(editor).toHaveValue("# Hosted\n\nChanged while saving.");
   });
@@ -171,11 +181,11 @@ describe("App hosted save control", () => {
     );
 
     let capturedDownloadName = "";
-    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(
-      function (this: HTMLAnchorElement) {
-        capturedDownloadName = this.download;
-      },
-    );
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
+      capturedDownloadName = this.download;
+    });
 
     render(<App />);
 
@@ -184,12 +194,12 @@ describe("App hosted save control", () => {
       target: { value: "# Exported\n\nFrom the browser." },
     });
 
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
     fireEvent.click(screen.getByRole("button", { name: "Download HTML" }));
 
-    expect(screen.getByRole("button", { name: "Download HTML" })).toHaveAttribute(
-      "aria-busy",
-      "true",
-    );
+    expect(
+      screen.queryByRole("dialog", { name: "Settings" }),
+    ).not.toBeInTheDocument();
     await waitFor(() =>
       expect(capturedTypes.some((type) => type?.startsWith("text/html"))).toBe(
         true,
@@ -203,7 +213,7 @@ describe("App hosted save control", () => {
     expect(capturedTypes[htmlBlobIndex]).toBe("text/html;charset=utf-8");
     expect(capturedContent[htmlBlobIndex]).toContain("<!DOCTYPE html>");
     expect(capturedContent[htmlBlobIndex]).toContain(
-      "<h1 id=\"exported\">Exported</h1>",
+      '<h1 id="exported">Exported</h1>',
     );
     expect(capturedDownloadName.endsWith(".html")).toBe(true);
   });
@@ -219,7 +229,7 @@ describe("App hosted save control", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Start writing" }));
     const saveButton = await screen.findByRole("button", {
-      name: "Save document",
+      name: "Download Markdown",
     });
 
     expect(saveButton).toBeDisabled();
@@ -250,12 +260,14 @@ describe("App hosted save control", () => {
     });
 
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent("Unsaved"),
+      expect(
+        screen.getByRole("button", { name: "Download Markdown" }),
+      ).toBeEnabled(),
     );
-    fireEvent.click(screen.getByRole("button", { name: "Save document" }));
-    expect(screen.getByRole("status")).toHaveTextContent("Saving");
+    fireEvent.click(screen.getByRole("button", { name: "Download Markdown" }));
+    expect(screen.getByRole("status")).toHaveTextContent("Preparing download");
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent("Saved"),
+      expect(screen.getByRole("status")).toHaveTextContent("Download started"),
     );
 
     fireEvent.click(screen.getByRole("button", { name: "View" }));
@@ -266,7 +278,9 @@ describe("App hosted save control", () => {
     fireEvent.click(taskCheckbox!);
 
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent("Unsaved"),
+      expect(
+        screen.getByRole("button", { name: "Download Markdown" }),
+      ).toBeEnabled(),
     );
   });
 
@@ -280,7 +294,9 @@ describe("App hosted save control", () => {
       target: { value: "# Keep me" },
     });
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent("Unsaved"),
+      expect(
+        screen.getByRole("button", { name: "Download Markdown" }),
+      ).toBeEnabled(),
     );
 
     fireEvent.click(screen.getByRole("button", { name: "New document" }));
@@ -289,7 +305,9 @@ describe("App hosted save control", () => {
     await waitFor(() => expect(document.activeElement).toBe(editor));
     expect(confirmSpy).not.toHaveBeenCalled();
     expect(editor).toHaveValue("");
-    expect(screen.getByRole("status")).toHaveTextContent("Saved");
+    expect(
+      screen.getByRole("button", { name: "Download Markdown" }),
+    ).toBeDisabled();
     expect(screen.getAllByText("Keep me").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Untitled 2.md").length).toBeGreaterThan(0);
 
@@ -298,7 +316,9 @@ describe("App hosted save control", () => {
 
     expect(screen.getByLabelText("Edit markdown")).toHaveValue("# Keep me");
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent("Unsaved"),
+      expect(
+        screen.getByRole("button", { name: "Download Markdown" }),
+      ).toBeEnabled(),
     );
   });
 
@@ -312,7 +332,9 @@ describe("App hosted save control", () => {
       target: { value: "# Discard me" },
     });
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent("Unsaved"),
+      expect(
+        screen.getByRole("button", { name: "Download Markdown" }),
+      ).toBeEnabled(),
     );
 
     fireEvent.click(screen.getByRole("button", { name: "New document" }));
@@ -321,7 +343,9 @@ describe("App hosted save control", () => {
     await waitFor(() => expect(document.activeElement).toBe(editor));
     expect(confirmSpy).not.toHaveBeenCalled();
     expect(editor).toHaveValue("");
-    expect(screen.getByRole("status")).toHaveTextContent("Saved");
+    expect(
+      screen.getByRole("button", { name: "Download Markdown" }),
+    ).toBeDisabled();
   });
 
   it("does not expose Mac licensing, checkout, browser license storage, or issuer requests", () => {
@@ -337,10 +361,7 @@ describe("App hosted save control", () => {
       configurable: true,
       value: sendBeaconSpy,
     });
-    const localStorageSetItem = vi.spyOn(
-      Storage.prototype,
-      "setItem",
-    );
+    const localStorageSetItem = vi.spyOn(Storage.prototype, "setItem");
 
     render(<App />);
 
@@ -358,12 +379,13 @@ describe("App hosted save control", () => {
     expect(Object.keys(sessionStorage)).not.toEqual(
       expect.arrayContaining([expect.stringMatching(/license/i)]),
     );
-    expect(fetchSpy.mock.calls.map(([input]) => requestInputToURLString(input)))
-      .not.toEqual(
-        expect.arrayContaining([
-          expect.stringMatching(forbiddenHostedNetworkPattern),
-        ]),
-      );
+    expect(
+      fetchSpy.mock.calls.map(([input]) => requestInputToURLString(input)),
+    ).not.toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(forbiddenHostedNetworkPattern),
+      ]),
+    );
     expect(
       xhrOpenSpy.mock.calls.map(([, url]) => requestInputToURLString(url)),
     ).not.toEqual(

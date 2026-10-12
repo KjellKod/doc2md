@@ -28,6 +28,19 @@ final class PersistenceStoreTests: XCTestCase {
         try super.tearDownWithError()
     }
 
+    func testRenameReplacesStoredAndNativeRecentPaths() throws {
+        let recentController = TestRecentDocumentController()
+        let store = PersistenceStore(settingsURL: try makeSettingsURL(), recentDocumentController: recentController)
+        _ = try store.setPersistenceEnabled(true)
+        let oldURL = try makeFile(name: "Before.md")
+        let newURL = oldURL.deletingLastPathComponent().appendingPathComponent("After.md")
+        _ = try store.recordRecentDocument(url: oldURL)
+        _ = try store.recordRecentDocument(url: newURL, replacingPath: oldURL.path)
+        XCTAssertEqual(store.recentFiles().map(\.path), [newURL.path])
+        XCTAssertEqual(store.load().recentFiles.map(\.path), [newURL.path])
+        XCTAssertEqual(recentController.recentDocumentURLs, [newURL])
+    }
+
     func testLoadReturnsDisabledDefaultWhenMissingOrUnreadable() throws {
         let settingsURL = try makeSettingsURL()
         let store = PersistenceStore(settingsURL: settingsURL)

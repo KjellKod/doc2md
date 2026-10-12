@@ -1,6 +1,6 @@
 // AppShell dedup Phase 2 — hosted web characterization spec.
 //
-// Locks the byte-identical geometry baseline before the AppShell extraction.
+// Preserves resize contracts after AppShell extraction and the combined-toolbar redesign.
 // Tests assert string equality on specific CSS variable values, inline
 // style.width / style.height strings on the workspace and edit-shell, and
 // the body resize class attribute at deterministic breakpoints. Commit
@@ -9,26 +9,26 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { Buffer } from "node:buffer";
 
-// Baseline snapshot constants. Asserted byte-identical across pre- and
-// post-refactor `main`. Values picked at deterministic resize breakpoints
-// from the resize helpers in src/App.tsx (DEFAULT_SIDEBAR_WIDTH=380,
+// Baseline constants updated for the approved 240px sidebar. Other resize
+// invariants remain unchanged. Values picked at deterministic resize breakpoints
+// from the resize helpers in src/App.tsx (DEFAULT_SIDEBAR_WIDTH=240,
 // BASE_PAGE_MAX_WIDTH=1680, SIDEBAR_COLLAPSE_WIDTH=56,
 // MIN_EDIT_SHELL_HEIGHT=240).
 const BASELINE_PAGE_MAX_WIDTH_PX = "1680px";
-const BASELINE_DEFAULT_SIDEBAR_WIDTH_PX = "380px";
+const BASELINE_DEFAULT_SIDEBAR_WIDTH_PX = "240px";
 const BASELINE_MIN_EDIT_SHELL_HEIGHT = 240;
 const BASELINE_BODY_IDLE_CLASS_INCLUDES_RESIZING = false;
 
 async function openHostedApp(page: Page, height = 1200) {
   await page.setViewportSize({ width: 1440, height });
   await page.goto("./");
-  await expect(page.getByRole("heading", { name: "Upload" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Upload", exact: true })).toBeVisible();
 }
 
 async function uploadViaLandingBrowse(page: Page, name: string, body: string) {
   const fileChooserPromise = page.waitForEvent("filechooser");
   await page
-    .getByRole("button", { name: "browse from your device", exact: true })
+    .getByRole("button", { name: "Open files", exact: true })
     .click();
   const fileChooser = await fileChooserPromise;
   await fileChooser.setFiles([
@@ -126,7 +126,7 @@ test("sidebar drag updates --sidebar-width inline string and round-trips on rese
   );
   await page.mouse.down();
   await page.mouse.move(
-    splitBarBox.x + splitBarBox.width / 2 - 80,
+    splitBarBox.x + splitBarBox.width / 2 - 20,
     splitBarBox.y + splitBarBox.height / 2,
   );
   await page.mouse.up();
@@ -218,28 +218,15 @@ test("MIN_EDIT_SHELL_HEIGHT lower-bound clamp is enforced", async ({
   expect(clampedHeightPx).toBeGreaterThanOrEqual(BASELINE_MIN_EDIT_SHELL_HEIGHT);
 });
 
-test("view switcher tabs reflect aria-selected and view-switcher-meta text matches landing summary", async ({
-  page,
-}) => {
+test("Settings navigation switches between install and workspace panels", async ({ page }) => {
   await openHostedApp(page);
-
-  const convertTab = page.getByRole("tab", { name: "Convert" });
-  const installTab = page.getByRole("tab", { name: "Install & Use" });
-
-  await expect(convertTab).toHaveAttribute("aria-selected", "true");
-  await expect(installTab).toHaveAttribute("aria-selected", "false");
-
-  // Landing meta string is the empty-state buildSummary text. Asserted
-  // byte-identical here, matching the buildSummary call at App.tsx:270.
-  await expect(page.locator(".view-switcher-meta")).toHaveText(
-    "Start writing or open files",
-  );
-
-  await installTab.click();
-  await expect(installTab).toHaveAttribute("aria-selected", "true");
-  await expect(page.locator(".view-switcher-meta")).toHaveText(
-    "CLI, Node, and portable skill setup from one place",
-  );
+  await expect(page.getByRole("tabpanel", { name: "Workspace" })).toBeVisible();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page.getByRole("button", { name: "Install & Use", exact: true }).click();
+  await expect(page.getByRole("tabpanel", { name: "Install & Use" })).toBeVisible();
+  await expect(page.getByRole("tabpanel", { name: "Workspace" })).toBeHidden();
+  await page.getByRole("button", { name: "doc2md workspace" }).click();
+  await expect(page.getByRole("tabpanel", { name: "Workspace" })).toBeVisible();
 });
 
 test("working-mode chrome auto-collapses upload sidebar on first non-scratch open and stays manual after re-expand", async ({
@@ -250,11 +237,11 @@ test("working-mode chrome auto-collapses upload sidebar on first non-scratch ope
 
   // First open should auto-collapse the sidebar into the rail.
   await expect(
-    page.getByRole("button", { name: "Show upload panel" }),
+    page.getByRole("button", { name: "Show files" }),
   ).toBeVisible();
 
   // Manually expand it.
-  await page.getByRole("button", { name: "Show upload panel" }).click();
+  await page.getByRole("button", { name: "Show files" }).click();
   await expect(page.locator(".sidebar-panel")).toBeVisible();
 
   // Open a second file: it must NOT auto-collapse again because the user
@@ -271,7 +258,7 @@ test("drop-zone browse button triggers hosted file chooser and adds the file", a
   await uploadViaLandingBrowse(page, "gamma.md", "# Gamma");
   // Auto-collapse fires on first non-scratch open; expand again so the
   // file list is visible for the assertion below.
-  await page.getByRole("button", { name: "Show upload panel" }).click();
+  await page.getByRole("button", { name: "Show files" }).click();
   await expect(
     page.getByRole("button", { name: "Open gamma.md" }),
   ).toBeVisible();

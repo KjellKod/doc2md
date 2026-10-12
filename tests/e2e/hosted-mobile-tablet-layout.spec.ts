@@ -18,7 +18,7 @@ const VIEWPORT_EDGE_TOLERANCE_PX = 2;
 
 async function openHostedApp(page: Page) {
   await page.goto("./");
-  await expect(page.getByRole("heading", { name: "Upload" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Upload", exact: true })).toBeVisible();
 }
 
 async function expectNoHorizontalOverflow(page: Page) {
@@ -86,7 +86,7 @@ async function uploadMarkdownFile(
   // First upload auto-collapses the upload panel. Tests that need file-list
   // controls can opt back into the expanded state explicitly once the collapse
   // has completed.
-  const showUpload = page.getByRole("button", { name: "Show upload panel" });
+  const showUpload = page.getByRole("button", { name: "Show files" });
   if (options.expandUploadPanel) {
     await expect(showUpload).toBeVisible({ timeout: 15_000 });
     await showUpload.click();
@@ -104,7 +104,7 @@ async function expandCollapsedUploadPanel(page: Page) {
   // hiding the file row and flaking the row-visibility wait downstream.
   // Wait for the collapse to settle, then expand. Auto-collapse is one-shot,
   // so once expanded the panel stays expanded.
-  const showUpload = page.getByRole("button", { name: "Show upload panel" });
+  const showUpload = page.getByRole("button", { name: "Show files" });
   await expect(showUpload).toBeVisible({ timeout: 15_000 });
   await showUpload.click();
   await expect(page.getByRole("heading", { name: "Files" })).toBeVisible();
@@ -233,7 +233,7 @@ test.describe("hosted mobile edit/view dominance (reproduce-first)", () => {
     await openHostedApp(page);
     await startDraftWithBody(page);
 
-    const actions = page.locator(".preview-toolbar-actions");
+    const actions = page.locator(".combined-toolbar-controls");
     await expect(actions).toBeVisible();
 
     // At the repo's 320px min-width (global.css:92) the secondary controls plus
@@ -269,44 +269,33 @@ test.describe("hosted mobile edit/view dominance (reproduce-first)", () => {
     await expectNoHorizontalOverflow(page);
   });
 
-  test("P1 at 375px: preview toolbar is one band with demoted actions behind a More menu", async ({
+  test("at 375px: combined toolbar exposes actions and a single Settings panel", async ({
     page,
   }) => {
     await page.setViewportSize(PHONE);
     await openHostedApp(page);
     await startDraftWithBody(page);
 
-    // Primary controls stay inline (Edit/View/LinkedIn + Save).
+    // Primary controls stay inline (Edit/View/LinkedIn + Markdown download).
     await expect(page.getByRole("button", { name: "Edit", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "View", exact: true })).toBeVisible();
     await expect(
       page.getByRole("button", { name: "LinkedIn", exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Save document" }),
+      page.getByRole("button", { name: "Download Markdown" }),
     ).toBeVisible();
 
-    // Demoted actions are NOT top-level buttons; they live behind one "More"
-    // trigger (the single-band fold). New/Find are not directly visible.
-    const overflowTrigger = page.getByRole("button", { name: "More actions" });
-    await expect(overflowTrigger).toBeVisible();
+    await expect(page.getByRole("button", { name: "New document" })).toBeVisible();
+    const overflowTrigger = page.getByRole("button", { name: "Settings", exact: true });
     await expectTapTargetFloor(overflowTrigger);
-
     await overflowTrigger.click();
-    const menu = page.getByRole("menu", { name: "More actions" });
+    const menu = page.getByRole("dialog", { name: "Settings" });
     await expect(menu).toBeVisible();
-    await expect(
-      menu.getByRole("menuitem", { name: "New document" }),
-    ).toBeVisible();
-    await expect(
-      menu.getByRole("menuitem", { name: "Find and replace" }),
-    ).toBeVisible();
-    await expect(
-      menu.getByRole("menuitem", { name: "Download Markdown" }),
-    ).toBeVisible();
-    await expect(
-      menu.getByRole("menuitem", { name: "Keyboard shortcuts" }),
-    ).toBeVisible();
+    await expect(menu.getByRole("checkbox", { name: "Line numbers" })).toBeVisible();
+    await expect(menu.getByRole("combobox", { name: "Appearance" })).toBeVisible();
+    await expect(menu.getByRole("button", { name: "Download Markdown" })).toHaveCount(0);
+    await expect(menu.locator("summary", { hasText: "Keyboard shortcuts" })).toBeVisible();
 
     // Escape closes the menu and returns focus to the trigger (a11y, AC-P1b).
     await page.keyboard.press("Escape");
@@ -356,6 +345,8 @@ test.describe("hosted mobile edit/view dominance (reproduce-first)", () => {
     await openHostedApp(page);
     await startDraftWithBody(page);
 
+    await page.getByRole("button", { name: "Settings", exact: true }).click();
+    await page.getByRole("button", { name: "About doc2md", exact: true }).click();
     const aboutHeading = page.locator(".about-section .about-header h2");
     await aboutHeading.scrollIntoViewIfNeeded();
     const fontSize = await aboutHeading.evaluate(
@@ -401,8 +392,8 @@ test.describe("hosted mobile and tablet layout", () => {
     // (the bar is non-inert in working mode). Tapping it reopens the sidebar via
     // the same handleShowSidebar callback the rail used.
     const showUpload = page
-      .locator(".working-mode-bar")
-      .getByRole("button", { name: "Show upload panel" });
+      .locator(".combined-toolbar")
+      .getByRole("button", { name: "Show files" });
     await expect(showUpload).toBeVisible();
     await expectHorizontallyInViewport(showUpload, page);
     await showUpload.click();
@@ -443,18 +434,18 @@ test.describe("hosted mobile and tablet layout", () => {
     // Manually reopen Uploads (sets userTouchedSidebarRef → suppresses
     // collapse-on-select for the rest of the session).
     const showUpload = page
-      .locator(".working-mode-bar")
-      .getByRole("button", { name: "Show upload panel" });
+      .locator(".combined-toolbar")
+      .getByRole("button", { name: "Show files" });
     await expect(showUpload).toBeVisible();
     await showUpload.click();
     await expect(workspace).not.toHaveClass(/sidebar-collapsed/);
 
-    // The SAME control is now a "Hide upload panel" toggle (aria-expanded flips
+    // The SAME control is now a "Hide files" toggle (aria-expanded flips
     // to true). It must be reachable and re-collapse the workspace despite the
     // sticky userTouchedSidebarRef.
     const hideUpload = page
-      .locator(".working-mode-bar")
-      .getByRole("button", { name: "Hide upload panel" });
+      .locator(".combined-toolbar")
+      .getByRole("button", { name: "Hide files" });
     await expect(hideUpload).toBeVisible();
     await expect(hideUpload).toHaveAttribute("aria-expanded", "true");
     await expectHorizontallyInViewport(hideUpload, page);
@@ -464,13 +455,13 @@ test.describe("hosted mobile and tablet layout", () => {
     await expect(workspace).toHaveClass(/sidebar-collapsed/);
     await expect(
       page
-        .locator(".working-mode-bar")
-        .getByRole("button", { name: "Show upload panel" }),
+        .locator(".combined-toolbar")
+        .getByRole("button", { name: "Show files" }),
     ).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
 
-  test("desktop viewport: the collapse rail still renders when the sidebar is collapsed (AC-P2b)", async ({
+  test("desktop viewport: combined toolbar reopens collapsed files", async ({
     page,
     isMobile,
   }) => {
@@ -490,10 +481,10 @@ test.describe("hosted mobile and tablet layout", () => {
 
     // The first open auto-collapses; on desktop the rail stays visible (it is
     // the reopen control there). Visibility semantics, not boundingBox math.
-    const showUpload = page.getByRole("button", { name: "Show upload panel" });
+    const showUpload = page.getByRole("button", { name: "Show files" });
     await expect(showUpload).toBeVisible({ timeout: 15_000 });
     const collapseRail = page.locator(".collapse-rail");
-    await expect(collapseRail).toBeVisible();
+    await expect(collapseRail).toBeHidden();
 
     // And it still reopens the upload panel.
     await showUpload.click();
@@ -528,7 +519,7 @@ test.describe("hosted mobile and tablet layout", () => {
     await expect(editor).toBeFocused();
     await expect(editor).toHaveValue(/Typed while focused\./);
     await expectInViewport(editor, page);
-    await expectInViewport(page.getByRole("button", { name: "Save document" }), page);
+    await expectInViewport(page.getByRole("button", { name: "Download Markdown" }), page);
     await expectNoHorizontalOverflow(page);
   });
 
@@ -561,14 +552,14 @@ test.describe("hosted mobile and tablet layout", () => {
       "# Phone draft\n\nLine one of the draft body.\n\nLine two of the draft body.",
     );
 
-    const saveButton = page.getByRole("button", { name: "Save document" });
+    const saveButton = page.getByRole("button", { name: "Download Markdown" });
     await expect(saveButton).toBeVisible();
 
     // Mode switch via PreviewToolbar: edit -> preview -> linkedin -> edit.
     await page.getByRole("button", { name: "View", exact: true }).click();
     await expect(
       page
-        .getByRole("region", { name: "View" })
+        .getByRole("region", { name: "Document", exact: true })
         .getByRole("heading", { name: "Phone draft" }),
     ).toBeVisible();
 
@@ -633,7 +624,7 @@ test.describe("hosted mobile and tablet layout", () => {
       { expandUploadPanel: true },
     );
 
-    const saveButton = page.getByRole("button", { name: "Save document" });
+    const saveButton = page.getByRole("button", { name: "Download Markdown" });
     await saveButton.scrollIntoViewIfNeeded();
     await expectTapTargetFloor(saveButton);
 
@@ -666,7 +657,7 @@ test.describe("hosted mobile and tablet layout", () => {
 
     // PreviewToolbar mode buttons reachable (scroll into view since the
     // workspace is stacked and the preview panel sits below the sidebar).
-    const previewToolbar = page.locator(".preview-toolbar");
+    const previewToolbar = page.locator(".combined-toolbar");
     await previewToolbar.scrollIntoViewIfNeeded();
 
     await expect(
@@ -679,7 +670,7 @@ test.describe("hosted mobile and tablet layout", () => {
       page.getByRole("button", { name: "LinkedIn", exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Save document" }),
+      page.getByRole("button", { name: "Download Markdown" }),
     ).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Find and replace" }),
@@ -709,7 +700,7 @@ test.describe("hosted mobile and tablet layout", () => {
       await startWriting.scrollIntoViewIfNeeded();
       await startWriting.click();
 
-      const saveButton = page.getByRole("button", { name: "Save document" });
+      const saveButton = page.getByRole("button", { name: "Download Markdown" });
       await expectInViewport(saveButton, page);
       await expectNoHorizontalOverflow(page);
     }
@@ -738,10 +729,10 @@ test.describe("hosted mobile and tablet layout", () => {
         /sidebar-collapsed/,
       );
       await expect(
-        page.getByRole("button", { name: "Show upload panel" }),
+        page.getByRole("button", { name: "Show files" }),
       ).toBeVisible();
       await expect(
-        page.getByRole("button", { name: "Hide upload panel" }),
+        page.getByRole("button", { name: "Hide files" }),
       ).toHaveCount(0);
 
       const previewPanel = page.locator(".preview-panel");
@@ -757,7 +748,7 @@ test.describe("hosted mobile and tablet layout", () => {
       await page.getByRole("button", { name: "View", exact: true }).click();
       await expect(
         page
-          .getByRole("region", { name: "View" })
+          .getByRole("region", { name: "Document", exact: true })
           .getByRole("heading", { name: `Loaded ${viewport.width}` }),
       ).toBeVisible();
       await expectNoHorizontalOverflow(page);
@@ -793,7 +784,7 @@ test.describe("hosted mobile and tablet layout", () => {
         ?.scrollIntoView({ block: "start", behavior: "instant" as ScrollBehavior });
     });
 
-    const saveButton = page.getByRole("button", { name: "Save document" });
+    const saveButton = page.getByRole("button", { name: "Download Markdown" });
     await expect(editor).toBeFocused();
     await editor.type("\nStill usable after keyboard resize.");
     await expect(editor).toHaveValue(/Still usable after keyboard resize\./);

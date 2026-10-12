@@ -31,6 +31,10 @@ Open `http://localhost:5173/` in your browser.
 
 The live site now includes an **Install & Use** tab for the package, tarball, and portable skill paths.
 
+Opening a document or choosing **Start writing** brings you into the working layout. Click the **doc2md** logo to return to the introduction without closing your documents.
+
+In the browser, **Download .md** creates a Markdown copy; it does not update the original file. **Download started** confirms the browser received the download request. The Mac app retains native **Save** and **Save As**. **Clear** asks before discarding unsaved edits (or edits not yet downloaded in the browser); canceling keeps the documents open.
+
 ## Local Commands
 
 Use `npm run validate:local` as the default pre-PR local gate. It runs lint, typecheck, unit tests, production build, Playwright e2e, Python workflow/security tests, and then Mac validation. Mac validation is signed by default and fails loudly if Apple/Sparkle credentials are missing.

@@ -48,6 +48,10 @@ function DesktopAppContent() {
       callbacks={adapter.callbacks}
       workingModeBarProps={adapter.workingModeBarProps}
       heroActionsSlot={adapter.heroActionsSlot}
+      settingsContent={adapter.settingsContent}
+      settingsActions={adapter.settingsActions}
+      documentTitle={adapter.documentTitle}
+      renameDisabled={adapter.renameDisabled}
       dropZoneProps={adapter.dropZoneProps}
       fileListProps={adapter.fileListProps}
       desktopStatusSlot={adapter.desktopStatusSlot}

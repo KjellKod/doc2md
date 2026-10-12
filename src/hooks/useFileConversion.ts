@@ -16,6 +16,7 @@ import {
   markEntryConverting,
   markEntryError,
   renameEntryFile,
+  renameEntryOutput,
   replaceEntryWithMarkdown,
 } from "./useFileConversion.helpers";
 
@@ -207,6 +208,14 @@ export function useFileConversion() {
     );
   }
 
+  function renameOutput(entryId: string, name: string) {
+    setEntries((currentEntries) =>
+      currentEntries.map((entry) =>
+        entry.id === entryId ? renameEntryOutput(entry, name) : entry,
+      ),
+    );
+  }
+
   function selectEntry(id: string) {
     setEntries((currentEntries) =>
       currentEntries.map((entry) => ({
@@ -283,6 +292,7 @@ export function useFileConversion() {
     clearEntriesById,
     replaceEntryWithMarkdownFile,
     renameEntry,
+    renameOutput,
     selectEntry,
     selectedEntry,
     updateMarkdown,

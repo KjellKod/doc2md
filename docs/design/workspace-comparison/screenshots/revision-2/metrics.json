@@ -1,0 +1,82 @@
+[
+  {
+    "width": 1440,
+    "concept": "a",
+    "appbar": 52,
+    "firstTextOffset": 204,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "width": 1440,
+    "concept": "b",
+    "appbar": 52,
+    "firstTextOffset": 160,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "width": 1050,
+    "concept": "a",
+    "appbar": 52,
+    "firstTextOffset": 204,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "width": 1050,
+    "concept": "b",
+    "appbar": 52,
+    "firstTextOffset": 160,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "width": 980,
+    "concept": "a",
+    "appbar": 52,
+    "firstTextOffset": 204,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "width": 980,
+    "concept": "b",
+    "appbar": 52,
+    "firstTextOffset": 160,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "width": 768,
+    "concept": "a",
+    "appbar": 52,
+    "firstTextOffset": 204,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "width": 768,
+    "concept": "b",
+    "appbar": 52,
+    "firstTextOffset": 204,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "width": 390,
+    "concept": "a",
+    "appbar": 56,
+    "firstTextOffset": 210,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "width": 390,
+    "concept": "b",
+    "appbar": 56,
+    "firstTextOffset": 210,
+    "overflow": false,
+    "errors": []
+  }
+]

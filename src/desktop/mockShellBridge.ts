@@ -103,6 +103,11 @@ export function createMockShell(
     openFile: wrappedOpenFile,
     saveFile: wrappedSaveFile,
     saveFileAs: wrappedSaveFileAs,
+    renameFile: overrides.renameFile ?? vi.fn(async (args) => ({
+      ok: true as const,
+      path: `${args.path.slice(0, args.path.lastIndexOf("/") + 1)}${args.name}`,
+      mtimeMs: mtimesByPath.get(args.path) ?? args.expectedMtimeMs,
+    })),
     revealInFinder:
       overrides.revealInFinder ?? vi.fn(async () => DEFAULT_REVEAL),
     statFile:
