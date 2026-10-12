@@ -364,3 +364,9 @@
 .app-shell-desktop .markdown-edit-area {
   display: block;
 }
+
+@media (max-width: 979px) {
+  .app-shell-desktop #view-panel-convert > .workspace:not(.sidebar-collapsed) {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+}

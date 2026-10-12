@@ -93,3 +93,24 @@ test("desktop file errors stay visible without pushing the editor below the wind
     .boundingBox();
   expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(696);
 });
+
+for (const width of [900, 979]) {
+  test(`narrow desktop at ${width}px reserves remaining height for the editor`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 700 });
+    const editor = page.getByRole("textbox", { name: "Edit markdown" });
+    const sidebar = page.locator(".sidebar-panel");
+    await expect(sidebar).toBeVisible();
+    await expect.poll(async () => (await editor.boundingBox())?.height ?? 0).toBeGreaterThan(280);
+    const expanded = await editor.boundingBox();
+    const files = await sidebar.boundingBox();
+    expect(expanded!.y).toBeLessThanOrEqual(files!.y + files!.height + 20);
+    expect(expanded!.y + expanded!.height).toBeLessThanOrEqual(700);
+    await page.getByRole("button", { name: "Hide files", exact: true }).click();
+    await expect(sidebar).toBeHidden();
+    await expect.poll(async () => (await editor.boundingBox())?.height ?? 0).toBeGreaterThan(500);
+    await page.getByRole("button", { name: "Show files", exact: true }).click();
+    await expect(sidebar).toBeVisible();
+    await expect.poll(async () => (await editor.boundingBox())?.height ?? 0).toBeGreaterThan(280);
+    expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(701);
+  });
+}
