@@ -2837,7 +2837,7 @@ export function useDesktopAppShellAdapter(): DesktopAppShellAdapter {
 
   const desktopStatusSlot = showDesktopShellBar ? (
     <section
-      className={`desktop-shell-bar desktop-shell-bar-${activeSaveState}`}
+      className={`desktop-shell-bar desktop-shell-bar-${activeSaveState}${!activePendingConflict && visibleDesktopNotice.kind === "none" ? " desktop-shell-bar-quiet" : ""}`}
       aria-label="Desktop file status"
       data-app-ready={appReady ? "true" : undefined}
     >

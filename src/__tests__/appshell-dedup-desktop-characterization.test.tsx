@@ -37,7 +37,6 @@ const { convertFileMock } = vi.hoisted(() => ({
 // tests/e2e/appshell-dedup-characterization.spec.ts.
 const BASELINE_PAGE_MAX_WIDTH_PX = "1680px";
 const BASELINE_DEFAULT_SIDEBAR_WIDTH_PX = "240px";
-const BASELINE_MIN_EDIT_SHELL_HEIGHT = 240;
 
 afterEach(() => {
   delete window.doc2mdShell;
@@ -113,7 +112,7 @@ describe("AppShell dedup characterization (desktop)", () => {
     expect(document.body.classList.contains("is-height-resizing")).toBe(false);
   });
 
-  it("sidebar width and editor height styles round-trip through desktop resize controls", async () => {
+  it("sidebar width remains resizable while the native window owns editor height", async () => {
     const cleanupShell = installMockShell({
       openFile: async () => ({
         ok: true as const,
@@ -152,24 +151,10 @@ describe("AppShell dedup characterization (desktop)", () => {
 
     const previewPanel = document.querySelector(".preview-panel");
     expect(previewPanel).not.toBeNull();
-    const heightHandle = screen.getByRole("separator", {
-      name: "Resize editor height",
-    });
-    fireEvent.keyDown(heightHandle, { key: "ArrowDown" });
-    const resizedStyle = previewPanel!.getAttribute("style") ?? "";
-    expect(resizedStyle).toMatch(
-      /^--preview-panel-ceiling: \d+px; height: \d+px; min-height: \d+px;$/,
-    );
-    const heightMatch = resizedStyle.match(/ height: (\d+)px;/);
-    expect(heightMatch).not.toBeNull();
-    expect(Number(heightMatch![1])).toBeGreaterThanOrEqual(
-      BASELINE_MIN_EDIT_SHELL_HEIGHT,
-    );
-
-    fireEvent.keyDown(heightHandle, { key: "Home" });
     expect(previewPanel!.getAttribute("style")).toMatch(
       /^--preview-panel-ceiling: \d+px;$/,
     );
+    expect(document.querySelector(".app-shell-desktop")).not.toBeNull();
 
     cleanupShell();
   });

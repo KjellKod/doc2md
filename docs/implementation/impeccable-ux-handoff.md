@@ -170,3 +170,9 @@ Validation: the two new deterministic regression cases failed before the fix and
 ## October 12 Settings alignment
 
 All Settings labels and commands share a left text edge and regular text weight. Appearance, Persistence and Line numbers use the same row padding; the selector and checkboxes sit on the right. The version uses the same left inset. This corrects inherited desktop/toolbar style differences without changing the controls or their behavior.
+
+## October 12 Mac editor window sizing
+
+The native editor bottom extended below the window at every height because the fixed viewport subtraction did not include the desktop status row and the editor resize handle. Desktop now allocates the actual remaining window height to the workspace, including visible notices. The OS window owns native editor height; the separate native vertical resize handle and persisted manual pane height no longer override it. Browser sizing and sidebar width resizing remain unchanged. A quiet desktop status region retains its accessibility/app-ready information without consuming a row.
+
+Validation: both new geometry regressions failed before the fix and passed afterward in Chromium and WebKit (four checks), covering growth/shrink, internal long-document scrolling and visible file errors. All seven existing browser resize checks passed. Unit run passed 1,020 tests with one obsolete native-height assertion; updating that assertion produced 13/13 passing desktop characterization tests. Lint/typecheck and web/desktop builds passed. Independent source review found no actionable issues. Screenshot checks used dark desktop mode at 600px and 1100px heights.
